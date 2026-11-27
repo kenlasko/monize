@@ -67,9 +67,10 @@ interface TransactionsCalendarViewProps {
   today: string;
   /**
    * The month on screen, when the page holds it: the Transactions page does,
-   * so the month a reader turned to becomes the register's date range when
-   * they switch back to the table. Without it the calendar holds its own month
-   * and opens on today's.
+   * so the calendar opens on the register page's month and the month a reader
+   * turned to sends the register to the page where it begins when they switch
+   * back to the table. Without it the calendar holds its own month and opens
+   * on today's.
    */
   month?: string;
   /** Called with every month the reader moves to, by any of the three ways. */

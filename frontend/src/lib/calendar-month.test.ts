@@ -9,6 +9,8 @@ import {
   isCalendarMonth,
   monthDateRange,
   monthForDateRange,
+  monthWithinDateRange,
+  earliestMonthOf,
   monthFromPageNumber,
   monthGridDays,
   monthOf,
@@ -381,5 +383,49 @@ describe('monthForDateRange', () => {
     expect(monthForDateRange('', '2025-04-15', today)).toBe('2025-04');
     expect(monthForDateRange('2027-02-10', '', today)).toBe('2027-02');
     expect(monthForDateRange('2027-02-30', 'garbage', today)).toBe('2026-11');
+  });
+});
+
+describe('monthWithinDateRange', () => {
+  it('is the whole month with no range', () => {
+    expect(monthWithinDateRange('2026-02', '', '')).toEqual({
+      startDate: '2026-02-01',
+      endDate: '2026-02-28',
+    });
+  });
+
+  it('is clipped to a range that starts or ends inside the month', () => {
+    expect(monthWithinDateRange('2026-03', '2026-03-10', '2026-12-31')).toEqual({
+      startDate: '2026-03-10',
+      endDate: '2026-03-31',
+    });
+    expect(monthWithinDateRange('2026-03', '2025-01-01', '2026-03-15')).toEqual({
+      startDate: '2026-03-01',
+      endDate: '2026-03-15',
+    });
+  });
+
+  it('is null for a month the range excludes', () => {
+    expect(monthWithinDateRange('2026-03', '2026-04-01', '')).toBeNull();
+    expect(monthWithinDateRange('2026-03', '', '2026-02-28')).toBeNull();
+  });
+
+  it('treats a malformed bound as no bound', () => {
+    expect(monthWithinDateRange('2026-03', 'garbage', '2026-02-30')).toEqual({
+      startDate: '2026-03-01',
+      endDate: '2026-03-31',
+    });
+  });
+});
+
+describe('earliestMonthOf', () => {
+  it('is the oldest month among the dates, in either order', () => {
+    expect(earliestMonthOf(['2026-04-03', '2026-03-31', '2026-03-02'])).toBe('2026-03');
+    expect(earliestMonthOf(['2025-12-30', '2026-01-02'])).toBe('2025-12');
+  });
+
+  it('is null for no dates, or none that is a calendar date', () => {
+    expect(earliestMonthOf([])).toBeNull();
+    expect(earliestMonthOf(['', 'garbage'])).toBeNull();
   });
 });

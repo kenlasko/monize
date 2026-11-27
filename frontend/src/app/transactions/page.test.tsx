@@ -384,7 +384,7 @@ vi.mock('@/components/transactions/TransactionList', () => ({
       {props.onTransactionUpdate && (
         <button
           data-testid="inline-update-btn"
-          onClick={() => props.onTransactionUpdate({ id: 'tx-1', status: 'CLEARED', linkedInvestmentTransactionId: undefined })}
+          onClick={() => props.onTransactionUpdate({ id: 'tx-1', transactionDate: '2026-02-01', status: 'CLEARED', linkedInvestmentTransactionId: undefined })}
         >
           Inline Update
         </button>
@@ -664,9 +664,9 @@ vi.mock('@/hooks/useExchangeRates', () => {
 });
 
 const mockTransactions = [
-  { id: 'tx-1', date: '2026-02-01', amount: -50, status: 'UNCLEARED', payee: { id: 'payee-1', name: 'Store' }, category: null, account: { id: 'acc-1', name: 'Checking' }, isTransfer: false },
-  { id: 'tx-2', date: '2026-02-02', amount: 3000, status: 'CLEARED', payee: { id: 'payee-2', name: 'Employer' }, category: { id: 'cat-1', name: 'Salary' }, account: { id: 'acc-1', name: 'Checking' }, isTransfer: false },
-  { id: 'tx-3', date: '2026-02-03', amount: -200, status: 'RECONCILED', payee: null, category: null, account: { id: 'acc-1', name: 'Checking' }, isTransfer: true, linkedInvestmentTransactionId: 'itx-1' },
+  { id: 'tx-1', transactionDate: '2026-02-01', amount: -50, status: 'UNCLEARED', payee: { id: 'payee-1', name: 'Store' }, category: null, account: { id: 'acc-1', name: 'Checking' }, isTransfer: false },
+  { id: 'tx-2', transactionDate: '2026-02-02', amount: 3000, status: 'CLEARED', payee: { id: 'payee-2', name: 'Employer' }, category: { id: 'cat-1', name: 'Salary' }, account: { id: 'acc-1', name: 'Checking' }, isTransfer: false },
+  { id: 'tx-3', transactionDate: '2026-02-03', amount: -200, status: 'RECONCILED', payee: null, category: null, account: { id: 'acc-1', name: 'Checking' }, isTransfer: true, linkedInvestmentTransactionId: 'itx-1' },
 ];
 
 // The account widget's own column: the floating bar repeats the balance.
@@ -775,6 +775,23 @@ describe('TransactionsPage', () => {
      * rehydrates it mid-render and the page updates outside act().
      */
     it('starts on the table, swaps the register for the calendar, and swaps back', async () => {
+      // Page 1 runs, newest first, from April 2025 back into March; the page
+      // holding February's first row (page 3) reaches back into January.
+      const row = (id: string, transactionDate: string) => ({
+        ...mockTransactions[0],
+        id,
+        transactionDate,
+      });
+      const pageOne = [row('apr-2', '2025-04-02'), row('mar-30', '2025-03-30')];
+      const pageThree = [row('feb-1', '2025-02-01'), row('jan-31', '2025-01-31')];
+      mockGetAll.mockImplementation(async (params: Record<string, unknown> = {}) => {
+        if (params.limit === 1) return { data: [row('feb-1', '2025-02-01')], pagination: { page: 1, totalPages: 9, total: 9 } };
+        if (params.targetTransactionId === 'feb-1' || params.page === 3) {
+          return { data: pageThree, pagination: { page: 3, totalPages: 4, total: 8 } };
+        }
+        return { data: pageOne, pagination: { page: 1, totalPages: 4, total: 8 } };
+      });
+
       await act(async () => {
         render(<TransactionsPage />);
       });
@@ -798,13 +815,11 @@ describe('TransactionsPage', () => {
       );
       expect(screen.getByTestId('dynamic-component')).toBeInTheDocument();
 
-      // With no date range the calendar opens on today's month.
-      expect(screen.getByTestId('dynamic-component')).toHaveAttribute(
-        'data-month',
-        expect.stringMatching(/^\d{4}-\d{2}$/),
-      );
+      // The calendar opens on the earliest month the page's rows fall in.
+      expect(screen.getByTestId('dynamic-component')).toHaveAttribute('data-month', '2025-03');
 
-      // The month the reader turned to is the register's range on the way back.
+      // The month the reader turned to sends the register to the page holding
+      // its first row, and writes no date filter.
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Turn to February 2025' }));
       });
@@ -816,13 +831,26 @@ describe('TransactionsPage', () => {
 
       await waitFor(() => expect(screen.getByTestId('transaction-list')).toBeInTheDocument());
       await waitFor(() =>
-        expect(mockGetAll.mock.calls.at(-1)?.[0]).toMatchObject({
+        expect(mockGetAll).toHaveBeenCalledWith(
+          expect.objectContaining({ targetTransactionId: 'feb-1' }),
+        ),
+      );
+      expect(mockGetAll).toHaveBeenCalledWith(
+        expect.objectContaining({
           startDate: '2025-02-01',
           endDate: '2025-02-28',
+          sortBy: 'date',
+          sortDirection: 'asc',
+          limit: 1,
         }),
       );
+      const registerReads = mockGetAll.mock.calls
+        .map(([params]) => params as Record<string, unknown>)
+        .filter((params) => params.limit !== 1);
+      expect(registerReads.at(-1)).toMatchObject({ startDate: undefined, endDate: undefined });
 
-      // And the calendar reopens on it, so switching back and forth stays put.
+      // The landed page also reaches into January, yet the calendar reopens on
+      // February, so switching back and forth stays put.
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Calendar' }));
       });
@@ -835,18 +863,9 @@ describe('TransactionsPage', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Table' }));
       });
       await waitFor(() => expect(screen.getByTestId('transaction-list')).toBeInTheDocument());
-      // An untouched calendar leaves the range as it was, so the register is
-      // not asked again for a range it already holds.
+      // An untouched calendar leaves the register on its page, so it is not
+      // asked again.
       expect(mockGetAll.mock.calls.length).toBe(readsBefore);
-      expect(mockGetAll.mock.calls.at(-1)?.[0]).toMatchObject({
-        startDate: '2025-02-01',
-        endDate: '2025-02-28',
-      });
-
-      // The range this left in storage must not open the next test.
-      for (const key of ['startDate', 'endDate', 'timePeriod']) {
-        window.localStorage.removeItem(`transactions.filter.${key}`);
-      }
     });
   });
 
@@ -2275,7 +2294,7 @@ describe('TransactionsPage', () => {
   describe('Transaction Editing', () => {
     it('opens edit form when a regular transaction is clicked', async () => {
       mockGetAll.mockResolvedValue({
-        data: [{ id: 'tx-1', date: '2026-02-01', amount: -50, payee: { name: 'Store' }, isTransfer: false }],
+        data: [{ id: 'tx-1', transactionDate: '2026-02-01', amount: -50, payee: { name: 'Store' }, isTransfer: false }],
         pagination: { page: 1, totalPages: 1, total: 1 },
       });
       mockGetSummary.mockResolvedValue({ totalIncome: 0, totalExpenses: 50, netCashFlow: -50, transactionCount: 1 });
@@ -2294,7 +2313,7 @@ describe('TransactionsPage', () => {
     });
 
     it('fetches full transaction when editing a split transaction', async () => {
-      const splitTx = { id: 'tx-split', date: '2026-02-01', amount: -100, payee: { name: 'Store' }, isTransfer: false, isSplit: true, splits: [{ id: 's1', amount: -60 }] };
+      const splitTx = { id: 'tx-split', transactionDate: '2026-02-01', amount: -100, payee: { name: 'Store' }, isTransfer: false, isSplit: true, splits: [{ id: 's1', amount: -60 }] };
       const fullSplitTx = { ...splitTx, splits: [{ id: 's1', amount: -60 }, { id: 's2', amount: -40 }] };
       mockGetAll.mockResolvedValue({
         data: [splitTx],
@@ -2318,7 +2337,7 @@ describe('TransactionsPage', () => {
     });
 
     it('falls back to filtered transaction if getById fails for split transaction', async () => {
-      const splitTx = { id: 'tx-split', date: '2026-02-01', amount: -100, payee: { name: 'Store' }, isTransfer: false, isSplit: true, splits: [{ id: 's1', amount: -60 }] };
+      const splitTx = { id: 'tx-split', transactionDate: '2026-02-01', amount: -100, payee: { name: 'Store' }, isTransfer: false, isSplit: true, splits: [{ id: 's1', amount: -60 }] };
       mockGetAll.mockResolvedValue({
         data: [splitTx],
         pagination: { page: 1, totalPages: 1, total: 1 },
@@ -2494,7 +2513,7 @@ describe('TransactionsPage', () => {
     });
 
     it("keeps the row's warranty count when a split is re-read for editing", async () => {
-      const splitTx = { id: 'tx-split', date: '2026-02-01', amount: -100, payee: { name: 'Store' }, isTransfer: false, isSplit: true, splits: [], warrantyCount: 2 };
+      const splitTx = { id: 'tx-split', transactionDate: '2026-02-01', amount: -100, payee: { name: 'Store' }, isTransfer: false, isSplit: true, splits: [], warrantyCount: 2 };
       const fullSplitTx = { ...splitTx, warrantyCount: undefined, splits: [{ id: 's1', amount: -100 }] };
       mockGetAll.mockResolvedValue({ data: [splitTx], pagination: { page: 1, totalPages: 1, total: 1 } });
       mockGetById.mockResolvedValue(fullSplitTx);

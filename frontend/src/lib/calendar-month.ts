@@ -260,3 +260,34 @@ export function monthForDateRange(startDate: string, endDate: string, today: str
   if (isCalendarDate(startDate) && monthOf(startDate) > month) month = monthOf(startDate);
   return month;
 }
+
+/**
+ * The days of `month` a register's date range lets through, or `null` when the
+ * range excludes the whole month. An empty or malformed bound is no bound, as
+ * in `monthForDateRange`.
+ */
+export function monthWithinDateRange(
+  month: string,
+  startDate: string,
+  endDate: string,
+): { startDate: string; endDate: string } | null {
+  const whole = monthDateRange(month);
+  const start = isCalendarDate(startDate) && startDate > whole.startDate ? startDate : whole.startDate;
+  const end = isCalendarDate(endDate) && endDate < whole.endDate ? endDate : whole.endDate;
+  return start <= end ? { startDate: start, endDate: end } : null;
+}
+
+/**
+ * The earliest month any of `dates` falls in, or `null` when none is a
+ * calendar date: the month a calendar opens on for a register page, so a page
+ * that spans two months opens on the older one whichever way it is sorted.
+ */
+export function earliestMonthOf(dates: readonly string[]): string | null {
+  let earliest: string | null = null;
+  for (const date of dates) {
+    if (!isCalendarDate(date)) continue;
+    const month = monthOf(date);
+    if (earliest === null || month < earliest) earliest = month;
+  }
+  return earliest;
+}
