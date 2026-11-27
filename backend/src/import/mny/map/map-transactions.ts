@@ -995,14 +995,6 @@ function collectInvestmentCashSources(
 }
 
 /**
- * Maps banking transactions, deferring anything that carries a security to the
- * investment mapper (Phase 2 reads the same tables).
- *
- * Every transaction id is pre-generated (design ADR-9) so transfer pairs and
- * transfer splits are fully wired before the first INSERT and the writer needs no
- * second pass to discover them.
- */
-/**
  * One category per transfer (INV-CATEGORY-002,
  * `docs/specs/transfer-categories.md` section 4.5): both legs of a linked
  * pair take the file's category. Money records one per row, so when the two
@@ -1037,6 +1029,14 @@ export function withOneCategoryPerTransfer(
   });
 }
 
+/**
+ * Maps banking transactions, deferring anything that carries a security to the
+ * investment mapper (Phase 2 reads the same tables).
+ *
+ * Every transaction id is pre-generated (design ADR-9) so transfer pairs and
+ * transfer splits are fully wired before the first INSERT and the writer needs no
+ * second pass to discover them.
+ */
 export function mapTransactions(
   input: MapTransactionsInput,
 ): MappedTransactions {
