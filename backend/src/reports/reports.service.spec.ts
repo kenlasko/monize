@@ -3625,9 +3625,9 @@ describe("ReportsService", () => {
         // PostgreSQL returns just the expense postings to the aggregator.
         expect(qb.andWhere).toHaveBeenCalledWith(
           expect.stringContaining(
-            "splitCategory.isIncome ELSE category.isIncome",
+            "splitCategory.categoryType ELSE category.categoryType",
           ),
-          { reportIncome: false },
+          { reportCategoryType: "expense" },
         );
         expect(result.data).toEqual([
           expect.objectContaining({ id: "cat-1", value: -70, count: 2 }),
