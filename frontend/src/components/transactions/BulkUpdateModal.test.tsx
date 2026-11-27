@@ -39,12 +39,13 @@ vi.mock('@/components/ui/FormActions', () => ({
 
 // Mock Combobox as a simple input
 vi.mock('@/components/ui/Combobox', () => ({
-  Combobox: ({ placeholder, value, onChange }: { placeholder?: string; value?: string; onChange: (value: string, label: string) => void; options?: unknown[]; onCreateNew?: (name: string) => void; allowCustomValue?: boolean }) => (
+  Combobox: ({ placeholder, value, onChange, options }: { placeholder?: string; value?: string; onChange: (value: string, label: string) => void; options?: { label: string }[]; onCreateNew?: (name: string) => void; allowCustomValue?: boolean }) => (
     <input
       placeholder={placeholder}
       value={value || ''}
       onChange={(e) => onChange(e.target.value, e.target.value)}
       data-testid={`combobox-${placeholder?.slice(0, 10)}`}
+      data-options={options?.map((o) => o.label).join('|')}
     />
   ),
 }));
@@ -100,7 +101,8 @@ vi.mock('@/lib/tags', () => ({
   tagsApi: { getAll: () => mockGetAllTags(), getUsage: () => mockGetTagUsage() },
 }));
 
-vi.mock('@/lib/categoryUtils', () => ({
+vi.mock('@/lib/categoryUtils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/categoryUtils')>()),
   buildCategoryTree: () => [],
 }));
 
@@ -150,6 +152,20 @@ describe('BulkUpdateModal', () => {
     expect(screen.getByText('Description')).toBeInTheDocument();
     expect(screen.getByText('Status')).toBeInTheDocument();
     expect(screen.getByText('Tags')).toBeInTheDocument();
+  });
+
+  it('offers every category type for a mixed selection, Transfer categories first (INV-CATEGORY-001)', async () => {
+    mockGetAllCategories.mockResolvedValueOnce([
+      { id: 'cat-food', name: 'Groceries', parentId: null, categoryType: 'expense' },
+      { id: 'cat-save', name: 'Savings moves', parentId: null, categoryType: 'transfer' },
+    ]);
+    render(<BulkUpdateModal {...defaultProps} />);
+    await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(5));
+    fireEvent.click(screen.getAllByRole('checkbox')[1]);
+    await waitFor(() => {
+      const picker = document.querySelector('input[data-options*="Groceries"]');
+      expect(picker?.getAttribute('data-options')).toBe('Savings moves|Groceries');
+    });
   });
 
   it('enables field when checkbox clicked', async () => {

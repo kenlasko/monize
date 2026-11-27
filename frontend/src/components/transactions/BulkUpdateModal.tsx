@@ -18,7 +18,7 @@ import { useTagPickerOptions } from '@/hooks/useTagPickerOptions';
 import { categoriesApi } from '@/lib/categories';
 import { payeesApi } from '@/lib/payees';
 import { tagsApi } from '@/lib/tags';
-import { buildCategoryTree } from '@/lib/categoryUtils';
+import { buildCategoryPickerOptions } from '@/lib/categoryUtils';
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
 import { categoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
@@ -105,19 +105,18 @@ export function BulkUpdateModal({
     }
   }, [isOpen, reset]);
 
-  const categoryTree = useMemo(() => buildCategoryTree(categories), [categories]);
-
-  const categoryOptions = useMemo(() =>
-    categoryTree.map(({ category }) => {
-      const parentCategory = category.parentId
-        ? categories.find(c => c.id === category.parentId)
-        : null;
-      return {
+  // A selection may mix transfers and ordinary rows, so every type is offered,
+  // Transfer categories first; the server skips each row a category does not
+  // fit and says why (INV-CATEGORY-001).
+  const categoryOptions = useMemo(
+    () =>
+      buildCategoryPickerOptions(categories, 'transfer', (category, label) => ({
         value: category.id,
-        label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+        label,
         icon: categoryPickerIcon(category),
-      };
-    }), [categoryTree, categories]);
+      })),
+    [categories],
+  );
 
   const payeeOptions = useMemo(() =>
     payees.map(payee => ({
