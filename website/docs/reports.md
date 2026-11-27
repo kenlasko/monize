@@ -291,22 +291,40 @@ Create your own reports with flexible filtering, grouping, and visualization opt
 | | **Sort By** / **Sort Direction** | Default or any column, Ascending or Descending |
 | **Time Period** | **Timeframe** | Last 7 Days, Last 30 Days, Last Month, Last 3 Months, Last 6 Months, Last 12 Months, Last Year, Year to Date, or Custom Range (with **Start Date** and **End Date**) |
 | **Aggregation Options** | **Metric** | No Aggregation, Total Amount, Transaction Count, Average Amount, or Budget Variance |
-| | **Direction** | Income Only, Expenses Only, or Both |
+| | **Direction** | Both, Incoming, or Outgoing |
+| | **Category Type** | All, Income, Expense, or Uncategorized |
 | | **Include transfers** | Count transfers between your accounts |
 | | **Add to favourites** | Star the report as soon as it is created |
 
 Click **Create Report** to save it. It then appears on the Reports page under **Custom**.
 
-#### How Direction Affects Amounts
+#### Direction and Category Type
 
-- **Income Only** and **Expenses Only** show positive amounts: what came in, or what was spent. A refund lowers its category's spending.
-- **Both** with **No Grouping** and **No Aggregation** lists every matching transaction with its own sign: money coming into an account is positive, money leaving it is negative, and a refund stays positive even in an expense category. The headline is the **Net amount** of the listed rows. With **Include transfers** ticked it is the **Net cash movement**: a transfer between two accounts you both included shows as a negative and a positive row that cancel out, and a transfer with only one side in the report counts only that side. A transfer between accounts in two different currencies counts at the amounts it actually moved when one side is in your default currency: the other side converts to what was received or sent, even when only one of the two accounts is in the report, so both sides cancel out. Until the receiving side of an imported transfer is confirmed by importing that account's file or by choosing **Confirm amount** on it (until then the row carries an **Estimated amount** badge, and you can list such rows with `is:provisional`), the other side converts at the exchange rate of its own date instead, so the two sides can leave a difference. A transfer between two currencies that are both different from your default currency is the exception: each side is converted at the exchange rate of its own date, so the two sides can leave a small difference.
-- **Both** with **Total Amount** shows **Net amount**. Money coming in raises the total, and money going out lowers it. A purchase of 100 in September and its full refund in October show as −100 and +100 by month, with a total of 0 for both months. With **Include transfers**, the headline reads **Net cash movement** and each matching leg contributes its signed value. If a transaction appears under several tags, each tag shows its activity and the headline counts each underlying amount once.
+**Direction** selects money moving into the account (Incoming), out of it (Outgoing), or in either direction (Both). **Category Type** selects postings by the type of their assigned category. Each line of a split transaction uses its own amount and category. You can combine the two filters. For example, **Incoming + Expense** selects refunds credited to expense categories.
+
+- With **No Grouping** and **No Aggregation**, the report lists individual postings with their signs. With **Include transfers** ticked it is the **Net cash movement**: a transfer between two accounts you both included shows as a negative and a positive row that cancel out, and a transfer with only one side in the report counts only that side. A transfer between accounts in two different currencies counts at the amounts it actually moved when one side is in your default currency: the other side converts to what was received or sent, even when only one of the two accounts is in the report, so both sides cancel out. Until the receiving side of an imported transfer is confirmed by importing that account's file or by choosing **Confirm amount** on it (until then the row carries an **Estimated amount** badge, and you can list such rows with `is:provisional`), the other side converts at the exchange rate of its own date instead, so the two sides can leave a difference. A transfer between two currencies that are both different from your default currency is the exception: each side is converted at the exchange rate of its own date, so the two sides can leave a small difference.
+- **Total Amount** shows the signed sum of the selected postings. Money coming in raises the total, and money going out lowers it. A purchase of 100 in September and its full refund in October show as −100 and +100 by month, with a total of 0 for both months. With **Include transfers**, the headline reads **Net cash movement** and each matching leg contributes its signed value. If a transaction appears under several tags, each tag shows its activity and the headline counts each underlying amount once.
 - **Both** with **Average Amount**, or with **No Aggregation** and a grouping, continues to use the magnitude of each category's net within the group.
 
 A signed pie uses cool colours for incoming amounts and warm colours for outgoing amounts. Its legend shows the signed value of every known row, including a cancellation at zero.
 
-**Previously saved reports.** On the next run, a saved **Both / Total Amount** report uses the signed calculation without editing or resaving. For example, salary of +1,000 in one category, a purchase of −100 and a refund of +30 in another previously showed 1,070. The same report now shows 930. Sorting by amount can change the order of the rows. Signed totals have no percentage shares. A report previously sorted by percentage now sorts by signed amount in the same ascending or descending order. When an exchange rate is missing, each grouping withholds the same incomplete category and currency from the known subtotal.
+#### Previously saved reports
+
+Your existing reports open with the following filters. An individual transaction list uses **No Grouping** and **No Aggregation** together. A grouped report using **No Aggregation** follows the aggregated-report rule.
+
+| Saved setting | Direction | Category Type |
+| --- | --- | --- |
+| Expenses Only, individual transaction list | Outgoing | All |
+| Income Only, individual transaction list | Incoming | All |
+| Expenses Only, aggregated report | Both | Expense |
+| Income Only, aggregated report | Both | Income |
+| Both, any layout | Both | All |
+
+The signs, totals, and transactions included can change. For a purchase of −100 and a refund of +30 in the same expense category, an outgoing transaction list shows the purchase at −100. A **Total Amount** report for expense categories includes both postings and shows −70. An uncategorized payment appears in the outgoing list and is excluded from the expense-category total.
+
+In a category-grouped **Budget Variance** report, an expense refund reduces the actual cost. With a budget of 100, a purchase of 100 and a refund of 150, actual spending is −50. The variance (actual spending minus budget) is −150.
+
+On the next run, a saved **Both / Total Amount** report uses the signed calculation without editing or resaving. For example, salary of +1,000 in one category, a purchase of −100 and a refund of +30 in another previously showed 1,070. The same report now shows 930. Sorting by amount can change the order of the rows. Signed totals have no percentage shares. A report previously sorted by percentage now sorts by signed amount in the same ascending or descending order. When an exchange rate is missing, each grouping withholds the same incomplete category and currency from the known subtotal.
 
 To see one report of everything that came in and went out for a set of categories, in date order, choose **No Grouping**, **No Aggregation** and **Both**, and filter by those categories.
 

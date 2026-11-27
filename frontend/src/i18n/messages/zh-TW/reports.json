@@ -447,6 +447,7 @@
     "labelEndDate": "結束日期",
     "labelMetric": "指標",
     "labelDirection": "方向",
+    "labelCategoryType": "類別類型",
     "checkboxTransfers": "包含轉帳",
     "checkboxFavourites": "加入最愛",
     "sortByPlaceholder": "預設",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "平均金額",
       "BUDGET_VARIANCE": "預算差異"
     },
+    "categoryType": {
+      "ALL": "全部",
+      "INCOME": "收入",
+      "EXPENSE": "支出",
+      "UNCATEGORIZED": "未分類"
+    },
     "direction": {
       "INCOME_ONLY": "僅收入",
       "EXPENSES_ONLY": "僅支出",
-      "BOTH": "兩者均包含"
+      "BOTH": "兩者均包含",
+      "INCOMING": "流入",
+      "OUTGOING": "流出"
     },
     "sortDirection": {
       "ASC": "遞增",

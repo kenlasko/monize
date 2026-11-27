@@ -447,6 +447,7 @@
     "labelEndDate": "Дата закінчення",
     "labelMetric": "Метрика",
     "labelDirection": "Напрямок",
+    "labelCategoryType": "Тип категорії",
     "checkboxTransfers": "Включати перекази",
     "checkboxFavourites": "Додати до вибраного",
     "sortByPlaceholder": "За замовчуванням",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Середня сума",
       "BUDGET_VARIANCE": "Відхилення від бюджету"
     },
+    "categoryType": {
+      "ALL": "Усі",
+      "INCOME": "Дохід",
+      "EXPENSE": "Витрата",
+      "UNCATEGORIZED": "Без категорії"
+    },
     "direction": {
       "INCOME_ONLY": "Тільки дохід",
       "EXPENSES_ONLY": "Тільки витрати",
-      "BOTH": "Обидва"
+      "BOTH": "Обидва",
+      "INCOMING": "Надходження",
+      "OUTGOING": "Списання"
     },
     "sortDirection": {
       "ASC": "За зростанням",

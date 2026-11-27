@@ -447,6 +447,7 @@
     "labelEndDate": "[XX-End Date-XX]",
     "labelMetric": "[XX-Metric-XX]",
     "labelDirection": "[XX-Direction-XX]",
+    "labelCategoryType": "[XX-Category Type-XX]",
     "checkboxTransfers": "[XX-Include transfers-XX]",
     "checkboxFavourites": "[XX-Add to favourites-XX]",
     "sortByPlaceholder": "[XX-Default-XX]",
@@ -1969,7 +1970,15 @@
       "AVERAGE": "[XX-Average Amount-XX]",
       "BUDGET_VARIANCE": "[XX-Budget Variance-XX]"
     },
+    "categoryType": {
+      "ALL": "[XX-All-XX]",
+      "INCOME": "[XX-Income-XX]",
+      "EXPENSE": "[XX-Expense-XX]",
+      "UNCATEGORIZED": "[XX-Uncategorized-XX]"
+    },
     "direction": {
+      "INCOMING": "[XX-Incoming-XX]",
+      "OUTGOING": "[XX-Outgoing-XX]",
       "INCOME_ONLY": "[XX-Income Only-XX]",
       "EXPENSES_ONLY": "[XX-Expenses Only-XX]",
       "BOTH": "[XX-Both-XX]"

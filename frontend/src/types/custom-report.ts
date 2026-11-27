@@ -37,9 +37,18 @@ export enum MetricType {
 }
 
 export enum DirectionFilter {
+  INCOMING = 'INCOMING',
+  OUTGOING = 'OUTGOING',
   INCOME_ONLY = 'INCOME_ONLY',
   EXPENSES_ONLY = 'EXPENSES_ONLY',
   BOTH = 'BOTH',
+}
+
+export enum ReportCategoryType {
+  ALL = 'ALL',
+  INCOME = 'INCOME',
+  EXPENSE = 'EXPENSE',
+  UNCATEGORIZED = 'UNCATEGORIZED',
 }
 
 export enum TableColumn {
@@ -91,6 +100,7 @@ export interface ReportConfig {
   metric: MetricType;
   includeTransfers: boolean;
   direction: DirectionFilter;
+  categoryType?: ReportCategoryType;
   customStartDate?: string;
   customEndDate?: string;
   tableColumns?: TableColumn[];
@@ -264,9 +274,9 @@ export const METRIC_LABELS: Record<MetricType, string> = {
   [MetricType.BUDGET_VARIANCE]: 'Budget Variance',
 };
 
-export const DIRECTION_LABELS: Record<DirectionFilter, string> = {
-  [DirectionFilter.INCOME_ONLY]: 'Income Only',
-  [DirectionFilter.EXPENSES_ONLY]: 'Expenses Only',
+export const DIRECTION_LABELS = {
+  [DirectionFilter.INCOMING]: 'Incoming',
+  [DirectionFilter.OUTGOING]: 'Outgoing',
   [DirectionFilter.BOTH]: 'Both',
 };
 

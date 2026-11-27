@@ -447,6 +447,7 @@
     "labelEndDate": "Einddatum",
     "labelMetric": "Metriek",
     "labelDirection": "Richting",
+    "labelCategoryType": "Categorietype",
     "checkboxTransfers": "Overboekingen opnemen",
     "checkboxFavourites": "Toevoegen aan favorieten",
     "sortByPlaceholder": "Standaard",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Gemiddeld bedrag",
       "BUDGET_VARIANCE": "Budgetafwijking"
     },
+    "categoryType": {
+      "ALL": "Alle",
+      "INCOME": "Inkomsten",
+      "EXPENSE": "Uitgaven",
+      "UNCATEGORIZED": "Zonder categorie"
+    },
     "direction": {
       "INCOME_ONLY": "Alleen inkomsten",
       "EXPENSES_ONLY": "Alleen uitgaven",
-      "BOTH": "Beide"
+      "BOTH": "Beide",
+      "INCOMING": "Binnenkomend",
+      "OUTGOING": "Uitgaand"
     },
     "sortDirection": {
       "ASC": "Oplopend",

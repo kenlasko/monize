@@ -307,13 +307,13 @@ describe("a row's own rate on every surface (integration)", () => {
     expect(bySource.totalIncome).toBe(INCOME);
   });
 
-  it("reads the same figures in a custom report", async () => {
+  it("uses the same conversion rates for signed custom report amounts", async () => {
     const expenses = await runCustomReport(DirectionFilter.EXPENSES_ONLY);
     const earned = await runCustomReport(DirectionFilter.INCOME_ONLY);
 
-    expect(expenses.summary.total).toBe(EXPENSES);
+    expect(expenses.summary.total).toBe(-EXPENSES);
     expect(expenses.data).toEqual([
-      expect.objectContaining({ id: travelId, value: EXPENSES }),
+      expect.objectContaining({ id: travelId, value: -EXPENSES }),
     ]);
     expect(earned.summary.total).toBe(INCOME);
   });
@@ -495,10 +495,10 @@ describe("a row's own rate on every surface (integration)", () => {
     expect(byCategory.totalSpending).toBe(EXPENSES + 100);
     expect(report.data).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: dining.id, value: 100 }),
+        expect.objectContaining({ id: dining.id, value: -100 }),
       ]),
     );
-    expect(report.summary.total).toBe(EXPENSES + 100);
+    expect(report.summary.total).toBe(-EXPENSES - 100);
     expect(list.breakdown).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ categoryId: dining.id, total: 100 }),

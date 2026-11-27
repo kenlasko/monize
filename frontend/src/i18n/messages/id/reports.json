@@ -447,6 +447,7 @@
     "labelEndDate": "Tanggal Akhir",
     "labelMetric": "Metrik",
     "labelDirection": "Arah",
+    "labelCategoryType": "Jenis kategori",
     "checkboxTransfers": "Sertakan transfer",
     "checkboxFavourites": "Tambah ke favorit",
     "sortByPlaceholder": "Bawaan",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Rata-rata Jumlah",
       "BUDGET_VARIANCE": "Varians Anggaran"
     },
+    "categoryType": {
+      "ALL": "Semua",
+      "INCOME": "Pendapatan",
+      "EXPENSE": "Pengeluaran",
+      "UNCATEGORIZED": "Tanpa kategori"
+    },
     "direction": {
       "INCOME_ONLY": "Pendapatan Saja",
       "EXPENSES_ONLY": "Pengeluaran Saja",
-      "BOTH": "Keduanya"
+      "BOTH": "Keduanya",
+      "INCOMING": "Masuk",
+      "OUTGOING": "Keluar"
     },
     "sortDirection": {
       "ASC": "Menaik",

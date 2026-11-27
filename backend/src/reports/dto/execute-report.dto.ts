@@ -115,7 +115,7 @@ export interface ReportSummary {
 
 export interface ReportResult {
   reportId: string;
-  /** Present when this server settled BOTH / TOTAL_AMOUNT as signed net movement. */
+  /** Present when this server settled TOTAL_AMOUNT as signed net movement. */
   signedTotal?: true;
   name: string;
   viewType: string;
@@ -131,7 +131,7 @@ export interface ReportResult {
    */
   missingCurrencies: string[];
   /**
-   * Rows (or split lines) excluded because a rate was missing. BOTH / TOTAL_AMOUNT
+   * Rows (or split lines) excluded because a rate was missing. Signed TOTAL_AMOUNT
    * excludes the incomplete category/currency across every display group and
    * counts each affected component once. Other metrics retain their group-level
    * conversion policy.

@@ -27,6 +27,7 @@ import {
   GroupByType,
   MetricType,
   DirectionFilter,
+  ReportCategoryType,
   TableColumn,
   SortDirection,
 } from "../entities/custom-report.entity";
@@ -138,6 +139,11 @@ export class ReportConfigDto {
   @IsOptional()
   @IsEnum(DirectionFilter)
   direction?: DirectionFilter;
+
+  @ApiPropertyOptional({ enum: ReportCategoryType })
+  @IsOptional()
+  @IsEnum(ReportCategoryType)
+  categoryType?: ReportCategoryType;
 
   @ApiPropertyOptional({
     description: "Custom start date for CUSTOM timeframe (YYYY-MM-DD)",

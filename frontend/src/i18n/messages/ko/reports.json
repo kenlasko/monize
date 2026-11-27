@@ -447,6 +447,7 @@
     "labelEndDate": "종료일",
     "labelMetric": "지표",
     "labelDirection": "방향",
+    "labelCategoryType": "카테고리 유형",
     "checkboxTransfers": "이체 포함",
     "checkboxFavourites": "즐겨찾기에 추가",
     "sortByPlaceholder": "기본값",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "평균 금액",
       "BUDGET_VARIANCE": "예산 차이"
     },
+    "categoryType": {
+      "ALL": "전체",
+      "INCOME": "수입",
+      "EXPENSE": "지출",
+      "UNCATEGORIZED": "미분류"
+    },
     "direction": {
       "INCOME_ONLY": "수익만",
       "EXPENSES_ONLY": "지출만",
-      "BOTH": "모두"
+      "BOTH": "모두",
+      "INCOMING": "입금",
+      "OUTGOING": "출금"
     },
     "sortDirection": {
       "ASC": "오름차순",
