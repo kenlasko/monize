@@ -434,6 +434,7 @@ export type ImportSkipReason =
   | 'possibleDuplicate'
   | 'unreadableDate'
   | 'unreadableAmount'
+  | 'unreadableAmountTransfer'
   // An investment-mode CSV row whose action needs data it does not carry.
   | 'missingSecurity'
   | 'missingQuantity'

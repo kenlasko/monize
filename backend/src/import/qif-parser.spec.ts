@@ -2801,7 +2801,7 @@ describe("unreadable amounts", () => {
     const result = parseQif(
       [
         "!Type:Invst",
-        record("D01/02/2026", "NBuy", "YACME", "Ix1", "Q1", "T10.00"),
+        record("D01/02/2026", "NBuy", "YACME", "Ixyz", "Q1", "T10.00"),
         record("D01/03/2026", "NBuy", "YACME", "I10", "Q1", "Oabc", "T10.00"),
       ].join("\n"),
     );
@@ -2960,6 +2960,54 @@ describe("unreadable amounts", () => {
       expect(blank.unreadableAmountRows).toBeUndefined();
       expect(blank.transactions[0].quantity).toBe(0);
     });
+  });
+
+  it.each([
+    ["T-1 000,00 zł", -1000],
+    ["T-500₽", -500],
+    ["T100 kr", 100],
+    ["T12.34 CAD", 12.34],
+    ["T1 250,00 Kč", 1250],
+    ["T₹500", 500],
+    ["T¥1,000", 1000],
+    ["TPLN -5.5", -5.5],
+  ])("reads a currency marker beside the number: %s", (tLine, amount) => {
+    const result = parseQif(
+      ["!Type:Bank", "D01/02/2026", tLine, "^"].join("\n"),
+    );
+    expect(result.unreadableAmountRows).toBeUndefined();
+    expect(result.transactions[0].amount).toBe(amount);
+  });
+
+  it.each(["Tabc", "T1,2,3.4.5", "T12abc34", "T12.34-", "T(12.34)"])(
+    "still reports %s",
+    (tLine) => {
+      const result = parseQif(
+        ["!Type:Bank", "D01/02/2026", tLine, "^"].join("\n"),
+      );
+      expect(result.transactions).toHaveLength(0);
+      expect(result.unreadableAmountRows).toHaveLength(1);
+    },
+  );
+
+  it("flags a dropped transfer record for the importer", () => {
+    const result = parseQif(
+      [
+        "!Type:Bank",
+        "D01/02/2026",
+        "Tabc",
+        "L[Savings]",
+        "^",
+        "D01/03/2026",
+        "Txyz",
+        "LFood",
+        "^",
+      ].join("\n"),
+    );
+    expect(result.unreadableAmountRows?.map((r) => r.isTransfer)).toEqual([
+      true,
+      undefined,
+    ]);
   });
 
   it.each([

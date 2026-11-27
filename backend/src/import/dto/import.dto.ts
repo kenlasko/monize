@@ -437,7 +437,9 @@ export class ParsedQifResponseDto {
  * `unreadableDate` when a CSV row's date cannot be read under the mapping's
  * date format (or the row has none), `unreadableAmount` when a CSV row's amount
  * (or debit or credit) field, a QIF record's amount, price, commission or
- * quantity, or an OFX transaction's amount holds text that cannot be read. The
+ * quantity, or an OFX transaction's amount holds text that cannot be read,
+ * `unreadableAmountTransfer` when that record is a transfer, whose other leg
+ * may already have been created from the other account's record. The
  * rest are an investment-mode CSV row
  * whose action needs data it does not carry (`InvestmentRejectReason`):
  * `missingSecurity`, `missingQuantity`, `missingAmount`, `missingProceeds`
@@ -452,6 +454,7 @@ export const IMPORT_SKIP_REASONS = [
   "possibleDuplicate",
   "unreadableDate",
   "unreadableAmount",
+  "unreadableAmountTransfer",
   "missingSecurity",
   "missingQuantity",
   "missingAmount",

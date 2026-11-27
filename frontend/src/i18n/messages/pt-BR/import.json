@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "data ilegível",
     "skipReasonNoDate": "sem data",
     "skipReasonUnreadableAmount": "valor ilegível",
+    "skipReasonUnreadableAmountTransfer": "valor ilegível; esta transferência pode já existir pelo registro da outra conta, confira antes de importá-la novamente",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "título ausente",
     "skipReasonMissingQuantity": "quantidade ausente",

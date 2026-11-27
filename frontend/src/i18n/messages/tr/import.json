@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "tarih okunamadı",
     "skipReasonNoDate": "tarih yok",
     "skipReasonUnreadableAmount": "tutar okunamadı",
+    "skipReasonUnreadableAmountTransfer": "tutar okunamadı; bu transfer diğer hesabın kaydından zaten oluşturulmuş olabilir, yeniden içe aktarmadan önce kontrol edin",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "menkul kıymet eksik",
     "skipReasonMissingQuantity": "adet eksik",

@@ -332,6 +332,7 @@ function ImportContent() {
             importResult={wizard.importResult}
             bulkImportResult={wizard.bulkImportResult}
             onImportMore={wizard.handleImportMore}
+            isMultiAccountImport={!!wizard.multiAccountData}
           />
         );
     }

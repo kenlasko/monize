@@ -240,6 +240,9 @@ export function parseOfx(content: string): QifParseResult {
           getTagValue(block, "NAME") || getTagValue(block, "MEMO"),
           255,
         ),
+        ...(getTagValue(block, "TRNTYPE").toUpperCase() === "XFER"
+          ? { isTransfer: true }
+          : {}),
       });
       continue;
     }

@@ -55,3 +55,21 @@ export function normalizeAmountSeparators(value: string): string {
 function countOf(value: string, separator: string): number {
   return value.split(separator).length - 1;
 }
+
+/**
+ * Read a QIF amount: a number with an optional currency marker before or after
+ * it (any currency symbol, or a 1-4 letter token such as "zł", "kr", "Kč",
+ * "CAD"), whitespace, and the grouping and decimal separators
+ * `normalizeAmountSeparators` reads. Anything else ("abc", "1,2,3.4.5",
+ * "12abc34") is null, never the number its first digits make. QIF takes fewer
+ * forms than CSV: no trailing minus, parentheses or DR/CR markers.
+ */
+export function parseQifAmount(amountStr: string): number | null {
+  const cleaned = normalizeAmountSeparators(
+    amountStr
+      .replace(/\p{Sc}|\s/gu, "")
+      .replace(/^([-+]?)\p{L}{1,4}/u, "$1")
+      .replace(/\p{L}{1,4}$/u, ""),
+  );
+  return isPlainAmount(cleaned) ? parseFloat(cleaned) : null;
+}

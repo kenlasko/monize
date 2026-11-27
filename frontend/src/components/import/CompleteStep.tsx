@@ -21,6 +21,8 @@ interface CompleteStepProps {
   importResult: ImportResult | null;
   bulkImportResult: BulkImportResult | null;
   onImportMore: () => void;
+  /** The multi-account QIF import: its file is not in `importFiles`, which can hold a previous one. */
+  isMultiAccountImport?: boolean;
 }
 
 export function CompleteStep({
@@ -32,6 +34,7 @@ export function CompleteStep({
   importResult,
   bulkImportResult,
   onImportMore,
+  isMultiAccountImport = false,
 }: CompleteStepProps) {
   const t = useTranslations('import');
   const router = useRouter();
@@ -261,11 +264,10 @@ export function CompleteStep({
                 <strong>{t('complete.securitiesCreated')}</strong> {importResult.securitiesCreated}
               </li>
             </ul>
-            {/* No file in the wizard means the multi-account QIF import, which keeps its content apart. */}
             <SkippedRowsList
               rows={importResult.skippedRows}
               total={importResult.skipped}
-              fileType={importFiles[0]?.fileType ?? 'qif'}
+              fileType={isMultiAccountImport ? 'qif' : importFiles[0]?.fileType}
             />
             {((importResult.duplicatesMerged ?? 0) > 0 || (importResult.duplicatesReplaced ?? 0) > 0) && (
               <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">

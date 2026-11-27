@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "तारीख पढ़ी नहीं जा सकी",
     "skipReasonNoDate": "कोई तारीख नहीं",
     "skipReasonUnreadableAmount": "राशि पढ़ी नहीं जा सकी",
+    "skipReasonUnreadableAmountTransfer": "राशि पढ़ी नहीं जा सकी; यह ट्रांसफ़र दूसरे खाते की प्रविष्टि से पहले ही बन चुका हो सकता है, दोबारा आयात करने से पहले जांच लें",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "प्रतिभूति अनुपलब्ध",
     "skipReasonMissingQuantity": "मात्रा अनुपलब्ध",

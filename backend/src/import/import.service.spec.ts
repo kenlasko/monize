@@ -4929,6 +4929,64 @@ describe("ImportService", () => {
       ]);
     });
 
+    it("reports an unreadable transfer record with its own reason", async () => {
+      mockedValidateQifContent.mockReturnValue({ valid: true });
+      const base = makeFullParseResult();
+      mockedParseQifFull.mockReturnValue(
+        makeFullParseResult({
+          categoryDefs: [],
+          accountBlocks: [
+            {
+              ...base.accountBlocks[0],
+              transactions: [],
+              unreadableAmountRows: [
+                {
+                  rowNumber: 9,
+                  rawAmount: "1,2,3.4.5",
+                  date: "2025-01-16",
+                  payee: "Shop",
+                  isTransfer: true,
+                },
+              ],
+            },
+          ],
+        }),
+      );
+      mockQueryRunner.manager.findOne.mockImplementation((entity, options) =>
+        Promise.resolve(
+          entity === Account && options?.where?.id
+            ? {
+                id: options.where.id,
+                userId,
+                accountType: AccountType.CHEQUING,
+                currencyCode: "CAD",
+              }
+            : null,
+        ),
+      );
+      let saveIdx = 0;
+      mockQueryRunner.manager.save.mockImplementation((entity) => {
+        saveIdx++;
+        return Promise.resolve({ ...entity, id: `saved-${saveIdx}` });
+      });
+
+      const result = await service.importQifMultiAccountFile(userId, baseDto);
+
+      expect(result.imported).toBe(0);
+      expect(result.skipped).toBe(1);
+      expect(result.skippedRows).toEqual([
+        {
+          date: "2025-01-16",
+          amount: 0,
+          currencyCode: "CAD",
+          payee: "Shop",
+          reason: "unreadableAmountTransfer",
+          rowNumber: 9,
+          rawAmount: "1,2,3.4.5",
+        },
+      ]);
+    });
+
     it("processes each block's rows oldest first, keeping the file's order within a date (INV-RULE-005)", async () => {
       const first = makeFullParseResult().accountBlocks[0].transactions[0];
       mockedValidateQifContent.mockReturnValue({ valid: true });

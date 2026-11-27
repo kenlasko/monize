@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "날짜를 읽을 수 없음",
     "skipReasonNoDate": "날짜 없음",
     "skipReasonUnreadableAmount": "금액을 읽을 수 없음",
+    "skipReasonUnreadableAmountTransfer": "금액을 읽을 수 없습니다. 이 이체는 상대 계좌의 기록으로 이미 만들어졌을 수 있으니 다시 가져오기 전에 확인하세요",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "유가증권 없음",
     "skipReasonMissingQuantity": "수량 없음",

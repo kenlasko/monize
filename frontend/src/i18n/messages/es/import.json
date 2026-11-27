@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "no se pudo leer la fecha",
     "skipReasonNoDate": "sin fecha",
     "skipReasonUnreadableAmount": "no se pudo leer el importe",
+    "skipReasonUnreadableAmountTransfer": "no se pudo leer el importe; esta transferencia puede existir ya por el registro de la otra cuenta, compruébelo antes de importarla de nuevo",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "falta el valor",
     "skipReasonMissingQuantity": "falta el número de acciones",

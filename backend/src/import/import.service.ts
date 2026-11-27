@@ -564,7 +564,7 @@ export class ImportService {
                 rowNumber: row.rowNumber,
                 rawAmount: row.rawAmount,
               },
-              "unreadableAmount",
+              row.isTransfer ? "unreadableAmountTransfer" : "unreadableAmount",
               account.currencyCode,
             );
           }
@@ -1543,7 +1543,9 @@ export class ImportService {
           rowNumber: row.rowNumber,
           rawAmount: row.rawAmount,
         },
-        reason: "unreadableAmount" as const,
+        reason: row.isTransfer
+          ? ("unreadableAmountTransfer" as const)
+          : ("unreadableAmount" as const),
       })),
       ...(result.rejectedInvestmentRows ?? []).map((row) => ({
         row: {

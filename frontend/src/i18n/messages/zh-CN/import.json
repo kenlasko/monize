@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "无法读取日期",
     "skipReasonNoDate": "无日期",
     "skipReasonUnreadableAmount": "无法读取金额",
+    "skipReasonUnreadableAmountTransfer": "无法读取金额；这笔转账可能已由另一账户的记录创建，再次导入前请先检查",
     "skippedRowRawAmount": "“{rawAmount}”",
     "skipReasonMissingSecurity": "缺少证券",
     "skipReasonMissingQuantity": "缺少数量",

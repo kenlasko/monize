@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "дату невозможно прочитать",
     "skipReasonNoDate": "нет даты",
     "skipReasonUnreadableAmount": "сумму невозможно прочитать",
+    "skipReasonUnreadableAmountTransfer": "сумму не удалось прочитать; этот перевод мог уже быть создан из записи другого счета, проверьте перед повторным импортом",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "отсутствует ценная бумага",
     "skipReasonMissingQuantity": "отсутствует количество",

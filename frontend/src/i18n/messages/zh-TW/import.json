@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "無法讀取日期",
     "skipReasonNoDate": "無日期",
     "skipReasonUnreadableAmount": "無法讀取金額",
+    "skipReasonUnreadableAmountTransfer": "無法讀取金額；這筆轉帳可能已由另一帳戶的記錄建立，再次匯入前請先檢查",
     "skippedRowRawAmount": "「{rawAmount}」",
     "skipReasonMissingSecurity": "缺少證券",
     "skipReasonMissingQuantity": "缺少數量",

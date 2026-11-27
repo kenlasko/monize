@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "дату неможливо прочитати",
     "skipReasonNoDate": "немає дати",
     "skipReasonUnreadableAmount": "суму неможливо прочитати",
+    "skipReasonUnreadableAmountTransfer": "суму не вдалося прочитати; цей переказ міг уже бути створений із запису іншого рахунку, перевірте перед повторним імпортом",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "відсутній цінний папір",
     "skipReasonMissingQuantity": "відсутня кількість",

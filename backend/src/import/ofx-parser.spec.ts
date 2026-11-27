@@ -934,6 +934,13 @@ ${amounts
       ]);
     });
 
+    it("flags an unreadable XFER transaction as a transfer", () => {
+      const result = parseOfx(
+        ofx("abc").replace("<TRNTYPE>DEBIT", "<TRNTYPE>XFER"),
+      );
+      expect(result.unreadableAmountRows?.[0].isTransfer).toBe(true);
+    });
+
     it("still reads zero, negative and decimal-comma amounts", () => {
       const result = parseOfx(ofx("0.00", "-1234.5", "-18,36"));
       expect(result.unreadableAmountRows).toBeUndefined();

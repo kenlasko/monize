@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "date illisible",
     "skipReasonNoDate": "aucune date",
     "skipReasonUnreadableAmount": "montant illisible",
+    "skipReasonUnreadableAmountTransfer": "montant illisible ; ce virement peut déjà exister depuis l'enregistrement de l'autre compte, vérifiez avant de l'importer de nouveau",
     "skippedRowRawAmount": "« {rawAmount} »",
     "skipReasonMissingSecurity": "titre manquant",
     "skipReasonMissingQuantity": "quantité manquante",

@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "tanggal tidak dapat dibaca",
     "skipReasonNoDate": "tanpa tanggal",
     "skipReasonUnreadableAmount": "jumlah tidak dapat dibaca",
+    "skipReasonUnreadableAmountTransfer": "jumlah tidak dapat dibaca; transfer ini mungkin sudah dibuat dari catatan akun lain, periksa sebelum mengimpornya lagi",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "sekuritas tidak ada",
     "skipReasonMissingQuantity": "kuantitas tidak ada",

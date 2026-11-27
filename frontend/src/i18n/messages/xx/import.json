@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "[XX-date could not be read-XX]",
     "skipReasonNoDate": "[XX-no date-XX]",
     "skipReasonUnreadableAmount": "[XX-amount could not be read-XX]",
+    "skipReasonUnreadableAmountTransfer": "[XX-amount could not be read; this transfer may already exist from the other account's record, so check before importing it again-XX]",
     "skippedRowRawAmount": "[XX-\"{rawAmount}\"-XX]",
     "skipReasonMissingSecurity": "[XX-missing security-XX]",
     "skipReasonMissingQuantity": "[XX-missing quantity-XX]",

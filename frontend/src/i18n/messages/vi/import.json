@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "không đọc được ngày",
     "skipReasonNoDate": "không có ngày",
     "skipReasonUnreadableAmount": "không đọc được số tiền",
+    "skipReasonUnreadableAmountTransfer": "không đọc được số tiền; khoản chuyển này có thể đã được tạo từ bản ghi của tài khoản kia, hãy kiểm tra trước khi nhập lại",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "thiếu chứng khoán",
     "skipReasonMissingQuantity": "thiếu số lượng",

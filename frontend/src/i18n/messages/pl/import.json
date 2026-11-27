@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "nie można odczytać daty",
     "skipReasonNoDate": "brak daty",
     "skipReasonUnreadableAmount": "nie można odczytać kwoty",
+    "skipReasonUnreadableAmountTransfer": "nie można odczytać kwoty; ten przelew mógł już powstać z zapisu drugiego konta, sprawdź to przed ponownym importem",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "brak papieru wartościowego",
     "skipReasonMissingQuantity": "brak ilości",

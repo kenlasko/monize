@@ -337,6 +337,7 @@
     "skipReasonUnreadableDate": "datum onleesbaar",
     "skipReasonNoDate": "geen datum",
     "skipReasonUnreadableAmount": "bedrag onleesbaar",
+    "skipReasonUnreadableAmountTransfer": "bedrag niet leesbaar; deze overboeking bestaat mogelijk al via het record van de andere rekening, controleer dit voordat u opnieuw importeert",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "waardepapier ontbreekt",
     "skipReasonMissingQuantity": "aantal ontbreekt",

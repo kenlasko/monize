@@ -16,12 +16,16 @@ const REASON_KEYS = {
   possibleDuplicate: 'complete.skipReasonPossibleDuplicate',
   unreadableDate: 'complete.skipReasonUnreadableDate',
   unreadableAmount: 'complete.skipReasonUnreadableAmount',
+  unreadableAmountTransfer: 'complete.skipReasonUnreadableAmountTransfer',
   missingSecurity: 'complete.skipReasonMissingSecurity',
   missingQuantity: 'complete.skipReasonMissingQuantity',
   missingAmount: 'complete.skipReasonMissingAmount',
   missingProceeds: 'complete.skipReasonMissingProceeds',
   missingSplitRatio: 'complete.skipReasonMissingSplitRatio',
 } as const satisfies Record<ImportSkipReason, string>;
+
+const isUnreadableAmount = (row: ImportSkippedRow) =>
+  row.reason === 'unreadableAmount' || row.reason === 'unreadableAmountTransfer';
 
 interface SkippedRowsListProps {
   rows: ImportSkippedRow[] | undefined;
@@ -61,9 +65,9 @@ export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total, fileType }
   const describeDate = (row: ImportSkippedRow) => {
     if (row.reason !== 'unreadableDate') {
       const lineKey =
-        row.reason === 'unreadableAmount' && fileType === 'qif'
+        isUnreadableAmount(row) && fileType === 'qif'
           ? 'complete.skippedRowQifLineAt'
-          : row.reason === 'unreadableAmount' && fileType === 'ofx'
+          : isUnreadableAmount(row) && fileType === 'ofx'
             ? 'complete.skippedRowOfxLineAt'
             : 'complete.skippedRowLineAt';
       return row.rowNumber !== undefined
@@ -84,7 +88,7 @@ export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total, fileType }
       date: describeDate(row),
       // An unreadable amount has no number to format; the file's text is shown.
       amount:
-        row.reason === 'unreadableAmount' && row.rawAmount !== undefined
+        isUnreadableAmount(row) && row.rawAmount !== undefined
           ? t('complete.skippedRowRawAmount', { rawAmount: row.rawAmount })
           : formatCurrency(row.amount, row.currencyCode),
       reason: describeReason(row),
