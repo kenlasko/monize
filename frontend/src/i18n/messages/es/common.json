@@ -20,7 +20,7 @@
     "englishOnly": "Las notas de esta versión solo están en inglés. Monize, incluidas las visitas guiadas, sigue tu configuración de idioma."
   },
   "transferPayee": "{direction, select, to {Transferencia a {name}} other {Transferencia desde {name}}}",
-  "transferBadge": "Transfer",
+  "transferBadge": "Transferencia",
   "save": "Guardar",
   "cancel": "Cancelar",
   "delete": "Eliminar",

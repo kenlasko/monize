@@ -18,8 +18,8 @@
     "summaryExpense": "Ausgabenkategorien",
     "summaryTopLevel": "Oberste Ebene",
     "eyebrow": "Kategorienübersicht",
-    "filterTransfers": "Transfers ({count})",
-    "summaryTransfer": "Transfer Categories"
+    "filterTransfers": "Überweisungen ({count})",
+    "summaryTransfer": "Überweisungskategorien"
   },
   "empty": {
     "heading": "Noch keine Kategorien",
@@ -73,7 +73,7 @@
     "descriptionLabel": "Beschreibung (optional)",
     "submitCreate": "Kategorie erstellen",
     "submitUpdate": "Kategorie aktualisieren",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "Überweisung"
   },
   "list": {
     "emptyHeading": "Keine Kategorien gefunden",
@@ -88,7 +88,7 @@
     "systemBadge": "(System)",
     "inheritedColorTitle": "Von übergeordneter Kategorie übernommen",
     "viewTransactionsTitle": "Buchungen in dieser Kategorie anzeigen",
-    "badgeTransfer": "Transfer"
+    "badgeTransfer": "Überweisung"
   },
   "deleteDialog": {
     "title": "\"{name}\" löschen",

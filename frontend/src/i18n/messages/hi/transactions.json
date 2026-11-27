@@ -50,8 +50,8 @@
     "collapseAria": "श्रेणी जानकारी छुपाएं",
     "show": "श्रेणी जानकारी दिखाएं",
     "amountUnavailable": "कोई दर नहीं",
-    "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "transfer": "ट्रांसफर",
+    "totalTransferred": "कुल ट्रांसफर की गई राशि"
   },
   "accountWidget": {
     "currentBalance": "वर्तमान शेष",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "इस ट्रांसफर का दूसरा पक्ष ऐसे खाते में है जो अब आपके साथ साझा नहीं है। इसकी राशि, तारीख और खाते लॉक हैं, लेकिन आप अभी भी इस लेन-देन के अपने विवरण संपादित कर सकते हैं।",
-    "transferCategoryNote": "वैकल्पिक। ट्रांसफर अब भी आय या व्यय के रूप में नहीं गिना जाएगा, लेकिन यह श्रेणी इसे मासिक श्रेणी विवरण में दिखने देती है (जैसे, मासिक निवेश योगदान)।",
+    "transferCategoryNote": "वैकल्पिक। ट्रांसफर अब भी आय या खर्च के रूप में नहीं गिना जाएगा। ट्रांसफर श्रेणी इसे मासिक श्रेणी विवरण में उस श्रेणी के अंतर्गत सूचीबद्ध करती है (जैसे मासिक निवेश योगदान); आय या खर्च श्रेणी पहले की तरह गिनी जाती रहेगी।",
     "amountReceivedNote": "मुद्रा रूपांतरण के बाद प्राप्त राशि",
     "splitTransaction": "लेन-देन विभाजित करें",
     "splitDisabledDuringTour": "निर्देशित टूर के दौरान उपलब्ध नहीं",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "विभाजन {number}",
     "accountForSplit": "विभाजन {number} का खाता",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "विभाजन {number} के लिए श्रेणी",
+    "transferCategoryPlaceholder": "श्रेणी (वैकल्पिक)",
     "columns": {
       "type": "प्रकार",
       "categoryAccount": "श्रेणी / खाता",

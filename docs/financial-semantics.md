@@ -90,6 +90,32 @@ strength of a status, must apply to both legs in the same transaction, or to
 neither.
 ```
 
+### A transfer's category: one per transfer, of any type
+
+A category has a type, Income, Expense or Transfer (`categories.category_type`;
+`is_income` stays a read-only mirror while the column exists). A Transfer
+category goes only on a transfer: a transfer leg, a split's transfer line and
+the row it links, and their scheduled forms. An ordinary row, a split's
+category line and a scheduled category row take only Income or Expense
+(INV-CATEGORY-001). A transfer may also keep an Income or Expense category, as
+it could before the type existed; nothing is migrated.
+
+A category write on a transfer sets both of its legs, and a split's transfer
+line together with the row it links; across two owners it sets the writer's
+leg only (INV-CATEGORY-002). A split's transfer line may carry a category: a
+line that has one is not thereby a category line, so a reader that treats "has a
+category" as "is interest" also asks whether the line is a transfer.
+
+Where the category shows: the Monthly Category Breakdown lists a transfer under
+its Transfer category (outgoing and incoming rows) and every other transfer in
+its per-account row; a custom report can filter and group by Transfer category
+and measures transfers as Outgoing, Incoming or Net (INV-REPORT-003,
+INV-REPORT-004); a budget line may name a Transfer category, and then wins over
+a per-account transfer line, with budget income split into Actual Income,
+Transfer Funding and Total Budget Funding
+(`docs/specs/transfer-categories.md` sections 6 to 8). A transfer is still
+never income, expenses or net.
+
 ### Cash flow Sankey: a transfer leg is a flow by scope and class
 
 The Cash Flow Sankey report (`backend/src/built-in-reports/cash-flow-sankey.service.ts`,

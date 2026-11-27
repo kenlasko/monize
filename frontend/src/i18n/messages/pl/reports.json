@@ -448,8 +448,8 @@
     "labelMetric": "Metryka",
     "labelDirection": "Kierunek",
     "labelCategoryType": "Typ kategorii",
-    "labelTransferMeasure": "Transfer Measure",
-    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
+    "labelTransferMeasure": "Miara przelewów",
+    "transferMeasureBudgetVariance": "Miary przelewów nie można łączyć z odchyleniem od budżetu",
     "checkboxTransfers": "Uwzględnij przelewy",
     "checkboxFavourites": "Dodaj do ulubionych",
     "sortByPlaceholder": "Domyślna",
@@ -474,12 +474,12 @@
       "netCashMovement": "Ruch środków netto",
       "unsignedTotal": "Suma kwot kategorii bez znaku",
       "unsignedAverage": "Średnia kwot kategorii bez znaku",
-      "transfersOutgoing": "Outgoing transfers",
-      "transfersIncoming": "Incoming transfers",
-      "transfersNet": "Net transfers"
+      "transfersOutgoing": "Przelewy wychodzące",
+      "transfersIncoming": "Przelewy przychodzące",
+      "transfersNet": "Przelewy netto"
     },
-    "unknownKnownPart": "Unknown ({amount} known)",
-    "partialRow": "(partial: a rate is missing)",
+    "unknownKnownPart": "Nieznane ({amount} znane)",
+    "partialRow": "(częściowe: brakuje kursu wymiany)",
     "truncatedNotice": "Ten raport osiągnął limit wierszy i pokazuje tylko najstarsze wiersze, więc jego wartości są niepełne. Zawęź okres lub filtry, aby zobaczyć wszystkie wiersze.",
     "toasts": {
       "loadFailed": "Nie udało się załadować raportu",
@@ -1227,8 +1227,8 @@
     "totalTransfers": "Suma transferów",
     "transferFrom": "Z",
     "transferTo": "Do",
-    "transferCategoryOut": "{name}, outgoing",
-    "transferCategoryIn": "{name}, incoming",
+    "transferCategoryOut": "{name}, wychodzące",
+    "transferCategoryIn": "{name}, przychodzące",
     "overallTotal": "Suma całkowita",
     "includeCurrentMonth": "Uwzględnij bieżący miesiąc",
     "includeCurrentYear": "Uwzględnij bieżący rok",
@@ -1980,10 +1980,10 @@
       "BUDGET_VARIANCE": "Odchylenie od budżetu"
     },
     "transferMeasure": {
-      "NONE": "None (income and expenses)",
-      "OUTGOING": "Outgoing transfers",
-      "INCOMING": "Incoming transfers",
-      "NET": "Net transfers"
+      "NONE": "Brak (przychody i wydatki)",
+      "OUTGOING": "Przelewy wychodzące",
+      "INCOMING": "Przelewy przychodzące",
+      "NET": "Przelewy netto"
     },
     "categoryType": {
       "ALL": "Wszystkie",

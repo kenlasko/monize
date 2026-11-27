@@ -18,8 +18,8 @@
     "summaryExpense": "Kategorie wydatków",
     "summaryTopLevel": "Najwyzszy poziom",
     "eyebrow": "Plan kategorii",
-    "filterTransfers": "Transfers ({count})",
-    "summaryTransfer": "Transfer Categories"
+    "filterTransfers": "Przelewy ({count})",
+    "summaryTransfer": "Kategorie przelewów"
   },
   "empty": {
     "heading": "Brak kategorii",
@@ -73,7 +73,7 @@
     "descriptionLabel": "Opis (opcjonalnie)",
     "submitCreate": "Utworz kategorie",
     "submitUpdate": "Zaktualizuj kategorie",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "Przelew"
   },
   "list": {
     "emptyHeading": "Nie znaleziono kategorii",
@@ -88,7 +88,7 @@
     "systemBadge": "(Systemowa)",
     "inheritedColorTitle": "Dziedziczony z kategorii nadrzednej",
     "viewTransactionsTitle": "Wyswietl transakcje w tej kategorii",
-    "badgeTransfer": "Transfer"
+    "badgeTransfer": "Przelew"
   },
   "deleteDialog": {
     "title": "Usuń \"{name}\"",

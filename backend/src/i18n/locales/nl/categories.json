@@ -368,6 +368,15 @@
         "vacationPay": "Vakantiegeld"
       }
     },
-    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
+    "transfers": {
+      "name": "Overboekingen",
+      "sub": {
+        "betweenOwnAccounts": "Tussen eigen rekeningen",
+        "cashWithdrawals": "Geldopnames",
+        "creditCardPayments": "Creditcardbetalingen",
+        "investmentContributions": "Beleggingsbijdragen",
+        "savingsContributions": "Spaarbijdragen"
+      }
+    }
   }
 }

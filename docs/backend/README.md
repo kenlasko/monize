@@ -8,7 +8,7 @@
 | `modules-and-runtime.md` | adding a module edge, a global provider, an environment variable, a log line or a boot-time hook |
 | `entities-and-dtos.md` | adding a column, a DTO field, a raw query or a validator |
 | `database-access-and-tenancy.md` | writing a query that decides ownership, authorization, identity or which row counts |
-| `transactions-and-money.md` | touching a transaction write, an export, a loan or category derivation, or the Money import |
+| `transactions-and-money.md` | touching a transaction write, an export, a loan or category derivation (a category's type included), or the Money import |
 | `securities-and-providers.md` | touching prices, `src/securities/`, or any `fetch` to a third party |
 | `bond-adapters.md` | adding a country's bonds, a new bond product or an engine primitive in `src/bonds/` |
 | `ai-and-payees.md` | touching `src/ai/`, `src/payees/lookup/`, a tool description or a search filter |

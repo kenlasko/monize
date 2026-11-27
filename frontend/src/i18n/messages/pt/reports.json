@@ -448,8 +448,8 @@
     "labelMetric": "Métrica",
     "labelDirection": "Direção",
     "labelCategoryType": "Tipo de categoria",
-    "labelTransferMeasure": "Transfer Measure",
-    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
+    "labelTransferMeasure": "Medida de transferências",
+    "transferMeasureBudgetVariance": "Uma medida de transferências não pode ser combinada com um desvio orçamental",
     "checkboxTransfers": "Incluir transferências",
     "checkboxFavourites": "Adicionar aos favoritos",
     "sortByPlaceholder": "Predefinição",
@@ -474,12 +474,12 @@
       "netCashMovement": "Movimento de caixa líquido",
       "unsignedTotal": "Total dos montantes de categoria sem sinal",
       "unsignedAverage": "Média dos montantes de categoria sem sinal",
-      "transfersOutgoing": "Outgoing transfers",
-      "transfersIncoming": "Incoming transfers",
-      "transfersNet": "Net transfers"
+      "transfersOutgoing": "Transferências de saída",
+      "transfersIncoming": "Transferências de entrada",
+      "transfersNet": "Transferências líquidas"
     },
-    "unknownKnownPart": "Unknown ({amount} known)",
-    "partialRow": "(partial: a rate is missing)",
+    "unknownKnownPart": "Desconhecido ({amount} conhecido)",
+    "partialRow": "(parcial: falta uma taxa de câmbio)",
     "truncatedNotice": "Este relatório atingiu o limite de linhas e mostra apenas as mais antigas, por isso os valores são parciais. Restrinja o período ou os filtros para ver todas.",
     "toasts": {
       "loadFailed": "Falha ao carregar relatório",
@@ -1227,8 +1227,8 @@
     "totalTransfers": "Total de transferências",
     "transferFrom": "De",
     "transferTo": "Para",
-    "transferCategoryOut": "{name}, outgoing",
-    "transferCategoryIn": "{name}, incoming",
+    "transferCategoryOut": "{name}, de saída",
+    "transferCategoryIn": "{name}, de entrada",
     "overallTotal": "Total geral",
     "includeCurrentMonth": "Incluir mês atual",
     "includeCurrentYear": "Incluir ano atual",
@@ -1980,10 +1980,10 @@
       "BUDGET_VARIANCE": "Variação do Orçamento"
     },
     "transferMeasure": {
-      "NONE": "None (income and expenses)",
-      "OUTGOING": "Outgoing transfers",
-      "INCOMING": "Incoming transfers",
-      "NET": "Net transfers"
+      "NONE": "Nenhuma (receitas e despesas)",
+      "OUTGOING": "Transferências de saída",
+      "INCOMING": "Transferências de entrada",
+      "NET": "Transferências líquidas"
     },
     "categoryType": {
       "ALL": "Todas",

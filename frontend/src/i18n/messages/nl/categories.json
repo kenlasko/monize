@@ -18,8 +18,8 @@
     "summaryExpense": "Uitgavencategorieën",
     "summaryTopLevel": "Hoofdniveau",
     "eyebrow": "Overzicht van categorieën",
-    "filterTransfers": "Transfers ({count})",
-    "summaryTransfer": "Transfer Categories"
+    "filterTransfers": "Overboekingen ({count})",
+    "summaryTransfer": "Overboekingscategorieën"
   },
   "empty": {
     "heading": "Nog geen categorieën",
@@ -73,7 +73,7 @@
     "descriptionLabel": "Beschrijving (optioneel)",
     "submitCreate": "Categorie aanmaken",
     "submitUpdate": "Categorie bijwerken",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "Overboeking"
   },
   "list": {
     "emptyHeading": "Geen categorieën gevonden",
@@ -88,7 +88,7 @@
     "systemBadge": "(Systeem)",
     "inheritedColorTitle": "Overgenomen van bovenliggende",
     "viewTransactionsTitle": "Transacties in deze categorie bekijken",
-    "badgeTransfer": "Transfer"
+    "badgeTransfer": "Overboeking"
   },
   "deleteDialog": {
     "title": "\"{name}\" verwijderen",

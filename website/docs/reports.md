@@ -81,6 +81,10 @@ The figures a report receives are worked out from the converted amounts themselv
 | **Monthly & Yearly Breakdown** | Expense and income by category, month by month or year by year, with subtotals, a total, and an average per month or per year. Choose **Monthly** or **Yearly** for the columns: the monthly view offers the 3M, 6M, 1Y and YTD ranges, the yearly view 2Y, 5Y, 10Y and All, and both take a **Custom** range. A yearly column covers whole calendar years, so 5Y shows the five years before the current one. A category with no parent and no subcategories is a line of its own, in alphabetical order among the parent categories. Spending recorded directly on a parent category is a row inside that parent's section, counted in its subtotal; only uncategorized transactions are left under **Other expenses** or **Other income**. Switches turn on **Summary only** (just the Summary at the bottom), **Include current month** (**Include current year** in the yearly view), **Show percentages**, and **Highlight deviations** (months or years well above or below the category's average). Transfers are listed separately, click **Income**, **Expenses**, or **Transfers** to fold that group down to its total, and a cell opens its transactions |
 | **Year Over Year Comparison** | Compare this year's income, expenses, and savings with up to four previous years |
 
+In **Monthly & Yearly Breakdown**, the **Transfers** group lists money moved between your own accounts, outside income, expenses and the balance. A transfer that holds a [Transfer category](categories-and-payees.md#categories-on-transfers) is listed first under that category, with an outgoing and an incoming row and the category's subcategories nested, so a regular contribution between two accounts you included still shows what moved. Every other transfer, including one that holds an Income or Expense category, stays in its per-account row. Each side of a transfer is counted once, so the group's total does not change.
+
+![The Transfers group of the Monthly & Yearly Breakdown, with a Transfer category's outgoing and incoming rows above the per-account rows](images/report-monthly-breakdown-transfers.png)
+
 In **Spending by Category**, a refund reduces spending in the expense category assigned to it. A purchase of 100 and a refund of 150 show **−50** for that category. A full refund shows **0** and the category stays visible. A refund received this month can therefore give the month negative spending even when the purchase was in an earlier month. Monthly Spending Trend and the assistant’s category breakdown include that credit. Monthly Comparison shows the change in money and leaves percentage growth unavailable when the previous month had a net refund.
 
 ![The Spending by Category report](images/report-spending-category.png)
@@ -294,6 +298,7 @@ Create your own reports with flexible filtering, grouping, and visualization opt
 | | **Direction** | Both, Incoming, or Outgoing |
 | | **Category Type** | All, Income, Expense, or Uncategorized |
 | | **Include transfers** | Count transfers between your accounts |
+| | **Transfer Measure** | None (income and expenses), Outgoing transfers, Incoming transfers or Net transfers: reads transfers instead of income and expenses, by [Transfer category](categories-and-payees.md#categories-on-transfers) when you group by category |
 | | **Add to favourites** | Star the report as soon as it is created |
 
 Click **Create Report** to save it. It then appears on the Reports page under **Custom**.

@@ -368,6 +368,15 @@
         "vacationPay": "休假薪資"
       }
     },
-    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
+    "transfers": {
+      "name": "轉帳",
+      "sub": {
+        "betweenOwnAccounts": "自己帳戶之間",
+        "cashWithdrawals": "現金提款",
+        "creditCardPayments": "信用卡還款",
+        "investmentContributions": "投資提撥",
+        "savingsContributions": "儲蓄提撥"
+      }
+    }
   }
 }

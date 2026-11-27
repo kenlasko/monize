@@ -18,8 +18,8 @@
     "summaryExpense": "지출 카테고리",
     "summaryTopLevel": "최상위",
     "eyebrow": "카테고리 목록",
-    "filterTransfers": "Transfers ({count})",
-    "summaryTransfer": "Transfer Categories"
+    "filterTransfers": "이체 ({count})",
+    "summaryTransfer": "이체 카테고리"
   },
   "empty": {
     "heading": "카테고리가 없습니다",
@@ -73,7 +73,7 @@
     "descriptionLabel": "설명 (선택 사항)",
     "submitCreate": "카테고리 만들기",
     "submitUpdate": "카테고리 업데이트",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "이체"
   },
   "list": {
     "emptyHeading": "카테고리를 찾을 수 없음",
@@ -88,7 +88,7 @@
     "systemBadge": "(시스템)",
     "inheritedColorTitle": "상위에서 상속됨",
     "viewTransactionsTitle": "이 카테고리의 거래 보기",
-    "badgeTransfer": "Transfer"
+    "badgeTransfer": "이체"
   },
   "deleteDialog": {
     "title": "\"{name}\" 삭제",

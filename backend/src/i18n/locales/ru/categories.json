@@ -368,6 +368,15 @@
         "vacationPay": "Отпускные"
       }
     },
-    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
+    "transfers": {
+      "name": "Переводы",
+      "sub": {
+        "betweenOwnAccounts": "Между своими счетами",
+        "cashWithdrawals": "Снятие наличных",
+        "creditCardPayments": "Платежи по кредитной карте",
+        "investmentContributions": "Инвестиционные взносы",
+        "savingsContributions": "Сберегательные взносы"
+      }
+    }
   }
 }

@@ -51,7 +51,7 @@
     "show": "Tampilkan info kategori",
     "amountUnavailable": "Tidak ada kurs",
     "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "totalTransferred": "Total ditransfer"
   },
   "accountWidget": {
     "currentBalance": "Saldo Saat Ini",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "Sisi lain dari transfer ini berada di akun yang tidak lagi dibagikan dengan Anda. Jumlah, tanggal, dan akunnya terkunci, tetapi Anda masih dapat mengedit detail transaksi ini.",
-    "transferCategoryNote": "Opsional. Transfer tetap tidak dihitung sebagai pemasukan atau pengeluaran, tetapi kategori ini membuatnya muncul dalam rincian kategori bulanan (mis. kontribusi investasi bulanan).",
+    "transferCategoryNote": "Opsional. Transfer tetap tidak dihitung sebagai pemasukan atau pengeluaran. Kategori transfer mencantumkannya di bawah kategori tersebut dalam rincian kategori bulanan (mis. kontribusi investasi bulanan); kategori pemasukan atau pengeluaran tetap dihitung seperti sebelumnya.",
     "amountReceivedNote": "Jumlah diterima setelah konversi mata uang",
     "splitTransaction": "Transaksi Terbagi",
     "splitDisabledDuringTour": "Tidak tersedia selama tur berpandu",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "Pembagian {number}",
     "accountForSplit": "Akun untuk pembagian {number}",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "Kategori untuk pemisahan {number}",
+    "transferCategoryPlaceholder": "Kategori (opsional)",
     "columns": {
       "type": "Tipe",
       "categoryAccount": "Kategori / Akun",

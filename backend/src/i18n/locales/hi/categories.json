@@ -368,6 +368,15 @@
         "vacationPay": "अवकाश वेतन"
       }
     },
-    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
+    "transfers": {
+      "name": "ट्रांसफर",
+      "sub": {
+        "betweenOwnAccounts": "अपने खातों के बीच",
+        "cashWithdrawals": "नकद निकासी",
+        "creditCardPayments": "क्रेडिट कार्ड भुगतान",
+        "investmentContributions": "निवेश योगदान",
+        "savingsContributions": "बचत योगदान"
+      }
+    }
   }
 }

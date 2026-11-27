@@ -18,8 +18,8 @@
     "summaryExpense": "Catégories de dépenses",
     "summaryTopLevel": "Niveau supérieur",
     "eyebrow": "Plan des catégories",
-    "filterTransfers": "Transfers ({count})",
-    "summaryTransfer": "Transfer Categories"
+    "filterTransfers": "Virements ({count})",
+    "summaryTransfer": "Catégories de virement"
   },
   "empty": {
     "heading": "Aucune catégorie",
@@ -73,7 +73,7 @@
     "descriptionLabel": "Description (optionnel)",
     "submitCreate": "Créer la catégorie",
     "submitUpdate": "Mettre à jour la catégorie",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "Virement"
   },
   "list": {
     "emptyHeading": "Aucune catégorie trouvée",
@@ -88,7 +88,7 @@
     "systemBadge": "(Système)",
     "inheritedColorTitle": "Hérité du parent",
     "viewTransactionsTitle": "Voir les transactions de cette catégorie",
-    "badgeTransfer": "Transfer"
+    "badgeTransfer": "Virement"
   },
   "deleteDialog": {
     "title": "Supprimer « {name} »",

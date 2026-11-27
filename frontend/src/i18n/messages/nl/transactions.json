@@ -50,8 +50,8 @@
     "collapseAria": "Categorie-info verbergen",
     "show": "Categorie-info tonen",
     "amountUnavailable": "Geen koers",
-    "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "transfer": "Overboeking",
+    "totalTransferred": "Totaal overgeboekt"
   },
   "accountWidget": {
     "currentBalance": "Huidig saldo",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "De andere kant van deze overboeking staat op een rekening die niet meer met je wordt gedeeld. Het bedrag, de datum en de rekeningen zijn vergrendeld, maar je kunt de details van deze transactie nog steeds bewerken.",
-    "transferCategoryNote": "Optioneel. De overboeking telt nog steeds niet mee als inkomsten of uitgaven, maar met deze categorie verschijnt hij wel in het maandelijkse categorieoverzicht (bijv. maandelijkse beleggingsinleg).",
+    "transferCategoryNote": "Optioneel. De overboeking telt nog steeds niet als inkomsten of uitgaven. Een overboekingscategorie toont ze onder die categorie in het maandelijkse categorieoverzicht (bijv. maandelijkse beleggingsbijdragen); een inkomsten- of uitgavencategorie telt zoals voorheen.",
     "amountReceivedNote": "Ontvangen bedrag na valutaomrekening",
     "splitTransaction": "Transactie splitsen",
     "splitDisabledDuringTour": "Niet beschikbaar tijdens de begeleide rondleiding",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "Splitsing {number}",
     "accountForSplit": "Rekening voor splitsing {number}",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "Categorie voor splitsing {number}",
+    "transferCategoryPlaceholder": "Categorie (optioneel)",
     "columns": {
       "type": "Type",
       "categoryAccount": "Categorie / rekening",

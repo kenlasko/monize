@@ -17,7 +17,7 @@
     "switchPlaceholder": "Filtra le categorie...",
     "switchNoMatches": "Nessuna categoria corrisponde",
     "since": "Categoria dal {date}",
-    "transferPill": "Transfer"
+    "transferPill": "Trasferimento"
   },
   "summary": {
     "spentThisYear": "Speso quest’anno",
@@ -31,9 +31,9 @@
     "lastTransaction": "Ultima transazione",
     "convertedNote": "Convertito in {currency}",
     "partialRatesNote": "Alcuni mesi non hanno un tasso di cambio",
-    "outgoingThisYear": "Outgoing This Year",
-    "incomingThisYear": "Incoming This Year",
-    "netThisYear": "Net This Year"
+    "outgoingThisYear": "In uscita quest'anno",
+    "incomingThisYear": "In entrata quest'anno",
+    "netThisYear": "Netto quest'anno"
   },
   "topPayees": {
     "title": "Beneficiari principali",
@@ -82,7 +82,7 @@
     "defaultFor": "Categoria predefinita per",
     "defaultForMore": "+{count} altri",
     "description": "Descrizione",
-    "transfer": "Transfer"
+    "transfer": "Trasferimento"
   },
   "tabs": {
     "ariaLabel": "Sezioni della categoria",

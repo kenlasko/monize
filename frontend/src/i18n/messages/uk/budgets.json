@@ -293,7 +293,7 @@
       "income": "Дохід",
       "expenses": "Витрати",
       "transfers": "Перекази / Заощадження",
-      "transferCategories": "Transfer Categories",
+      "transferCategories": "Категорії переказів",
       "transfersIn": "Вхідні перекази (дохід)",
       "trendMedian": "Тенденція / Медіана",
       "amount": "Сума"
@@ -760,11 +760,11 @@
     "targetAmount": "{amount} за період"
   },
   "funding": {
-    "actualIncome": "Actual Income",
-    "transferFunding": "Transfer Funding",
-    "totalFunding": "Total Budget Funding",
-    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
-    "thisPeriod": "This period",
-    "parts": "Actual Income {income}, Transfer Funding {transfers}"
+    "actualIncome": "Фактичний дохід",
+    "transferFunding": "Фінансування переказами",
+    "totalFunding": "Загальне фінансування бюджету",
+    "hint": "Фінансування переказами — це гроші, переказані з ваших власних рахунків. Воно фінансує бюджет, але не є доходом у ваших звітах.",
+    "thisPeriod": "Цей період",
+    "parts": "Фактичний дохід {income}, фінансування переказами {transfers}"
   }
 }

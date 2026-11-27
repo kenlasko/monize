@@ -368,6 +368,15 @@
         "vacationPay": "Lương nghỉ phép"
       }
     },
-    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
+    "transfers": {
+      "name": "Chuyển khoản",
+      "sub": {
+        "betweenOwnAccounts": "Giữa các tài khoản của mình",
+        "cashWithdrawals": "Rút tiền mặt",
+        "creditCardPayments": "Thanh toán thẻ tín dụng",
+        "investmentContributions": "Đóng góp đầu tư",
+        "savingsContributions": "Đóng góp tiết kiệm"
+      }
+    }
   }
 }

@@ -17,7 +17,7 @@
     "switchPlaceholder": "Lọc danh mục...",
     "switchNoMatches": "Không có danh mục nào khớp",
     "since": "Danh mục từ {date}",
-    "transferPill": "Transfer"
+    "transferPill": "Chuyển khoản"
   },
   "summary": {
     "spentThisYear": "Chi tiêu năm nay",
@@ -31,9 +31,9 @@
     "lastTransaction": "Giao tác gần nhất",
     "convertedNote": "Đã chuyển sang {currency}",
     "partialRatesNote": "Một số tháng không có tỷ giá",
-    "outgoingThisYear": "Outgoing This Year",
-    "incomingThisYear": "Incoming This Year",
-    "netThisYear": "Net This Year"
+    "outgoingThisYear": "Chuyển đi trong năm nay",
+    "incomingThisYear": "Chuyển đến trong năm nay",
+    "netThisYear": "Ròng trong năm nay"
   },
   "topPayees": {
     "title": "Người nhận hàng đầu",
@@ -82,7 +82,7 @@
     "defaultFor": "Danh mục mặc định cho",
     "defaultForMore": "+{count} nữa",
     "description": "Mô tả",
-    "transfer": "Transfer"
+    "transfer": "Chuyển khoản"
   },
   "tabs": {
     "ariaLabel": "Các phần của danh mục",

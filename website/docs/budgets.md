@@ -305,6 +305,14 @@ If you keep a reserve in one account and move a set amount out of it each month 
 
 Either way the figure is the net change: money moved in, less anything moved back to the same account in the period, and never below zero. A transfer between two accounts that are both in the budget, such as a credit card payment, is never income under the option. An account with its own transfer line is counted on that line, never twice, and an account can have only one transfer line in a budget: a savings line or an income line, not both. Voided transfers never count.
 
+### A budget line on a Transfer category
+
+A budget line can also name a [Transfer category](categories-and-payees.md#categories-on-transfers), as a planned outgoing amount (a savings or investment contribution) or as an income line. In step 2 of the wizard the **Transfer Categories** table lists them; on the edit page add the line as you would a category line. The line counts the transfers that hold that category in the budget's accounts, net of anything moved back, as a category line counts its rows. A transfer between two accounts of the budget nets to zero.
+
+**The category line wins.** A transfer holding a Transfer category that has a line in the budget is counted on that line and left out of any per-account transfer line and of **Count transfers in from excluded accounts as income**. A transfer whose Transfer category has no line in the budget is counted by the account lines exactly as an uncategorized one. A line on an Income or Expense category counts what it counted before.
+
+**Income is shown in three figures.** **Actual Income** is what your income categories received, **Transfer Funding** is money moved in from your own accounts (transfer income lines, income lines on a Transfer category and the excluded-accounts option), and **Total Budget Funding** is the two together. Transfer Funding funds the budget but is not income in your reports. A budget with no Transfer category line shows the same total as before; a period closed before the upgrade keeps its old figure under its old caption, because its split was not recorded.
+
 Transfer income counts everywhere the budget's income does: the savings figures, an income-linked budget's percentages, the **Income Shortfall** alert, the income a closed period records, and the savings-rate report.
 
 ---

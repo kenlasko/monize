@@ -50,8 +50,8 @@
     "collapseAria": "Nascondi info categoria",
     "show": "Mostra info categoria",
     "amountUnavailable": "Nessun tasso",
-    "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "transfer": "Trasferimento",
+    "totalTransferred": "Totale trasferito"
   },
   "accountWidget": {
     "currentBalance": "Saldo attuale",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "L'altro lato di questo trasferimento si trova in un conto non più condiviso con te. Importo, data e conti sono bloccati, ma puoi comunque modificare i dettagli di questa transazione.",
-    "transferCategoryNote": "Facoltativo. Il trasferimento continuerà a non contare come entrata o uscita, ma questa categoria gli consente di comparire nel riepilogo mensile per categoria (ad es. contributi di investimento mensili).",
+    "transferCategoryNote": "Facoltativo. Il trasferimento continua a non contare come entrata o spesa. Una categoria di trasferimento lo elenca sotto quella categoria nel dettaglio mensile per categoria (ad es. contributi di investimento mensili); una categoria di entrate o di spese continua a contare come prima.",
     "amountReceivedNote": "Importo ricevuto dopo la conversione valuta",
     "splitTransaction": "Suddividi transazione",
     "splitDisabledDuringTour": "Non disponibile durante il tour guidato",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "Suddivisione {number}",
     "accountForSplit": "Conto della suddivisione {number}",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "Categoria della suddivisione {number}",
+    "transferCategoryPlaceholder": "Categoria (facoltativa)",
     "columns": {
       "type": "Tipo",
       "categoryAccount": "Categoria / Conto",

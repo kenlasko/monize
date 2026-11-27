@@ -50,8 +50,8 @@
     "collapseAria": "Приховати інформацію про категорію",
     "show": "Показати інформацію про категорію",
     "amountUnavailable": "Немає курсу",
-    "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "transfer": "Переказ",
+    "totalTransferred": "Усього переказано"
   },
   "accountWidget": {
     "currentBalance": "Поточний баланс",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "Інша сторона цього переказу знаходиться на рахунку, яким з вами більше не діляться. Його сума, дата та рахунки заблоковані, але ви все ще можете редагувати деталі цієї транзакції.",
-    "transferCategoryNote": "Необов'язково. Переказ і надалі не враховуватиметься як дохід чи витрата, але ця категорія дозволяє йому з'являтися в щомісячному розподілі за категоріями (наприклад, щомісячні інвестиційні внески).",
+    "transferCategoryNote": "Необов’язково. Переказ, як і раніше, не вважається ні доходом, ні витратою. Категорія переказу показує його в цій категорії в щомісячному розподілі за категоріями (наприклад, щомісячні інвестиційні внески); категорія доходів або витрат враховується як раніше.",
     "amountReceivedNote": "Отримана сума після конвертації валюти",
     "splitTransaction": "Розподілити транзакцію",
     "splitDisabledDuringTour": "Недоступно під час інтерактивного туру",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "Розподіл {number}",
     "accountForSplit": "Рахунок для частини {number}",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "Категорія частини {number}",
+    "transferCategoryPlaceholder": "Категорія (необов’язково)",
     "columns": {
       "type": "Тип",
       "categoryAccount": "Категорія / Рахунок",

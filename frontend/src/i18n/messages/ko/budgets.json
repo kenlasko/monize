@@ -293,7 +293,7 @@
       "income": "소득",
       "expenses": "지출",
       "transfers": "이체 / 저축",
-      "transferCategories": "Transfer Categories",
+      "transferCategories": "이체 카테고리",
       "transfersIn": "입금 이체(수입)",
       "trendMedian": "추세 / 중앙값",
       "amount": "금액"
@@ -760,11 +760,11 @@
     "targetAmount": "기간당 {amount}"
   },
   "funding": {
-    "actualIncome": "Actual Income",
-    "transferFunding": "Transfer Funding",
-    "totalFunding": "Total Budget Funding",
-    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
-    "thisPeriod": "This period",
-    "parts": "Actual Income {income}, Transfer Funding {transfers}"
+    "actualIncome": "실제 수입",
+    "transferFunding": "이체 자금",
+    "totalFunding": "예산 총 자금",
+    "hint": "이체 자금은 본인의 다른 계좌에서 옮겨 온 돈입니다. 예산의 자금이 되지만 보고서에서는 수입이 아닙니다.",
+    "thisPeriod": "이번 기간",
+    "parts": "실제 수입 {income}, 이체 자금 {transfers}"
   }
 }

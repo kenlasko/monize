@@ -368,6 +368,15 @@
         "vacationPay": "Відпускні"
       }
     },
-    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
+    "transfers": {
+      "name": "Перекази",
+      "sub": {
+        "betweenOwnAccounts": "Між власними рахунками",
+        "cashWithdrawals": "Зняття готівки",
+        "creditCardPayments": "Платежі кредитною карткою",
+        "investmentContributions": "Інвестиційні внески",
+        "savingsContributions": "Заощаджувальні внески"
+      }
+    }
   }
 }

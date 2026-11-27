@@ -293,7 +293,7 @@
       "income": "Inkomsten",
       "expenses": "Uitgaven",
       "transfers": "Overboekingen / Sparen",
-      "transferCategories": "Transfer Categories",
+      "transferCategories": "Overboekingscategorieën",
       "transfersIn": "Inkomende overboekingen (inkomen)",
       "trendMedian": "Trend / Mediaan",
       "amount": "Bedrag"
@@ -760,11 +760,11 @@
     "targetAmount": "{amount} per periode"
   },
   "funding": {
-    "actualIncome": "Actual Income",
-    "transferFunding": "Transfer Funding",
-    "totalFunding": "Total Budget Funding",
-    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
-    "thisPeriod": "This period",
-    "parts": "Actual Income {income}, Transfer Funding {transfers}"
+    "actualIncome": "Werkelijke inkomsten",
+    "transferFunding": "Financiering via overboekingen",
+    "totalFunding": "Totale budgetfinanciering",
+    "hint": "Financiering via overboekingen is geld dat van je eigen rekeningen is overgeboekt. Het financiert het budget, maar is in je rapporten geen inkomen.",
+    "thisPeriod": "Deze periode",
+    "parts": "Werkelijke inkomsten {income}, financiering via overboekingen {transfers}"
   }
 }

@@ -50,8 +50,8 @@
     "collapseAria": "Kategorie-Informationen ausblenden",
     "show": "Kategorie-Informationen anzeigen",
     "amountUnavailable": "Kein Kurs",
-    "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "transfer": "Überweisung",
+    "totalTransferred": "Insgesamt überwiesen"
   },
   "accountWidget": {
     "currentBalance": "Aktueller Saldo",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "Die Gegenseite dieser Überweisung liegt in einem Konto, das nicht mehr mit Ihnen geteilt wird. Betrag, Datum und Konten sind gesperrt, aber Sie können die Details dieser Transaktion weiterhin bearbeiten.",
-    "transferCategoryNote": "Optional. Der Transfer zählt weiterhin nicht als Einnahme oder Ausgabe, aber diese Kategorie lässt ihn in der monatlichen Kategorienübersicht erscheinen (z. B. monatliche Investitionsbeiträge).",
+    "transferCategoryNote": "Optional. Die Überweisung zählt weiterhin nicht als Einnahme oder Ausgabe. Eine Überweisungskategorie listet sie in der monatlichen Kategorienübersicht unter dieser Kategorie auf (z. B. monatliche Anlagebeiträge); eine Einnahmen- oder Ausgabenkategorie zählt wie bisher.",
     "amountReceivedNote": "Erhaltener Betrag nach Währungsumrechnung",
     "splitTransaction": "Buchung aufteilen",
     "splitDisabledDuringTour": "Während der geführten Tour nicht verfügbar",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "Buchungsteil {number}",
     "accountForSplit": "Konto für Aufteilung {number}",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "Kategorie für Aufteilung {number}",
+    "transferCategoryPlaceholder": "Kategorie (optional)",
     "columns": {
       "type": "Typ",
       "categoryAccount": "Kategorie / Konto",

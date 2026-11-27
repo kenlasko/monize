@@ -20,7 +20,7 @@
     "englishOnly": "아래 릴리스 노트는 영어로만 제공됩니다. 가이드 투어를 포함한 Monize 자체는 언어 설정을 따릅니다."
   },
   "transferPayee": "{direction, select, to {{name}(으)로 이체} other {{name}에서 이체}}",
-  "transferBadge": "Transfer",
+  "transferBadge": "이체",
   "save": "저장",
   "cancel": "취소",
   "delete": "삭제",

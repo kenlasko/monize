@@ -50,8 +50,8 @@
     "collapseAria": "Скрыть информацию о категории",
     "show": "Показать информацию о категории",
     "amountUnavailable": "Нет курса",
-    "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "transfer": "Перевод",
+    "totalTransferred": "Всего переведено"
   },
   "accountWidget": {
     "currentBalance": "Текущий остаток",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "Вторая сторона этого перевода находится на счёте, доступ к которому вам больше не предоставлен. Его сумма, дата и счета заблокированы, но вы по-прежнему можете редактировать детали этой транзакции.",
-    "transferCategoryNote": "Необязательно. Перевод по-прежнему не будет учитываться как доход или расход, но эта категория позволяет ему отображаться в ежемесячной разбивке по категориям (например, ежемесячные инвестиционные взносы).",
+    "transferCategoryNote": "Необязательно. Перевод по-прежнему не считается ни доходом, ни расходом. Категория перевода показывает его в этой категории в ежемесячной разбивке по категориям (например, ежемесячные инвестиционные взносы); категория доходов или расходов учитывается как раньше.",
     "amountReceivedNote": "Полученная сумма после конвертации валюты",
     "splitTransaction": "Разделить проводку",
     "splitDisabledDuringTour": "Недоступно во время обучающего тура",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "Часть {number}",
     "accountForSplit": "Счёт для части {number}",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "Категория части {number}",
+    "transferCategoryPlaceholder": "Категория (необязательно)",
     "columns": {
       "type": "Тип",
       "categoryAccount": "Категория / Счёт",

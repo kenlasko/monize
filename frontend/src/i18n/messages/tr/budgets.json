@@ -293,7 +293,7 @@
       "income": "Gelir",
       "expenses": "Giderler",
       "transfers": "Transferler / Tasarruf",
-      "transferCategories": "Transfer Categories",
+      "transferCategories": "Transfer kategorileri",
       "transfersIn": "Gelen transferler (gelir)",
       "trendMedian": "Trend / Medyan",
       "amount": "Tutar"
@@ -760,11 +760,11 @@
     "targetAmount": "Dönem başına {amount}"
   },
   "funding": {
-    "actualIncome": "Actual Income",
-    "transferFunding": "Transfer Funding",
-    "totalFunding": "Total Budget Funding",
-    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
-    "thisPeriod": "This period",
-    "parts": "Actual Income {income}, Transfer Funding {transfers}"
+    "actualIncome": "Gerçekleşen gelir",
+    "transferFunding": "Transfer finansmanı",
+    "totalFunding": "Toplam bütçe finansmanı",
+    "hint": "Transfer finansmanı, kendi hesaplarınızdan aktarılan paradır. Bütçeyi finanse eder ancak raporlarınızda gelir değildir.",
+    "thisPeriod": "Bu dönem",
+    "parts": "Gerçekleşen gelir {income}, transfer finansmanı {transfers}"
   }
 }

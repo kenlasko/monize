@@ -293,7 +293,7 @@
       "income": "Przychody",
       "expenses": "Wydatki",
       "transfers": "Przelewy / Oszczędności",
-      "transferCategories": "Transfer Categories",
+      "transferCategories": "Kategorie przelewów",
       "transfersIn": "Przelewy przychodzące (dochód)",
       "trendMedian": "Trend / Mediana",
       "amount": "Kwota"
@@ -760,11 +760,11 @@
     "targetAmount": "{amount} na okres"
   },
   "funding": {
-    "actualIncome": "Actual Income",
-    "transferFunding": "Transfer Funding",
-    "totalFunding": "Total Budget Funding",
-    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
-    "thisPeriod": "This period",
-    "parts": "Actual Income {income}, Transfer Funding {transfers}"
+    "actualIncome": "Rzeczywiste przychody",
+    "transferFunding": "Finansowanie z przelewów",
+    "totalFunding": "Całkowite finansowanie budżetu",
+    "hint": "Finansowanie z przelewów to pieniądze przeniesione z Twoich własnych kont. Finansuje budżet, ale nie jest przychodem w Twoich raportach.",
+    "thisPeriod": "Ten okres",
+    "parts": "Rzeczywiste przychody {income}, finansowanie z przelewów {transfers}"
   }
 }

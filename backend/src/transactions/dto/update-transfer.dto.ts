@@ -85,7 +85,7 @@ export class UpdateTransferDto {
 
   @ApiPropertyOptional({
     description:
-      "Optional spending category for the transfer (null to clear). Does not make the transfer count as income/expense; only surfaces it under this category in the monthly category breakdown.",
+      "Optional category for the transfer, of any type (null to clear); written to both legs. Does not make the transfer count as income/expense; a Transfer category lists it under that category in the monthly category breakdown.",
   })
   @IsOptional()
   @IsUUID()

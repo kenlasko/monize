@@ -18,8 +18,8 @@
     "summaryExpense": "Danh mục chi tiêu",
     "summaryTopLevel": "Cấp cao nhất",
     "eyebrow": "Sơ đồ danh mục",
-    "filterTransfers": "Transfers ({count})",
-    "summaryTransfer": "Transfer Categories"
+    "filterTransfers": "Chuyển khoản ({count})",
+    "summaryTransfer": "Danh mục chuyển khoản"
   },
   "empty": {
     "heading": "Chưa có danh mục",
@@ -73,7 +73,7 @@
     "descriptionLabel": "Mô tả (tùy chọn)",
     "submitCreate": "Tạo danh mục",
     "submitUpdate": "Cập nhật danh mục",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "Chuyển khoản"
   },
   "list": {
     "emptyHeading": "Không tìm thấy danh mục",
@@ -88,7 +88,7 @@
     "systemBadge": "(Hệ thống)",
     "inheritedColorTitle": "Kế thừa từ cha",
     "viewTransactionsTitle": "Xem giao dịch trong danh mục này",
-    "badgeTransfer": "Transfer"
+    "badgeTransfer": "Chuyển khoản"
   },
   "deleteDialog": {
     "title": "Xóa \"{name}\"",

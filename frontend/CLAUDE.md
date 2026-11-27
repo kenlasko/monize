@@ -108,7 +108,7 @@ npm run docs:build         # Regenerate the user docs (website/docs/) from their
 | A new page, dialog or toolbar: the reference screen to copy, dialog chrome, list and detail page layout, labels | `docs/frontend/screens-and-dialogs.md` |
 | Inputs, number and date formatting, phone numbers, text caps, CSV, form modals | `docs/frontend/forms-and-formatting.md` |
 | Tables, registers, density, pagination, phones | `docs/frontend/tables-and-registers.md` |
-| Money figures: scheduled occurrences, loans, portfolio ranges, chart reductions, unknown values, export precision | `docs/frontend/financial-figures.md`, then `docs/financial-semantics.md`, `docs/time-series-contract.md`, `docs/system-invariants.md` |
+| Money figures and category types: scheduled occurrences, loans, portfolio ranges, chart reductions, unknown values, export precision | `docs/frontend/financial-figures.md`, then `docs/financial-semantics.md`, `docs/time-series-contract.md`, `docs/system-invariants.md` |
 | Push, service worker, Web Share Target | `docs/frontend/pwa-push-share.md` |
 | Native shells (Electron, Capacitor): shell detection, deep links, external links, push availability | `docs/frontend/shell-contract.md` |
 | Tests, mocks, harness | `docs/frontend/testing.md` and `docs/testing-contract.md` |

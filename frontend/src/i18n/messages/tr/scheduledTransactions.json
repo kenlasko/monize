@@ -270,7 +270,7 @@
     "toAccountPlaceholder": "Hedef hesap seçin...",
     "transferAmountLabel": "Transfer Tutarı",
     "transferCategoryLabel": "Kategori (isteğe bağlı)",
-    "transferCategoryNote": "İsteğe bağlı: Bu transferi kategorilendirin (ör. düzenli bir yatırım katkısı) ki aylık kategori dökümünde görünsün. Gelir veya gider olarak sayılmaz.",
+    "transferCategoryNote": "İsteğe bağlı: bu transferi kategorilendirin (ör. yinelenen bir yatırım katkısı). Bir transfer kategorisi, transferi aylık kategori dökümünde o kategorinin altında listeler. Gelir veya gider sayılmaz.",
     "actionLabel": "İşlem",
     "securityLabel": "Menkul Kıymet",
     "securityPlaceholder": "Menkul kıymet seçin...",

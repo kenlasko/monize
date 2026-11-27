@@ -50,8 +50,8 @@
     "collapseAria": "Ukryj informacje o kategorii",
     "show": "Pokaż informacje o kategorii",
     "amountUnavailable": "Brak kursu",
-    "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "transfer": "Przelew",
+    "totalTransferred": "Łącznie przelano"
   },
   "accountWidget": {
     "currentBalance": "Bieżące saldo",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "Druga strona tego przelewu znajduje się na koncie, które nie jest już Tobie udostępniane. Kwota, data i konta są zablokowane, ale nadal możesz edytować szczegóły tej transakcji.",
-    "transferCategoryNote": "Opcjonalnie. Transfer nadal nie będzie liczony jako przychód ani wydatek, ale ta kategoria pozwala mu pojawić się w miesięcznym zestawieniu według kategorii (np. comiesięczne wpłaty inwestycyjne).",
+    "transferCategoryNote": "Opcjonalnie. Przelew nadal nie liczy się jako przychód ani wydatek. Kategoria przelewu wyświetla go w tej kategorii w miesięcznym zestawieniu kategorii (np. miesięczne wpłaty inwestycyjne); kategoria przychodów lub wydatków liczy się jak dotąd.",
     "amountReceivedNote": "Kwota otrzymana po przeliczeniu waluty",
     "splitTransaction": "Podziel transakcję",
     "splitDisabledDuringTour": "Niedostępne podczas przewodnika",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "Podział {number}",
     "accountForSplit": "Konto dla podziału {number}",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "Kategoria podziału {number}",
+    "transferCategoryPlaceholder": "Kategoria (opcjonalnie)",
     "columns": {
       "type": "Typ",
       "categoryAccount": "Kategoria / Konto",

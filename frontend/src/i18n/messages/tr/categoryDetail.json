@@ -31,9 +31,9 @@
     "lastTransaction": "Son İşlem",
     "convertedNote": "{currency} birimine çevrildi",
     "partialRatesNote": "Bazı aylar için döviz kuru yok",
-    "outgoingThisYear": "Outgoing This Year",
-    "incomingThisYear": "Incoming This Year",
-    "netThisYear": "Net This Year"
+    "outgoingThisYear": "Bu yıl giden",
+    "incomingThisYear": "Bu yıl gelen",
+    "netThisYear": "Bu yıl net"
   },
   "topPayees": {
     "title": "En Çok Kullanılan Alacaklılar",

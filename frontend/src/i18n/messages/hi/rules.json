@@ -233,7 +233,7 @@
       "directionFrom": "आय: पैसा दूसरे खाते से आता है",
       "clearCategory": "श्रेणी हटाएँ",
       "clearCategoryHelp": "ट्रांसफ़र की कोई श्रेणी नहीं होती। लेन-देन की मौजूदा श्रेणी बनाए रखने के लिए इसे बंद करें।",
-      "convertCategory": "Category for the transfer (optional)",
+      "convertCategory": "ट्रांसफर के लिए श्रेणी (वैकल्पिक)",
       "splitPayee": "लेन-देन का प्राप्तकर्ता (वैकल्पिक)",
       "splitHint": "हर हिस्सा अपनी राशि ऊपर के पैटर्न के किसी कैप्चर से लेता है, या शेष लेता है। हिस्सों का जोड़ लेन-देन की राशि के बराबर होना चाहिए, वरना नियम उसे छोड़ देता है।",
       "splitNoCaptures": "अभी कोई कैप्चर परिभाषित नहीं है। ऊपर के किसी पैटर्न में कर्ली ब्रैकेट में एक नाम लिखें, जैसे PRINCIPAL: {example}, ताकि उसे यहाँ राशि के रूप में उपयोग कर सकें।",
@@ -459,7 +459,7 @@
     },
     "skipReasons": {
       "reconciled_locked": "यह मिलान किया हुआ और लॉक है",
-      "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
+      "transfer_category_on_category_row": "यह ट्रांसफर नहीं है, और ट्रांसफर श्रेणी केवल ट्रांसफर पर लगाई जा सकती है",
       "split_category": "यह विभाजित है, इसलिए श्रेणी विभाजनों की है",
       "cross_owner_transfer_payee": "यह किसी अन्य स्वामी को ट्रांसफ़र है, जिसका प्राप्तकर्ता यह नियम नहीं बदल सकता",
       "empty_render": "किसी कार्रवाई का टेक्स्ट इसके लिए खाली निकला",

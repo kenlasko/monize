@@ -18,8 +18,8 @@
     "summaryExpense": "支出類別",
     "summaryTopLevel": "頂層類別",
     "eyebrow": "類別總表",
-    "filterTransfers": "Transfers ({count})",
-    "summaryTransfer": "Transfer Categories"
+    "filterTransfers": "轉帳（{count}）",
+    "summaryTransfer": "轉帳類別"
   },
   "empty": {
     "heading": "尚無類別",
@@ -73,7 +73,7 @@
     "descriptionLabel": "說明（選填）",
     "submitCreate": "建立類別",
     "submitUpdate": "更新類別",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "轉帳"
   },
   "list": {
     "emptyHeading": "找不到類別",
@@ -88,7 +88,7 @@
     "systemBadge": "（系統）",
     "inheritedColorTitle": "繼承自上層",
     "viewTransactionsTitle": "檢視此類別的交易",
-    "badgeTransfer": "Transfer"
+    "badgeTransfer": "轉帳"
   },
   "deleteDialog": {
     "title": "刪除「{name}」",

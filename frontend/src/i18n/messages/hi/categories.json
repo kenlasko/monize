@@ -18,8 +18,8 @@
     "summaryExpense": "व्यय श्रेणियां",
     "summaryTopLevel": "शीर्ष-स्तर",
     "eyebrow": "श्रेणियों का खाका",
-    "filterTransfers": "Transfers ({count})",
-    "summaryTransfer": "Transfer Categories"
+    "filterTransfers": "ट्रांसफर ({count})",
+    "summaryTransfer": "ट्रांसफर श्रेणियां"
   },
   "empty": {
     "heading": "अभी तक कोई श्रेणी नहीं",
@@ -73,7 +73,7 @@
     "descriptionLabel": "विवरण (वैकल्पिक)",
     "submitCreate": "श्रेणी बनाएं",
     "submitUpdate": "श्रेणी अपडेट करें",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "ट्रांसफर"
   },
   "list": {
     "emptyHeading": "कोई श्रेणी नहीं मिली",
@@ -88,7 +88,7 @@
     "systemBadge": "(सिस्टम)",
     "inheritedColorTitle": "मूल से विरासत में मिला",
     "viewTransactionsTitle": "इस श्रेणी के लेनदेन देखें",
-    "badgeTransfer": "Transfer"
+    "badgeTransfer": "ट्रांसफर"
   },
   "deleteDialog": {
     "title": "\"{name}\" हटाएं",

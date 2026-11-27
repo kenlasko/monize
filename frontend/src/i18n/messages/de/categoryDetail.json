@@ -17,7 +17,7 @@
     "switchPlaceholder": "Kategorien filtern...",
     "switchNoMatches": "Keine Kategorien gefunden",
     "since": "Kategorie seit {date}",
-    "transferPill": "Transfer"
+    "transferPill": "Überweisung"
   },
   "summary": {
     "spentThisYear": "Ausgaben dieses Jahr",
@@ -31,9 +31,9 @@
     "lastTransaction": "Letzte Buchung",
     "convertedNote": "Umgerechnet in {currency}",
     "partialRatesNote": "Für einige Monate fehlt ein Wechselkurs",
-    "outgoingThisYear": "Outgoing This Year",
-    "incomingThisYear": "Incoming This Year",
-    "netThisYear": "Net This Year"
+    "outgoingThisYear": "Ausgehend in diesem Jahr",
+    "incomingThisYear": "Eingehend in diesem Jahr",
+    "netThisYear": "Netto in diesem Jahr"
   },
   "topPayees": {
     "title": "Top-Zahlungsempfänger",
@@ -82,7 +82,7 @@
     "defaultFor": "Standardkategorie für",
     "defaultForMore": "+{count} weitere",
     "description": "Beschreibung",
-    "transfer": "Transfer"
+    "transfer": "Überweisung"
   },
   "tabs": {
     "ariaLabel": "Kategorie-Abschnitte",

@@ -20,7 +20,7 @@
     "englishOnly": "以下のリリースノートは英語のみです。ガイドツアーを含む Monize 本体は言語設定に従います。"
   },
   "transferPayee": "{direction, select, to {{name}への振替} other {{name}からの振替}}",
-  "transferBadge": "Transfer",
+  "transferBadge": "振替",
   "save": "保存",
   "cancel": "キャンセル",
   "delete": "削除",

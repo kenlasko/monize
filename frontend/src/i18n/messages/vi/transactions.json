@@ -50,8 +50,8 @@
     "collapseAria": "Ẩn thông tin danh mục",
     "show": "Hiển thị thông tin danh mục",
     "amountUnavailable": "Không có tỷ giá",
-    "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "transfer": "Chuyển khoản",
+    "totalTransferred": "Tổng đã chuyển"
   },
   "accountWidget": {
     "currentBalance": "Số tiền còn lại",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "Phía bên kia của khoản chuyển khoản này nằm trong tài khoản không còn được chia sẻ với bạn. Số tiền, ngày và tài khoản đã bị khóa, nhưng bạn vẫn có thể chỉnh sửa chi tiết của giao dịch này.",
-    "transferCategoryNote": "Tùy chọn. Giao dịch chuyển khoản vẫn không được tính là thu nhập hay chi phí, nhưng danh mục này giúp nó xuất hiện trong bảng phân tích danh mục hằng tháng (ví dụ: khoản đóng góp đầu tư hằng tháng).",
+    "transferCategoryNote": "Tùy chọn. Khoản chuyển vẫn không được tính là thu nhập hay chi phí. Danh mục chuyển khoản liệt kê khoản chuyển dưới danh mục đó trong bảng phân tích danh mục hằng tháng (ví dụ: đóng góp đầu tư hằng tháng); danh mục thu nhập hoặc chi phí vẫn được tính như trước.",
     "amountReceivedNote": "Số tiền nhận sau khi quy đổi tiền tệ",
     "splitTransaction": "Chia giao tác",
     "splitDisabledDuringTour": "Không khả dụng trong lúc hướng dẫn",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "Phần {number}",
     "accountForSplit": "Tài khoản cho phần chia {number}",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "Danh mục cho phần tách {number}",
+    "transferCategoryPlaceholder": "Danh mục (tùy chọn)",
     "columns": {
       "type": "Loại",
       "categoryAccount": "Danh mục / Tài khoản",

@@ -50,8 +50,8 @@
     "collapseAria": "隐藏分类信息",
     "show": "显示分类信息",
     "amountUnavailable": "无汇率",
-    "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "transfer": "转账",
+    "totalTransferred": "转账总额"
   },
   "accountWidget": {
     "currentBalance": "当前余额",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "此转账的另一方位于不再与您共享的账户中。其金额、日期和账户已锁定，但您仍可以编辑此交易自身的详细信息。",
-    "transferCategoryNote": "可选。该转账仍不计为收入或支出，但此类别可让它显示在每月类别细分中（例如每月投资缴款）。",
+    "transferCategoryNote": "可选。转账仍不计为收入或支出。选择转账类别后，它会显示在月度类别明细中该类别之下（例如每月投资缴款）；收入或支出类别仍按原方式计算。",
     "amountReceivedNote": "货币兑换后收到的金额",
     "splitTransaction": "拆分交易",
     "splitDisabledDuringTour": "引导式导览期间不可用",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "拆分项 {number}",
     "accountForSplit": "拆分 {number} 的账户",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "拆分 {number} 的类别",
+    "transferCategoryPlaceholder": "类别（可选）",
     "columns": {
       "type": "类型",
       "categoryAccount": "分类/账户",

@@ -17,7 +17,7 @@
     "switchPlaceholder": "카테고리 검색...",
     "switchNoMatches": "일치하는 카테고리가 없습니다",
     "since": "{date}부터 등록된 카테고리",
-    "transferPill": "Transfer"
+    "transferPill": "이체"
   },
   "summary": {
     "spentThisYear": "올해 지출",
@@ -31,9 +31,9 @@
     "lastTransaction": "마지막 거래",
     "convertedNote": "{currency}(으)로 환산",
     "partialRatesNote": "일부 월에는 환율이 없습니다",
-    "outgoingThisYear": "Outgoing This Year",
-    "incomingThisYear": "Incoming This Year",
-    "netThisYear": "Net This Year"
+    "outgoingThisYear": "올해 나간 금액",
+    "incomingThisYear": "올해 들어온 금액",
+    "netThisYear": "올해 순액"
   },
   "topPayees": {
     "title": "상위 수취인",
@@ -82,7 +82,7 @@
     "defaultFor": "기본 카테고리로 지정된 수취인",
     "defaultForMore": "+{count}개 더",
     "description": "설명",
-    "transfer": "Transfer"
+    "transfer": "이체"
   },
   "tabs": {
     "ariaLabel": "카테고리 섹션",

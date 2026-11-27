@@ -17,7 +17,7 @@
     "switchPlaceholder": "Фильтр категорий...",
     "switchNoMatches": "Нет подходящих категорий",
     "since": "Категория с {date}",
-    "transferPill": "Transfer"
+    "transferPill": "Перевод"
   },
   "summary": {
     "spentThisYear": "Потрачено в этом году",
@@ -31,9 +31,9 @@
     "lastTransaction": "Последняя проводка",
     "convertedNote": "Пересчитано в {currency}",
     "partialRatesNote": "Для некоторых месяцев нет обменного курса",
-    "outgoingThisYear": "Outgoing This Year",
-    "incomingThisYear": "Incoming This Year",
-    "netThisYear": "Net This Year"
+    "outgoingThisYear": "Исходящие за этот год",
+    "incomingThisYear": "Входящие за этот год",
+    "netThisYear": "Итого за этот год"
   },
   "topPayees": {
     "title": "Основные получатели",
@@ -82,7 +82,7 @@
     "defaultFor": "Категория по умолчанию для",
     "defaultForMore": "и ещё {count}",
     "description": "Описание",
-    "transfer": "Transfer"
+    "transfer": "Перевод"
   },
   "tabs": {
     "ariaLabel": "Разделы категории",

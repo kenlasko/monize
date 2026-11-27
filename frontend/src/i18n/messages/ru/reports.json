@@ -448,8 +448,8 @@
     "labelMetric": "Метрика",
     "labelDirection": "Направление",
     "labelCategoryType": "Тип категории",
-    "labelTransferMeasure": "Transfer Measure",
-    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
+    "labelTransferMeasure": "Показатель переводов",
+    "transferMeasureBudgetVariance": "Показатель переводов нельзя сочетать с отклонением от бюджета",
     "checkboxTransfers": "Включить переводы",
     "checkboxFavourites": "Добавить в избранное",
     "sortByPlaceholder": "По умолчанию",
@@ -474,12 +474,12 @@
       "netCashMovement": "Чистое движение денежных средств",
       "unsignedTotal": "Итог сумм по категориям без учёта знака",
       "unsignedAverage": "Среднее сумм по категориям без учёта знака",
-      "transfersOutgoing": "Outgoing transfers",
-      "transfersIncoming": "Incoming transfers",
-      "transfersNet": "Net transfers"
+      "transfersOutgoing": "Исходящие переводы",
+      "transfersIncoming": "Входящие переводы",
+      "transfersNet": "Чистые переводы"
     },
-    "unknownKnownPart": "Unknown ({amount} known)",
-    "partialRow": "(partial: a rate is missing)",
+    "unknownKnownPart": "Неизвестно (известно {amount})",
+    "partialRow": "(частично: отсутствует курс обмена)",
     "truncatedNotice": "Отчёт достиг ограничения по числу строк и показывает только самые старые строки, поэтому его итоги неполные. Сузьте период или фильтры, чтобы увидеть все.",
     "toasts": {
       "loadFailed": "Не удалось загрузить отчёт",
@@ -1227,8 +1227,8 @@
     "totalTransfers": "Всего переводов",
     "transferFrom": "Из",
     "transferTo": "В",
-    "transferCategoryOut": "{name}, outgoing",
-    "transferCategoryIn": "{name}, incoming",
+    "transferCategoryOut": "{name}, исходящие",
+    "transferCategoryIn": "{name}, входящие",
     "overallTotal": "Общий итог",
     "includeCurrentMonth": "Включить текущий месяц",
     "includeCurrentYear": "Включить текущий год",
@@ -1980,10 +1980,10 @@
       "BUDGET_VARIANCE": "Отклонение от бюджета"
     },
     "transferMeasure": {
-      "NONE": "None (income and expenses)",
-      "OUTGOING": "Outgoing transfers",
-      "INCOMING": "Incoming transfers",
-      "NET": "Net transfers"
+      "NONE": "Нет (доходы и расходы)",
+      "OUTGOING": "Исходящие переводы",
+      "INCOMING": "Входящие переводы",
+      "NET": "Чистые переводы"
     },
     "categoryType": {
       "ALL": "Все",

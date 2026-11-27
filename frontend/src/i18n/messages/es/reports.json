@@ -448,8 +448,8 @@
     "labelMetric": "Métrica",
     "labelDirection": "Dirección",
     "labelCategoryType": "Tipo de categoría",
-    "labelTransferMeasure": "Transfer Measure",
-    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
+    "labelTransferMeasure": "Medida de transferencias",
+    "transferMeasureBudgetVariance": "Una medida de transferencias no se puede combinar con una desviación del presupuesto",
     "checkboxTransfers": "Incluir transferencias",
     "checkboxFavourites": "Agregar a favoritos",
     "sortByPlaceholder": "Predeterminado",
@@ -474,12 +474,12 @@
       "netCashMovement": "Movimiento neto de efectivo",
       "unsignedTotal": "Total de montos de categoría sin signo",
       "unsignedAverage": "Promedio de montos de categoría sin signo",
-      "transfersOutgoing": "Outgoing transfers",
-      "transfersIncoming": "Incoming transfers",
-      "transfersNet": "Net transfers"
+      "transfersOutgoing": "Transferencias salientes",
+      "transfersIncoming": "Transferencias entrantes",
+      "transfersNet": "Transferencias netas"
     },
-    "unknownKnownPart": "Unknown ({amount} known)",
-    "partialRow": "(partial: a rate is missing)",
+    "unknownKnownPart": "Desconocido ({amount} conocido)",
+    "partialRow": "(parcial: falta un tipo de cambio)",
     "truncatedNotice": "Este informe alcanzó el límite de filas y solo muestra las más antiguas, por lo que sus cifras son parciales. Acote el período o los filtros para verlas todas.",
     "toasts": {
       "loadFailed": "Error al cargar el informe",
@@ -1227,8 +1227,8 @@
     "totalTransfers": "Total transferencias",
     "transferFrom": "Desde",
     "transferTo": "A",
-    "transferCategoryOut": "{name}, outgoing",
-    "transferCategoryIn": "{name}, incoming",
+    "transferCategoryOut": "{name}, saliente",
+    "transferCategoryIn": "{name}, entrante",
     "overallTotal": "Total general",
     "includeCurrentMonth": "Incluir mes actual",
     "includeCurrentYear": "Incluir año actual",
@@ -1980,10 +1980,10 @@
       "BUDGET_VARIANCE": "Variación del presupuesto"
     },
     "transferMeasure": {
-      "NONE": "None (income and expenses)",
-      "OUTGOING": "Outgoing transfers",
-      "INCOMING": "Incoming transfers",
-      "NET": "Net transfers"
+      "NONE": "Ninguna (ingresos y gastos)",
+      "OUTGOING": "Transferencias salientes",
+      "INCOMING": "Transferencias entrantes",
+      "NET": "Transferencias netas"
     },
     "categoryType": {
       "ALL": "Todas",

@@ -18,8 +18,8 @@
     "summaryExpense": "Categorie uscite",
     "summaryTopLevel": "Livello superiore",
     "eyebrow": "Piano delle categorie",
-    "filterTransfers": "Transfers ({count})",
-    "summaryTransfer": "Transfer Categories"
+    "filterTransfers": "Trasferimenti ({count})",
+    "summaryTransfer": "Categorie di trasferimento"
   },
   "empty": {
     "heading": "Nessuna categoria",
@@ -73,7 +73,7 @@
     "descriptionLabel": "Descrizione (facoltativa)",
     "submitCreate": "Crea categoria",
     "submitUpdate": "Aggiorna categoria",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "Trasferimento"
   },
   "list": {
     "emptyHeading": "Nessuna categoria trovata",
@@ -88,7 +88,7 @@
     "systemBadge": "(Sistema)",
     "inheritedColorTitle": "Ereditato dal genitore",
     "viewTransactionsTitle": "Visualizza transazioni in questa categoria",
-    "badgeTransfer": "Transfer"
+    "badgeTransfer": "Trasferimento"
   },
   "deleteDialog": {
     "title": "Elimina \"{name}\"",

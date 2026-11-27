@@ -18,8 +18,8 @@
     "summaryExpense": "Gider Kategorileri",
     "summaryTopLevel": "Üst Düzey",
     "eyebrow": "Kategori planı",
-    "filterTransfers": "Transfers ({count})",
-    "summaryTransfer": "Transfer Categories"
+    "filterTransfers": "Transferler ({count})",
+    "summaryTransfer": "Transfer kategorileri"
   },
   "empty": {
     "heading": "Henüz kategori yok",

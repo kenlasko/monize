@@ -9,7 +9,7 @@
 | `screens-and-dialogs.md` | adding a page, a dialog or a toolbar: which reference screen to copy and how its controls are arranged |
 | `forms-and-formatting.md` | adding an input, formatting a number, date or phone a person reads, or exporting CSV |
 | `tables-and-registers.md` | touching a table, a register, row density, a pager or a list toolbar |
-| `financial-figures.md` | rendering, deriving or totalling a money figure; scheduled occurrences, loans, portfolio ranges, charts |
+| `financial-figures.md` | a category's type (Income, Expense, Transfer); rendering, deriving or totalling a money figure; scheduled occurrences, loans, portfolio ranges, charts |
 | `pwa-push-share.md` | touching push notifications, the service worker, or the Web Share Target |
 | `shell-contract.md` | adding code that detects a native shell, changing the push enable controls, or building the Electron or Capacitor shell |
 | `testing.md` | writing or changing a test, a mock or a test helper |

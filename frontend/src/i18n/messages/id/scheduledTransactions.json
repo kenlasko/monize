@@ -270,7 +270,7 @@
     "toAccountPlaceholder": "Pilih akun tujuan...",
     "transferAmountLabel": "Jumlah Transfer",
     "transferCategoryLabel": "Kategori (opsional)",
-    "transferCategoryNote": "Opsional: kategorikan transfer ini (mis. kontribusi investasi berulang) agar muncul di rincian kategori bulanan. Ini tidak dihitung sebagai pemasukan atau pengeluaran.",
+    "transferCategoryNote": "Opsional: kategorikan transfer ini (mis. kontribusi investasi berulang). Kategori transfer mencantumkannya di bawah kategori tersebut dalam rincian kategori bulanan. Transfer tidak dihitung sebagai pemasukan atau pengeluaran.",
     "actionLabel": "Tindakan",
     "securityLabel": "Sekuritas",
     "securityPlaceholder": "Pilih sekuritas...",

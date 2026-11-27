@@ -368,6 +368,15 @@
         "vacationPay": "Wynagrodzenie za urlop"
       }
     },
-    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
+    "transfers": {
+      "name": "Przelewy",
+      "sub": {
+        "betweenOwnAccounts": "Między własnymi kontami",
+        "cashWithdrawals": "Wypłaty gotówki",
+        "creditCardPayments": "Płatności kartą kredytową",
+        "investmentContributions": "Wpłaty inwestycyjne",
+        "savingsContributions": "Wpłaty oszczędnościowe"
+      }
+    }
   }
 }

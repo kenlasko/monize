@@ -368,6 +368,15 @@
         "vacationPay": "İzin Ücreti"
       }
     },
-    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
+    "transfers": {
+      "name": "Transferler",
+      "sub": {
+        "betweenOwnAccounts": "Kendi hesaplarım arasında",
+        "cashWithdrawals": "Nakit çekimleri",
+        "creditCardPayments": "Kredi kartı ödemeleri",
+        "investmentContributions": "Yatırım katkıları",
+        "savingsContributions": "Birikim katkıları"
+      }
+    }
   }
 }

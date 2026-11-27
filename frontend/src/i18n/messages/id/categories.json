@@ -18,8 +18,8 @@
     "summaryExpense": "Kategori Pengeluaran",
     "summaryTopLevel": "Tingkat Atas",
     "eyebrow": "Bagan kategori",
-    "filterTransfers": "Transfers ({count})",
-    "summaryTransfer": "Transfer Categories"
+    "filterTransfers": "Transfer ({count})",
+    "summaryTransfer": "Kategori transfer"
   },
   "empty": {
     "heading": "Belum ada kategori",
