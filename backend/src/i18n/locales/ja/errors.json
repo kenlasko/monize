@@ -1139,6 +1139,8 @@
       "loanFees": "ローン手数料",
       "loanAccounts": "ローン口座",
       "customReports": "カスタムレポート",
+      "monteCarloScenarios": "モンテカルロシナリオ",
+      "investmentReports": "投資レポート",
       "subcategories": "サブカテゴリ",
       "holdings": "保有銘柄",
       "investmentTransactions": "投資取引",

@@ -1139,6 +1139,8 @@
       "loanFees": "대출 수수료",
       "loanAccounts": "대출 계좌",
       "customReports": "사용자 지정 보고서",
+      "monteCarloScenarios": "몬테카를로 시나리오",
+      "investmentReports": "투자 보고서",
       "subcategories": "하위 카테고리",
       "holdings": "보유 종목",
       "investmentTransactions": "투자 거래",

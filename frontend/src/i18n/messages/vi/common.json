@@ -305,6 +305,8 @@
       "loanFees": "{count, plural, other {# phí khoản vay}}",
       "loanAccounts": "{count, plural, other {# tài khoản vay}}",
       "customReports": "{count, plural, other {# báo cáo tùy chỉnh}}",
+      "monteCarloScenarios": "{count, plural, other {# kịch bản Monte Carlo}}",
+      "investmentReports": "{count, plural, other {# báo cáo đầu tư}}",
       "holdings": "{count, plural, other {# khoản nắm giữ}}",
       "investmentTransactions": "{count, plural, other {# giao dịch đầu tư}}",
       "gemStrategies": "{count, plural, other {# chiến lược GEM}}",

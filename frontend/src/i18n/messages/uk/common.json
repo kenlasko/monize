@@ -305,6 +305,8 @@
       "loanFees": "{count, plural, one {# комісія за кредит} few {# комісії за кредит} many {# комісій за кредит} other {# комісії за кредит}}",
       "loanAccounts": "{count, plural, one {# кредитний рахунок} few {# кредитні рахунки} many {# кредитних рахунків} other {# кредитного рахунку}}",
       "customReports": "{count, plural, one {# користувацький звіт} few {# користувацькі звіти} many {# користувацьких звітів} other {# користувацького звіту}}",
+      "monteCarloScenarios": "{count, plural, one {# сценарій Монте-Карло} few {# сценарії Монте-Карло} many {# сценаріїв Монте-Карло} other {# сценарію Монте-Карло}}",
+      "investmentReports": "{count, plural, one {# інвестиційний звіт} few {# інвестиційні звіти} many {# інвестиційних звітів} other {# інвестиційного звіту}}",
       "holdings": "{count, plural, one {# позиція} few {# позиції} many {# позицій} other {# позиції}}",
       "investmentTransactions": "{count, plural, one {# інвестиційна транзакція} few {# інвестиційні транзакції} many {# інвестиційних транзакцій} other {# інвестиційної транзакції}}",
       "gemStrategies": "{count, plural, one {# стратегія GEM} few {# стратегії GEM} many {# стратегій GEM} other {# стратегії GEM}}",

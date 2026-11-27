@@ -305,6 +305,8 @@
       "loanFees": "{count, plural, one {# tarifa de empréstimo} other {# tarifas de empréstimo}}",
       "loanAccounts": "{count, plural, one {# conta de empréstimo} other {# contas de empréstimo}}",
       "customReports": "{count, plural, one {# relatório personalizado} other {# relatórios personalizados}}",
+      "monteCarloScenarios": "{count, plural, one {# cenário de Monte Carlo} other {# cenários de Monte Carlo}}",
+      "investmentReports": "{count, plural, one {# relatório de investimento} other {# relatórios de investimento}}",
       "holdings": "{count, plural, one {# posição} other {# posições}}",
       "investmentTransactions": "{count, plural, one {# transação de investimento} other {# transações de investimento}}",
       "gemStrategies": "{count, plural, one {# estratégia GEM} other {# estratégias GEM}}",

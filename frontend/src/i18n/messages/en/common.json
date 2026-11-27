@@ -305,6 +305,8 @@
       "loanFees": "{count, plural, one {# loan fee} other {# loan fees}}",
       "loanAccounts": "{count, plural, one {# loan account} other {# loan accounts}}",
       "customReports": "{count, plural, one {# custom report} other {# custom reports}}",
+      "monteCarloScenarios": "{count, plural, one {# Monte Carlo scenario} other {# Monte Carlo scenarios}}",
+      "investmentReports": "{count, plural, one {# investment report} other {# investment reports}}",
       "holdings": "{count, plural, one {# holding} other {# holdings}}",
       "investmentTransactions": "{count, plural, one {# investment transaction} other {# investment transactions}}",
       "gemStrategies": "{count, plural, one {# GEM strategy} other {# GEM strategies}}",

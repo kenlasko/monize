@@ -305,6 +305,8 @@
       "loanFees": "{count, plural, other {#个贷款费用}}",
       "loanAccounts": "{count, plural, other {#个贷款账户}}",
       "customReports": "{count, plural, other {#个自定义报表}}",
+      "monteCarloScenarios": "{count, plural, other {#个蒙特卡洛情景}}",
+      "investmentReports": "{count, plural, other {#个投资报表}}",
       "holdings": "{count, plural, other {#个持仓}}",
       "investmentTransactions": "{count, plural, other {#个投资交易}}",
       "gemStrategies": "{count, plural, other {#个GEM 策略}}",

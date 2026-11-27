@@ -1139,6 +1139,8 @@
       "loanFees": "kredi ücreti",
       "loanAccounts": "kredi hesabı",
       "customReports": "özel rapor",
+      "monteCarloScenarios": "Monte Carlo senaryosu",
+      "investmentReports": "yatırım raporu",
       "subcategories": "alt kategori",
       "holdings": "pozisyon",
       "investmentTransactions": "yatırım işlemi",

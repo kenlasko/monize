@@ -1139,6 +1139,8 @@
       "loanFees": "opłaty kredytowe",
       "loanAccounts": "konta kredytowe",
       "customReports": "raporty niestandardowe",
+      "monteCarloScenarios": "scenariusze Monte Carlo",
+      "investmentReports": "raporty inwestycyjne",
       "subcategories": "podkategorie",
       "holdings": "pozycje",
       "investmentTransactions": "transakcje inwestycyjne",

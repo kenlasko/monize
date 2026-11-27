@@ -305,6 +305,8 @@
       "loanFees": "{count, plural, other {# biaya pinjaman}}",
       "loanAccounts": "{count, plural, other {# akun pinjaman}}",
       "customReports": "{count, plural, other {# laporan kustom}}",
+      "monteCarloScenarios": "{count, plural, other {# skenario Monte Carlo}}",
+      "investmentReports": "{count, plural, other {# laporan investasi}}",
       "holdings": "{count, plural, other {# kepemilikan}}",
       "investmentTransactions": "{count, plural, other {# transaksi investasi}}",
       "gemStrategies": "{count, plural, other {# strategi GEM}}",

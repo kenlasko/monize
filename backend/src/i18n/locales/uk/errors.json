@@ -1139,6 +1139,8 @@
       "loanFees": "комісії за кредит",
       "loanAccounts": "кредитні рахунки",
       "customReports": "користувацькі звіти",
+      "monteCarloScenarios": "сценарії Монте-Карло",
+      "investmentReports": "інвестиційні звіти",
       "subcategories": "підкатегорії",
       "holdings": "позиції",
       "investmentTransactions": "інвестиційні транзакції",

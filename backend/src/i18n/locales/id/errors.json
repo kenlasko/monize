@@ -1139,6 +1139,8 @@
       "loanFees": "biaya pinjaman",
       "loanAccounts": "akun pinjaman",
       "customReports": "laporan kustom",
+      "monteCarloScenarios": "skenario Monte Carlo",
+      "investmentReports": "laporan investasi",
       "subcategories": "subkategori",
       "holdings": "kepemilikan",
       "investmentTransactions": "transaksi investasi",

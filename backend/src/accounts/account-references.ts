@@ -18,7 +18,9 @@ export type AccountReferenceKind =
   | "gemStrategies"
   | "linkedAccounts"
   | "rules"
-  | "customReports";
+  | "customReports"
+  | "monteCarloScenarios"
+  | "investmentReports";
 
 /**
  * How deleting an account treats each column with a foreign key to
@@ -137,7 +139,7 @@ const LINKED_ACCOUNTS_SQL =
   "SELECT id FROM accounts WHERE user_id = $1 AND (source_account_id = $2 OR linked_loan_account_id = $2)";
 
 /**
- * Rules and custom reports keep an account id inside JSONB with no foreign
+ * Rules, custom reports and investment reports keep an account id inside JSONB with no foreign
  * key, so a delete leaves it dangling. A budget's `config.excludedAccountIds`
  * is not counted: a stale exclusion of a deleted account changes nothing.
  * shortcut: matches the id anywhere in the JSON text; fine for UUIDs.
@@ -152,6 +154,16 @@ const JSON_SQL: ReferenceCount[] = [
     kind: "customReports",
     sql: "SELECT count(*)::int AS count FROM custom_reports WHERE user_id = $1 AND filters::text LIKE $2",
     like: true,
+  },
+  {
+    kind: "investmentReports",
+    sql: "SELECT count(*)::int AS count FROM investment_reports WHERE user_id = $1 AND config::text LIKE $2",
+    like: true,
+  },
+  // A UUID[] column, so a real array match rather than LIKE.
+  {
+    kind: "monteCarloScenarios",
+    sql: "SELECT count(*)::int AS count FROM monte_carlo_scenarios WHERE user_id = $1 AND $2::uuid = ANY(account_ids)",
   },
 ];
 

@@ -79,6 +79,8 @@ describe("findAccountReferences", () => {
         "FROM gem_strategy_accounts": 1,
         "FROM transaction_rules": 2,
         "FROM custom_reports": 3,
+        "FROM investment_reports": 2,
+        "FROM monte_carlo_scenarios": 1,
         "FROM budgets": 4,
       },
       ["l1", "l2"],
@@ -97,10 +99,12 @@ describe("findAccountReferences", () => {
         { kind: "gemStrategies", count: 1 },
         { kind: "rules", count: 2 },
         { kind: "customReports", count: 3 },
+        { kind: "investmentReports", count: 2 },
+        { kind: "monteCarloScenarios", count: 1 },
         { kind: "linkedAccounts", count: 2, ids: ["l1", "l2"] },
       ]),
     );
-    expect(found).toHaveLength(11);
+    expect(found).toHaveLength(13);
   });
 
   it("counts only a nonzero position as a holding", async () => {
@@ -120,6 +124,15 @@ describe("findAccountReferences", () => {
       .filter(([sql]) => sql.includes("COUNT(DISTINCT refs.schedule_id)"))
       .map(([, params]) => (params as unknown[])[2]);
     expect(flags).toEqual([false, true]);
+  });
+
+  it("matches a scenario's account_ids as an array, not a pattern", async () => {
+    const m = makeManager();
+    await run(m);
+    expect(m.query).toHaveBeenCalledWith(
+      expect.stringContaining("$2::uuid = ANY(account_ids)"),
+      ["u", "a"],
+    );
   });
 
   it("matches the id inside JSON as a LIKE pattern", async () => {

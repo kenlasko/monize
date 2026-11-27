@@ -54,6 +54,10 @@ export function accountInUseHref(accountId: string, entry: RecordInUseEntry): st
       return '/reports';
     case 'gemStrategies':
       return '/reports/gem-strategy';
+    case 'monteCarloScenarios':
+      return '/reports/monte-carlo-simulation';
+    case 'investmentReports':
+      return '/reports/investment';
     default:
       return undefined;
   }
