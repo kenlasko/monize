@@ -545,6 +545,8 @@
     },
     "splitLabel": "[XX-Split {number}-XX]",
     "accountForSplit": "[XX-Account for split {number}-XX]",
+    "transferCategoryForSplit": "[XX-Category for split {number}-XX]",
+    "transferCategoryPlaceholder": "[XX-Category (optional)-XX]",
     "columns": {
       "type": "[XX-Type-XX]",
       "categoryAccount": "[XX-Category / Account-XX]",

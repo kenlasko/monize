@@ -124,6 +124,28 @@ export function getCategorySelectOptionsFor(
   ];
 }
 
+/**
+ * The options a category picker on a row of `holder` offers, in tree order
+ * with "Parent: Child" labels (INV-CATEGORY-001): on a transfer every type,
+ * Transfer categories first; elsewhere Income and Expense only. `toOption`
+ * adds what a picker shows beside the label (an icon).
+ */
+export function buildCategoryPickerOptions<T>(
+  categories: Category[],
+  holder: CategoryHolder,
+  toOption: (category: Category, label: string) => T,
+): T[] {
+  const byId = new Map(categories.map((c) => [c.id, c]));
+  const group = (list: Category[]) =>
+    buildCategoryTree(list).map(({ category }) => {
+      const parent = category.parentId ? byId.get(category.parentId) : undefined;
+      return toOption(category, parent ? `${parent.name}: ${category.name}` : category.name);
+    });
+  const fitting = categoriesForHolder(categories, holder);
+  if (holder === 'category') return group(fitting);
+  return [...group(fitting.filter(isTransferCategory)), ...group(fitting.filter((c) => !isTransferCategory(c)))];
+}
+
 /** "Parent: Child" for a category by id, read from the whole list. */
 function categoryPathLabel(categories: Category[], id: string): string | undefined {
   const byId = new Map(categories.map((c) => [c.id, c]));

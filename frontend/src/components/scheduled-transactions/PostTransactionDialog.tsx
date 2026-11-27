@@ -36,7 +36,8 @@ import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { investmentsApi } from '@/lib/investments';
 import { totalFromQuantity, quantityFromTotal, priceFromTotal, roundPrice, usableClose } from '@/lib/investmentFold';
 import { getLocalDateString } from '@/lib/utils';
-import { buildCategoryTree } from '@/lib/categoryUtils';
+import { buildCategoryPickerOptions } from '@/lib/categoryUtils';
+import type { CategoryHolder } from '@/lib/category-type';
 import {
   roundMoney,
   sumMoney,
@@ -103,7 +104,11 @@ interface PostTransactionDialogProps {
    * created category. The page owns the category list, so it owns the creation.
    * When omitted the pickers only select from what already exists.
    */
-  onCreateCategory?: (name: string) => Promise<Category | null | undefined>;
+  /** `holder` "transfer" creates a Transfer category (INV-CATEGORY-001). */
+  onCreateCategory?: (
+    name: string,
+    holder?: CategoryHolder,
+  ) => Promise<Category | null | undefined>;
 }
 
 export function PostTransactionDialog({
@@ -870,18 +875,22 @@ export function PostTransactionDialog({
     }
   };
 
-  const categoryOptions = useMemo(() => {
-    return buildCategoryTree(categories).map(({ category }) => {
-      const parentCategory = category.parentId
-        ? categories.find(c => c.id === category.parentId)
-        : null;
-      return {
-        value: category.id,
-        label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
-        icon: categoryPickerIcon(category),
-      };
-    });
-  }, [categories]);
+  // The occurrence's category fits its schedule's kind (INV-CATEGORY-001): a
+  // scheduled transfer every type, Transfer categories first; otherwise Income
+  // and Expense only. A split line's picker is the split editor's own.
+  const categoryOptions = useMemo(
+    () =>
+      buildCategoryPickerOptions(
+        categories,
+        scheduledTransaction.isTransfer ? 'transfer' : 'category',
+        (category, label) => ({
+          value: category.id,
+          label,
+          icon: categoryPickerIcon(category),
+        }),
+      ),
+    [categories, scheduledTransaction.isTransfer],
+  );
 
   const handlePost = async () => {
     // An unknown estimate opened the field at zero; posting that unchanged
@@ -1445,7 +1454,10 @@ export function PostTransactionDialog({
                     onCreateNew={
                       onCreateCategory
                         ? async (name) => {
-                            const created = await onCreateCategory(name);
+                            const created = await onCreateCategory(
+                            name,
+                            scheduledTransaction.isTransfer ? 'transfer' : 'category',
+                          );
                             if (created) setCategoryId(created.id);
                           }
                         : undefined

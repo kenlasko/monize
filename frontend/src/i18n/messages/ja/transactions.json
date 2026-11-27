@@ -545,6 +545,8 @@
     },
     "splitLabel": "分割{number}",
     "accountForSplit": "分割 {number} の口座",
+    "transferCategoryForSplit": "Category for split {number}",
+    "transferCategoryPlaceholder": "Category (optional)",
     "columns": {
       "type": "種類",
       "categoryAccount": "カテゴリ / 口座",

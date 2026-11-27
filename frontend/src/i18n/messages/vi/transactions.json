@@ -545,6 +545,8 @@
     },
     "splitLabel": "Phần {number}",
     "accountForSplit": "Tài khoản cho phần chia {number}",
+    "transferCategoryForSplit": "Category for split {number}",
+    "transferCategoryPlaceholder": "Category (optional)",
     "columns": {
       "type": "Loại",
       "categoryAccount": "Danh mục / Tài khoản",

@@ -545,6 +545,8 @@
     },
     "splitLabel": "Bölüm {number}",
     "accountForSplit": "Bölüm {number} hesabı",
+    "transferCategoryForSplit": "Category for split {number}",
+    "transferCategoryPlaceholder": "Category (optional)",
     "columns": {
       "type": "Tür",
       "categoryAccount": "Kategori / Hesap",

@@ -545,6 +545,8 @@
     },
     "splitLabel": "拆分项 {number}",
     "accountForSplit": "拆分 {number} 的账户",
+    "transferCategoryForSplit": "Category for split {number}",
+    "transferCategoryPlaceholder": "Category (optional)",
     "columns": {
       "type": "类型",
       "categoryAccount": "分类/账户",

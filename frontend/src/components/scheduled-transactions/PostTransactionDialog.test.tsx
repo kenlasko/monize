@@ -84,6 +84,19 @@ vi.mock('@/lib/forecast', () => ({
 }));
 
 vi.mock('@/lib/categoryUtils', () => ({
+  // The holder-aware builders, as the real ones shape them: "Parent: Child"
+  // labels, Transfer categories only where a transfer holds the category.
+  buildCategoryPickerOptions: (cats: any[], holder: string, toOption: (c: any, label: string) => unknown) =>
+    (cats || [])
+      .filter((c: any) => holder === 'transfer' || c.categoryType !== 'transfer')
+      .map((c: any) => {
+        const p = (cats || []).find((x: any) => x.id === c.parentId);
+        return toOption(c, p ? `${p.name}: ${c.name}` : c.name);
+      }),
+  getCategorySelectOptionsFor: (cats: any[], holder: string) =>
+    (cats || [])
+      .filter((c: any) => holder === 'transfer' || c.categoryType !== 'transfer')
+      .map((c: any) => ({ value: c.id, label: c.name })),
   buildCategoryTree: (cats: any[]) => (cats || []).map((c: any) => ({ category: c })),
 }));
 
@@ -396,7 +409,8 @@ describe('PostTransactionDialog', () => {
         fireEvent.click(screen.getByTestId('combobox-category-create'));
       });
 
-      expect(onCreateCategory).toHaveBeenCalledWith('vet bills');
+      // A category typed on an ordinary row or a category line is an Income or Expense one.
+    expect(onCreateCategory).toHaveBeenCalledWith('vet bills', 'category');
       expect(screen.getByTestId('combobox-category')).toHaveValue('c-new');
     });
 

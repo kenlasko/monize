@@ -545,6 +545,8 @@
     },
     "splitLabel": "分割 {number}",
     "accountForSplit": "分割 {number} 的帳戶",
+    "transferCategoryForSplit": "Category for split {number}",
+    "transferCategoryPlaceholder": "Category (optional)",
     "columns": {
       "type": "類型",
       "categoryAccount": "類別 / 科目",

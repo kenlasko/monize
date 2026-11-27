@@ -29,6 +29,7 @@ import { categoriesApi } from '@/lib/categories';
 import { investmentsApi } from '@/lib/investments';
 import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
 import { buildCategoryTree } from '@/lib/categoryUtils';
+import { categoriesForHolder } from '@/lib/category-type';
 import { getErrorMessage } from '@/lib/errors';
 import { Account, AccountType } from '@/types/account';
 import { Category } from '@/types/category';
@@ -1288,9 +1289,13 @@ export function useImportWizard() {
     }
   };
 
+  // A file's category lands on ordinary rows and split category lines (a
+  // transfer names its account instead), so a mapping offers Income and
+  // Expense only; a Transfer category would be left off every row it reached
+  // (INV-CATEGORY-001).
   const categoryOptions = useMemo(() => {
     const options = [{ value: '', label: 'Skip (no category)' }];
-    const tree = buildCategoryTree(categories);
+    const tree = buildCategoryTree(categoriesForHolder(categories, 'category'));
     tree.forEach(({ category }) => {
       options.push({ value: category.id, label: getCategoryPath(category, categories) });
     });

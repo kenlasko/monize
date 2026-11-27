@@ -1,6 +1,6 @@
 'use client';
 
-import { signByCategoryType } from '@/lib/category-type';
+import { categoryFitsHolder, signByCategoryType, type CategoryHolder } from '@/lib/category-type';
 import { SharedLinkedTransactionNotice } from "@/components/shared-expenses/SharedLinkedTransactionNotice";
 import { isSharedPaymentAccount } from "@/lib/shared-bank-eligibility";
 
@@ -67,7 +67,7 @@ import { ContactLookupDialog } from '@/components/payees/ContactLookupDialog';
 import { useContactLookupAvailable } from '@/hooks/useContactLookupAvailable';
 import { usePayeeContactLookup } from '@/hooks/usePayeeContactLookup';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { buildCategoryTree, signAmountByCategory } from '@/lib/categoryUtils';
+import { buildCategoryPickerOptions, signAmountByCategory } from '@/lib/categoryUtils';
 import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -717,23 +717,27 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
     [selectedIsJoint, jointRefData, payees],
   );
 
-  // Memoize category tree to avoid rebuilding on every render
-  const categoryTree = useMemo(
-    () => buildCategoryTree(effectiveCategories),
+  // The category pickers, by what holds the category (INV-CATEGORY-001): an
+  // ordinary row offers Income and Expense only; a transfer every type,
+  // Transfer categories first.
+  const categoryOptions = useMemo(
+    () =>
+      buildCategoryPickerOptions(effectiveCategories, 'category', (category, label) => ({
+        value: category.id,
+        label,
+        icon: categoryPickerIcon(category),
+      })),
     [effectiveCategories],
   );
-
-  // Memoize category options for combobox
-  const categoryOptions = useMemo(() => categoryTree.map(({ category }) => {
-    const parentCategory = category.parentId
-      ? effectiveCategories.find(c => c.id === category.parentId)
-      : null;
-    return {
-      value: category.id,
-      label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
-      icon: categoryPickerIcon(category),
-    };
-  }), [categoryTree, effectiveCategories]);
+  const transferCategoryOptions = useMemo(
+    () =>
+      buildCategoryPickerOptions(effectiveCategories, 'transfer', (category, label) => ({
+        value: category.id,
+        label,
+        icon: categoryPickerIcon(category),
+      })),
+    [effectiveCategories],
+  );
 
   // Memoize tag options for multiselect
   // Tags are per-user, so the picker (and its usage lookup) is off on a joint account.
@@ -804,6 +808,20 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       setIsSplitMode(false);
       setSplits([]);
       setTransferToAccountId('');
+      clearTransferCategory();
+    }
+  };
+
+  // Leaving a transfer for an ordinary row: a Transfer category goes only on a
+  // transfer, so one the form holds is cleared; an Income or Expense one stays
+  // (INV-CATEGORY-001, the conversion's rule).
+  const clearTransferCategory = () => {
+    const held = selectedCategoryId
+      ? effectiveCategories.find((c) => c.id === selectedCategoryId)
+      : undefined;
+    if (held && !categoryFitsHolder(held, 'category')) {
+      setSelectedCategoryId('');
+      setValue('categoryId', '', { shouldDirty: true, shouldValidate: true });
     }
   };
 
@@ -1346,18 +1364,22 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   // the CALLER's, which put an id the owner does not own on the form. Parents
   // are matched against whichever list the pickers are showing, so a
   // `Parent: Child` typed on a joint account reuses the owner's parent.
-  const createCategoryFromTypedName = async (name: string): Promise<Category | null> => {
+  const createCategoryFromTypedName = async (
+    name: string,
+    holder: CategoryHolder = 'category',
+  ): Promise<Category | null> => {
     // The request's own account, kept beside its response: which ledger the
     // create lands on is decided here, and nothing later may read it off a
     // selection that has since moved.
     const originAccountId = watchedAccountId;
     const jointAccountId = selectedIsJoint ? originAccountId : undefined;
     try {
-      const result = await createCategoryFromInput(
-        name,
-        effectiveCategories,
-        jointAccountId ? { jointAccountId } : {},
-      );
+      // Typed on a transfer, the new category is a Transfer one; elsewhere
+      // the server's Income or Expense default (INV-CATEGORY-001).
+      const result = await createCategoryFromInput(name, effectiveCategories, {
+        ...(jointAccountId ? { jointAccountId } : {}),
+        ...(holder === 'transfer' ? { type: 'transfer' as const } : {}),
+      });
       if (!result) return null;
       if (jointAccountId) {
         setJointRef(prev =>
@@ -1424,15 +1446,18 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   // Undefined when the capability is absent, for the reason above -- which is
   // what takes "+ Create" out of the Category field and the transfer form's,
   // exactly as it does out of the split lines.
-  const handleCategoryCreate = jointSafeCategoryCreator
-    ? async (name: string) => {
-        const newCategory = await jointSafeCategoryCreator(name);
-        if (!newCategory) return;
-        setSelectedCategoryId(newCategory.id);
-        setValue('categoryId', newCategory.id, { shouldDirty: true, shouldValidate: true });
-        categoryWasAutoSetRef.current = false;
-      }
-    : undefined;
+  const categoryCreateHandler = (holder: CategoryHolder) =>
+    jointSafeCategoryCreator
+      ? async (name: string) => {
+          const newCategory = await jointSafeCategoryCreator(name, holder);
+          if (!newCategory) return;
+          setSelectedCategoryId(newCategory.id);
+          setValue('categoryId', newCategory.id, { shouldDirty: true, shouldValidate: true });
+          categoryWasAutoSetRef.current = false;
+        }
+      : undefined;
+  const handleCategoryCreate = categoryCreateHandler('category');
+  const handleTransferCategoryCreate = categoryCreateHandler('transfer');
 
   // Created At override (only when editing and preference is enabled)
   const userTimezone = resolveTimezone(timezonePref);
@@ -2100,10 +2125,10 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
           crossCurrencyInfo={crossCurrencyInfo}
           payees={effectivePayees}
           payeeAliasMap={payeeAliasMap}
-          categoryOptions={categoryOptions}
+          categoryOptions={transferCategoryOptions}
           selectedCategoryId={selectedCategoryId}
           handleCategoryChange={handleCategoryChange}
-          handleCategoryCreate={handleCategoryCreate}
+          handleCategoryCreate={handleTransferCategoryCreate}
           transaction={transaction}
           createdAtSlot={createdAtSlot}
         />

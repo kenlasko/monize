@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildCategoryTree, getCategorySelectOptions, getCategorySelectOptionsFor, buildCategoryColorMap, buildCategoryLabelMap, buildDescendantIdSet, rollupToDirectChildren, buildCategoryFilterOptions, canonicalizeCategoryFilter, resolveSelectedCategories, SpecialCategoryFilterLabels, signAmountByCategory } from './categoryUtils';
+import { buildCategoryTree, buildCategoryPickerOptions, getCategorySelectOptions, getCategorySelectOptionsFor, buildCategoryColorMap, buildCategoryLabelMap, buildDescendantIdSet, rollupToDirectChildren, buildCategoryFilterOptions, canonicalizeCategoryFilter, resolveSelectedCategories, SpecialCategoryFilterLabels, signAmountByCategory } from './categoryUtils';
 import { Category } from '@/types/category';
 
 function makeCategory(overrides: Partial<Category> & { id: string; name: string }): Category {
@@ -387,5 +387,21 @@ describe('getCategorySelectOptionsFor (INV-CATEGORY-001)', () => {
     expect(
       getCategorySelectOptionsFor(list, 'category', { includeEmpty: true, emptyLabel: 'None' }).map((o) => o.value),
     ).toEqual(['', 'cat-2', 'cat-1']);
+  });
+});
+
+describe('buildCategoryPickerOptions (INV-CATEGORY-001)', () => {
+  const transfers = makeCategory({ id: 't', name: 'Transfers', categoryType: 'transfer' });
+  const brokerage = makeCategory({ id: 't2', name: 'Brokerage', parentId: 't', categoryType: 'transfer' });
+  const list = [groceries, transfers, brokerage, dining];
+  const labels = (holder: 'transfer' | 'category') =>
+    buildCategoryPickerOptions(list, holder, (_c, label) => label);
+
+  it('lists a transfer every type, Transfer categories first', () => {
+    expect(labels('transfer')).toEqual(['Transfers', 'Transfers: Brokerage', 'Dining', 'Groceries']);
+  });
+
+  it('lists a category row Income and Expense only', () => {
+    expect(labels('category')).toEqual(['Dining', 'Groceries']);
   });
 });

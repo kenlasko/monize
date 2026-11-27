@@ -117,6 +117,48 @@ describe('createCategoryFromInput', () => {
     });
   });
 
+  it('puts a Transfer child under a Transfer parent, creating one beside an Expense parent of that name (INV-CATEGORY-003)', async () => {
+    vi.mocked(apiClient.post)
+      .mockResolvedValueOnce({ data: cat({ id: 'p2', name: 'Savings', categoryType: 'transfer' }) })
+      .mockResolvedValueOnce({ data: cat({ id: 'c', name: 'Pension', parentId: 'p2', categoryType: 'transfer' }) });
+
+    const result = await createCategoryFromInput(
+      'savings: pension',
+      [cat({ id: 'p1', name: 'Savings', categoryType: 'expense' })],
+      { type: 'transfer' },
+    );
+
+    expect(apiClient.post).toHaveBeenNthCalledWith(1, '/categories', { name: 'Savings', type: 'transfer' });
+    expect(apiClient.post).toHaveBeenNthCalledWith(2, '/categories', {
+      name: 'Pension',
+      parentId: 'p2',
+      type: 'transfer',
+    });
+    expect(result?.created.map((c) => c.id)).toEqual(['p2', 'c']);
+  });
+
+  it('reuses an existing Transfer parent for a Transfer child', async () => {
+    vi.mocked(apiClient.post).mockResolvedValueOnce({
+      data: cat({ id: 'c', name: 'Pension', parentId: 'p2', categoryType: 'transfer' }),
+    });
+
+    await createCategoryFromInput(
+      'Savings: Pension',
+      [
+        cat({ id: 'p1', name: 'Savings', categoryType: 'expense' }),
+        cat({ id: 'p2', name: 'Savings', categoryType: 'transfer' }),
+      ],
+      { type: 'transfer' },
+    );
+
+    expect(apiClient.post).toHaveBeenCalledTimes(1);
+    expect(apiClient.post).toHaveBeenCalledWith('/categories', {
+      name: 'Pension',
+      parentId: 'p2',
+      type: 'transfer',
+    });
+  });
+
   it('propagates an API failure so the caller can report it', async () => {
     vi.mocked(apiClient.post).mockRejectedValue(new Error('boom'));
     await expect(createCategoryFromInput('Boat', [])).rejects.toThrow('boom');

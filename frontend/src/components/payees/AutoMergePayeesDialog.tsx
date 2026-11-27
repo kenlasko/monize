@@ -11,7 +11,7 @@ import { Combobox } from '@/components/ui/Combobox';
 import { payeesApi } from '@/lib/payees';
 import { AutoMergeGroup } from '@/types/payee';
 import { Category } from '@/types/category';
-import { buildCategoryTree, buildCategoryLabelMap } from '@/lib/categoryUtils';
+import { buildCategoryLabelMap, buildCategoryPickerOptions } from '@/lib/categoryUtils';
 import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
@@ -101,18 +101,14 @@ export function AutoMergePayeesDialog({
 
   // Hierarchical "Parent: Child" options for the per-group default category,
   // mirroring the payee edit form so the picker behaves identically.
+  // A payee default: Income or Expense only (INV-CATEGORY-001).
   const categoryOptions = useMemo(
     () =>
-      buildCategoryTree(categories).map(({ category }) => {
-        const parent = category.parentId
-          ? categories.find((c) => c.id === category.parentId)
-          : null;
-        return {
-          value: category.id,
-          label: parent ? `${parent.name}: ${category.name}` : category.name,
-          icon: categoryPickerIcon(category),
-        };
-      }),
+      buildCategoryPickerOptions(categories, 'category', (category, label) => ({
+        value: category.id,
+        label,
+        icon: categoryPickerIcon(category),
+      })),
     [categories],
   );
   const categoryLabelMap = useMemo(

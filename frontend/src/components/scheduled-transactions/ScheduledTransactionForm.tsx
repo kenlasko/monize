@@ -1,6 +1,6 @@
 'use client';
 
-import { signByCategoryType } from '@/lib/category-type';
+import { categoryFitsHolder, signByCategoryType, type CategoryHolder } from '@/lib/category-type';
 import { FALLBACK_DEFAULT_CURRENCY } from '@/lib/default-currency';
 import { useState, useEffect, useMemo, useRef, MutableRefObject } from 'react';
 import { useForm, useWatch, Controller, Resolver } from 'react-hook-form';
@@ -50,7 +50,7 @@ import { Category } from '@/types/category';
 import { Account } from '@/types/account';
 import { Tag } from '@/types/tag';
 import { useTagPickerOptions } from '@/hooks/useTagPickerOptions';
-import { buildCategoryTree } from '@/lib/categoryUtils';
+import { buildCategoryPickerOptions } from '@/lib/categoryUtils';
 import {
   roundToCents,
   roundMoney,
@@ -668,17 +668,22 @@ export function ScheduledTransactionForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isForeign, entryCurrency, accountCurrency]);
 
-  // Memoize category options
-  const categoryOptions = useMemo(() => buildCategoryTree(categories).map(({ category }) => {
-    const parentCategory = category.parentId
-      ? categories.find(c => c.id === category.parentId)
-      : null;
-    return {
-      value: category.id,
-      label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
-      icon: categoryPickerIcon(category),
-    };
-  }), [categories]);
+  // The pickers by what holds the category (INV-CATEGORY-001): a scheduled
+  // transaction offers Income and Expense only; a scheduled transfer every
+  // type, Transfer categories first.
+  const toPickerOption = (category: Category, label: string) => ({
+    value: category.id,
+    label,
+    icon: categoryPickerIcon(category),
+  });
+  const categoryOptions = useMemo(
+    () => buildCategoryPickerOptions(categories, 'category', toPickerOption),
+    [categories],
+  );
+  const transferCategoryOptions = useMemo(
+    () => buildCategoryPickerOptions(categories, 'transfer', toPickerOption),
+    [categories],
+  );
 
   // Memoize account options (exclude closed, asset, brokerage)
   const accountOptions = useMemo(() =>
@@ -1125,6 +1130,16 @@ export function ScheduledTransactionForm({
       // 'transaction'
       setSplits([]);
       setTransferToAccountId('');
+      // A Transfer category goes only on a transfer: leaving one for an
+      // ordinary schedule clears it, an Income or Expense one stays
+      // (INV-CATEGORY-001; the server refuses the save otherwise).
+      const held = selectedCategoryId
+        ? categories.find((c) => c.id === selectedCategoryId)
+        : undefined;
+      if (held && !categoryFitsHolder(held, 'category')) {
+        setSelectedCategoryId('');
+        setValue('categoryId', '', { shouldDirty: true });
+      }
     }
   };
 
@@ -1235,9 +1250,18 @@ export function ScheduledTransactionForm({
   // -- the Category field, and each split line's own picker. Returns the
   // created category so a split line can assign it to the row that asked; null
   // means nothing was created (blank input, or the request failed).
-  const createCategoryFromTypedName = async (name: string): Promise<Category | null> => {
+  const createCategoryFromTypedName = async (
+    name: string,
+    holder: CategoryHolder = 'category',
+  ): Promise<Category | null> => {
     try {
-      const result = await createCategoryFromInput(name, categories);
+      // Typed on a transfer (the schedule's or a split's transfer line), the
+      // new category is a Transfer one (INV-CATEGORY-001).
+      const result = await createCategoryFromInput(
+        name,
+        categories,
+        holder === 'transfer' ? { type: 'transfer' } : {},
+      );
       if (!result) return null;
       setCategories((prev) => [...prev, ...result.created]);
       toast.success(t('form.toasts.categoryCreated', { name: result.displayName }));
@@ -1249,12 +1273,14 @@ export function ScheduledTransactionForm({
     }
   };
 
-  const handleCategoryCreate = async (name: string) => {
-    const newCategory = await createCategoryFromTypedName(name);
+  const categoryCreateHandler = (holder: CategoryHolder) => async (name: string) => {
+    const newCategory = await createCategoryFromTypedName(name, holder);
     if (!newCategory) return;
     setSelectedCategoryId(newCategory.id);
     setValue('categoryId', newCategory.id, { shouldDirty: true, shouldValidate: true });
   };
+  const handleCategoryCreate = categoryCreateHandler('category');
+  const handleTransferCategoryCreate = categoryCreateHandler('transfer');
 
   const handleTransactionAmountChange = (amount: number) => {
     const rounded = toAccountPlaces(amount);
@@ -2249,11 +2275,11 @@ export function ScheduledTransactionForm({
               <Combobox
                 label={t('form.transferCategoryLabel')}
                 placeholder={t('form.categoryPlaceholder')}
-                options={categoryOptions}
+                options={transferCategoryOptions}
                 value={selectedCategoryId}
                 initialDisplayValue={scheduledTransaction?.category?.name || ''}
                 onChange={handleCategoryChange}
-                onCreateNew={handleCategoryCreate}
+                onCreateNew={handleTransferCategoryCreate}
                 allowCustomValue={true}
                 valueIsId
                 error={errors.categoryId?.message}

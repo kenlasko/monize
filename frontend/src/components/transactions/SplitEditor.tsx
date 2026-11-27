@@ -15,7 +15,8 @@ import { Account } from '@/types/account';
 import { Tag, TagUsageMap } from '@/types/tag';
 import { InvestmentSplitDetails } from '@/types/transaction';
 import type { SplitRow } from './split-rows';
-import { buildCategoryTree } from '@/lib/categoryUtils';
+import { buildCategoryPickerOptions } from '@/lib/categoryUtils';
+import { categoryFitsHolder, type CategoryHolder } from '@/lib/category-type';
 import { FALLBACK_DEFAULT_CURRENCY } from '@/lib/default-currency';
 import {
   roundMoney,
@@ -89,7 +90,14 @@ interface SplitEditorProps {
    * non-split transaction form's category field; when omitted, typed text that
    * matches nothing is discarded, which is what every split line used to do.
    */
-  onCreateCategory?: (name: string) => Promise<Category | null | undefined>;
+  /**
+   * Create a category from typed text: a Transfer category when typed on a
+   * transfer line (`holder` "transfer"), otherwise an Income or Expense one.
+   */
+  onCreateCategory?: (
+    name: string,
+    holder?: CategoryHolder,
+  ) => Promise<Category | null | undefined>;
   /**
    * The parent transaction's date (`YYYY-MM-DD`). An investment line prefills its
    * FX rate from the rate for this day (INV-FX-001), never the latest.
@@ -179,17 +187,22 @@ export function SplitEditor({
   // Always show Type column since a transaction will always have an account
   const supportsTransfers = true;
 
-  // Memoize category options to avoid rebuilding on every render
-  const categoryOptions = useMemo(() => buildCategoryTree(categories).map(({ category }) => {
-    const parentCategory = category.parentId
-      ? categories.find(c => c.id === category.parentId)
-      : null;
-    return {
-      value: category.id,
-      label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
-      icon: categoryPickerIcon(category),
-    };
-  }), [categories]);
+  // The pickers by what holds the category (INV-CATEGORY-001): a category
+  // line offers Income and Expense only; a transfer line every type, Transfer
+  // categories first.
+  const toPickerOption = (category: Category, label: string) => ({
+    value: category.id,
+    label,
+    icon: categoryPickerIcon(category),
+  });
+  const categoryOptions = useMemo(
+    () => buildCategoryPickerOptions(categories, 'category', toPickerOption),
+    [categories],
+  );
+  const transferCategoryOptions = useMemo(
+    () => buildCategoryPickerOptions(categories, 'transfer', toPickerOption),
+    [categories],
+  );
 
   // Memoize tag options for multiselect
   const tagOptions = useMemo(() => buildTagOptions(tags, tagUsage), [tags, tagUsage]);
@@ -298,18 +311,24 @@ export function SplitEditor({
     // If changing split type, clear the other-kind fields
     if (field === 'splitType') {
       if (value === 'category') {
+        // A category line takes no Transfer category: one the transfer line
+        // held is cleared, an Income or Expense one stays.
+        const held = newSplits[index].categoryId
+          ? findCategory(newSplits[index].categoryId!)
+          : undefined;
         newSplits[index] = {
           ...newSplits[index],
           splitType: 'category',
+          ...(held && !categoryFitsHolder(held, 'category') ? { categoryId: undefined } : {}),
           transferAccountId: undefined,
           transferTargetAmount: undefined,
           investment: undefined,
         };
       } else if (value === 'transfer') {
+        // A transfer line takes a category of any type, so the line keeps it.
         newSplits[index] = {
           ...newSplits[index],
           splitType: 'transfer',
-          categoryId: undefined,
           transferTargetAmount: undefined,
           investment: undefined,
         };
@@ -367,7 +386,9 @@ export function SplitEditor({
     }
 
     // If changing category, adjust the amount sign based on income/expense
-    if (field === 'categoryId' && value) {
+    // A transfer line's sign is its direction: its category, of any type,
+    // never re-signs it, as a transfer's category never re-signs the transfer.
+    if (field === 'categoryId' && value && newSplits[index].splitType !== 'transfer') {
       const category = findCategory(value);
       // A category with automatic sign turned off keeps whatever sign was typed.
       if (category && category.effectiveAutoSign !== false) {
@@ -436,9 +457,13 @@ export function SplitEditor({
   // Create a category from the text typed into a split line and assign it to
   // the row that asked. The row is addressed by its id rather than its index
   // for the same reason.
-  const handleCategoryCreate = async (splitId: string, name: string) => {
+  const handleCategoryCreate = async (
+    splitId: string,
+    name: string,
+    holder: CategoryHolder = 'category',
+  ) => {
     if (!onCreateCategory) return;
-    const category = await onCreateCategory(name);
+    const category = await onCreateCategory(name, holder);
     if (!category) return;
     createdCategoriesRef.current = [...createdCategoriesRef.current, category];
     const { localSplits: current, handleSplitChange: applyChange } = latestRef.current;
@@ -448,6 +473,29 @@ export function SplitEditor({
     if (index === -1) return;
     applyChange(index, 'categoryId', category.id);
   };
+
+  // A transfer line's optional category, of any type, which the row it links
+  // in the other account holds too (INV-CATEGORY-002).
+  const renderTransferCategory = (
+    split: SplitRow,
+    index: number,
+    currentCategory: Category | null | undefined,
+  ) => (
+    <Combobox
+      aria-label={t('splitEditor.transferCategoryForSplit', { number: index + 1 })}
+      placeholder={t('splitEditor.transferCategoryPlaceholder')}
+      options={transferCategoryOptions}
+      value={split.categoryId || ''}
+      initialDisplayValue={currentCategory?.name || ''}
+      onChange={(categoryId) => handleSplitChange(index, 'categoryId', categoryId || undefined)}
+      onCreateNew={
+        onCreateCategory ? (name) => handleCategoryCreate(split.id, name, 'transfer') : undefined
+      }
+      allowCustomValue={!!onCreateCategory}
+      valueIsId
+      disabled={disabled}
+    />
+  );
 
   const addSplit = () => {
     const newSplit: SplitRow = {
@@ -737,19 +785,22 @@ export function SplitEditor({
                     disabled={disabled}
                   />
                 ) : (
-                  <AccountSelect
-                    aria-label={t('splitEditor.accountForSplit', { number: index + 1 })}
-                    options={[
-                      { value: '', label: t('splitEditor.selectAccount') },
-                      ...accountOptions,
-                    ]}
-                    value={split.transferAccountId || ''}
-                    onChange={(e) =>
-                      handleSplitChange(index, 'transferAccountId', e.target.value || undefined)
-                    }
-                    disabled={disabled}
-                    className="w-full"
-                  />
+                  <>
+                    <AccountSelect
+                      aria-label={t('splitEditor.accountForSplit', { number: index + 1 })}
+                      options={[
+                        { value: '', label: t('splitEditor.selectAccount') },
+                        ...accountOptions,
+                      ]}
+                      value={split.transferAccountId || ''}
+                      onChange={(e) =>
+                        handleSplitChange(index, 'transferAccountId', e.target.value || undefined)
+                      }
+                      disabled={disabled}
+                      className="w-full"
+                    />
+                    {renderTransferCategory(split, index, currentCategory)}
+                  </>
                 )}
                 <div className="grid grid-cols-2 gap-2">
                   {renderAmountFields(split, index)}
@@ -908,19 +959,22 @@ export function SplitEditor({
                       disabled={disabled}
                     />
                   ) : (
-                    <AccountSelect
-                      aria-label={t('splitEditor.accountForSplit', { number: index + 1 })}
-                      options={[
-                        { value: '', label: t('splitEditor.selectAccount') },
-                        ...accountOptions,
-                      ]}
-                      value={split.transferAccountId || ''}
-                      onChange={(e) =>
-                        handleSplitChange(index, 'transferAccountId', e.target.value || undefined)
-                      }
-                      disabled={disabled}
-                      className="w-full"
-                    />
+                    <div className="space-y-1">
+                      <AccountSelect
+                        aria-label={t('splitEditor.accountForSplit', { number: index + 1 })}
+                        options={[
+                          { value: '', label: t('splitEditor.selectAccount') },
+                          ...accountOptions,
+                        ]}
+                        value={split.transferAccountId || ''}
+                        onChange={(e) =>
+                          handleSplitChange(index, 'transferAccountId', e.target.value || undefined)
+                        }
+                        disabled={disabled}
+                        className="w-full"
+                      />
+                      {renderTransferCategory(split, index, currentCategory)}
+                    </div>
                   )}
                 </td>
                 <td className="px-1 py-2">

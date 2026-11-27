@@ -34,7 +34,7 @@ import { Category } from '@/types/category';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { payeesApi } from '@/lib/payees';
-import { getCategorySelectOptions } from '@/lib/categoryUtils';
+import { getCategorySelectOptionsFor } from '@/lib/categoryUtils';
 import { getCurrencySymbol } from '@/lib/format';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { createLogger } from '@/lib/logger';
@@ -172,7 +172,9 @@ export function LoanPaymentSetupDialog({
   const effectiveAutoPost = paymentMatchingEnabled ? false : autoPost;
   const sourceAccountName = accounts.find((a) => a.id === sourceAccountId)?.name;
 
-  const categoryOptions = withCategoryIcons(getCategorySelectOptions(categories), categories);
+  // A loan's interest category goes on the payment's category line: Income or
+  // Expense only (INV-CATEGORY-001).
+  const categoryOptions = withCategoryIcons(getCategorySelectOptionsFor(categories, 'category'), categories);
 
   const payeeOptions = payees.map((p) => ({
     value: p.id,

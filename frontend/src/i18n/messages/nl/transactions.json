@@ -545,6 +545,8 @@
     },
     "splitLabel": "Splitsing {number}",
     "accountForSplit": "Rekening voor splitsing {number}",
+    "transferCategoryForSplit": "Category for split {number}",
+    "transferCategoryPlaceholder": "Category (optional)",
     "columns": {
       "type": "Type",
       "categoryAccount": "Categorie / rekening",

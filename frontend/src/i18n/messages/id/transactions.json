@@ -545,6 +545,8 @@
     },
     "splitLabel": "Pembagian {number}",
     "accountForSplit": "Akun untuk pembagian {number}",
+    "transferCategoryForSplit": "Category for split {number}",
+    "transferCategoryPlaceholder": "Category (optional)",
     "columns": {
       "type": "Tipe",
       "categoryAccount": "Kategori / Akun",

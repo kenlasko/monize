@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
-import { getCategorySelectOptions } from '@/lib/categoryUtils';
+import { getCategorySelectOptionsFor } from '@/lib/categoryUtils';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 import { createLogger } from '@/lib/logger';
 import { payeesApi } from '@/lib/payees';
@@ -109,7 +109,7 @@ export function useReceiptParserLookups(): { state: ReceiptParserLookupsState; r
               payees,
             ),
             categories: withCategoryIcons(
-              getCategorySelectOptions(categories).map(({ value, label }) => ({ value, label })),
+              getCategorySelectOptionsFor(categories, 'category').map(({ value, label }) => ({ value, label })),
               categories,
             ),
             accounts: toReceiptAccountOptions(accounts),

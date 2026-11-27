@@ -224,7 +224,9 @@ export function toCreateSplitData(
 ): CreateSplitData[] {
   return splits.map((split) => ({
     splitKind: split.splitType,
-    categoryId: split.splitType === 'category' ? split.categoryId : undefined,
+    // A category line's category, and a transfer line's of any type, which
+    // the row it links holds too (INV-CATEGORY-002); an investment line none.
+    categoryId: split.splitType === 'investment' ? undefined : split.categoryId,
     transferAccountId: split.splitType === 'transfer' ? split.transferAccountId : undefined,
     investment: split.splitType === 'investment' ? split.investment : undefined,
     amount: split.amount,

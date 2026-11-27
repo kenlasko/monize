@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/Select';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
 import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFinancialToday } from '@/hooks/useFinancialToday';
-import { getCategorySelectOptions } from '@/lib/categoryUtils';
+import { getCategorySelectOptionsFor } from '@/lib/categoryUtils';
 import { createLogger } from '@/lib/logger';
 import { payrollDeductionsApi } from '@/lib/payroll-deductions';
 import { nextPeriodWindowOpen, payrollPeriodOf } from '@/lib/payroll-period';
@@ -270,7 +270,8 @@ export function PayrollDeductionRuleForm({
     [existingRules, billId, rule?.id],
   );
   const allCategoryOptions = useMemo(
-    () => withCategoryIcons(getCategorySelectOptions(categories), categories),
+    // A deduction names a paycheck's category line: Income or Expense only.
+    () => withCategoryIcons(getCategorySelectOptionsFor(categories, 'category'), categories),
     [categories],
   );
   const optionsForRow = useCallback(
