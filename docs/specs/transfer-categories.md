@@ -1,9 +1,8 @@
 # Spec: Transfer categories
 
-Status: proposed for discussion #2387 (2026-11-26), pull request 1 of 5 in
-`docs/future-plans/transfer-categories-tasks.md`. The maintainer's merge of this
-document is the approval the later pull requests are held to. Nothing here is
-built yet.
+Status: built (2026-11-27) for discussion #2387, five pull requests; section 17
+holds the retired plan's decisions and the delivery record. The maintainer's
+merge of the first pull request was the approval the later ones were held to.
 
 Governs: every path that writes a category onto a ledger row or a schedule, the
 category type itself, and every read that shows a transfer by its category: the
@@ -11,8 +10,8 @@ Monthly Category Breakdown, custom reports, budgets, the register's category
 filter and grouped totals, the category detail page, and the AI and MCP tools
 that read them.
 
-Read first: `docs/future-plans/transfer-categories.md` (the plan; its section 3
-holds the maintainer's decisions, which this document does not reopen),
+Read first: section 17.1 below (the maintainer's decisions, which this
+document does not reopen),
 `docs/financial-semantics.md` section 2 ("Transfers"),
 `docs/specs/split-line-equivalence.md` (a split line reads as the whole row it
 stands for) and `docs/specs/budget-transfer-income.md` (the transfer income
@@ -866,10 +865,145 @@ the review can find them:
 
 ## 16. Out of scope
 
-- Everything in the plan's section 11.
+- Everything in section 17.2.
 - Found by the sweep and not changed here, each reported in this pull request:
   a category reassign does not touch scheduled overrides (neither
   `category_id` nor the split JSON); a category delete counts no override
   references; undoing the delete of a split with a transfer line fails today,
   because the restore names no `kind` (section 4.7); scheduled writes do not
   check category ownership (section 4.3).
+
+## 17. Plan record (retired)
+
+The plan (`transfer-categories.md`) and its task list were retired into this
+document when the last pull request merged, the way earlier plans were. The
+plan's sections 4 to 9 became sections 1 to 12 above; what follows is what the
+specification does not repeat: the maintainer's decisions, the scope cuts, and
+the delivery record with each step's commit. Plan sections 1, 2, 10, 12 and 13
+(goal, the inventory of today's code, the test matrix, the open questions and
+the risks) are answered by sections 13 to 15 and by the entries in
+`docs/system-invariants.md`.
+
+### 17.1 Product decisions
+
+All (decided) by the maintainer on 2026-11-26. Items 1, 3, 6, 11 and 12 were
+revised that day; the introduction says why.
+
+1. **Strict one way.** A Transfer category goes only on a transfer. A transfer
+   accepts a category of any type. An ordinary row or a split's category line
+   accepts only Income or Expense. Converting a transfer to an ordinary
+   transaction clears a Transfer category.
+2. **One category per transfer.** Every write path sets both sides together.
+   A transfer between two owners keeps one category per owner, since a
+   category belongs to one person.
+3. **No migration.** Existing transfers, categories, saved reports, rules,
+   schedules and budgets are left as they are. A person moves a transfer to a
+   Transfer category by editing it, by bulk edit or by a rule.
+4. **Budgets.** A budget line may name a Transfer category, and the budget
+   shows Actual Income, Transfer Funding and Total Budget Funding separately.
+   A line on an Income or Expense category keeps counting the transfers that
+   hold that category.
+5. **Budget overlap: the category line wins.** A transfer whose Transfer
+   category has its own line is counted there and left out of the per-account
+   transfer line.
+6. **Monthly Category Breakdown.** A transfer holding a Transfer category is
+   listed under it in the Transfers group. Every other transfer, including one
+   holding an Income or Expense category, stays in its per-account row. The
+   whole group stays outside income, expenses and balance.
+7. **Split transfer lines carry a category, in the first release.**
+8. **Custom reports, in full.** Transfer categories in filters and grouping,
+   plus an Outgoing / Incoming / Net measure for transfers.
+9. **Wire shape.** A new `type` field is the source of truth. Responses keep
+   `isIncome` (true only for income) as a read-only derived field; requests may
+   send either, `type` winning.
+10. **Defaults.** The default category import gains a short Transfer set, for
+    new users only.
+11. **Automation.** A rule's "Set the category" applies to a transfer with a
+    category of any type, and "Convert to transfer" can name one. A payee's
+    default category stays Income or Expense and stays off transfers.
+12. **Delivery.** Five pull requests, grouped by area rather than one per
+    task, each into `main` in order (the issue workers branch from `main`).
+    No pull request refuses data that already exists, so `main` can be
+    released after any of them.
+
+### 17.2 Scope cuts
+
+- Any automatic change to existing transfers, categories, reports, rules or
+  budgets.
+- A warning or suggestion on a transfer that holds an Income or Expense
+  category, an "ignore" memory for one, and a setting to turn them off.
+- Detecting two unlinked ordinary transactions that cancel out and linking
+  them into one transfer.
+- A setting that makes a transfer accept Transfer categories only.
+- A second, Transfer-type default category on a payee.
+- A switch on the Monthly Category Breakdown between "by category" and "by
+  account".
+- Any change to how the Cash Flow Sankey places a transfer.
+
+### 17.3 Delivery record
+
+Five pull requests into `main`, in order, each with its steps ticked and the
+commit that did it. PR 5 (this one) carried the contract docs, the website
+pages and their screenshots, the end-to-end specs
+(`e2e/tests/transfer-categories.spec.ts`), the corrected tool and DTO text,
+release notes and a What's new entry (`docs/release-notes/1.22.0.md`), the
+full-locale pass, and a follow-up issue to drop `categories.is_income` in the
+release after next.
+
+###### PR 1: Specification
+
+One document in `docs/specs/`, no code.
+
+- [x] Truth tables for FIT and ONE per entry point, each with a Transfer, an Income or Expense, and no category; the three funding figures; the budget overlap rule; the three transfer measures; invariant IDs. (9ab7221fc)
+- [x] Measure the database backstop on a bulk import and record the answer to Q2. (4181ef3d9)
+
+Done when the maintainer has approved it and every default in the plan's section 12 is confirmed or replaced there.
+
+###### PR 2: The category type, end to end
+
+Backend and frontend know the third type; nothing can use it on a row yet.
+
+- [x] Schema: `category_type` column, check, backfill from each category's own flag with a count of mismatched children, the categories trigger (type mirror, a child's type from its parent, the subtree cascade); both split constraints relaxed; the FIT backstop triggers under the category-owner advisory lock, raising `category_fits_row` (`docs/specs/transfer-categories.md` sections 11 to 13; Q2 as approved on #2452); `schema.sql`; entity; support-backup and undo column lists, the category's history recording `type`. (a472b2c22)
+- [x] Category service and API: `type` in and out, derived `isIncome`, inheritance, type-change refusal under the category-owner lock (and its entry in `docs/concurrency-and-idempotency.md` section 5), type filter, stats; `category_fits_row` answered as 400; a loan's interest and fee categories, a payee's default, an asset account's asset category and a payroll deduction rule refuse a Transfer category, and a stored one is skipped where applied; `list_categories` in the assistant and MCP. (271274286)
+- [x] Backend reader sweep: every `isIncome` read moves to a typed helper; the READ guard. (371547fe8)
+- [x] Frontend: types, typed helper and reader sweep; category form, list and detail. (81db6fd28)
+- [x] Default Transfer set and its translations in the default import. (7dee03f9c)
+
+Done when the existing specs of every touched module pass unchanged and a Transfer category can be created, listed and edited.
+
+###### PR 3: What a row may hold
+
+FIT and ONE on every path that writes a category, with the screens that drive them.
+
+- [x] The fit helper and the entry-point integration matrix, written failing first. (6ec3d83a6)
+- [x] Standalone transfers and ordinary rows: create, update, plain patch, conversion both ways, reassign. (369cc8ff4)
+- [x] Both sides together: bulk update, plain patch, the assistant's categorize action; the cross-owner rule. (e3fdeeffc)
+- [x] Split transfer lines carry a category: create, add, remove, collapse, linked row, bulk recategorize, undo; the loan payment detector's interest line. (ee5a4a270)
+- [x] Scheduled transfers, scheduled split lines, overrides and posting. (5229383db)
+- [x] Rules: `set_category` on a transfer with a category of any type, skip reasons, `convert_to_transfer` naming a category; the rules editor. (df426e253)
+- [x] Importers: QIF payee default off transfers, Money's category on a transfer written to both sides, split lines. (b46182f79)
+- [x] Assistant and MCP write tools: schemas, descriptions, refusals; context and forecast. (2eb95fb98)
+- [x] Frontend: pickers by row kind across transaction, scheduled, bulk, quick-add, payee and import screens; inline create; the split editor's transfer line. (a719f9d31)
+
+Done when the entry-point matrix is green and each importer's existing fixtures import as they did before.
+
+###### PR 4: Reports and budgets
+
+Every read that shows a Transfer category.
+
+- [x] Monthly Category Breakdown: Transfers group by Transfer category, then by account for every other transfer; its screen. (899965ca2)
+- [x] Register filters, grouped totals, category detail for a Transfer category, MCP flow totals. (b33238508)
+- [x] Custom reports: Transfer categories in filters and groups; Outgoing / Incoming / Net; INV-REPORT-004 amended; builder and viewer. (9697f0f08)
+- [x] Budget line on a Transfer category; the category line wins over the account line. (affca042a)
+- [x] Actual Income, Transfer Funding, Total Budget Funding on every budget income surface, period close included; wizard, edit page and period detail. (a9709c1f0, d847cf17a, 961de34f9)
+
+Done when a report or budget with no Transfer category returns the figures it returned before, and the new figures match the specification's numerical examples.
+
+###### PR 5: Docs, tests, locales
+
+- [x] Contract docs: invariant catalog entries, `docs/financial-semantics.md`, the backend and frontend indexes, corrected tool and DTO text.
+- [x] Website docs, retaken screenshots, help links.
+- [x] E2E specs from section 14.
+- [x] Full-locale i18n pass.
+- [x] Release notes and What's new; a follow-up issue for the `is_income` column drop.
+

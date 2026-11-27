@@ -116,7 +116,7 @@ Shared finance review uses `sharedReviewState`; unbooked entries remain optional
 | Module edges, global providers, `main.ts`, env vars, logging, OIDC, CodeQL | `docs/backend/modules-and-runtime.md` |
 | Entities, DTOs, raw SQL, phone numbers, text caps, regex escaping | `docs/backend/entities-and-dtos.md` |
 | Ownership, identity, joint accounts, refusals, predicates | `docs/backend/database-access-and-tenancy.md` and `docs/row-level-security-contract.md` |
-| Transaction writes, exports, loans, categories and their type (Income, Expense, Transfer), currency of a value, Money import | `docs/backend/transactions-and-money.md`, then `docs/financial-semantics.md` |
+| Transaction writes, exports, loans, category types, currency of a value, Money import | `docs/backend/transactions-and-money.md`, then `docs/financial-semantics.md` |
 | Prices, securities, outbound providers and the breaker | `docs/backend/securities-and-providers.md` |
 | Adding a country's bonds, a new bond product or engine primitive | `docs/backend/bond-adapters.md` |
 | AI assistant, tools, payee lookup and enrichment, search | `docs/backend/ai-and-payees.md` |
