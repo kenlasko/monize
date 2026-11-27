@@ -358,9 +358,21 @@ export interface MonthlyBreakdownCategoryRow {
   average: number;
 }
 
+/**
+ * A row of the breakdown's Transfers group: the legs holding one Transfer
+ * category (`kind: 'category'`, a parent's roll-up when `isSubtotal`), or every
+ * other leg on one account (`kind: 'account'`, the default when absent).
+ */
 export interface MonthlyBreakdownTransferRow {
-  accountId: string;
-  accountName: string;
+  kind?: 'category' | 'account';
+  accountId: string | null;
+  accountName: string | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  parentId?: string | null;
+  parentName?: string | null;
+  /** A parent's roll-up: its legs are on the other rows, and outside the group total. */
+  isSubtotal?: boolean;
   direction: 'from' | 'to';
   valuesByMonth: Record<string, number>;
   /** The row's columns summed once by the server, signed as its cells are. */

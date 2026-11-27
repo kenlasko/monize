@@ -121,18 +121,55 @@ export class MonthlyBreakdownSummary {
 }
 
 /**
- * One transfer row in the breakdown: the net transfer flow for a single
- * account in one direction. "from" rows are money leaving an account (a source
- * of funds, positive); "to" rows are money entering an account (a use of funds,
- * negative). Grouping every transfer leg by the account it sits on and the
- * sign of its amount reproduces a Microsoft Money style banking summary.
+ * One transfer row in the breakdown, in one direction. "from" rows are money
+ * leaving (a source of funds, positive); "to" rows are money entering (a use of
+ * funds, negative). A leg holding a Transfer category is counted on its
+ * category's row (`kind: "category"`); every other leg, one holding an Income or
+ * Expense category included, on its account's row (`kind: "account"`), a
+ * Microsoft Money style banking summary (docs/specs/transfer-categories.md
+ * section 7). Each leg is on exactly one non-subtotal row.
  */
 export class MonthlyBreakdownTransferRow {
-  @ApiProperty({ example: "uuid-123" })
-  accountId: string;
+  @ApiProperty({
+    enum: ["category", "account"],
+    example: "account",
+    description:
+      "'category' = the legs holding one Transfer category (or, with " +
+      "isSubtotal, a parent's roll-up); 'account' = every other leg on one " +
+      "account.",
+  })
+  kind: "category" | "account";
 
-  @ApiProperty({ example: "Chequing" })
-  accountName: string;
+  @ApiProperty({ example: "uuid-123", nullable: true, type: String })
+  accountId: string | null;
+
+  @ApiProperty({ example: "Chequing", nullable: true, type: String })
+  accountName: string | null;
+
+  @ApiProperty({ example: "uuid-456", nullable: true, type: String })
+  categoryId: string | null;
+
+  @ApiProperty({
+    example: "Savings contributions",
+    nullable: true,
+    type: String,
+  })
+  categoryName: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  parentId: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  parentName: string | null;
+
+  @ApiProperty({
+    example: false,
+    description:
+      "A parent Transfer category's roll-up of its own legs and its " +
+      "children's, per direction. Its legs are already on the other rows, so " +
+      "it is not part of the group total.",
+  })
+  isSubtotal: boolean;
 
   @ApiProperty({
     enum: ["from", "to"],

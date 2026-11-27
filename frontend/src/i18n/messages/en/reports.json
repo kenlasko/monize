@@ -1220,6 +1220,8 @@
     "totalTransfers": "Total transfers",
     "transferFrom": "From",
     "transferTo": "To",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Overall total",
     "includeCurrentMonth": "Include current month",
     "includeCurrentYear": "Include current year",
