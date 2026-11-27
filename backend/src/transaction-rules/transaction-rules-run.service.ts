@@ -147,6 +147,11 @@ export function runSkipReason(refused: {
   type: string;
   reason: string;
 }): RuleRunSkipReason | undefined {
+  // A Transfer category where a category row or line holds it: a
+  // `set_category`, or a `split` part (INV-CATEGORY-001).
+  if (refused.reason === "category_does_not_fit") {
+    return "transfer_category_on_category_row";
+  }
   if (isStructuralActionType(refused.type)) {
     return refused.reason === "row_is_transfer_leg" ||
       refused.reason === "row_has_splits" ||

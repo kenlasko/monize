@@ -72,7 +72,8 @@ export type RuleActionSkipReason =
   | "row_is_transfer_leg"
   /**
    * `set_category` with a Transfer category on a category row (an ordinary
-   * row): a Transfer category goes only on a transfer (INV-CATEGORY-001).
+   * row), or a `split` part naming one for a category line: a Transfer
+   * category goes only on a transfer (INV-CATEGORY-001).
    */
   | "category_does_not_fit"
   | "cross_owner_transfer_leg"
@@ -484,6 +485,20 @@ function structural(
   }
   if (action.type === "settle_loan_installment") {
     return settleLoan(state, action, input);
+  }
+  // A split's category line takes only Income or Expense (INV-CATEGORY-001):
+  // a part naming a Transfer category is skipped with the reason, never
+  // planned as a change the write would refuse. A transfer part takes any.
+  if (
+    action.type === "split" &&
+    action.parts.some(
+      (part) =>
+        !part.transferAccountId &&
+        part.categoryId !== undefined &&
+        input.context.transferCategoryIds?.has(part.categoryId) === true,
+    )
+  ) {
+    return skip(state, action, "category_does_not_fit");
   }
   const planned = planStructure(
     action,

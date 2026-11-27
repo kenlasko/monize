@@ -380,6 +380,16 @@ describe("planRuleEffects: split", () => {
     expect(effects.trace[0].changes.structure?.before).toBeNull();
   });
 
+  it("skips a split whose category line names a Transfer category (INV-CATEGORY-001)", () => {
+    const refused = plan(
+      [split(SPLIT_PARTS)],
+      {},
+      { accounts: ACCOUNTS, transferCategoryIds: new Set([CAT_INTEREST]) },
+    );
+    expect(skippedReasons(refused)).toEqual(["category_does_not_fit"]);
+    expect(refused.changes.structure).toBeUndefined();
+  });
+
   it("clears an existing category of the parent", () => {
     const effects = plan([split(SPLIT_PARTS)], { categoryId: CAT });
     expect(effects.changes.categoryId).toBeNull();

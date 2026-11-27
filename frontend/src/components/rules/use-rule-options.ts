@@ -36,6 +36,11 @@ export interface RuleOptions {
    * first (INV-CATEGORY-001), for a conversion's category.
    */
   readonly transferCategories: RuleOption[];
+  /**
+   * The categories a split's category line may take: Income and Expense only
+   * (INV-CATEGORY-001), for a split part's category.
+   */
+  readonly lineCategories: RuleOption[];
   readonly tags: RuleOption[];
   readonly currencyCodes: readonly string[];
 }
@@ -86,6 +91,10 @@ export function useRuleOptions(lookups: RuleLookups): RuleOptions {
       ),
       transferCategories: withCategoryIcons(
         getCategorySelectOptionsFor(lookups.categories as Category[], 'transfer'),
+        lookups.categories,
+      ),
+      lineCategories: withCategoryIcons(
+        getCategorySelectOptionsFor(lookups.categories as Category[], 'category'),
         lookups.categories,
       ),
       tags: lookups.tags.map((t) => ({ value: t.id, label: t.name })),

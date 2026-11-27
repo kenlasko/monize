@@ -932,6 +932,13 @@ export class TransactionRulesApplierService {
         if (action.type === "convert_to_transfer" && action.categoryId) {
           wanted.add(action.categoryId);
         }
+        // A split part's category, so the planner knows a Transfer one and
+        // skips a category line that names it (INV-CATEGORY-001).
+        if (action.type === "split") {
+          for (const part of action.parts) {
+            if (part.categoryId) wanted.add(part.categoryId);
+          }
+        }
       }
     }
     return loadCategoryChains(m, userId, [...wanted]);

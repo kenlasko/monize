@@ -212,7 +212,7 @@ function SplitPartRow({ part, index, parts, captures, options, onChange, onRemov
         <Combobox
           label={ts('columns.category')}
           placeholder={ts('selectCategory')}
-          options={options.categories}
+          options={options.lineCategories}
           value={part.categoryId}
           onChange={(categoryId) => onChange({ ...part, categoryId })}
           error={fieldError(`${at}.categoryId`)}

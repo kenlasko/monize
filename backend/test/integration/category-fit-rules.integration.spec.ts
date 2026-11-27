@@ -353,6 +353,54 @@ describe("Category fit and one category per transfer: rules (integration)", () =
     );
   });
 
+  describe("split", () => {
+    row(
+      "split in a run: a category line naming a Transfer category skips the row with the reason, and the run writes nothing",
+      async () => {
+        const ordinary = await asUser(() =>
+          transactions.create(userId, {
+            accountId: chequingId,
+            transactionDate: "2026-03-02",
+            amount: -100,
+            currencyCode: "USD",
+            payeeName: "PAY 60 FEE 40",
+          } as never),
+        );
+        const created = await rule(
+          ["import"],
+          [
+            {
+              type: "split",
+              parts: [
+                { amount: "{pay}", transferAccountId: savingsId },
+                { amount: "{fee}", categoryId: transferCat },
+              ],
+            },
+          ],
+          { field: "payeeText", op: "matches", value: "PAY {pay} FEE {fee}" },
+        );
+        const preview = await asUser(() =>
+          runs.previewRun(userId, created.id, {}),
+        );
+        expect(preview.matched).toEqual([]);
+        expect(preview.skipped).toEqual([
+          {
+            transactionId: ordinary.id,
+            reason: "transfer_category_on_category_row",
+          },
+        ]);
+        await asUser(() =>
+          runs.run(userId, created.id, { fingerprint: preview.fingerprint }),
+        );
+        const [stored] = await db.query(
+          `SELECT is_split FROM transactions WHERE id = $1`,
+          [ordinary.id],
+        );
+        expect(stored.is_split).toBe(false);
+      },
+    );
+  });
+
   describe("convert_to_transfer", () => {
     const convert = (extra: Record<string, unknown>) =>
       rule(
