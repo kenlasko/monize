@@ -900,6 +900,8 @@
     "bulkUpdateConcurrentChange": "These transactions changed while the update was running. Reload and try again.",
     "bulkSplitNoMatchingLinesOne": "1 split transaction was skipped because none of its split lines matched the category update",
     "bulkSplitNoMatchingLinesMany": "{{ count }} split transactions were skipped because none of their split lines matched the category update",
+    "bulkTransferCategoryOnCategoryRows": "{{ count }} transactions kept their category: {{ name }} is a Transfer category; it can go only on a transfer",
+    "bulkTransferCategoryOnSplitLines": "{{ count }} split transactions kept their split lines' categories: {{ name }} is a Transfer category; it can go only on a transfer",
     "bulkSplitTransferLegSkippedOne": "1 split transfer was skipped (void or restore it from the split transaction it belongs to, so both sides change together)",
     "bulkSplitTransferLegSkippedMany": "{{ count }} split transfers were skipped (void or restore them from the split transaction they belong to, so both sides change together)",
     "bulkInvestmentCashLegSkippedOne": "1 investment cash transaction was skipped (void or restore it by changing the investment transaction's status, so both sides change together)",

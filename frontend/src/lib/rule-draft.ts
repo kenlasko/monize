@@ -239,6 +239,7 @@ function readConvert(
     accountId,
     // A missing flag reads as the server's default: a transfer has no category.
     clearCategory: typeof input.clearCategory === 'boolean' ? input.clearCategory : blank.clearCategory,
+    categoryId: readOptionalId(input.categoryId, repairs),
     payeeId: readOptionalId(input.payeeId, repairs),
   };
 }
@@ -409,6 +410,7 @@ export function actionToApi(action: EditorAction): RuleAction {
             ? { fromAccountId: action.accountId }
             : { toAccountId: action.accountId }),
         clearCategory: action.clearCategory,
+        ...(action.categoryId !== '' ? { categoryId: action.categoryId } : {}),
         ...(action.payeeId !== '' ? { payeeId: action.payeeId } : {}),
       };
     case 'split':

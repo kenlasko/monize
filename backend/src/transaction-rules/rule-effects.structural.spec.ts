@@ -246,19 +246,30 @@ describe("planRuleEffects: a later rule sees the structured row", () => {
     actions,
   });
 
-  it("refuses set_category after a conversion in the same pass", () => {
+  it("lets set_category after a conversion in the same pass give the transfer a category of any type", () => {
     const effects = planRuleEffects(
       row({ amount: -640.15 }),
       [
         rule([convert()]),
         later([{ type: "set_category", categoryId: CAT, onlyIfEmpty: false }]),
       ],
+      { accounts: ACCOUNTS, transferCategoryIds: new Set([CAT]) },
+    );
+    expect(effects.trace[1].skipped).toEqual([]);
+    expect(effects.changes.categoryId).toBe(CAT);
+  });
+
+  it("gives both legs the category a conversion names (INV-CATEGORY-002)", () => {
+    const effects = planRuleEffects(
+      row({ amount: -640.15 }),
+      [rule([convert({ categoryId: CAT })])],
       { accounts: ACCOUNTS },
     );
-    expect(effects.trace[1].skipped).toEqual([
-      { type: "set_category", reason: "row_is_transfer_leg" },
-    ]);
-    expect(effects.changes.categoryId).toBeUndefined();
+    expect(effects.changes.categoryId).toBe(CAT);
+    expect(effects.changes.structure).toMatchObject({
+      kind: "transfer",
+      categoryId: CAT,
+    });
   });
 
   it("refuses a second structural action after a conversion", () => {

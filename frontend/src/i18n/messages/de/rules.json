@@ -233,6 +233,7 @@
       "directionFrom": "Einnahme: Das Geld kommt von einem anderen Konto",
       "clearCategory": "Kategorie entfernen",
       "clearCategoryHelp": "Eine Überweisung hat keine Kategorie. Deaktivieren, um die vorhandene Kategorie der Transaktion zu behalten.",
+      "convertCategory": "Category for the transfer (optional)",
       "splitPayee": "Zahlungsempfänger der Transaktion (optional)",
       "splitHint": "Jeder Teil übernimmt seinen Betrag aus einer Erfassung in den Mustern oben oder nimmt den Rest. Die Teile müssen zusammen den Betrag der Transaktion ergeben, sonst lässt die Regel sie unverändert.",
       "splitNoCaptures": "Es ist noch keine Erfassung definiert. Setzen Sie in einem Muster oben einen Namen in geschweifte Klammern, zum Beispiel PRINCIPAL: {example}, um ihn hier als Betrag zu verwenden.",
@@ -459,6 +460,7 @@
     "skipReasons": {
       "reconciled_locked": "sie ist abgeglichen und gesperrt",
       "transfer_leg_category": "sie ist eine Überweisung und hat keine Kategorie",
+      "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "sie ist aufgeteilt, die Kategorie gehört daher zu den Teilbuchungen",
       "cross_owner_transfer_payee": "sie ist eine Überweisung an einen anderen Eigentümer, dessen Zahlungsempfänger diese Regel nicht ändern darf",
       "empty_render": "der Text einer Aktion ist dafür leer geworden",

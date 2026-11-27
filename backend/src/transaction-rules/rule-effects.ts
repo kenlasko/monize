@@ -1,3 +1,4 @@
+import type { CategoryPartnerRecord } from "../transactions/transfer-category-partner";
 import type { ClaimedLoanOccurrence } from "../loan-installments/claim-loan-occurrence";
 import type {
   LoanSettlementPlan,
@@ -69,6 +70,11 @@ export type RuleActionSkipReason =
   | "no_change"
   | "row_has_splits"
   | "row_is_transfer_leg"
+  /**
+   * `set_category` with a Transfer category on a category row (an ordinary
+   * row): a Transfer category goes only on a transfer (INV-CATEGORY-001).
+   */
+  | "category_does_not_fit"
   | "cross_owner_transfer_leg"
   /** The template rendered to nothing (design 10.2). */
   | "empty_render"
@@ -132,6 +138,13 @@ export interface RulePlanContext {
    * no I/O; a missing entry falls back to the category alone.
    */
   readonly categoryChains?: ReadonlyMap<string, readonly string[]>;
+  /**
+   * The categories among those a rule may set that are Transfer categories,
+   * so `set_category` skips a category row it does not fit
+   * (INV-CATEGORY-001). The planner does no I/O; absent, nothing is skipped
+   * for its type and the write's own fit check is the backstop.
+   */
+  readonly transferCategoryIds?: ReadonlySet<string>;
   /**
    * The owner's accounts a structural action may target, with their currency.
    * The planner does no I/O; an account missing here is refused as
@@ -255,6 +268,15 @@ export interface RuleNetChanges {
 
 export interface RuleEffects {
   readonly changes: RuleNetChanges;
+  /**
+   * Set by the write, never by the plan: the other side of a transfer the
+   * category reached (a split transfer line, or an other leg the run did not
+   * write itself) and what it held, so the run's undo returns it.
+   */
+  readonly categoryPartner?: {
+    readonly before: CategoryPartnerRecord;
+    readonly after: CategoryPartnerRecord;
+  };
   readonly trace: readonly RuleTraceEntry[];
   readonly aiReviewRequests: readonly AiReviewRequest[];
   /** Rendered payee names the plan needed and `payeeResolutions` did not hold. */
@@ -348,7 +370,14 @@ function refusal(
 ): RuleActionSkipReason | null {
   if (action.type === "set_category") {
     if (facts.hasSplits) return "row_has_splits";
-    if (facts.type === "TRANSFER") return "row_is_transfer_leg";
+    // A transfer takes a category of any type, written to both of its legs
+    // (INV-CATEGORY-002); a category row takes only Income or Expense.
+    if (
+      facts.type !== "TRANSFER" &&
+      context.transferCategoryIds?.has(action.categoryId) === true
+    ) {
+      return "category_does_not_fit";
+    }
   }
   if (
     (action.type === "set_payee" ||
@@ -468,10 +497,21 @@ function structural(
     action.payeeId === undefined
       ? {}
       : { payeeId: action.payeeId, payeeName: null, payeeCreate: null };
+  // A conversion naming a category gives both legs that one, of any type; one
+  // that clears it leaves none; one that keeps it keeps the row's on both.
+  const namedCategory =
+    structure.kind === "transfer" ? structure.categoryId : undefined;
   const category =
-    structure.kind === "split" || structure.clearCategory
-      ? { categoryId: null, categoryAncestorIds: [] }
-      : {};
+    namedCategory !== undefined
+      ? {
+          categoryId: namedCategory,
+          categoryAncestorIds: input.context.categoryChains?.get(
+            namedCategory,
+          ) ?? [namedCategory],
+        }
+      : structure.kind === "split" || structure.clearCategory
+        ? { categoryId: null, categoryAncestorIds: [] }
+        : {};
   return {
     state: {
       ...state,

@@ -128,6 +128,8 @@ export interface ConvertToTransferAction {
   readonly toAccountId?: string;
   readonly fromAccountId?: string;
   readonly clearCategory: boolean;
+  /** The category both legs take, of any type (a transfer accepts all three). */
+  readonly categoryId?: string;
   readonly payeeId?: string;
 }
 

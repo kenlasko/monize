@@ -900,6 +900,8 @@
     "bulkUpdateConcurrentChange": "更新の実行中にこれらの取引が変更されました。再読み込みしてもう一度お試しください。",
     "bulkSplitNoMatchingLinesOne": "いずれの分割行もカテゴリ更新に一致しなかったため、1件の分割取引がスキップされました",
     "bulkSplitNoMatchingLinesMany": "いずれの分割行もカテゴリ更新に一致しなかったため、{{ count }}件の分割取引がスキップされました",
+    "bulkTransferCategoryOnCategoryRows": "{{ count }} transactions kept their category: {{ name }} is a Transfer category; it can go only on a transfer",
+    "bulkTransferCategoryOnSplitLines": "{{ count }} split transactions kept their split lines' categories: {{ name }} is a Transfer category; it can go only on a transfer",
     "bulkSplitTransferLegSkippedOne": "1件の分割振替をスキップしました（両側が同時に変わるよう、所属する分割取引から無効化または復元してください）",
     "bulkSplitTransferLegSkippedMany": "{{ count }}件の分割振替をスキップしました（両側が同時に変わるよう、所属する分割取引から無効化または復元してください）",
     "bulkInvestmentCashLegSkippedOne": "1件の投資現金取引をスキップしました（両側が同時に変わるよう、投資取引のステータスを変更して無効化または復元してください）",

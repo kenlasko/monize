@@ -21,6 +21,11 @@ export interface TransferStructurePlan {
   readonly accountId: string;
   readonly clearCategory: boolean;
   /**
+   * The category both legs take, of any type, when the action names one
+   * (INV-CATEGORY-002); absent, `clearCategory` decides.
+   */
+  readonly categoryId?: string;
+  /**
    * The counterpart leg's signed amount (the negative of the row's), 4
    * decimals. It is part of the plan so the preview shows it, the run
    * fingerprint covers it, and the write refuses a row whose amount moved
@@ -178,6 +183,7 @@ function planConvert(
       kind: "transfer",
       accountId: target,
       clearCategory: action.clearCategory,
+      ...(action.categoryId ? { categoryId: action.categoryId } : {}),
       // The row's amount is non-zero here (`rowRefusal`).
       amount: -(facts.amount ?? 0),
     },

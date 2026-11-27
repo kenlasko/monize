@@ -900,6 +900,8 @@
     "bulkUpdateConcurrentChange": "更新运行期间这些交易已更改。请重新加载后重试。",
     "bulkSplitNoMatchingLinesOne": "已跳过 1 笔拆分交易，因为它没有任何拆分项与分类更新匹配",
     "bulkSplitNoMatchingLinesMany": "已跳过 {{ count }} 笔拆分交易，因为它们没有任何拆分项与分类更新匹配",
+    "bulkTransferCategoryOnCategoryRows": "{{ count }} transactions kept their category: {{ name }} is a Transfer category; it can go only on a transfer",
+    "bulkTransferCategoryOnSplitLines": "{{ count }} split transactions kept their split lines' categories: {{ name }} is a Transfer category; it can go only on a transfer",
     "bulkSplitTransferLegSkippedOne": "已跳过 1 笔拆分转账（请从其所属的拆分交易中作废或恢复，使两侧一起变更）",
     "bulkSplitTransferLegSkippedMany": "已跳过 {{ count }} 笔拆分转账（请从其所属的拆分交易中作废或恢复，使两侧一起变更）",
     "bulkInvestmentCashLegSkippedOne": "已跳过 1 笔投资现金交易（请通过更改该投资交易的状态来作废或恢复，使两侧一起变更）",

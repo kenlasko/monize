@@ -233,6 +233,7 @@
       "directionFrom": "收入:資金來自另一個帳戶",
       "clearCategory": "清除分類",
       "clearCategoryHelp": "轉帳沒有分類。關閉此項可保留交易已有的分類。",
+      "convertCategory": "Category for the transfer (optional)",
       "splitPayee": "交易的收款對象(選填)",
       "splitHint": "每個部分的金額取自上方模式中的擷取值,或取剩餘部分。各部分的總和必須等於交易金額,否則規則不會變更該交易。",
       "splitNoCaptures": "尚未定義任何擷取值。請在上方的模式中用大括號寫一個名稱,例如 PRINCIPAL: {example},即可在此用作金額。",
@@ -459,6 +460,7 @@
     "skipReasons": {
       "reconciled_locked": "已對帳並被鎖定",
       "transfer_leg_category": "是轉帳，轉帳沒有分類",
+      "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "已拆分，因此分類屬於各拆分項",
       "cross_owner_transfer_payee": "是轉給其他擁有者的轉帳，此規則不能變更其收款對象",
       "empty_render": "某個動作的文字對它而言為空",

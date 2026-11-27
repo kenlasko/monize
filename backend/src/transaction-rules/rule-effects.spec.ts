@@ -166,19 +166,33 @@ describe("planRuleEffects: actions", () => {
     expect(plan.changes.addTagIds).toEqual([TAG_A]);
   });
 
-  it("set_category is refused on a transfer leg", () => {
-    const plan = planRuleEffects(
-      facts({
-        isTransfer: true,
-        fromAccountId: ACCOUNT,
-        toAccountId: uuid(50),
-      }),
-      [rule([setCategory(CAT, false)])],
-    );
+  it("set_category applies to a transfer leg, a Transfer category included (INV-CATEGORY-001)", () => {
+    const transfer = facts({
+      isTransfer: true,
+      fromAccountId: ACCOUNT,
+      toAccountId: uuid(50),
+    });
+    const plan = planRuleEffects(transfer, [rule([setCategory(CAT, false)])], {
+      transferCategoryIds: new Set([CAT]),
+    });
+    expect(plan.changes.categoryId).toBe(CAT);
+    expect(plan.trace[0].skipped).toEqual([]);
+  });
+
+  it("set_category skips a Transfer category on a row that is not a transfer, naming why", () => {
+    const plan = planRuleEffects(facts(), [rule([setCategory(CAT, false)])], {
+      transferCategoryIds: new Set([CAT]),
+    });
     expect("categoryId" in plan.changes).toBe(false);
     expect(plan.trace[0].skipped).toEqual([
-      { type: "set_category", reason: "row_is_transfer_leg" },
+      { type: "set_category", reason: "category_does_not_fit" },
     ]);
+    // An Income or Expense category still applies.
+    expect(
+      planRuleEffects(facts(), [rule([setCategory(CAT, false)])], {
+        transferCategoryIds: new Set(),
+      }).changes.categoryId,
+    ).toBe(CAT);
   });
 
   it("set_payee sets an empty payee, keeps a set one under onlyIfEmpty, replaces it otherwise", () => {

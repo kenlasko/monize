@@ -900,6 +900,8 @@
     "bulkUpdateConcurrentChange": "Diese Buchungen wurden während der Aktualisierung geändert. Laden Sie neu und versuchen Sie es erneut.",
     "bulkSplitNoMatchingLinesOne": "1 aufgeteilte Transaktion wurde übersprungen, weil keiner ihrer Buchungsteile mit der Kategorieaktualisierung übereinstimmte",
     "bulkSplitNoMatchingLinesMany": "{{ count }} aufgeteilte Transaktionen wurden übersprungen, weil keiner ihrer Buchungsteile mit der Kategorieaktualisierung übereinstimmte",
+    "bulkTransferCategoryOnCategoryRows": "{{ count }} transactions kept their category: {{ name }} is a Transfer category; it can go only on a transfer",
+    "bulkTransferCategoryOnSplitLines": "{{ count }} split transactions kept their split lines' categories: {{ name }} is a Transfer category; it can go only on a transfer",
     "bulkSplitTransferLegSkippedOne": "1 aufgeteilte Umbuchung wurde übersprungen (stornieren oder wiederherstellen Sie sie über die Splittbuchung, zu der sie gehört, damit sich beide Seiten gemeinsam ändern)",
     "bulkSplitTransferLegSkippedMany": "{{ count }} aufgeteilte Umbuchungen wurden übersprungen (stornieren oder wiederherstellen Sie sie über die Splittbuchung, zu der sie gehören, damit sich beide Seiten gemeinsam ändern)",
     "bulkInvestmentCashLegSkippedOne": "1 Investment-Geldbuchung wurde übersprungen (stornieren oder wiederherstellen Sie sie, indem Sie den Status der Investmentbuchung ändern, damit sich beide Seiten gemeinsam ändern)",

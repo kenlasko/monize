@@ -900,6 +900,8 @@
     "bulkUpdateConcurrentChange": "Güncelleme çalışırken bu işlemler değişti. Yeniden yükleyip tekrar deneyin.",
     "bulkSplitNoMatchingLinesOne": "Hiçbir bölümü kategori güncellemesiyle eşleşmediği için 1 bölünmüş işlem atlandı",
     "bulkSplitNoMatchingLinesMany": "Hiçbir bölümü kategori güncellemesiyle eşleşmediği için {{ count }} bölünmüş işlem atlandı",
+    "bulkTransferCategoryOnCategoryRows": "{{ count }} transactions kept their category: {{ name }} is a Transfer category; it can go only on a transfer",
+    "bulkTransferCategoryOnSplitLines": "{{ count }} split transactions kept their split lines' categories: {{ name }} is a Transfer category; it can go only on a transfer",
     "bulkSplitTransferLegSkippedOne": "1 bölünmüş transfer atlandı (her iki taraf birlikte değişsin diye, ait olduğu bölünmüş işlemden iptal edin veya geri yükleyin)",
     "bulkSplitTransferLegSkippedMany": "{{ count }} bölünmüş transfer atlandı (her iki taraf birlikte değişsin diye, ait oldukları bölünmüş işlemden iptal edin veya geri yükleyin)",
     "bulkInvestmentCashLegSkippedOne": "1 yatırım nakit işlemi atlandı (her iki taraf birlikte değişsin diye, yatırım işleminin durumunu değiştirerek iptal edin veya geri yükleyin)",

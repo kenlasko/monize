@@ -93,7 +93,6 @@ const NOT_YET_CONVERTED = new Set<string>([
   "action-history/action-history.service.ts undoTransactionDelete",
   "action-history/action-history.service.ts undoTransactionUpdate",
   "action-history/action-history.service.ts undoTransferDelete",
-  "action-history/rule-run-undo.ts undoRuleRun",
   "bank-sync/bank-sync-writer.service.ts applyRulePayeeCategories",
   "bank-sync/bank-sync-writer.service.ts write",
   "database/demo-reset.service.ts generateIntradayTransactionsWithinContext",
@@ -111,7 +110,6 @@ const NOT_YET_CONVERTED = new Set<string>([
   "shared-expenses/shared-finance-write.ts insertRow",
   "shared-expenses/shared-finance-write.ts undoSharedPosting",
   "shared-expenses/shared-finance-write.ts writeSharedFinance",
-  "transaction-rules/transaction-rules-applier.service.ts writeEffects",
 ]);
 
 export interface CategoryWrite {

@@ -900,6 +900,8 @@
     "bulkUpdateConcurrentChange": "Estas transações foram alteradas durante a atualização. Recarregue e tente novamente.",
     "bulkSplitNoMatchingLinesOne": "1 transação dividida foi ignorada porque nenhuma das suas parcelas correspondia à atualização de categoria",
     "bulkSplitNoMatchingLinesMany": "{{ count }} transações divididas foram ignoradas porque nenhuma das suas parcelas correspondia à atualização de categoria",
+    "bulkTransferCategoryOnCategoryRows": "{{ count }} transactions kept their category: {{ name }} is a Transfer category; it can go only on a transfer",
+    "bulkTransferCategoryOnSplitLines": "{{ count }} split transactions kept their split lines' categories: {{ name }} is a Transfer category; it can go only on a transfer",
     "bulkSplitTransferLegSkippedOne": "1 transferência dividida foi ignorada (anule-a ou restaure-a a partir da transação dividida a que pertence, para que ambos os lados mudem juntos)",
     "bulkSplitTransferLegSkippedMany": "{{ count }} transferências divididas foram ignoradas (anule-as ou restaure-as a partir da transação dividida a que pertencem, para que ambos os lados mudem juntos)",
     "bulkInvestmentCashLegSkippedOne": "1 transação de numerário de investimento foi ignorada (anule-a ou restaure-a alterando o estado da transação de investimento, para que ambos os lados mudem juntos)",

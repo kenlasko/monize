@@ -900,6 +900,8 @@
     "bulkUpdateConcurrentChange": "Te transakcje zmieniły się w trakcie aktualizacji. Odśwież i spróbuj ponownie.",
     "bulkSplitNoMatchingLinesOne": "Pominięto 1 transakcję podzieloną, ponieważ żaden z jej podziałów nie pasował do aktualizacji kategorii",
     "bulkSplitNoMatchingLinesMany": "Pominięto {{ count }} transakcji podzielonych, ponieważ żaden z ich podziałów nie pasował do aktualizacji kategorii",
+    "bulkTransferCategoryOnCategoryRows": "{{ count }} transactions kept their category: {{ name }} is a Transfer category; it can go only on a transfer",
+    "bulkTransferCategoryOnSplitLines": "{{ count }} split transactions kept their split lines' categories: {{ name }} is a Transfer category; it can go only on a transfer",
     "bulkSplitTransferLegSkippedOne": "Pominięto 1 podzielony przelew (unieważnij go lub przywróć z podzielonej transakcji, do której należy, aby obie strony zmieniły się razem)",
     "bulkSplitTransferLegSkippedMany": "Pominięto {{ count }} podzielonych przelewów (unieważnij je lub przywróć z podzielonej transakcji, do której należą, aby obie strony zmieniły się razem)",
     "bulkInvestmentCashLegSkippedOne": "Pominięto 1 gotówkową transakcję inwestycyjną (unieważnij ją lub przywróć, zmieniając status transakcji inwestycyjnej, aby obie strony zmieniły się razem)",

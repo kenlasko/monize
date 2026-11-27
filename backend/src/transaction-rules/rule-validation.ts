@@ -575,7 +575,8 @@ function optionalUuid(
 /**
  * `convert_to_transfer` (spec 3.3): exactly one of `toAccountId` and
  * `fromAccountId`, `clearCategory` a boolean (stored rules carry it; the
- * defaults fill it for a draft), an optional `payeeId`.
+ * defaults fill it for a draft), an optional `payeeId`, and an optional
+ * `categoryId` both legs take, of any type (INV-CATEGORY-001).
  */
 function validateConvertToTransfer(
   action: Record<string, unknown>,
@@ -584,10 +585,18 @@ function validateConvertToTransfer(
 ): void {
   checkKeys(
     action,
-    ["type", "toAccountId", "fromAccountId", "clearCategory", "payeeId"],
+    [
+      "type",
+      "toAccountId",
+      "fromAccountId",
+      "clearCategory",
+      "payeeId",
+      "categoryId",
+    ],
     path,
     push,
   );
+  optionalUuid(action, "categoryId", path, push);
   const hasTo = hasKey(action, "toAccountId");
   const hasFrom = hasKey(action, "fromAccountId");
   if (hasTo && hasFrom) push(path, "CONFLICTING_ACTIONS");

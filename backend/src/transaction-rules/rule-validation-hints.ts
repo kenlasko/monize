@@ -42,6 +42,7 @@ export const RULE_ACTION_TOOL_KEYS: Readonly<
     "fromAccountName",
     "clearCategory",
     "payeeName",
+    "categoryName",
   ],
   split: ["type", "payeeName", "parts"],
   settle_loan_installment: [

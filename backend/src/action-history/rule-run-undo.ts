@@ -1,3 +1,7 @@
+import {
+  isCategoryPartnerRecord,
+  restoreCategoryPartner,
+} from "../transactions/transfer-category-partner";
 import { ConflictException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { LockedTransactionRow, lockTransactionRows } from "../common/db/locks";
@@ -187,6 +191,7 @@ export async function undoRuleRun(
     if ("linkedTransactionId" in row) {
       fields.linkedTransactionId = row.linkedTransactionId ?? null;
     }
+    // category-fit-ok: the undo restores the value the run recorded
     if ("categoryId" in row) fields.categoryId = row.categoryId ?? null;
     if ("payeeId" in row) fields.payeeId = row.payeeId ?? null;
     if ("payeeName" in row) fields.payeeName = row.payeeName ?? null;
@@ -197,6 +202,12 @@ export async function undoRuleRun(
         { id: row.id, userId: action.userId },
         fields,
       );
+    }
+    // The other side of a transfer the run's category reached returns to the
+    // value it held (INV-CATEGORY-002).
+    const partner = (row as { categoryPartner?: unknown }).categoryPartner;
+    if (isCategoryPartnerRecord(partner)) {
+      await restoreCategoryPartner(manager, action.userId, partner);
     }
     if (Array.isArray(row.tagIds)) {
       tagOwners.push(row.id);

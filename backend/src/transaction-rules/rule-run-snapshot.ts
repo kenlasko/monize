@@ -188,6 +188,13 @@ export function buildRunSnapshots(
         was.structure = structure;
         will.structure = structure;
       }
+      // The other side of a transfer the category reached and the run did
+      // not write as a leg of its own (a split's transfer line), recorded on
+      // the leg whose write reached it so the undo returns it.
+      if (leg === unit.primary && effects.categoryPartner) {
+        was.categoryPartner = effects.categoryPartner.before;
+        will.categoryPartner = effects.categoryPartner.after;
+      }
       before.push(was);
       after.push(will);
     }

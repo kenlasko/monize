@@ -93,6 +93,13 @@ function harness(fx: Fixture = {}) {
   );
   const ruleRepo = { find: jest.fn().mockResolvedValue(fx.rules ?? []) };
   const categoryRepo = {
+    // The write's fit check (`fitCategory`): every category is the user's
+    // Expense category unless a test says otherwise.
+    findOne: jest.fn(async (opts: { where: { id: string } }) => ({
+      id: opts.where.id,
+      name: opts.where.id,
+      categoryType: "expense",
+    })),
     find: jest.fn(async (opts: { select?: unknown }) =>
       opts.select
         ? (fx.categories ?? [
@@ -126,6 +133,8 @@ function harness(fx: Fixture = {}) {
     }),
     update: jest.fn().mockResolvedValue({ affected: 1 }),
     insert: jest.fn().mockResolvedValue({}),
+    // The shared category-owner lock and the partner reads answer no rows.
+    query: jest.fn().mockResolvedValue([]),
   };
   const tags = {
     addTransactionTags: jest.fn().mockResolvedValue(undefined),
@@ -629,7 +638,7 @@ describe("TransactionRulesApplierService.applyToNewTransfer", () => {
     );
   });
 
-  it("refuses set_category on the legs, traces it as skipped and writes no category", async () => {
+  it("sets the category on both legs, of any type (INV-CATEGORY-001, INV-CATEGORY-002)", async () => {
     const h = harness({
       rules: [
         rule(RULE_1, [
@@ -640,11 +649,12 @@ describe("TransactionRulesApplierService.applyToNewTransfer", () => {
       rows: [fromLeg(), toLeg()],
     });
     const applied = await h.service.applyToNewTransfer(h.m, sameOwner);
-    expect(applied[0].effects.trace[0].skipped).toEqual([
-      { type: "set_category", reason: "row_is_transfer_leg" },
-    ]);
-    expect(applied[0].effects.changes.categoryId).toBeUndefined();
-    expect(h.mock.update).not.toHaveBeenCalled();
+    expect(applied[0].effects.trace[0].skipped).toEqual([]);
+    expect(applied[0].effects.changes.categoryId).toBe(CAT);
+    const categoryWrites = h.mock.update.mock.calls.filter(
+      ([, , patch]) => (patch as { categoryId?: string }).categoryId === CAT,
+    );
+    expect(categoryWrites).toHaveLength(2);
     expect(h.tags.addTransactionTags).toHaveBeenCalledTimes(2);
   });
 

@@ -101,8 +101,16 @@ export interface ConvertToTransferAction {
   readonly type: "convert_to_transfer";
   readonly toAccountId?: string;
   readonly fromAccountId?: string;
-  /** Clears the row's category (a transfer has none). Defaults to true. */
+  /**
+   * Clears the row's category. Defaults to true; false keeps it, on both
+   * legs. Ignored when `categoryId` names one.
+   */
   readonly clearCategory: boolean;
+  /**
+   * The category both legs take, of any type: a transfer accepts Income,
+   * Expense and Transfer categories (INV-CATEGORY-001, INV-CATEGORY-002).
+   */
+  readonly categoryId?: string;
   /** The payee of both legs. */
   readonly payeeId?: string;
 }

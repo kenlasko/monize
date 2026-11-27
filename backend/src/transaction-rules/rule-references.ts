@@ -146,6 +146,11 @@ function actionSites(
         kind: "payeeIds",
         ids: [action.payeeId].filter(isString),
       });
+      out.push({
+        path,
+        kind: "categoryIds",
+        ids: [action.categoryId].filter(isString),
+      });
     } else if (action.type === "split") {
       out.push({
         path,

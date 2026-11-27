@@ -27,6 +27,8 @@ function usePlannerSkipReason(): (reason: string) => string {
     switch (reason) {
       case 'row_is_transfer_leg':
         return runReason('transfer_leg_category');
+      case 'category_does_not_fit':
+        return runReason('transfer_category_on_category_row');
       case 'row_has_splits':
         return runReason('split_category');
       case 'cross_owner_transfer_leg':

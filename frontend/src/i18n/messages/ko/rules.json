@@ -233,6 +233,7 @@
       "directionFrom": "수입: 돈이 다른 계좌에서 옵니다",
       "clearCategory": "카테고리 지우기",
       "clearCategoryHelp": "이체에는 카테고리가 없습니다. 거래가 이미 가진 카테고리를 유지하려면 끄세요.",
+      "convertCategory": "Category for the transfer (optional)",
       "splitPayee": "거래의 수취인(선택)",
       "splitHint": "각 부분은 위 패턴의 캡처에서 금액을 가져오거나 나머지를 가져갑니다. 부분의 합이 거래 금액과 같아야 하며, 그렇지 않으면 규칙이 거래를 그대로 둡니다.",
       "splitNoCaptures": "아직 정의된 캡처가 없습니다. 위 패턴에서 이름을 중괄호로 묶으면(예: PRINCIPAL: {example}) 여기서 금액으로 사용할 수 있습니다.",
@@ -459,6 +460,7 @@
     "skipReasons": {
       "reconciled_locked": "조정되어 잠겨 있습니다",
       "transfer_leg_category": "이체이며 이체에는 카테고리가 없습니다",
+      "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "분할되어 있어 카테고리가 분할 항목에 속합니다",
       "cross_owner_transfer_payee": "다른 소유자에게 보내는 이체이며, 이 규칙으로 그 수취인을 변경할 수 없습니다",
       "empty_render": "작업의 텍스트가 비어 버렸기 때문",

@@ -16,6 +16,9 @@ import { TransactionRulesApplierService } from "./transaction-rules-applier.serv
 
 jest.mock("../common/db/locks", () => ({
   lockTransactionRow: jest.fn().mockResolvedValue({ id: "row" }),
+  lockTransactionRows: jest.fn().mockResolvedValue(new Map()),
+  // The category write's shared owner lock (`fitCategory`).
+  lockCategoryOwnerShared: jest.fn().mockResolvedValue(undefined),
 }));
 
 /**
@@ -96,7 +99,18 @@ function harness(
         ),
       },
     ],
-    [Category, { find: jest.fn().mockResolvedValue([]) }],
+    [
+      Category,
+      {
+        find: jest.fn().mockResolvedValue([]),
+        // The write's fit check (`fitCategory`): the user's Expense category.
+        findOne: jest.fn(async (opts: { where: { id: string } }) => ({
+          id: opts.where.id,
+          name: opts.where.id,
+          categoryType: "expense",
+        })),
+      },
+    ],
     [Payee, { find: jest.fn().mockResolvedValue([]) }],
     [Tag, { find: jest.fn().mockResolvedValue([]) }],
   ]);

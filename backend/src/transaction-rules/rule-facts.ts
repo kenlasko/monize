@@ -7,6 +7,7 @@ import {
 } from "../attachments/attachment-parent";
 import { Warranty } from "../warranties/entities/warranty.entity";
 import { Category } from "../categories/entities/category.entity";
+import { isTransferCategory } from "../categories/category-type.util";
 import { MONEY_SCALE, roundMoney } from "../common/round.util";
 import {
   RULE_WEEKDAYS,
@@ -146,19 +147,38 @@ export function buildRuleFacts(input: RuleFactsInput): RuleFacts {
  * and walked in memory. An id that is not the user's has no chain and maps to
  * `[id]`. A parent cycle stops the walk at the first repeat.
  */
+/**
+ * The chains of `loadCategoryChains`, and which of the wanted categories are
+ * Transfer categories (`RulePlanContext.transferCategoryIds`).
+ */
+export interface CategoryChains extends ReadonlyMap<string, readonly string[]> {
+  readonly transferCategoryIds?: ReadonlySet<string>;
+}
+
 export async function loadCategoryChains(
   m: EntityManager,
   userId: string,
   categoryIds: readonly string[],
-): Promise<ReadonlyMap<string, readonly string[]>> {
+): Promise<CategoryChains> {
   const wanted = [...new Set(categoryIds)];
-  const chains = new Map<string, readonly string[]>();
+  const transferCategoryIds = new Set<string>();
+  const chains: Map<string, readonly string[]> & {
+    transferCategoryIds: ReadonlySet<string>;
+  } = Object.assign(new Map<string, readonly string[]>(), {
+    transferCategoryIds,
+  });
   if (wanted.length === 0) return chains;
   const rows = await m.getRepository(Category).find({
-    select: { id: true, parentId: true },
+    select: { id: true, parentId: true, categoryType: true },
     where: { userId },
   });
   const parentOf = new Map(rows.map((row) => [row.id, row.parentId]));
+  const wantedSet = new Set(wanted);
+  for (const row of rows) {
+    if (wantedSet.has(row.id) && isTransferCategory(row)) {
+      transferCategoryIds.add(row.id);
+    }
+  }
   for (const id of wanted) {
     const chain: string[] = [];
     let cursor: string | null | undefined = id;

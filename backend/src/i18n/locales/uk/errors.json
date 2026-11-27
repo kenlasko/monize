@@ -900,6 +900,8 @@
     "bulkUpdateConcurrentChange": "Ці транзакції змінилися під час оновлення. Перезавантажте та спробуйте ще раз.",
     "bulkSplitNoMatchingLinesOne": "1 розділену транзакцію пропущено, оскільки жодна з її частин не відповідала оновленню категорії",
     "bulkSplitNoMatchingLinesMany": "{{ count }} розділених транзакцій пропущено, оскільки жодна з їхніх частин не відповідала оновленню категорії",
+    "bulkTransferCategoryOnCategoryRows": "{{ count }} transactions kept their category: {{ name }} is a Transfer category; it can go only on a transfer",
+    "bulkTransferCategoryOnSplitLines": "{{ count }} split transactions kept their split lines' categories: {{ name }} is a Transfer category; it can go only on a transfer",
     "bulkSplitTransferLegSkippedOne": "Пропущено 1 розділений переказ (анулюйте або відновіть його з розділеної операції, до якої він належить, щоб обидві сторони змінилися разом)",
     "bulkSplitTransferLegSkippedMany": "Пропущено розділених переказів: {{ count }} (анулюйте або відновіть їх із розділеної операції, до якої вони належать, щоб обидві сторони змінилися разом)",
     "bulkInvestmentCashLegSkippedOne": "Пропущено 1 грошову операцію за інвестицією (анулюйте або відновіть її, змінивши статус інвестиційної операції, щоб обидві сторони змінилися разом)",

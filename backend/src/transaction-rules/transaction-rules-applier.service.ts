@@ -6,6 +6,11 @@ import { Payee } from "../payees/entities/payee.entity";
 import { PayeesService } from "../payees/payees.service";
 import { AccountsService } from "../accounts/accounts.service";
 import { convertRowToTransfer } from "../transactions/convert-to-transfer";
+import { fitCategory, holderOfRow } from "../categories/category-fit";
+import {
+  findCategoryPartner,
+  writeCategoryPartner,
+} from "../transactions/transfer-category-partner";
 import { CreateTransactionSplitDto } from "../transactions/dto/create-transaction-split.dto";
 import { TransactionSplitService } from "../transactions/transaction-split.service";
 import { Tag } from "../tags/entities/tag.entity";
@@ -40,6 +45,7 @@ import {
   recordAiReviewQueued,
 } from "./rule-effects";
 import {
+  type CategoryChains,
   RuleFactsInput,
   buildRuleFacts,
   loadCategoryChains,
@@ -889,6 +895,9 @@ export class TransactionRulesApplierService {
       planRuleEffects(facts, rules, {
         ...context,
         categoryChains: chains,
+        // Which categories a rule sets are Transfer ones, read with the
+        // chains (`loadCategoryChains`).
+        transferCategoryIds: (chains as CategoryChains).transferCategoryIds,
         // A row not stored yet (the preview) has no stored name; the text the
         // create will store is the payee text, so the trace agrees with the commit.
         payeeName:
@@ -1061,12 +1070,32 @@ export class TransactionRulesApplierService {
   ): Promise<RuleEffects> {
     const resolved = await this.resolveCreatedPayee(m, userId, planned);
     const { changes } = resolved;
+    // A conversion writes the category onto both legs itself, once the row is
+    // a transfer (`convertRowToTransfer`); written here first, a Transfer
+    // category would land on the row while it is still a category row.
+    const converts = changes.structure?.kind === "transfer";
+    const writesCategory = changes.categoryId !== undefined && !converts;
+    // The category fits the row it lands on (INV-CATEGORY-001): the planner
+    // skipped a Transfer category on a category row, so a refusal here means
+    // the row changed kind since the plan, and the run rolls back.
+    const row = writesCategory
+      ? await m.findOne(Transaction, {
+          where: { id: transactionId, userId },
+          select: { id: true, isTransfer: true, linkedTransactionId: true },
+        })
+      : null;
+    if (writesCategory) {
+      await fitCategory(
+        m,
+        userId,
+        changes.categoryId,
+        holderOfRow(row ?? { isTransfer: false }),
+      );
+    }
     const patch: Partial<
       Pick<Transaction, "categoryId" | "payeeId" | "payeeName" | "description">
     > = {
-      ...(changes.categoryId !== undefined
-        ? { categoryId: changes.categoryId }
-        : {}),
+      ...(writesCategory ? { categoryId: changes.categoryId } : {}),
       ...(changes.description !== undefined
         ? { description: changes.description }
         : {}),
@@ -1088,6 +1117,21 @@ export class TransactionRulesApplierService {
     if (Object.keys(patch).length > 0) {
       await m.update(Transaction, { id: transactionId, userId }, patch);
     }
+    // One category per transfer (INV-CATEGORY-002): the other leg follows,
+    // and a split transfer line's linked row takes its line with it. A run
+    // writes both legs of a same-owner pair itself, so the other leg already
+    // holds it and nothing is written twice; across two owners there is no
+    // partner.
+    let categoryPartner: RuleEffects["categoryPartner"];
+    if (writesCategory && row) {
+      categoryPartner =
+        (await writeCategoryPartner(
+          m,
+          userId,
+          await findCategoryPartner(m, userId, row),
+          changes.categoryId ?? null,
+        )) ?? undefined;
+    }
     if (changes.addTagIds.length > 0) {
       await this.tagsService.addTransactionTags(
         m,
@@ -1104,7 +1148,9 @@ export class TransactionRulesApplierService {
         changes.removeTagIds,
       );
     }
-    let effects = resolved;
+    let effects: RuleEffects = categoryPartner
+      ? { ...resolved, categoryPartner }
+      : resolved;
     if (changes.structure !== undefined) {
       const written = await this.writeStructure(
         m,
@@ -1112,6 +1158,7 @@ export class TransactionRulesApplierService {
         transactionId,
         changes.structure,
         placesCache,
+        changes.categoryId,
       );
       for (const id of written.affectedAccountIds) affectedAccountIds?.add(id);
       effects = withWrittenStructure(resolved, written.structure);
@@ -1166,6 +1213,8 @@ export class TransactionRulesApplierService {
     transactionId: string,
     structure: RuleStructurePlan,
     placesCache: CurrencyPlacesCache,
+    /** The category the rules left the row with, for a conversion. */
+    categoryAfterConversion?: string | null,
   ): Promise<{
     structure: RuleStructurePlan;
     affectedAccountIds: readonly string[];
@@ -1182,6 +1231,9 @@ export class TransactionRulesApplierService {
         {
           clearCategory: structure.clearCategory,
           expectedCounterpartAmount: structure.amount,
+          // What the rules left the row's category as, written to both legs;
+          // absent, `clearCategory` decides.
+          categoryId: categoryAfterConversion,
         },
       );
       return {

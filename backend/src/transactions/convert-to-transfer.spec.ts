@@ -77,6 +77,12 @@ function harness(
           decimal_places: row.decimalPlaces,
         })),
       ),
+      // The legs' category, fitted as a transfer's (`fitCategory`).
+      findOne: jest.fn(async (opts: { where: { id: string } }) => ({
+        id: opts.where.id,
+        name: opts.where.id,
+        categoryType: "expense",
+      })),
     })),
   };
   const accounts = {
@@ -140,13 +146,42 @@ describe("convertRowToTransfer", () => {
     );
   });
 
-  it("keeps the category when clearCategory is false", async () => {
-    const h = harness();
+  it("keeps the category on both legs when clearCategory is false (INV-CATEGORY-002)", async () => {
+    const h = harness({ categoryId: "cat-1" });
     await convert(h, false);
     expect(h.m.update).toHaveBeenCalledWith(
       Transaction,
       { id: ROW, userId: USER },
-      { linkedTransactionId: COUNTERPART, isTransfer: true },
+      {
+        linkedTransactionId: COUNTERPART,
+        isTransfer: true,
+        categoryId: "cat-1",
+      },
+    );
+    expect(h.m.create).toHaveBeenCalledWith(
+      Transaction,
+      expect.objectContaining({ categoryId: "cat-1", isTransfer: true }),
+    );
+  });
+
+  it("gives both legs the category the rule names, of any type", async () => {
+    const h = harness({ categoryId: "cat-1" });
+    await convertRowToTransfer(
+      h.m as unknown as EntityManager,
+      h.accounts,
+      USER,
+      ROW,
+      LOAN,
+      { clearCategory: true, categoryId: "cat-transfer" },
+    );
+    expect(h.m.update).toHaveBeenCalledWith(
+      Transaction,
+      { id: ROW, userId: USER },
+      expect.objectContaining({ categoryId: "cat-transfer" }),
+    );
+    expect(h.m.create).toHaveBeenCalledWith(
+      Transaction,
+      expect.objectContaining({ categoryId: "cat-transfer" }),
     );
   });
 

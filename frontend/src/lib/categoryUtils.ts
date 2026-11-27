@@ -1,5 +1,11 @@
 import { Category } from '@/types/category';
-import { categoryTypeOrUndefined, signByCategoryType } from '@/lib/category-type';
+import {
+  categoriesForHolder,
+  categoryTypeOrUndefined,
+  isTransferCategory,
+  signByCategoryType,
+  type CategoryHolder,
+} from '@/lib/category-type';
 import type { MultiSelectOption } from '@/components/ui/MultiSelect';
 
 interface CategoryOption {
@@ -88,6 +94,43 @@ export function getCategorySelectOptions(
   }
 
   return [...result, ...categoryOptions];
+}
+
+/**
+ * `getCategorySelectOptions` for a picker that writes onto `holder`
+ * (INV-CATEGORY-001): on a transfer every type, Transfer categories first;
+ * elsewhere Income and Expense only. Each group keeps its own tree order.
+ */
+export function getCategorySelectOptionsFor(
+  categories: Category[],
+  holder: CategoryHolder,
+  options?: Parameters<typeof getCategorySelectOptions>[1],
+): CategoryOption[] {
+  const fitting = categoriesForHolder(categories, holder);
+  if (holder === 'category') return getCategorySelectOptions(fitting, options);
+  // The pseudo entries the options ask for (empty, uncategorized), then each
+  // group as a tree of its own; a child's label names its parent from the
+  // whole list.
+  const head = getCategorySelectOptions([], options);
+  const group = (list: Category[]) =>
+    getCategorySelectOptions(list).map((option) => ({
+      ...option,
+      label: categoryPathLabel(categories, option.value) ?? option.label,
+    }));
+  return [
+    ...head,
+    ...group(fitting.filter(isTransferCategory)),
+    ...group(fitting.filter((c) => !isTransferCategory(c))),
+  ];
+}
+
+/** "Parent: Child" for a category by id, read from the whole list. */
+function categoryPathLabel(categories: Category[], id: string): string | undefined {
+  const byId = new Map(categories.map((c) => [c.id, c]));
+  const category = byId.get(id);
+  if (!category) return undefined;
+  const parent = category.parentId ? byId.get(category.parentId) : undefined;
+  return parent ? `${parent.name}: ${category.name}` : category.name;
 }
 
 /**
