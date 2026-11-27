@@ -1,5 +1,9 @@
 import { EntityManager } from "typeorm";
-import { fitMnyCategory, transferCategoryIdsAmong } from "./fit-mny-category";
+import {
+  fitMnyCategory,
+  mnyCategoryLeftOff,
+  transferCategoryIdsAmong,
+} from "./fit-mny-category";
 
 /** INV-CATEGORY-001 on the Money writers: a reused Transfer category stays off a category row. */
 describe("fitMnyCategory", () => {
@@ -46,5 +50,15 @@ describe("fitMnyCategory", () => {
       transferCategoryIdsAmong(m, "user-1", new Map()),
     ).resolves.toEqual(new Set());
     expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it("counts a category left off only when the file named one the import mapped", () => {
+    // A Transfer category on a category row is left off; on a transfer it is kept.
+    expect(mnyCategoryLeftOff(input, 2, "category")).toBe(true);
+    expect(mnyCategoryLeftOff(input, 2, "transfer")).toBe(false);
+    expect(mnyCategoryLeftOff(input, 1, "category")).toBe(false);
+    // No category, or one the import did not map, is not this notice's.
+    expect(mnyCategoryLeftOff(input, null, "category")).toBe(false);
+    expect(mnyCategoryLeftOff(input, 99, "category")).toBe(false);
   });
 });

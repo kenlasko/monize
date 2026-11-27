@@ -1,4 +1,4 @@
-import { categoryIdForCategoryRow } from "../categories/category-row-gate";
+import { categoryRowFit } from "../categories/category-row-gate";
 import { statusFromQifFlags } from "./qif-status.util";
 import { Injectable, Logger } from "@nestjs/common";
 import { Account, AccountSubType } from "../accounts/entities/account.entity";
@@ -505,10 +505,13 @@ export class ImportInvestmentProcessorService {
     // A cash-only row is a category row: a Transfer category the file's
     // category maps to is left off, the row imported uncategorized and counted
     // (INV-CATEGORY-001). A transfer takes a category of any type.
-    const fittedCategoryId = transferAccountId
-      ? categoryId
-      : await categoryIdForCategoryRow(ctx.manager, ctx.userId, categoryId);
-    if (categoryId && !fittedCategoryId) {
+    const fit = transferAccountId
+      ? null
+      : await categoryRowFit(ctx.manager, ctx.userId, categoryId);
+    const fittedCategoryId =
+      transferAccountId || fit === "fits" ? categoryId : null;
+    // Counted only for a Transfer category: that is what the notice says.
+    if (fit === "transfer") {
       ctx.importResult.categoriesNotFitting =
         (ctx.importResult.categoriesNotFitting ?? 0) + 1;
     }

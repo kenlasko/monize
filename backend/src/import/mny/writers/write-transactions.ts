@@ -5,7 +5,12 @@ import { SplitKind } from "../../../transactions/entities/split-kind.enum";
 import { FIAT_MONEY_DECIMALS, roundMoney } from "../../../common/round.util";
 import { MappedTransaction } from "../model/mny-import-model";
 import { INSERT_CHUNK_SIZE, chunk } from "./chunk";
-import { fitMnyCategory, type MnyCategoryInput } from "./fit-mny-category";
+import type { CategoryHolder } from "../../../categories/category-fit";
+import {
+  fitMnyCategory,
+  mnyCategoryLeftOff,
+  type MnyCategoryInput,
+} from "./fit-mny-category";
 import {
   TagLink,
   tagIdsFor,
@@ -56,6 +61,11 @@ export interface WriteTransactionsInput extends MnyCategoryInput {
 export interface WrittenTransactions {
   readonly transactionsCreated: number;
   readonly splitsCreated: number;
+  /**
+   * Rows and split lines whose Transfer category was left off: a category
+   * row or line takes only Income or Expense (INV-CATEGORY-001).
+   */
+  readonly categoriesNotFitting: number;
   readonly linksApplied: number;
   /** Tag links written, on transactions and on split legs together. */
   readonly tagLinksApplied: number;
@@ -114,7 +124,7 @@ export async function writeTransactions(
         categoryId: fitMnyCategory(
           input,
           transaction.categoryHandle,
-          transaction.isTransfer ? "transfer" : "category",
+          rowHolder(transaction),
         ),
         description: transaction.description,
         referenceNumber: transaction.referenceNumber,
@@ -155,6 +165,23 @@ export async function writeTransactions(
   return {
     transactionsCreated: writable.length,
     splitsCreated: splits.created,
+    categoriesNotFitting:
+      writable.filter((transaction) =>
+        mnyCategoryLeftOff(
+          input,
+          transaction.categoryHandle,
+          rowHolder(transaction),
+        ),
+      ).length +
+      writable
+        .flatMap((transaction) => transaction.splits)
+        .filter((split) =>
+          mnyCategoryLeftOff(
+            input,
+            split.categoryHandle,
+            lineHolder(split, input),
+          ),
+        ).length,
     linksApplied,
     tagLinksApplied: tagLinks + splitTagLinks,
     affectedAccountIds,
@@ -202,6 +229,27 @@ async function backPatchLinks(
   return links.length;
 }
 
+/** What holds a Money row's category: a transfer, or a category row. */
+function rowHolder(transaction: MappedTransaction): CategoryHolder {
+  return transaction.isTransfer ? "transfer" : "category";
+}
+
+/**
+ * What holds a split line's category. A transfer line whose account did not
+ * import is written as a category line (`writeSplits`), so it is fitted as
+ * the line it will be.
+ */
+function lineHolder(
+  split: MappedTransaction["splits"][number],
+  input: WriteTransactionsInput,
+): CategoryHolder {
+  return split.kind === SplitKind.TRANSFER &&
+    split.transferAccountKey &&
+    input.accountIdByKey.has(split.transferAccountKey)
+    ? "transfer"
+    : "category";
+}
+
 /**
  * Inserts split legs after every transaction exists, so a transfer split can
  * carry its `linked_transaction_id` straight away.
@@ -220,16 +268,10 @@ async function writeSplits(
       id: split.id,
       transactionId: transaction.id,
       kind: split.kind,
-      // A transfer line whose account did not import is written as a
-      // category line below, so it is fitted as the line it will be.
       categoryId: fitMnyCategory(
         input,
         split.categoryHandle,
-        split.kind === SplitKind.TRANSFER &&
-          split.transferAccountKey &&
-          input.accountIdByKey.has(split.transferAccountKey)
-          ? "transfer"
-          : "category",
+        lineHolder(split, input),
       ),
       transferAccountId: split.transferAccountKey
         ? (input.accountIdByKey.get(split.transferAccountKey) ?? null)

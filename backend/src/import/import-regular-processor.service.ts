@@ -1,5 +1,8 @@
 import { statusFromQifFlags } from "./qif-status.util";
-import { categoryIdForCategoryRow } from "../categories/category-row-gate";
+import {
+  categoryIdForCategoryRow,
+  categoryRowFit,
+} from "../categories/category-row-gate";
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { Account, AccountType } from "../accounts/entities/account.entity";
 import {
@@ -509,14 +512,13 @@ export class ImportRegularProcessorService {
     payeeDefaultCategoryId: string | null,
   ): Promise<string | null> {
     if (fileCategoryId) {
-      const fitting = await categoryIdForCategoryRow(
-        ctx.manager,
-        ctx.userId,
-        fileCategoryId,
-      );
-      if (fitting) return fitting;
-      ctx.importResult.categoriesNotFitting =
-        (ctx.importResult.categoriesNotFitting ?? 0) + 1;
+      const fit = await categoryRowFit(ctx.manager, ctx.userId, fileCategoryId);
+      if (fit === "fits") return fileCategoryId;
+      // Counted only for a Transfer category: that is what the notice says.
+      if (fit === "transfer") {
+        ctx.importResult.categoriesNotFitting =
+          (ctx.importResult.categoriesNotFitting ?? 0) + 1;
+      }
       return null;
     }
     return categoryIdForCategoryRow(

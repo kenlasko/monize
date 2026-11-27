@@ -121,6 +121,12 @@ export interface MnyImportResult {
    * row until its series is chosen. Absent when zero.
    */
   readonly bondRowsWithoutSeries?: number;
+  /**
+   * Rows and split lines imported without the file's category because it is
+   * a Transfer category (merged into one a person made), which goes only on a
+   * transfer (INV-CATEGORY-001). Absent when zero.
+   */
+  readonly categoriesNotFitting?: number;
   /** Payee aliases written (KMyMoney file only; absent for Money). */
   readonly payeeAliasesCreated?: number;
   /**

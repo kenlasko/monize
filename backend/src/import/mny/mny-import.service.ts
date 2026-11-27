@@ -430,6 +430,9 @@ export class MnyImportService {
       ...(written.bondRowsWithoutSeries > 0
         ? { bondRowsWithoutSeries: written.bondRowsWithoutSeries }
         : {}),
+      ...(written.categoriesNotFitting > 0
+        ? { categoriesNotFitting: written.categoriesNotFitting }
+        : {}),
       ...(parsed.sourceFormat === "kmy"
         ? {
             ...(parsed.kmyFile ? { fileAsOf: parsed.kmyFile.asOf } : {}),
@@ -516,6 +519,7 @@ export class MnyImportService {
     securitiesCreated: number;
     investmentTransactionsCreated: number;
     bondRowsWithoutSeries: number;
+    categoriesNotFitting: number;
     billsCreated: number;
     pricesImported: number;
     exchangeRatesImported: number;
@@ -790,6 +794,7 @@ export class MnyImportService {
         investmentTransactionsCreated:
           investments.investmentTransactionsCreated,
         bondRowsWithoutSeries: investments.bondRowsWithoutSeries,
+        categoriesNotFitting: transactions.categoriesNotFitting,
         billsCreated: bills.created,
         pricesImported,
         exchangeRatesImported,

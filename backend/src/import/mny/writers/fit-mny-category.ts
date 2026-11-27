@@ -38,6 +38,23 @@ export function fitMnyCategory(
   return categoryFits({ categoryType }, holder) ? id : null;
 }
 
+/**
+ * Whether the file named a category for `holder` that `fitMnyCategory` left
+ * off (a Transfer category on a category row or line), for the import's
+ * notice. A category the file names but the import did not map is not.
+ */
+export function mnyCategoryLeftOff(
+  input: MnyCategoryInput,
+  handle: number | null,
+  holder: CategoryHolder,
+): boolean {
+  return (
+    handle !== null &&
+    input.categoryIdByHandle.has(handle) &&
+    fitMnyCategory(input, handle, holder) === null
+  );
+}
+
 /** The Transfer categories among the ids a Money import will write. */
 export async function transferCategoryIdsAmong(
   manager: EntityManager,
