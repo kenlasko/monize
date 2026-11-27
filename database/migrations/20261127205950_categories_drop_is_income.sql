@@ -10,6 +10,11 @@
 -- schema (and a previous release's open tab sending `isIncome` is refused).
 -- The maintainer accepted that on #2478; a Recreate rollout avoids it.
 --
+-- This file ships in the release after v1.22.0 (#2478: "in the next release"),
+-- and the marker is true only then. Merged before v1.22.0 is tagged, the type
+-- column and this drop would ship together, the release left behind would be
+-- 1.21.x (which knows no type at all), and the marker would be wrong.
+--
 -- 1. categories_sync_type without the mirror. It keeps its other two jobs: a
 --    child takes its parent's type on insert and on a move, and a category a
 --    category row holds cannot become a Transfer one (INV-CATEGORY-003,

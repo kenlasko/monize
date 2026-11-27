@@ -5,7 +5,8 @@ import { categoryTypeFromIncomeFlag } from "./category-type.util";
  * paths that replay one into today's schema: a backup restore and an
  * action-history undo (#2478, `docs/specs/transfer-categories.md` section 11).
  *
- * Up to 1.21.x a category carried only `is_income`; 1.22.0 wrote both. The
+ * Up to 1.21.x a category carried only `is_income`; 1.22.0 wrote both (this
+ * drop ships in the release after it). The
  * contract migration `20261127205950_categories_drop_is_income.sql` dropped the
  * flag, so a snapshot replayed as it stands would name a column that no longer
  * exists, and one carrying only the flag would come back as an Expense category

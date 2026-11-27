@@ -93,7 +93,11 @@ describe("Category type schema (integration)", () => {
   });
 
   describe("a category's type and its parent's", () => {
-    it("has no income flag beside the type (#2478)", async () => {
+    it("maps no income flag beside the type (#2478)", async () => {
+      // This harness builds the tables from the entities (synchronize), so
+      // this proves the entity; the migration's drop is proven by
+      // migration-path.integration.spec.ts and schema.sql's by
+      // legacy-category-type-restore.spec.ts.
       const columns = await dataSource.query(
         `SELECT column_name FROM information_schema.columns
           WHERE table_schema = 'public' AND table_name = 'categories'

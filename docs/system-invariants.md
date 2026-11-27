@@ -9732,10 +9732,13 @@ Failure response    400 on a type change or a move that a holder refuses, and
                     on a request that sends isIncome (forbidNonWhitelisted).
 Required tests      Integration: a child takes its parent's type on insert and
                     on a move, and a re-type reaches the subtree
-                    (category-type-schema.integration.spec.ts); the schema has
-                    no is_income column. Unit: a pre-1.22.0 backup row and undo
-                    snapshot take the type their flag named
-                    (legacy-income-flag.util.spec.ts,
+                    (category-type-schema.integration.spec.ts); the migrations
+                    replayed onto a baseline that has is_income drop it and
+                    the trigger still types a child
+                    (migration-path.integration.spec.ts). Unit: schema.sql has
+                    no is_income (legacy-category-type-restore.spec.ts, which
+                    parses it); a pre-1.22.0 backup row and undo snapshot take
+                    the type their flag named (legacy-income-flag.util.spec.ts,
                     legacy-category-type-restore.spec.ts,
                     action-history.service.spec.ts).
 Status              partial
