@@ -92,6 +92,8 @@
   },
   "actionHistory": {
     "undoSplitLegsChanged": "此次編輯變更了將資金轉入其他帳戶的拆分列，因此無法自動復原。請編輯交易以改回。",
+    "undoDeletedSplitHasTransferLine": "此拆分包含轉帳列，復原無法還原另一個帳戶的一側。請重新輸入該拆分。",
+    "undoTransferPartnerChanged": "此轉帳的另一側之後已被刪除或變更，因此復原無法重新關聯兩側。",
     "undoVoidWithLegs": "此變更作廢或恢復了其他帳戶中的項目，因此無法自動復原。請改為把狀態改回。",
     "loanEditNotUndoable": "此貸款變更無法自動復原。請編輯貸款以改回。",
     "nothingToUndo": "沒有可復原的操作",

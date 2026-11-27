@@ -92,6 +92,8 @@
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Esta edição alterou linhas de divisão que movem dinheiro para outras contas, pelo que não pode ser anulada automaticamente. Edite a transação para a reverter.",
+    "undoDeletedSplitHasTransferLine": "Esta divisão tem uma linha de transferência, e anular não consegue restaurar o lado da outra conta. Introduza a divisão novamente.",
+    "undoTransferPartnerChanged": "O outro lado desta transferência foi eliminado ou alterado entretanto, pelo que anular não consegue ligar novamente os dois lados.",
     "undoVoidWithLegs": "Esta alteração anulou ou restaurou lançamentos noutras contas, pelo que não pode ser anulada automaticamente. Altere antes o estado de volta.",
     "loanEditNotUndoable": "Esta alteração do empréstimo não pode ser anulada automaticamente. Edite o empréstimo para a reverter.",
     "nothingToUndo": "Nada para desfazer",

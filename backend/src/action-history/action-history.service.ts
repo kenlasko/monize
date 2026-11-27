@@ -1509,6 +1509,41 @@ export class ActionHistoryService {
       { currencyCode: account.currencyCode, ...before },
     ]);
 
+    // A transfer line's other-account leg went with the row and history does
+    // not hold it, so refuse before writing anything.
+    if (
+      Array.isArray(before.splits) &&
+      (before.splits as SplitSnapshot[]).some(isLegSplit)
+    ) {
+      throw new ConflictException({
+        message: tr(
+          "errors.actionHistory.undoDeletedSplitHasTransferLine",
+          "This split has a transfer line, and undo cannot restore the other account's side. Enter the split again.",
+        ),
+        errorCode: "UNDO_DELETED_SPLIT_HAS_TRANSFER_LINE",
+      });
+    }
+
+    // A deleted transfer leg: the FK (ON DELETE SET NULL) cleared the
+    // surviving partner's link. Link it back only if it is still unlinked; a
+    // missing or relinked partner would leave a one-way link, so refuse.
+    if (before.linkedTransactionId) {
+      const partner: { linked_transaction_id: string | null }[] =
+        await manager.query(
+          `SELECT linked_transaction_id FROM transactions WHERE id = $1 AND user_id = $2 FOR UPDATE`,
+          [before.linkedTransactionId, action.userId],
+        );
+      if (!partner?.[0] || partner[0].linked_transaction_id !== null) {
+        throw new ConflictException({
+          message: tr(
+            "errors.actionHistory.undoTransferPartnerChanged",
+            "The other side of this transfer was deleted or changed since, so undo cannot link the two sides again.",
+          ),
+          errorCode: "UNDO_TRANSFER_PARTNER_CHANGED",
+        });
+      }
+    }
+
     // Re-insert the transaction
     await manager.query(
       // category-fit-ok: the undo restores the row as its history recorded it
@@ -1543,6 +1578,13 @@ export class ActionHistoryService {
       ],
     );
 
+    if (before.linkedTransactionId) {
+      await manager.query(
+        `UPDATE transactions SET linked_transaction_id = $1 WHERE id = $2 AND user_id = $3 AND linked_transaction_id IS NULL`,
+        [before.id, before.linkedTransactionId, action.userId],
+      );
+    }
+
     // Re-insert splits
     if (Array.isArray(before.splits) && before.splits.length > 0) {
       await this.assertTagsStillExist(
@@ -1555,8 +1597,8 @@ export class ActionHistoryService {
       for (const splitData of before.splits) {
         await manager.query(
           // category-fit-ok: the undo restores the lines as their history recorded them
-          `INSERT INTO transaction_splits (id, transaction_id, category_id, transfer_account_id, linked_transaction_id, amount, memo)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          `INSERT INTO transaction_splits (id, transaction_id, category_id, transfer_account_id, linked_transaction_id, amount, memo, kind)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
           [
             splitData.id,
             before.id,
@@ -1565,6 +1607,7 @@ export class ActionHistoryService {
             splitData.linkedTransactionId ?? null,
             splitData.amount,
             splitData.memo ?? null,
+            splitKindOf(splitData),
           ],
         );
         // The line's tags went with the deleted row; put back those recorded

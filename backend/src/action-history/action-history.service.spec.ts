@@ -1948,6 +1948,115 @@ describe("ActionHistoryService", () => {
       expect(result.description).toContain("Undone");
       expect(mockQueryRunner.manager.findOne).not.toHaveBeenCalled();
     });
+
+    describe("splits and transfer legs", () => {
+      const arrange = (
+        beforeData: Record<string, unknown>,
+        partnerRows: unknown[] = [],
+      ) => {
+        mockRepository.findOne.mockResolvedValue({
+          ...mockAction,
+          entityType: "transaction",
+          action: "delete",
+          entityId: "tx-1",
+          beforeData: {
+            id: "tx-1",
+            accountId: "acc-1",
+            transactionDate: "2024-01-15",
+            amount: -100,
+            currencyCode: "USD",
+            tagIds: [],
+            ...beforeData,
+          },
+          afterData: null,
+        });
+        mockQueryRunner.manager.findOne.mockResolvedValue({
+          id: "acc-1",
+          userId,
+        });
+        mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+        mockQueryRunner.query.mockImplementation(async (sql: string) =>
+          sql.includes("SELECT linked_transaction_id")
+            ? partnerRows
+            : [{ opening_balance: "0", tx_sum: "0" }],
+        );
+      };
+      const writes = () =>
+        mockQueryRunner.query.mock.calls.filter(
+          (c: any[]) =>
+            /^\s*(INSERT|UPDATE|DELETE)/.test(c[0]) &&
+            !c[0].includes("accounts"),
+        );
+
+      it("refuses a split with a transfer line, before writing", async () => {
+        arrange({
+          isSplit: true,
+          splits: [
+            { id: "s1", categoryId: "cat-1", amount: -30 },
+            {
+              id: "s2",
+              transferAccountId: "acc-2",
+              linkedTransactionId: "leg-2",
+              amount: -70,
+            },
+          ],
+        });
+
+        await expect(service.undo(userId)).rejects.toMatchObject({
+          response: { errorCode: "UNDO_DELETED_SPLIT_HAS_TRANSFER_LINE" },
+        });
+        expect(writes()).toHaveLength(0);
+      });
+
+      it("writes the kind of a category-only split line", async () => {
+        arrange({
+          isSplit: true,
+          splits: [{ id: "s1", categoryId: "cat-1", amount: -100 }],
+        });
+
+        await service.undo(userId);
+
+        const insert = mockQueryRunner.query.mock.calls.find((c: any[]) =>
+          c[0].includes("INSERT INTO transaction_splits"),
+        );
+        expect(insert[0]).toContain("kind");
+        expect(insert[1]).toContain("category");
+      });
+
+      it("links the surviving partner back to the restored leg", async () => {
+        arrange({ isTransfer: true, linkedTransactionId: "tx-2" }, [
+          { linked_transaction_id: null },
+        ]);
+
+        await service.undo(userId);
+
+        const insert = mockQueryRunner.query.mock.calls.find((c: any[]) =>
+          c[0].includes("INSERT INTO transactions"),
+        );
+        expect(insert[1]).toContain("tx-2");
+        expect(mockQueryRunner.query).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "UPDATE transactions SET linked_transaction_id",
+          ),
+          ["tx-1", "tx-2", userId],
+        );
+      });
+
+      it.each([
+        ["gone", []],
+        ["relinked elsewhere", [{ linked_transaction_id: "tx-9" }]],
+      ])(
+        "refuses, before writing, when the partner is %s",
+        async (_n, rows) => {
+          arrange({ isTransfer: true, linkedTransactionId: "tx-2" }, rows);
+
+          await expect(service.undo(userId)).rejects.toMatchObject({
+            response: { errorCode: "UNDO_TRANSFER_PARTNER_CHANGED" },
+          });
+          expect(writes()).toHaveLength(0);
+        },
+      );
+    });
   });
 
   describe("undo transfer", () => {

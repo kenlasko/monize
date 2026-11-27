@@ -92,6 +92,8 @@
   },
   "actionHistory": {
     "undoSplitLegsChanged": "[XX-This edit changed split lines that move money to other accounts, so it cannot be undone automatically. Edit the transaction to change it back.-XX]",
+    "undoDeletedSplitHasTransferLine": "[XX-This split has a transfer line, and undo cannot restore the other account's side. Enter the split again.-XX]",
+    "undoTransferPartnerChanged": "[XX-The other side of this transfer was deleted or changed since, so undo cannot link the two sides again.-XX]",
     "undoVoidWithLegs": "[XX-This change voided or restored entries in other accounts, so it cannot be undone automatically. Change the status back instead.-XX]",
     "loanEditNotUndoable": "[XX-This loan change cannot be undone automatically. Edit the loan to change it back.-XX]",
     "nothingToUndo": "[XX-Nothing to undo-XX]",

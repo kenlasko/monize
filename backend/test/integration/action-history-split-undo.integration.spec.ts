@@ -162,6 +162,18 @@ describe("Undo of an edit of a split with a transfer line (integration)", () => 
     expect(await balances()).toEqual(settled);
   });
 
+  it("refuses the undo of deleting a split with a transfer line, before any write", async () => {
+    const id = await createSplit();
+    await asUser(() => transactions.remove(userId, id));
+    const settled = await balances();
+
+    await expect(settledUndo()).rejects.toMatchObject({
+      response: { errorCode: "UNDO_DELETED_SPLIT_HAS_TRANSFER_LINE" },
+    });
+    expect(await balances()).toEqual(settled);
+    expect(await db.manager.countBy(Transaction, { id })).toBe(0);
+  });
+
   it("refuses the undo of a VOID that reached the legs, with every balance unchanged", async () => {
     const id = await createSplit();
     await asUser(() =>

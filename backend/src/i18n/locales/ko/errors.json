@@ -92,6 +92,8 @@
   },
   "actionHistory": {
     "undoSplitLegsChanged": "이 편집으로 다른 계좌로 돈을 이동하는 분할 줄이 변경되어 자동으로 실행 취소할 수 없습니다. 되돌리려면 거래를 편집하세요.",
+    "undoDeletedSplitHasTransferLine": "이 분할에는 이체 줄이 있으며, 실행 취소로는 상대 계좌 쪽을 복원할 수 없습니다. 분할을 다시 입력하세요.",
+    "undoTransferPartnerChanged": "이 이체의 상대편이 이후 삭제되거나 변경되어, 실행 취소로 양쪽을 다시 연결할 수 없습니다.",
     "undoVoidWithLegs": "이 변경으로 다른 계좌의 항목이 무효 처리되거나 복원되어 자동으로 실행 취소할 수 없습니다. 대신 상태를 다시 변경하세요.",
     "loanEditNotUndoable": "이 대출 변경은 자동으로 실행 취소할 수 없습니다. 되돌리려면 대출을 편집하세요.",
     "nothingToUndo": "실행 취소할 항목이 없습니다",

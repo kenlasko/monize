@@ -92,6 +92,8 @@
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Deze bewerking heeft splitsregels gewijzigd die geld naar andere rekeningen verplaatsen, dus ze kan niet automatisch ongedaan worden gemaakt. Bewerk de transactie om haar terug te zetten.",
+    "undoDeletedSplitHasTransferLine": "Deze splitsing heeft een overboekingsregel en ongedaan maken kan de kant van de andere rekening niet herstellen. Voer de splitsing opnieuw in.",
+    "undoTransferPartnerChanged": "De andere kant van deze overboeking is sindsdien verwijderd of gewijzigd, dus ongedaan maken kan beide kanten niet opnieuw koppelen.",
     "undoVoidWithLegs": "Deze wijziging heeft boekingen op andere rekeningen geannuleerd of hersteld, dus ze kan niet automatisch ongedaan worden gemaakt. Zet in plaats daarvan de status terug.",
     "loanEditNotUndoable": "Deze leningwijziging kan niet automatisch ongedaan worden gemaakt. Bewerk de lening om haar terug te zetten.",
     "nothingToUndo": "Niets om ongedaan te maken",
