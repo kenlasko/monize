@@ -223,6 +223,12 @@ export class InvestmentTransactionsController {
     required: false,
     description: "Filter by action type (BUY, SELL, DIVIDEND, etc.)",
   })
+  @ApiQuery({
+    name: "securityId",
+    required: false,
+    description:
+      "Filter by security ID: one security, where a symbol can name two (the new-transaction form's history of a security)",
+  })
   @ApiResponse({
     status: 200,
     description: "List of investment transactions with pagination",
@@ -238,6 +244,8 @@ export class InvestmentTransactionsController {
     @Query("limit") limit?: string,
     @Query("symbol") symbol?: string,
     @Query("action") action?: string,
+    @Query("securityId", new ParseUUIDPipe({ optional: true }))
+    securityId?: string,
   ) {
     const uuidRegex =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -328,6 +336,7 @@ export class InvestmentTransactionsController {
       limit ? parseInt(limit, 10) : undefined,
       symbol,
       action,
+      securityId,
     );
   }
 
