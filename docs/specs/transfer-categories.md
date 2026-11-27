@@ -569,7 +569,7 @@ a category line; each such reader is listed below.
   `is_income` in PR 2 (`true` to income; `false` and `NULL` to expense, the
   column being nullable), so every existing category is Income or Expense and
   every existing row already fits. `is_income` stays one release for the
-  previous pods and is dropped later as a `contract-after` change; the API
+  previous pods and is dropped in the next release as a `contract-after` change; the API
   field `isIncome` stays, derived.
 - **Children whose flag differs from their parent's exist today.** A moved
   category is re-typed alone and its children keep their flag
@@ -947,8 +947,8 @@ commit that did it. PR 5 (this one) carried the contract docs, the website
 pages and their screenshots, the end-to-end specs
 (`e2e/tests/transfer-categories.spec.ts`), the corrected tool and DTO text,
 release notes and a What's new entry (`docs/release-notes/1.22.0.md`), the
-full-locale pass, and a follow-up issue to drop `categories.is_income` in the
-release after next.
+full-locale pass, and the owed follow-up to drop `categories.is_income` in the
+next release (the issue is still to be opened; its number goes here).
 
 ###### PR 1: Specification
 
@@ -1001,9 +1001,10 @@ Done when a report or budget with no Transfer category returns the figures it re
 
 ###### PR 5: Docs, tests, locales
 
-- [x] Contract docs: invariant catalog entries, `docs/financial-semantics.md`, the backend and frontend indexes, corrected tool and DTO text.
-- [x] Website docs, retaken screenshots, help links.
-- [x] E2E specs from section 14.
-- [x] Full-locale i18n pass.
-- [x] Release notes and What's new; a follow-up issue for the `is_income` column drop.
-
+- [x] Contract docs: invariant catalog entries, `docs/financial-semantics.md`, the backend and frontend indexes, corrected tool and DTO text. (8e27bf1c9, a9f378a2b)
+- [x] Website docs, retaken screenshots, help links. (94cf64503, 572c91b3c)
+- [x] E2E specs from section 14. (8452e2264, 4b994c8e2)
+- [x] Full-locale i18n pass. (435d33b83)
+- [x] Release notes and What's new (the What's new digest is `docs/release-notes/1.22.0.md`). (70783f308)
+- [ ] A follow-up issue for the `is_income` column drop in the next release: pending, to be opened by the maintainer.
+- [x] Retire the plan pair into this specification. (0edb383cd)
