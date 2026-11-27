@@ -24,6 +24,18 @@ export interface SplitRow extends CreateSplitData {
 }
 
 /**
+ * The category a split's total is signed by: the first line's, when that line
+ * is not a transfer line. A transfer line's category, of any type, says what
+ * the transfer is for, never which way the money runs.
+ */
+export function splitTotalSigningCategoryId(
+  splits: readonly Pick<SplitRow, 'splitType' | 'categoryId'>[],
+): string | undefined {
+  const first = splits[0];
+  return first && first.splitType !== 'transfer' ? first.categoryId || undefined : undefined;
+}
+
+/**
  * Two new split rows halving `transactionAmount`, at the money precision of
  * the account currency `currencyCode` (four for fiat, a coin's eight), the
  * second taking the rounding so the pair sums to the total.

@@ -14,6 +14,7 @@ import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Select } from '@/components/ui/Select';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitData } from './SplitEditor';
+import { splitTotalSigningCategoryId } from './split-rows';
 import { receivedAmountToSend } from './split-transfer-currency';
 import { NormalTransactionFields } from './NormalTransactionFields';
 import { SplitTransactionFields } from './SplitTransactionFields';
@@ -1111,12 +1112,12 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   };
 
   // The category whose income/expense flag drives the amount sign: the selected
-  // category in normal mode, the first split's category in split mode.
+  // category in normal mode, the first split's category in split mode (none
+  // when that line is a transfer line, `splitTotalSigningCategoryId`).
   const activeSigningCategory = (): Category | undefined => {
     if (mode === 'split') {
-      return splits.length > 0 && splits[0].categoryId
-        ? effectiveCategories.find((c) => c.id === splits[0].categoryId)
-        : undefined;
+      const signingId = splitTotalSigningCategoryId(splits);
+      return signingId ? effectiveCategories.find((c) => c.id === signingId) : undefined;
     }
     return selectedCategoryId
       ? effectiveCategories.find((c) => c.id === selectedCategoryId)
@@ -1143,10 +1144,8 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       setValue('amount', value ?? 0, { shouldValidate: true });
       return;
     }
-    const category =
-      splits.length > 0 && splits[0].categoryId
-        ? categories.find((c) => c.id === splits[0].categoryId)
-        : undefined;
+    const signingId = splitTotalSigningCategoryId(splits);
+    const category = signingId ? categories.find((c) => c.id === signingId) : undefined;
     setValue('amount', signAmountByCategory(value, watchedAmount, category), {
       shouldValidate: true,
     });

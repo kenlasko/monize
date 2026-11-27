@@ -421,8 +421,9 @@ export function SplitEditor({
     }
 
     // If changing amount, adjust sign based on selected category
-    // But respect explicit sign changes (same pattern as handleAmountChange)
-    if (field === 'amount') {
+    // But respect explicit sign changes (same pattern as handleAmountChange).
+    // A transfer line's sign is its direction, whatever its category's type.
+    if (field === 'amount' && newSplits[index].splitType !== 'transfer') {
       const categoryId = newSplits[index].categoryId;
       if (categoryId) {
         const category = findCategory(categoryId);

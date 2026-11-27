@@ -2882,6 +2882,17 @@ describe('SplitEditor: what a line may hold (INV-CATEGORY-001)', () => {
     expect(onChange.mock.calls[0][0][0]).toMatchObject({ splitType: 'transfer', categoryId: 'cat-food' });
   });
 
+  it("keeps the sign typed on a transfer line, whatever its category's type", () => {
+    // A transfer line's sign is its direction; an Expense category on it
+    // never turns an incoming amount into an outgoing one.
+    renderLines([
+      createSplitRow({ id: 's1', splitType: 'transfer', transferAccountId: 'acc-2', categoryId: 'cat-food', amount: -30 }),
+      createSplitRow({ id: 's2', categoryId: 'cat-food', amount: -20 }),
+    ]);
+    fireEvent.change(screen.getAllByDisplayValue('-30.00')[0], { target: { value: '500' } });
+    expect(onChange.mock.calls[0][0][0].amount).toBe(500);
+  });
+
   it("sends a transfer line's category, and none for an investment line", () => {
     const data = toCreateSplitData([
       createSplitRow({ splitType: 'transfer', transferAccountId: 'acc-2', categoryId: 'cat-save', amount: -30 }),
