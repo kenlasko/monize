@@ -184,6 +184,9 @@ describe("Undo of an edit of a split with a transfer line (integration)", () => 
         fromCurrencyCode: "USD",
       }),
     );
+    // The create entry is written fire-and-forget; settle it so the entry
+    // recorded below is the newest one undo takes.
+    await settlePendingHistoryWrites();
     const [leg] = await db.query(
       `SELECT id, linked_transaction_id AS "linkedTransactionId"
          FROM transactions WHERE account_id = $1`,

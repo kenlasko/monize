@@ -1530,6 +1530,10 @@ export class ActionHistoryService {
 
     const before = action.beforeData;
 
+    // First, so a row undo can never restore is refused with its own code
+    // whatever else changed since.
+    assertDeletedRowRestorable(before, true);
+
     // Verify account still exists
     const account = await manager.findOne(Account, {
       where: { id: before.accountId, userId: action.userId },
@@ -1545,8 +1549,6 @@ export class ActionHistoryService {
     await this.assertSnapshotAmountsFit(manager, [
       { currencyCode: account.currencyCode, ...before },
     ]);
-
-    assertDeletedRowRestorable(before, true);
 
     // Re-insert the transaction
     await manager.query(
