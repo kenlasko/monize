@@ -10,6 +10,7 @@ import { BudgetCategory } from "@/budgets/entities/budget-category.entity";
 import { getCurrentMonthPeriodDates } from "@/budgets/budget-date.utils";
 import {
   queryCategorySpending,
+  resolveCategoryProvisionalCount,
   resolveCategorySpentOrNull,
   resolveOutsideTransferIncome,
 } from "@/budgets/budget-spending.util";
@@ -212,6 +213,36 @@ describe("budget lines on a Transfer category (integration)", () => {
       const spending = await read([own, hisa]);
       expect(resolveCategorySpentOrNull(own, spending)).toBe(500);
       expect(resolveCategorySpentOrNull(hisa, spending)).toBe(0);
+    });
+
+    it("discloses an estimate the rule moves onto the category line", async () => {
+      const own = await categoryLine("Savings contributions", 500);
+      const hisa = await accountLine("HISA", 300);
+      await transfer("Chequing", "HISA", 500, "Savings contributions");
+      await db.query(
+        `UPDATE transactions SET amount_is_provisional = true
+          WHERE user_id = $1 AND account_id = $2`,
+        [userId, accounts.Chequing],
+      );
+      const spending = await read([own, hisa]);
+      expect(resolveCategoryProvisionalCount(own, spending)).toBe(1);
+      expect(resolveCategoryProvisionalCount(hisa, spending)).toBe(0);
+      expect(spending.provisionalCount).toBe(1);
+    });
+
+    it("leaves an estimate on an Expense category's line untracked, as before", async () => {
+      const own = await categoryLine("Mortgage", 1500);
+      await transfer("Chequing", "Mortgage", 1500, "Mortgage");
+      await db.query(
+        `UPDATE transactions SET amount_is_provisional = true
+          WHERE user_id = $1 AND account_id = $2`,
+        [userId, accounts.Chequing],
+      );
+      const spending = await read([own]);
+      // The line takes nothing from the per-account figures (section 5), so
+      // it names no estimate; the toggle, which nets this leg, still does.
+      expect(resolveCategoryProvisionalCount(own, spending)).toBe(0);
+      expect(spending.outsideTransferIncomeProvisionalCount).toBe(1);
     });
 
     it("leaves the account's line counting it when the category has no line", async () => {

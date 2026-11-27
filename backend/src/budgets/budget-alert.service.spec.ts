@@ -85,6 +85,7 @@ function spending(
     transferProvisionalCounts: new Map(),
     transferIncomeProvisionalCounts: new Map(),
     outsideTransferIncomeProvisionalCount: 0,
+    categoryProvisionalCounts: new Map(),
     provisionalCount: 0,
   };
 }

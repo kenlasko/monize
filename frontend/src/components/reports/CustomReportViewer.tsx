@@ -147,7 +147,11 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
   // what was clicked; a listed transaction is flashed on its page.
   const handleDataPointClick = (id: string) => {
     if (!result) return;
-    router.push(customReportDrillDownHref(report?.filters, result, id));
+    router.push(
+      customReportDrillDownHref(report?.filters, result, id, {
+        transferMeasure: !!report?.config.transferMeasure,
+      }),
+    );
   };
 
   const timeframeOptions = [

@@ -281,6 +281,13 @@ export interface CategorySpending {
   /** The same, inside `outsideTransferIncome`. */
   outsideTransferIncomeProvisionalCount: number;
   /**
+   * categoryId -> the same, inside its `spendingMap` figure: the transfer legs
+   * a line on a Transfer category takes off the per-account lines (the overlap
+   * rule, docs/specs/transfer-categories.md section 6.3), so an estimate the
+   * rule moves is still disclosed. Absent for every other category.
+   */
+  categoryProvisionalCounts: Map<string, number>;
+  /**
    * The distinct provisional legs in any transfer figure above, once each
    * however many figures hold it.
    */
@@ -375,6 +382,7 @@ export function emptyCategorySpending(currency: string): CategorySpending & {
     transferProvisionalCounts: new Map(),
     transferIncomeProvisionalCounts: new Map(),
     outsideTransferIncomeProvisionalCount: 0,
+    categoryProvisionalCounts: new Map(),
     provisionalCount: 0,
   };
 }
@@ -511,6 +519,16 @@ export async function queryCategorySpendingBuckets(
       .andWhere("t.is_split = false");
     if (paceThrough)
       directQb.addSelect("SUM(-LEAST(t.amount, 0))", "purchases");
+    // The estimates among the transfer legs a Transfer category's line takes
+    // over. A leg holding an Income or Expense category is not tracked on its
+    // category line, as before.
+    if (lineTransferCategoryIds.length > 0)
+      directQb
+        .addSelect(
+          "ARRAY_AGG(DISTINCT t.id::text) FILTER (WHERE t.amount_is_provisional = true AND t.is_transfer = true AND t.category_id IN (:...lineTransferCategoryIds))",
+          "provisionalIds",
+        )
+        .setParameter("lineTransferCategoryIds", lineTransferCategoryIds);
     excludeBudgetAccounts(directQb, excludedAccountIds)
       .groupBy("t.category_id")
       .addGroupBy("t.currency_code")
@@ -775,6 +793,10 @@ export async function queryCategorySpendingBuckets(
     // An outgoing line and an income line naming one account can both read
     // the same leg, so the whole count is over distinct ids.
     const provisionalIds = new Set<string>();
+    for (const [key, ids] of categories.provisional) {
+      spending.categoryProvisionalCounts.set(key, ids.size);
+      for (const id of ids) provisionalIds.add(id);
+    }
     for (const [key, ids] of transfers.provisional) {
       spending.transferProvisionalCounts.set(key, ids.size);
       for (const id of ids) provisionalIds.add(id);
@@ -970,15 +992,17 @@ export function resolveCategorySpent(
 
 /**
  * The provisional transfer legs inside the figure `resolveCategorySpent`
- * reads for `bc`: a transfer line's own count, 0 for a category line, whose
- * rows are never transfer legs.
+ * reads for `bc`: a transfer line's own count; for a line on a Transfer
+ * category, the legs it took over (the overlap rule); 0 for every other
+ * category line.
  */
 export function resolveCategoryProvisionalCount(
   bc: BudgetCategory,
   spending: Pick<
     CategorySpending,
     "transferProvisionalCounts" | "transferIncomeProvisionalCounts"
-  >,
+  > &
+    Partial<Pick<CategorySpending, "categoryProvisionalCounts">>,
 ): number {
   if (isTransferIncomeLine(bc)) {
     return (
@@ -989,6 +1013,9 @@ export function resolveCategoryProvisionalCount(
   }
   if (bc.isTransfer && bc.transferAccountId) {
     return spending.transferProvisionalCounts.get(bc.transferAccountId) ?? 0;
+  }
+  if (bc.categoryId) {
+    return spending.categoryProvisionalCounts?.get(bc.categoryId) ?? 0;
   }
   return 0;
 }

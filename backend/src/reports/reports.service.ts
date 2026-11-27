@@ -1178,6 +1178,9 @@ export class ReportsService {
       data.known === false ||
       (config.transferMeasure === TransferMeasure.NET &&
         metric !== MetricType.COUNT);
+    // A group none of whose parts converted has no known part to name: an
+    // empty aggregate's 0 is not one.
+    if (data.known === false) return { value: null, incomplete: true };
     return withheld
       ? { value: null, knownValue: value, incomplete: true }
       : { value, incomplete: true };

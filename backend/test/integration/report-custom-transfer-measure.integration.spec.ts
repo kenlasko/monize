@@ -332,6 +332,8 @@ describe("custom report: the transfer measure (integration)", () => {
         value: null,
         incomplete: true,
       });
+      // Nothing converted, so no known part is named, not a known 0.
+      expect(result.data[0].knownValue).toBeUndefined();
       expect(result.summary.total).toBeNull();
       expect(result.missingCurrencies).toEqual(["USD"]);
     });
