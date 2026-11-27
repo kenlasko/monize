@@ -585,6 +585,7 @@
       },
       "optionalHeading": "वैकल्पिक रूप से भी हटाएं:",
       "accountsOption": "खाते",
+      "accountsOptionDetail": "यह उन निवेश रिपोर्ट और मोंटे कार्लो परिदृश्यों को भी हटाता है जिनमें कोई खाता चुना गया है।",
       "categoriesOption": "श्रेणियां",
       "payeesOption": "भुगतानकर्ता",
       "currencyPreferencesOption": "मुद्रा प्राथमिकताएं",

@@ -585,6 +585,7 @@
       },
       "optionalHeading": "選擇性也刪除：",
       "accountsOption": "科目",
+      "accountsOptionDetail": "同時刪除指定了帳戶的投資報表和蒙特卡羅情境。",
       "categoriesOption": "類別",
       "payeesOption": "收款人",
       "currencyPreferencesOption": "貨幣偏好設定",

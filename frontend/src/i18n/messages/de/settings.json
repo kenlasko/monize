@@ -585,6 +585,7 @@
       },
       "optionalHeading": "Optional auch löschen:",
       "accountsOption": "Konten",
+      "accountsOptionDetail": "Löscht auch die Anlageberichte und Monte-Carlo-Szenarien, die ein Konto nennen.",
       "categoriesOption": "Kategorien",
       "payeesOption": "Zahlungsempfänger",
       "currencyPreferencesOption": "Währungseinstellungen",

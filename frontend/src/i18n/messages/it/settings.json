@@ -585,6 +585,7 @@
       },
       "optionalHeading": "Facoltativamente elimina anche:",
       "accountsOption": "Conti",
+      "accountsOptionDetail": "Elimina anche i report di investimento e gli scenari Monte Carlo che indicano un conto.",
       "categoriesOption": "Categorie",
       "payeesOption": "Beneficiari",
       "currencyPreferencesOption": "Preferenze valuta",

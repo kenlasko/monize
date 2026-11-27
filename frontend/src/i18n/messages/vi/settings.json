@@ -585,6 +585,7 @@
       },
       "optionalHeading": "Tùy chọn cũng xóa:",
       "accountsOption": "Tài khoản",
+      "accountsOptionDetail": "Cũng xóa các báo cáo đầu tư và kịch bản Monte Carlo có chỉ định một tài khoản.",
       "categoriesOption": "Danh mục",
       "payeesOption": "Người nhận",
       "currencyPreferencesOption": "Tùy chọn tiền tệ",

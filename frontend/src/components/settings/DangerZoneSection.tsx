@@ -213,6 +213,9 @@ export function DangerZoneSection({ user }: DangerZoneSectionProps) {
                 />
                 {t('deleteData.accountsOption')}
               </label>
+              <p className="ml-6 text-xs text-gray-500 dark:text-gray-400">
+                {t('deleteData.accountsOptionDetail')}
+              </p>
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                 <input
                   type="checkbox"

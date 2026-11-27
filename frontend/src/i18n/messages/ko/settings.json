@@ -585,6 +585,7 @@
       },
       "optionalHeading": "선택적으로 삭제 가능:",
       "accountsOption": "계정",
+      "accountsOptionDetail": "계좌를 지정한 투자 보고서와 몬테카를로 시나리오도 함께 삭제됩니다.",
       "categoriesOption": "카테고리",
       "payeesOption": "수취인",
       "currencyPreferencesOption": "통화 설정",

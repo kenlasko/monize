@@ -585,6 +585,7 @@
       },
       "optionalHeading": "Optioneel ook verwijderen:",
       "accountsOption": "Rekeningen",
+      "accountsOptionDetail": "Verwijdert ook de beleggingsrapporten en Monte Carlo-scenario's die een rekening noemen.",
       "categoriesOption": "Categorieën",
       "payeesOption": "Begunstigden",
       "currencyPreferencesOption": "Valutavoorkeuren",

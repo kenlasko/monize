@@ -2258,10 +2258,17 @@ describe("UsersService", () => {
       const accounts = queries.findIndex((q) =>
         q.includes("DELETE FROM accounts"),
       );
-      for (const table of ["investment_reports", "monte_carlo_scenarios"]) {
+      // Only rows naming an account go; one naming none stays valid.
+      const guards = {
+        investment_reports: "jsonb_array_length(",
+        monte_carlo_scenarios: "cardinality(account_ids) > 0",
+      };
+      for (const [table, guard] of Object.entries(guards)) {
         const i = queries.findIndex((q) => q.includes(`DELETE FROM ${table}`));
         expect(i).toBeGreaterThanOrEqual(0);
         expect(i).toBeLessThan(accounts);
+        expect(queries[i]).toContain(guard);
+        expect(queries[i]).toContain("> 0");
       }
 
       mockQueryRunner.query.mockClear();

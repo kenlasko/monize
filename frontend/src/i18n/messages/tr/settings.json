@@ -585,6 +585,7 @@
       },
       "optionalHeading": "İsteğe bağlı olarak ayrıca şunları silin:",
       "accountsOption": "Hesaplar",
+      "accountsOptionDetail": "Bir hesabı belirten yatırım raporlarını ve Monte Carlo senaryolarını da siler.",
       "categoriesOption": "Kategoriler",
       "payeesOption": "Alacaklılar",
       "currencyPreferencesOption": "Para birimi tercihleri",

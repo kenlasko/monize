@@ -585,6 +585,7 @@
       },
       "optionalHeading": "オプションで追加削除:",
       "accountsOption": "口座",
+      "accountsOptionDetail": "口座を指定している投資レポートとモンテカルロシナリオも削除されます。",
       "categoriesOption": "カテゴリ",
       "payeesOption": "支払先",
       "currencyPreferencesOption": "通貨設定",

@@ -585,6 +585,7 @@
       },
       "optionalHeading": "Optionally also delete:",
       "accountsOption": "Accounts",
+      "accountsOptionDetail": "Also deletes the investment reports and Monte Carlo scenarios that name an account.",
       "categoriesOption": "Categories",
       "payeesOption": "Payees",
       "currencyPreferencesOption": "Currency preferences",

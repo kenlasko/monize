@@ -1054,7 +1054,7 @@ You can optionally choose to also delete:
 
 | Option | What It Does |
 |--------|-------------|
-| **Accounts** | Deletes all financial accounts. If unchecked, accounts are kept but their balances are reset to the opening balance. |
+| **Accounts** | Deletes all financial accounts, and the investment reports and Monte Carlo scenarios that name an account (one that names none stays). If unchecked, accounts are kept but their balances are reset to the opening balance. |
 | **Categories** | Deletes all categories. References to categories on payees and accounts are cleared first. |
 | **Payees** | Deletes all payees and payee aliases. |
 | **Currency preferences** | Deletes saved exchange rate preferences. |
