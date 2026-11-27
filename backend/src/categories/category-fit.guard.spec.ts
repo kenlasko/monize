@@ -73,8 +73,6 @@ const FIT_HELPERS = new Set([
   "fitCategories",
   "categoryFits",
   "categoryIdForCategoryRow",
-  // fitCategory for a transfer leg, with the transfer routes' 400.
-  "fitTransferCategory",
 ]);
 
 const ROW_TABLES =
@@ -109,11 +107,6 @@ const NOT_YET_CONVERTED = new Set<string>([
   "loan-fees/loan-fees.service.ts syncTemplate",
   "payees/payee-backfill.util.ts applyPayeeCategoryToAll",
   "payees/payee-backfill.util.ts backfillPayeeCategory",
-  "scheduled-transactions/scheduled-transaction-override.service.ts createOverride",
-  "scheduled-transactions/scheduled-transaction-override.service.ts updateOverride",
-  "scheduled-transactions/scheduled-transactions.service.ts createSplits",
-  "scheduled-transactions/scheduled-transactions.service.ts createWithoutHistory",
-  "scheduled-transactions/scheduled-transactions.service.ts update",
   "shared-expenses/shared-bank-splits.ts restoreBankSplits",
   "shared-expenses/shared-finance-write.ts insertRow",
   "shared-expenses/shared-finance-write.ts undoSharedPosting",
@@ -163,12 +156,22 @@ function functionLabel(fn: ts.Node): string {
   return "<anonymous>";
 }
 
+/**
+ * A fit helper of a narrower subject, named for it: `fitTransferCategory`,
+ * `fitOverrideCategories`. Each is a wrapper of `fitCategory` or
+ * `fitCategories` and is held by the matrix like them.
+ */
+const FIT_HELPER_NAME = /^fit\w*Categor(?:y|ies)$/;
+
 /** Does `scope` call or name one of the fit helpers? */
 function callsFitHelper(scope: ts.Node): boolean {
   let found = false;
   const visit = (n: ts.Node): void => {
     if (found) return;
-    if (ts.isIdentifier(n) && FIT_HELPERS.has(n.text)) {
+    if (
+      ts.isIdentifier(n) &&
+      (FIT_HELPERS.has(n.text) || FIT_HELPER_NAME.test(n.text))
+    ) {
       found = true;
       return;
     }

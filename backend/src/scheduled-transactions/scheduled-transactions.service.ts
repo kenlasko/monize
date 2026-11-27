@@ -24,6 +24,12 @@ import { CreateScheduledTransactionDto } from "./dto/create-scheduled-transactio
 import { UpdateScheduledTransactionDto } from "./dto/update-scheduled-transaction.dto";
 import { CreateScheduledTransactionSplitDto } from "./dto/create-scheduled-transaction-split.dto";
 import {
+  categoryFits,
+  fitCategories,
+  fitCategory,
+} from "../categories/category-fit";
+import { clearTransferCategoriesFromOverrides } from "./scheduled-category-fit";
+import {
   CreateScheduledTransactionOverrideDto,
   UpdateScheduledTransactionOverrideDto,
   OverrideSplitDto,
@@ -409,6 +415,15 @@ const INVESTMENT_RELATIONS = [
  * (issue #1154 review). Use this so validation sees the value that will be
  * written.
  */
+/** The kind a scheduled split line is written as, from what the request names. */
+function scheduledSplitKind(
+  split: CreateScheduledTransactionSplitDto,
+): SplitKind {
+  if (split.splitKind) return split.splitKind;
+  if (split.investment) return SplitKind.INVESTMENT;
+  return split.transferAccountId ? SplitKind.TRANSFER : SplitKind.CATEGORY;
+}
+
 function suppliedOrStored<T>(supplied: T | undefined, stored: T): T {
   return supplied === undefined ? stored : supplied;
 }
@@ -1268,6 +1283,18 @@ export class ScheduledTransactionsService {
               : [],
         });
       }
+      // The schedule's category is the person's and fits what the schedule
+      // posts (INV-CATEGORY-001): a scheduled transfer takes any type, a
+      // scheduled ordinary transaction only Income or Expense. Its split lines
+      // are fitted where they are written (`createSplits`).
+      if (!(hasSplits || isInvestment)) {
+        await fitCategory(
+          m,
+          userId,
+          transactionData.categoryId,
+          isTransfer ? "transfer" : "category",
+        );
+      }
       const repo = m.getRepository(ScheduledTransaction);
       const scheduledTransaction = repo.create({
         ...transactionData,
@@ -1278,10 +1305,10 @@ export class ScheduledTransactionsService {
         nextDueDate,
         startDate,
         totalOccurrences: transactionData.occurrencesRemaining,
-        // A transfer may carry an optional spending category (see #743): it is
-        // stored on the schedule and applied to both legs when posted, surfacing
-        // the transfer in the monthly category breakdown. Only splits (category
-        // lives on each split) and investments null it out here.
+        // A transfer may carry an optional category of any type (see #743):
+        // it is stored on the schedule and applied to both legs when posted
+        // (INV-CATEGORY-002). Only splits (category lives on each split) and
+        // investments null it out here.
         categoryId:
           hasSplits || isInvestment ? null : transactionData.categoryId,
         originalAmount: scheduleFx.originalAmount,
@@ -1922,6 +1949,24 @@ export class ScheduledTransactionsService {
   ): Promise<ScheduledTransactionSplit[]> {
     const savedSplits: ScheduledTransactionSplit[] = [];
 
+    // Every line's category is the person's and fits the line: a category
+    // line takes only Income or Expense, a transfer line any type, which its
+    // posting writes to the row it links (INV-CATEGORY-001). An investment
+    // line holds none. Refused before the first line is written.
+    await fitCategories(
+      manager,
+      userId,
+      splits
+        .filter((split) => scheduledSplitKind(split) !== SplitKind.INVESTMENT)
+        .map((split) => ({
+          categoryId: split.categoryId,
+          holder:
+            scheduledSplitKind(split) === SplitKind.TRANSFER
+              ? ("transfer" as const)
+              : ("category" as const),
+        })),
+    );
+
     // Batch-fetch every tag referenced across all splits so the per-split
     // tag assignment doesn't trigger one `findBy(Tag, ...)` query per row
     // (the prior N+1 pattern).
@@ -1939,13 +1984,7 @@ export class ScheduledTransactionsService {
         : new Map<string, Tag>();
 
     for (const split of splits) {
-      const inferredKind: SplitKind = split.splitKind
-        ? split.splitKind
-        : split.investment
-          ? SplitKind.INVESTMENT
-          : split.transferAccountId
-            ? SplitKind.TRANSFER
-            : SplitKind.CATEGORY;
+      const inferredKind = scheduledSplitKind(split);
 
       const isInvestmentSplit =
         inferredKind === SplitKind.INVESTMENT && !!split.investment;
@@ -1989,8 +2028,12 @@ export class ScheduledTransactionsService {
       const entity = manager.create(ScheduledTransactionSplit, {
         scheduledTransactionId,
         kind: inferredKind,
+        // A category line's category, and a transfer line's (of any type);
+        // an investment line holds none.
         categoryId:
-          inferredKind === SplitKind.CATEGORY ? split.categoryId || null : null,
+          inferredKind === SplitKind.INVESTMENT
+            ? null
+            : split.categoryId || null,
         transferAccountId:
           inferredKind === SplitKind.TRANSFER
             ? split.transferAccountId || null
@@ -2812,6 +2855,7 @@ export class ScheduledTransactionsService {
       fieldsToUpdate.payeeId = updateData.payeeId || null;
     if (updateData.payeeName !== undefined)
       fieldsToUpdate.payeeName = updateData.payeeName || null;
+    // Fitted to the kind the schedule will have, under the lock below.
     if (updateData.categoryId !== undefined)
       fieldsToUpdate.categoryId = updateData.categoryId || null;
     if (updateData.amount !== undefined)
@@ -3428,6 +3472,43 @@ export class ScheduledTransactionsService {
           updateData.amount ?? scheduled.amount,
           moneyDecimals,
         );
+      }
+
+      // The category the schedule will hold fits what it will post
+      // (INV-CATEGORY-001), decided on the locked row before the first write:
+      // one the request names is the person's and fits; a Transfer category
+      // the schedule kept while switching from a transfer to an ordinary
+      // transaction is cleared in this same write, on the schedule and on
+      // each override that can still post.
+      const switchesToOrdinary =
+        current.isTransfer === true && fieldsToUpdate.isTransfer === false;
+      const willBeTransfer =
+        (fieldsToUpdate.isTransfer as boolean | undefined) ??
+        current.isTransfer === true;
+      if (fieldsToUpdate.categoryId) {
+        await fitCategory(
+          m,
+          userId,
+          fieldsToUpdate.categoryId as string,
+          willBeTransfer ? "transfer" : "category",
+        );
+      } else if (
+        switchesToOrdinary &&
+        fieldsToUpdate.categoryId === undefined &&
+        current.categoryId
+      ) {
+        const held = await fitCategory(
+          m,
+          userId,
+          current.categoryId,
+          "transfer",
+        );
+        if (held && !categoryFits(held, "category")) {
+          fieldsToUpdate.categoryId = null;
+        }
+      }
+      if (switchesToOrdinary) {
+        await clearTransferCategoriesFromOverrides(m, userId, id);
       }
 
       if (splits !== undefined) {

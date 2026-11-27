@@ -29,6 +29,7 @@ export type OverrideInvestmentProvenance = Map<
 >;
 import { validateSplitAmountSum } from "../common/split-amount.util";
 import { withScopedDb } from "../common/db/scoped-db";
+import { fitOverrideCategories } from "./scheduled-category-fit";
 import { assertAmountPrecision } from "../common/amount-precision.util";
 import {
   loadCurrencyPlaces,
@@ -160,6 +161,9 @@ export class ScheduledTransactionOverrideService {
         createDto,
       );
       await this.assertAutoPostAllowed(m, scheduledTransactionId, createDto);
+      // The override's category fits the schedule's kind and each split line
+      // its own, all the owner's (INV-CATEGORY-001), before the write.
+      await fitOverrideCategories(m, scheduledTransactionId, createDto);
       const repo = m.getRepository(ScheduledTransactionOverride);
       // The friendly refusal, for the ordinary case. It is NOT what makes one
       // override per occurrence true: a SELECT is not a lock, so two concurrent
@@ -383,6 +387,9 @@ export class ScheduledTransactionOverrideService {
       );
       // Judged on the override as this update leaves it.
       await this.assertAutoPostAllowed(m, scheduledTransactionId, override);
+      // Its category and split lines as the update leaves them, fitted to the
+      // schedule's kind and each line's (INV-CATEGORY-001).
+      await fitOverrideCategories(m, scheduledTransactionId, override);
       // The lines sum to the override amount at the schedule currency's
       // precision, judged before the write with the currency read above.
       if (splitAmount !== undefined && updateDto.splits) {
