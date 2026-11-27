@@ -1,4 +1,8 @@
-import { budgetFunding, isTransferFundingLine } from "./budget-funding.util";
+import {
+  budgetFunding,
+  isTransferFundingLine,
+  periodCategoryIncome,
+} from "./budget-funding.util";
 
 // docs/specs/transfer-categories.md section 6.2.
 describe("isTransferFundingLine", () => {
@@ -79,5 +83,23 @@ describe("budgetFunding", () => {
       transferFunding: 0,
       totalIncome: 1234.5678,
     });
+  });
+});
+
+describe("periodCategoryIncome", () => {
+  it("is the stored total less its Transfer Funding part (section 6.6)", () => {
+    expect(
+      periodCategoryIncome({
+        actualIncome: "6650.00000000",
+        transferFunding: "1650.00000000",
+      }),
+    ).toBe(5000);
+  });
+
+  it("is unknown, not the total, while the part is unknown (section 10)", () => {
+    expect(periodCategoryIncome({ actualIncome: 6650 })).toBeNull();
+    expect(
+      periodCategoryIncome({ actualIncome: 6650, transferFunding: null }),
+    ).toBeNull();
   });
 });

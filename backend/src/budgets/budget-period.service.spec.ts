@@ -275,6 +275,32 @@ describe("BudgetPeriodService", () => {
       });
     });
 
+    it("names each period's Actual Income, unknown for one closed before the split was stored", async () => {
+      periodsRepository.find.mockResolvedValue([
+        {
+          ...mockPeriod,
+          id: "after",
+          actualIncome: 6650,
+          transferFunding: 1650,
+        },
+        { ...mockPeriod, id: "before", actualIncome: 6650 },
+        {
+          ...mockPeriod,
+          id: "legacy-null",
+          actualIncome: 6650,
+          transferFunding: null,
+        },
+      ]);
+
+      const result = await service.findAll("user-1", "budget-1");
+
+      expect(result.map((p) => [p.id, p.categoryIncome])).toEqual([
+        ["after", 5000],
+        ["before", null],
+        ["legacy-null", null],
+      ]);
+    });
+
     it("returns empty array when no periods exist", async () => {
       periodsRepository.find.mockResolvedValue([]);
 
@@ -605,7 +631,13 @@ describe("BudgetPeriodService", () => {
       );
       expect(scopedManager.save).toHaveBeenCalledWith(
         BudgetPeriod,
-        expect.objectContaining({ actualIncome: 2300, actualExpenses: 0 }),
+        // The HISA line's 2,000 and the toggle's 300 are both Transfer
+        // Funding (docs/specs/transfer-categories.md section 6.6).
+        expect.objectContaining({
+          actualIncome: 2300,
+          transferFunding: 2300,
+          actualExpenses: 0,
+        }),
       );
     });
 
@@ -647,7 +679,11 @@ describe("BudgetPeriodService", () => {
 
       expect(scopedManager.save).toHaveBeenCalledWith(
         BudgetPeriod,
-        expect.objectContaining({ actualIncome: 400, actualExpenses: 0 }),
+        expect.objectContaining({
+          actualIncome: 400,
+          transferFunding: 400,
+          actualExpenses: 0,
+        }),
       );
     });
   });

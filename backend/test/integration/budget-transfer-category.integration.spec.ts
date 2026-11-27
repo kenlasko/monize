@@ -4,6 +4,7 @@ import { TransactionsModule } from "@/transactions/transactions.module";
 import { BudgetsModule } from "@/budgets/budgets.module";
 import { BudgetsService } from "@/budgets/budgets.service";
 import { BudgetGeneratorService } from "@/budgets/budget-generator.service";
+import { BudgetPeriodService } from "@/budgets/budget-period.service";
 import { Budget, BudgetType } from "@/budgets/entities/budget.entity";
 import { BudgetCategory } from "@/budgets/entities/budget-category.entity";
 import { getCurrentMonthPeriodDates } from "@/budgets/budget-date.utils";
@@ -42,6 +43,7 @@ describe("budget lines on a Transfer category (integration)", () => {
   let db: DataSource;
   let budgets: BudgetsService;
   let generator: BudgetGeneratorService;
+  let periodsService: BudgetPeriodService;
   let userId: string;
   const accounts: Record<string, string> = {};
   const categories: Record<string, string> = {};
@@ -54,6 +56,7 @@ describe("budget lines on a Transfer category (integration)", () => {
     db = module.get(DataSource);
     budgets = module.get(BudgetsService);
     generator = module.get(BudgetGeneratorService, { strict: false });
+    periodsService = module.get(BudgetPeriodService, { strict: false });
   });
 
   afterAll(async () => {
@@ -394,6 +397,8 @@ describe("budget lines on a Transfer category (integration)", () => {
       expect(totals.totalSpent).toBe(2650);
       expect(totals.totalBudgeted).toBe(3000);
       expect(totals.totalIncome).toBe(6400);
+      expect(totals.categoryIncome).toBe(5000);
+      expect(totals.transferFunding).toBe(1400);
     });
 
     it("reads the example's toggle and totals without row c", async () => {
@@ -403,8 +408,48 @@ describe("budget lines on a Transfer category (integration)", () => {
       expect(resolveCategorySpentOrNull(lines.L5, spending)).toBe(200);
       const totals = await summary();
       expect(totals.totalIncome).toBe(6650);
+      // Actual Income 5,000; Transfer Funding 1,000 + 400 + 250 = 1,650.
+      expect(totals.categoryIncome).toBe(5000);
+      expect(totals.transferFunding).toBe(1650);
       expect(totals.totalSpent).toBe(1150);
       expect(totals.totalBudgeted).toBe(3000);
+    });
+
+    it("freezes the Transfer Funding part at the close (section 6.6)", async () => {
+      await seed(false);
+      await withUserContext(userId, () =>
+        periodsService.getOrCreateCurrentPeriod(userId, budget.id),
+      );
+      const closed = await withUserContext(userId, () =>
+        periodsService.closePeriod(userId, budget.id),
+      );
+      expect(Number(closed.actualIncome)).toBe(6650);
+      expect(Number(closed.transferFunding)).toBe(1650);
+      expect(closed.categoryIncome).toBe(5000);
+
+      const [stored] = await db.query(
+        `SELECT actual_income, transfer_funding FROM budget_periods
+          WHERE id = $1`,
+        [closed.id],
+      );
+      expect(Number(stored.actual_income)).toBe(6650);
+      expect(Number(stored.transfer_funding)).toBe(1650);
+    });
+
+    it("shows one figure for a period closed before the split was stored (section 10)", async () => {
+      await db.query(
+        `INSERT INTO budget_periods
+           (budget_id, period_start, period_end, actual_income, status)
+         VALUES ($1, '2020-01-01', '2020-01-31', 6650, 'CLOSED')`,
+        [budget.id],
+      );
+      const periods = await withUserContext(userId, () =>
+        periodsService.findAll(userId, budget.id),
+      );
+      const legacy = periods.find((p) => p.periodStart === "2020-01-01");
+      expect(Number(legacy?.actualIncome)).toBe(6650);
+      expect(legacy?.transferFunding).toBeNull();
+      expect(legacy?.categoryIncome).toBeNull();
     });
 
     it("applies the rule from the budget's lines when a caller reads a subset", async () => {

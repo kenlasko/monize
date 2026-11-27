@@ -81,6 +81,13 @@ export class BudgetPeriod {
   })
   transferFunding?: number | null;
 
+  /**
+   * Not a column: Actual Income, `actualIncome` less `transferFunding`, set
+   * by every read of a period (`periodCategoryIncome`). `null` whenever
+   * `transferFunding` is.
+   */
+  categoryIncome?: number | null;
+
   @Column({
     type: "decimal",
     precision: 24,

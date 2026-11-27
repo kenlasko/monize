@@ -1,5 +1,5 @@
 import { categoryTypeOfOrUndefined } from "../categories/category-type.util";
-import { sumMoney } from "../common/round.util";
+import { roundMoney, sumMoney } from "../common/round.util";
 import { BudgetCategory } from "./entities/budget-category.entity";
 
 /**
@@ -61,4 +61,20 @@ export function budgetFunding(
       outsideTransferIncome,
     ]),
   };
+}
+
+/**
+ * A stored period's Actual Income: `actual_income` (Total Budget Funding)
+ * less the Transfer Funding part frozen beside it (section 6.6). `null` while
+ * that part is unknown: an open or projected period, or one closed before it
+ * was recorded, whose split is unknown rather than zero (section 10).
+ */
+export function periodCategoryIncome(period: {
+  actualIncome: number | string;
+  transferFunding?: number | string | null;
+}): number | null {
+  if (period.transferFunding == null) return null;
+  return roundMoney(
+    Number(period.actualIncome) - Number(period.transferFunding),
+  );
 }
