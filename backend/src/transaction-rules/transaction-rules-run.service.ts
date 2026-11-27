@@ -16,7 +16,10 @@ import {
   MAX_JSONB_SIZE_BYTES,
 } from "../action-history/action-history.service";
 import { RULE_RUN_ENTITY_TYPE } from "../action-history/rule-run-undo";
-import { lockAccountsForBalanceWrite } from "../common/db/locks";
+import {
+  lockAccountsForBalanceWrite,
+  lockCategoryOwnerShared,
+} from "../common/db/locks";
 import { withScopedDb } from "../common/db/scoped-db";
 import { PriorSettlement } from "../loan-installments/loan-settlement.types";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
@@ -279,6 +282,11 @@ export class TransactionRulesRunService {
   ): Promise<RuleRunResult> {
     this.assertRange(dto);
     const done = await withScopedDb(this.dataSource, async (m) => {
+      // First lock of the transaction: a category the run writes onto a
+      // category row is fitted under the shared category-owner lock, which
+      // comes before every row lock (`common/db/locks.ts`); re-entrant, so
+      // the write's fit takes it again.
+      await lockCategoryOwnerShared(m, userId);
       const rule = await this.usableRule(m, userId, ruleId, true);
       const plan = await this.plan(m, userId, rule, dto, true);
       if (plan.preview.fingerprint !== dto.fingerprint) {

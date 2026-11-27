@@ -1,6 +1,7 @@
 import { NotFoundException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { fitCategories, fitCategory } from "../categories/category-fit";
+import { lockCategoryOwnerShared } from "../common/db/locks";
 import { tr } from "../i18n/translate";
 import { SplitKind } from "../transactions/entities/split-kind.enum";
 import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
@@ -14,7 +15,10 @@ import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
  * the schedule owner's.
  *
  * The schedule is read under a share lock, so a concurrent switch of its kind
- * either commits first and is seen, or waits for this write.
+ * either commits first and is seen, or waits for this write. When a category
+ * is named, the shared category-owner lock is taken before that row lock
+ * (`common/db/locks.ts`): whether a category row holds it is known only under
+ * the share lock, and the fit below takes it again, re-entrant.
  */
 export async function fitOverrideCategories(
   m: EntityManager,
@@ -24,6 +28,19 @@ export async function fitOverrideCategories(
     readonly splits?: readonly OverrideLineShape[] | null;
   },
 ): Promise<void> {
+  const namesCategory =
+    Boolean(override.categoryId) ||
+    (override.splits ?? []).some(
+      (line) => !isInvestmentLine(line) && Boolean(line.categoryId),
+    );
+  if (namesCategory) {
+    // The owner, read without a lock: it never changes.
+    const owner = await m.getRepository(ScheduledTransaction).findOne({
+      where: { id: scheduledTransactionId },
+      select: { id: true, userId: true },
+    });
+    if (owner) await lockCategoryOwnerShared(m, owner.userId);
+  }
   const schedule = await m.getRepository(ScheduledTransaction).findOne({
     where: { id: scheduledTransactionId },
     select: { id: true, userId: true, isTransfer: true },

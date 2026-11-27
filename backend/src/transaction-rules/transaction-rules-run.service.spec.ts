@@ -687,6 +687,15 @@ describe("TransactionRulesRunService", () => {
         RULE_ID,
         { share: true },
       );
+      // The shared category-owner lock is the commit's first lock, before the
+      // rule's share lock and the rows' (`common/db/locks.ts`).
+      const ownerLock = s.manager.query.mock.calls.findIndex(([sql]) =>
+        String(sql).includes("pg_advisory_xact_lock_shared"),
+      );
+      expect(ownerLock).toBeGreaterThanOrEqual(0);
+      expect(s.manager.query.mock.invocationCallOrder[ownerLock]).toBeLessThan(
+        s.rulesService.getOwnedRule.mock.invocationCallOrder.at(-1)!,
+      );
       expect(s.writeEffects).toHaveBeenCalledTimes(2);
       expect(s.writeEffects).toHaveBeenCalledWith(
         s.manager,
