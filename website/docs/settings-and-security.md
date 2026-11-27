@@ -1081,6 +1081,8 @@ To confirm:
 
 > **Note:** You cannot delete your account if you are the last admin user. Assign the admin role to another user first.
 
+> **Note:** You cannot delete your account while you own a shared-expense group that other members have joined. Transfer the ownership of the group first.
+
 > **If you are a delegate of another account:** deleting removes your own data, but your login and the shared access others granted you are kept so the delegation keeps working -- you become a delegate-only user. To end that access, ask the owner to remove you from their [Shared Access](shared-access.md) list first.
 
 ---

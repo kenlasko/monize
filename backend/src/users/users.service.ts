@@ -1,4 +1,5 @@
 import {
+  assertSharedOwnershipTransferred,
   detachSharedLedgerForErasure,
   eraseSharedUser,
 } from "../shared-expenses/shared-erasure";
@@ -647,6 +648,13 @@ export class UsersService {
       }
     }
 
+    // Pre-flight only, like the last-admin check: a group others joined must be
+    // transferred first, and refusing here does not revoke the caller's sessions.
+    // `eraseSharedUser` in the delete transaction is the authoritative check.
+    await withScopedDb(this.dataSource, (manager) =>
+      assertSharedOwnershipTransferred(manager, userId),
+    );
+
     // Revoke all refresh tokens and PATs (forces re-login either way).
     await this.scoped(RefreshToken, (repo) =>
       repo.update({ userId, isRevoked: false }, { isRevoked: true }),
@@ -685,6 +693,10 @@ export class UsersService {
         );
       }
 
+      // shared_groups.owner_user_id and shared_memberships.user_id are ON DELETE
+      // RESTRICT; the admin path erases them the same way.
+      await eraseSharedUser(manager, userId);
+
       const refreshTokens = manager.getRepository(RefreshToken);
       await refreshTokens.delete({ userId });
       await refreshTokens.delete({ actingAsUserId: userId });
@@ -704,6 +716,8 @@ export class UsersService {
       await manager.getRepository(User).remove(user);
       await currencies.removeUnreferencedCurrencies(manager, createdCodes);
     });
+    // SECURITY: the account is gone; end the OAuth grants an MCP client holds.
+    await revokeOAuthGrantsAfterCommit(this.moduleRef, userId, this.logger);
     return { downgraded: false };
   }
 
