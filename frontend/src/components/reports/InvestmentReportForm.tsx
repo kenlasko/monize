@@ -117,7 +117,7 @@ export function InvestmentReportForm({
   useEffect(() => {
     const loadData = async () => {
       try {
-        const all = await accountsApi.getAll();
+        const all = await accountsApi.getAll(true);
         setAccounts(
           // Closed accounts are kept here; accountOptions lists one only while selected.
           all.filter(

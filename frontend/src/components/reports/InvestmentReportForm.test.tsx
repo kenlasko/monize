@@ -173,7 +173,9 @@ describe('InvestmentReportForm', () => {
       { id: 'a4', name: 'Old Named', accountType: 'INVESTMENT', accountSubType: null, isClosed: true },
       { id: 'a5', name: 'Old Unnamed', accountType: 'INVESTMENT', accountSubType: null, isClosed: true },
     ] as never;
-    vi.mocked(accountsApi.getAll).mockResolvedValueOnce(accounts);
+    // Like the real endpoint, closed rows come back only when inactive ones are asked for.
+    vi.mocked(accountsApi.getAll).mockImplementationOnce((async (includeInactive?: boolean) =>
+      includeInactive ? accounts : []) as never);
     const report = {
       id: 'r1',
       name: 'Existing',
@@ -185,6 +187,7 @@ describe('InvestmentReportForm', () => {
     });
     const labels = (await screen.findAllByTestId('account-option')).map((e) => e.textContent);
     expect(labels).toEqual(['Open One', 'Old Named (closed)']);
+    expect(accountsApi.getAll).toHaveBeenCalledWith(true);
   });
 
   it('captures the chosen as-of date on submit', async () => {

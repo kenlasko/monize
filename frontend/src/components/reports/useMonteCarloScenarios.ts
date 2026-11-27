@@ -211,7 +211,7 @@ export function useMonteCarloScenarios() {
         let closed: BrokerageAccount[] = [];
         if (missing.size > 0) {
           try {
-            closed = (await accountsApi.getAll())
+            closed = (await accountsApi.getAll(true))
               .filter((a) => a.isClosed && missing.has(a.id))
               .map((a) => ({ id: a.id, name: a.name, currencyCode: a.currencyCode, isClosed: true }));
           } catch (err) {

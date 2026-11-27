@@ -223,7 +223,9 @@ export function MonteCarloReport() {
         .map((a) => ({
           value: a.id,
           label: a.isClosed
-            ? tSecurity('accounts.closedSuffix', { name: a.name })
+            ? tSecurity('accounts.closedSuffix', {
+                name: foreignCurrencyLabel(a.name, a.currencyCode),
+              })
             : foreignCurrencyLabel(a.name, a.currencyCode),
         })),
     [accounts, form.accountIds, foreignCurrencyLabel, tSecurity],

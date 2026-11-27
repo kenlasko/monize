@@ -1019,6 +1019,15 @@ export class UsersService {
 
     // Optional: delete accounts (must come after transactions)
     if (opts.deleteAccounts) {
+      // These keep account ids with no foreign key (JSONB, UUID[]); they would
+      // name deleted accounts. A scenario's cash flows cascade from it.
+      await manager.query("DELETE FROM investment_reports WHERE user_id = $1", [
+        userId,
+      ]);
+      await manager.query(
+        "DELETE FROM monte_carlo_scenarios WHERE user_id = $1",
+        [userId],
+      );
       result = await manager.query("DELETE FROM accounts WHERE user_id = $1", [
         userId,
       ]);
