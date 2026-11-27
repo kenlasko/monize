@@ -1218,7 +1218,10 @@ export class TransactionRulesApplierService {
     transactionId: string,
     structure: RuleStructurePlan,
     placesCache: CurrencyPlacesCache,
-    /** The category the rules left the row with, for a conversion. */
+    /**
+     * The rules' net change to the row's category, for a conversion:
+     * `undefined` when they left it as stored.
+     */
     categoryAfterConversion?: string | null,
   ): Promise<{
     structure: RuleStructurePlan;
@@ -1234,10 +1237,13 @@ export class TransactionRulesApplierService {
         transactionId,
         structure.accountId,
         {
-          clearCategory: structure.clearCategory,
+          // The plan has already applied the conversion's own choice (the
+          // category it names, or none when it clears) and every later
+          // action's, and planned from the stored row: its net change is what
+          // both legs take, and no change keeps the row's own on both.
+          // `clearCategory` is not asked a second time.
+          clearCategory: false,
           expectedCounterpartAmount: structure.amount,
-          // What the rules left the row's category as, written to both legs;
-          // absent, `clearCategory` decides.
           categoryId: categoryAfterConversion,
         },
       );

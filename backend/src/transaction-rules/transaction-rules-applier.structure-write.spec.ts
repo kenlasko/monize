@@ -239,6 +239,57 @@ describe("TransactionRulesApplierService structure writes", () => {
         }),
       ]);
     });
+    // The plan has applied the conversion's own category choice and every
+    // later action's; the write takes what the plan left the row with, even
+    // when that is the category the row already held (no net change).
+    const legsHold = (h: ReturnType<typeof harness>, categoryId: string) => {
+      expect(h.mock.create).toHaveBeenCalledWith(
+        Transaction,
+        expect.objectContaining({ accountId: LOAN, categoryId }),
+      );
+      expect(h.mock.update).toHaveBeenCalledWith(
+        Transaction,
+        { id: TX, userId: USER },
+        expect.objectContaining({ isTransfer: true, categoryId }),
+      );
+    };
+
+    it("writes the category it names on both legs when the row already holds it", async () => {
+      const h = harness({ amount: "-640.1500" as never, categoryId: CAT });
+      await run(
+        h,
+        rule("PRINCIPAL: *", [
+          {
+            type: "convert_to_transfer",
+            toAccountId: LOAN,
+            clearCategory: true,
+            categoryId: CAT,
+          },
+        ]),
+      );
+      legsHold(h, CAT);
+    });
+
+    it("keeps the row's category on both legs when a later rule puts it back", async () => {
+      const h = harness({ amount: "-640.1500" as never, categoryId: CAT });
+      const putBack = {
+        ...rule("PRINCIPAL: *", [
+          { type: "set_category", categoryId: CAT, onlyIfEmpty: false },
+        ]),
+        id: uuid(12),
+        position: 1,
+      } as TransactionRule;
+      // The category `set_category` names is the person's.
+      (
+        h.mock.getRepository(Category) as unknown as { find: jest.Mock }
+      ).find.mockResolvedValue([
+        { id: CAT, userId: USER, name: "Loan", parentId: null },
+      ]);
+      await h.service.applyToNew(h.m, USER, [TX], "create", {
+        rules: [convert, putBack],
+      });
+      legsHold(h, CAT);
+    });
   });
 
   describe("split", () => {
