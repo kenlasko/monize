@@ -92,6 +92,9 @@
   },
   "actionHistory": {
     "undoSplitLegsChanged": "此次编辑更改了将资金转入其他账户的拆分行，因此无法自动撤销。请编辑交易以改回。",
+    "undoDeletedSplitHasTransferLine": "此拆分包含在另一个账户中转移资金的行（转账或投资行），撤销无法恢复另一个账户一侧。请重新输入该拆分。",
+    "undoTransferLegDeleted": "此行是转账或拆分的一侧。撤销无法单独恢复它。请检查另一个账户：编辑仍然存在的一侧，如果什么都没留下，则重新输入该交易。",
+    "undoBulkDeletedSplit": "此次删除包含拆分交易，批量删除的撤销无法恢复拆分行。请重新输入该拆分。",
     "undoVoidWithLegs": "此更改作废或恢复了其他账户中的条目，因此无法自动撤销。请改为把状态改回。",
     "loanEditNotUndoable": "此贷款更改无法自动撤销。请编辑贷款以改回。",
     "nothingToUndo": "没有可撤销的操作",

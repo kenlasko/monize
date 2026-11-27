@@ -97,11 +97,7 @@ function assertTransactionCreateRedoable(action: ActionHistory): void {
   const splits: unknown[] = Array.isArray(after?.splits) ? after.splits : [];
   const hasLegs =
     (after?.isTransfer === true && !!after?.linkedTransactionId) ||
-    splits.some(
-      (split) =>
-        !!(split as { linkedTransactionId?: string | null })
-          ?.linkedTransactionId,
-    );
+    (splits as SplitSnapshot[]).some(isLegSplit);
   if (!hasLegs) return;
   throw new ConflictException({
     message: tr(
@@ -276,6 +272,47 @@ function assertSplitLegsUndoable(
     ),
     errorCode: "UNDO_SPLIT_LEGS_CHANGED",
   });
+}
+
+/**
+ * Refuses, before anything is written, the undo of a delete whose row had a
+ * counterpart that went with it and is not in history: one leg of a transfer
+ * (the other leg and its link are gone) or a split with a line that moves money
+ * in another account. `restoresSplits` is false for the bulk undo, which writes
+ * no split lines, so a split parent would come back without its lines.
+ */
+function assertDeletedRowRestorable(
+  row: Record<string, any>,
+  restoresSplits: boolean,
+): void {
+  if (row.linkedTransactionId) {
+    throw new ConflictException({
+      message: tr(
+        "errors.actionHistory.undoTransferLegDeleted",
+        "This row was one side of a transfer or of a split. Undo cannot restore it alone. Check the other account: edit the side that is still there, or enter the transaction again if nothing is left.",
+      ),
+      errorCode: "UNDO_TRANSFER_LEG_DELETED",
+    });
+  }
+  const splits: SplitSnapshot[] = Array.isArray(row.splits) ? row.splits : [];
+  if (splits.some(isLegSplit)) {
+    throw new ConflictException({
+      message: tr(
+        "errors.actionHistory.undoDeletedSplitHasTransferLine",
+        "This split has a line that moves money in another account (a transfer or an investment line), and undo cannot restore the other account's side. Enter the split again.",
+      ),
+      errorCode: "UNDO_DELETED_SPLIT_HAS_TRANSFER_LINE",
+    });
+  }
+  if (!restoresSplits && row.isSplit === true) {
+    throw new ConflictException({
+      message: tr(
+        "errors.actionHistory.undoBulkDeletedSplit",
+        "This delete included a split transaction, and undo of a bulk delete cannot restore split lines. Enter the split again.",
+      ),
+      errorCode: "UNDO_BULK_DELETED_SPLIT",
+    });
+  }
 }
 
 /**
@@ -1493,6 +1530,10 @@ export class ActionHistoryService {
 
     const before = action.beforeData;
 
+    // First, so a row undo can never restore is refused with its own code
+    // whatever else changed since.
+    assertDeletedRowRestorable(before, true);
+
     // Verify account still exists
     const account = await manager.findOne(Account, {
       where: { id: before.accountId, userId: action.userId },
@@ -1555,8 +1596,8 @@ export class ActionHistoryService {
       for (const splitData of before.splits) {
         await manager.query(
           // category-fit-ok: the undo restores the lines as their history recorded them
-          `INSERT INTO transaction_splits (id, transaction_id, category_id, transfer_account_id, linked_transaction_id, amount, memo)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          `INSERT INTO transaction_splits (id, transaction_id, category_id, transfer_account_id, linked_transaction_id, amount, memo, kind)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
           [
             splitData.id,
             before.id,
@@ -1565,6 +1606,7 @@ export class ActionHistoryService {
             splitData.linkedTransactionId ?? null,
             splitData.amount,
             splitData.memo ?? null,
+            splitKindOf(splitData),
           ],
         );
         // The line's tags went with the deleted row; put back those recorded
@@ -2096,6 +2138,11 @@ export class ActionHistoryService {
   ): Promise<void> {
     if (!action.beforeData || !Array.isArray(action.beforeData.transactions))
       return;
+
+    // Every row is checked before the first write.
+    for (const txData of action.beforeData.transactions) {
+      assertDeletedRowRestorable(txData, false);
+    }
 
     const accountIds = new Set<string>();
 
