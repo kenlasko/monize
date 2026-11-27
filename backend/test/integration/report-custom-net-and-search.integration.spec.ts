@@ -1,6 +1,7 @@
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import type { RateIndex } from "@/common/time-series/rate-index.util";
+import { UserPreference } from "@/users/entities/user-preference.entity";
 import { SplitKind } from "@/transactions/entities/split-kind.enum";
 import { TransactionSplit } from "@/transactions/entities/transaction-split.entity";
 import { ReportCurrencyService } from "@/built-in-reports/report-currency.service";
@@ -160,6 +161,75 @@ describe("custom report: signed category sums and escaped search (integration)",
     const report = await saveReport(overrides);
     return withUserContext(userId, () => reports.execute(userId, report.id));
   }
+
+  it.each([
+    [DirectionFilter.BOTH, -20, -6.67, 3],
+    [DirectionFilter.OUTGOING, -1020, -510, 2],
+    [DirectionFilter.INCOMING, 1000, 1000, 1],
+    [DirectionFilter.EXPENSES_ONLY, -20, -6.67, 3],
+  ] as const)(
+    "reconciles the March CAD fee and transfer for %s",
+    async (direction, total, average, count) => {
+      await dataSource.query(
+        `INSERT INTO currencies (code, name, symbol, decimal_places) VALUES ('CAD', 'Canadian Dollar', '$', 2) ON CONFLICT DO NOTHING`,
+      );
+      await dataSource.manager.save(UserPreference, {
+        userId,
+        defaultCurrency: "CAD",
+      });
+      const chequing = await createTestAccount(dataSource, userId, {
+        name: "CAD Chequing",
+        currencyCode: "CAD",
+      });
+      const brokerage = await createTestAccount(dataSource, userId, {
+        name: "Brokerage",
+        currencyCode: "CAD",
+      });
+      const investments = await createTestCategory(dataSource, userId, {
+        name: "Investments",
+        isIncome: false,
+      });
+      const posting = {
+        accountId: chequing.id,
+        categoryId: investments.id,
+        currencyCode: "CAD",
+      };
+      await insertTransaction({ ...posting, amount: -20 });
+      const debit = await insertTransaction({
+        ...posting,
+        isTransfer: true,
+        amount: -1000,
+      });
+      const credit = await insertTransaction({
+        ...posting,
+        accountId: brokerage.id,
+        isTransfer: true,
+        linkedTransactionId: debit.id,
+        amount: 1000,
+      });
+      await dataSource.manager.update(Transaction, debit.id, {
+        linkedTransactionId: credit.id,
+      });
+
+      for (const [metric, expected] of [
+        [MetricType.TOTAL_AMOUNT, total],
+        [MetricType.NONE, total],
+        [MetricType.AVERAGE, average],
+      ] as const) {
+        const result = await run({ direction, metric, includeTransfers: true });
+        expect(result.currency).toBe("CAD");
+        expect(result.signedTotal).toBe(true);
+        expect(result.data).toEqual([
+          expect.objectContaining({
+            id: investments.id,
+            value: expected,
+            count,
+          }),
+        ]);
+        expect(result.summary).toMatchObject({ total: expected, count });
+      }
+    },
+  );
 
   async function insertGroceriesWithRefund(): Promise<void> {
     await insertTransaction({ categoryId: groceriesId, amount: -100 });

@@ -12,6 +12,12 @@ import { tr } from "../i18n/translate";
 import { DataSource, EntityManager, In } from "typeorm";
 import { acquireAdvisoryLock, LockScope } from "../common/db/locks";
 import { withScopedDb } from "../common/db/scoped-db";
+import {
+  RecordInUseEntry,
+  recordInUseException,
+  recordInUseSummary,
+} from "../common/helpers/record-in-use";
+import { findSecurityReferences } from "./security-references";
 import { roundToDecimals } from "../common/round.util";
 import { assertSecurityCurrencyIsFiatIn } from "./security-currency-kind.util";
 import { returnedRows } from "../common/db/query-result";
@@ -149,6 +155,23 @@ export interface DeleteSecurityPreview {
   securityId: string;
   symbol: string;
   name: string;
+}
+
+/** Refuse (409) while any row outside the security's own prices and tags still uses it. */
+function refuseWhileReferenced(
+  symbol: string,
+  references: RecordInUseEntry[],
+): void {
+  if (references.length === 0) return;
+  const summary = recordInUseSummary(references);
+  throw recordInUseException(
+    tr(
+      "errors.securities.inUse",
+      `Security "${symbol}" cannot be deleted: it is still used by ${summary}. Remove or reassign these first.`,
+      { symbol, summary },
+    ),
+    references,
+  );
 }
 
 /** One candidate returned by the LLM/MCP security lookup tool. */
@@ -1269,57 +1292,30 @@ export class SecuritiesService {
 
   async remove(userId: string, id: string): Promise<void> {
     const security = await this.findOne(userId, id);
-
-    // Check for any holdings with non-zero quantity
-    // Using ABS() to handle potential small negative values from rounding
-    const holdingsCount = await withScopedDb(this.dataSource, (m) =>
-      m
-        .getRepository(Holding)
-        .createQueryBuilder("holding")
-        .leftJoin("holding.account", "account")
-        .where("holding.securityId = :securityId", { securityId: id })
-        .andWhere("account.userId = :userId", { userId })
-        .andWhere("ABS(holding.quantity) > :threshold", {
-          threshold: 0.00000001,
-        })
-        .getCount(),
-    );
-
-    if (holdingsCount > 0) {
-      throw new ForbiddenException(
-        tr(
-          "errors.securities.cannotDeleteWithHoldings",
-          "Cannot delete security that has holdings. Remove all holdings first.",
-        ),
-      );
-    }
-
-    // Check for any investment transactions referencing this security
-    // includes VOID rows: records read -- a VOID row still references the
-    // security and would be orphaned by the delete.
-    const transactionsCount = await withScopedDb(this.dataSource, (m) =>
-      m
-        .getRepository(InvestmentTransaction)
-        .createQueryBuilder("tx")
-        .where("tx.securityId = :securityId", { securityId: id })
-        .andWhere("tx.userId = :userId", { userId })
-        .getCount(),
-    );
-
-    if (transactionsCount > 0) {
-      throw new ForbiddenException(
-        tr(
-          "errors.securities.cannotDeleteWithTransactions",
-          "Cannot delete security that has investment transactions. Delete all related transactions first.",
-        ),
-      );
-    }
-
-    // Clean up any zero-quantity holding records before deleting the security,
-    // then delete the security itself -- one transaction so a failure can never
-    // strand the holdings without their security.
     const beforeData = { ...security };
+
+    // Lock, count and delete in one transaction: a reference committed while
+    // this waits for the lock is counted, and a refusal has written nothing.
+    // Zero-quantity holdings are bookkeeping and go with the security.
     await withScopedDb(this.dataSource, async (m) => {
+      const locked = await m.getRepository(Security).findOne({
+        where: { id, userId },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!locked) {
+        throw new NotFoundException(
+          tr(
+            "errors.securities.notFoundById",
+            `Security with ID ${id} not found`,
+            { id },
+          ),
+        );
+      }
+      refuseWhileReferenced(
+        locked.symbol,
+        await findSecurityReferences(m, userId, id),
+      );
+
       const holdingsRepo = m.getRepository(Holding);
       const zeroHoldings = await holdingsRepo
         .createQueryBuilder("holding")
@@ -1332,7 +1328,7 @@ export class SecuritiesService {
       }
 
       // Security prices cascade-delete via FK constraint
-      await m.getRepository(Security).remove(security);
+      await m.getRepository(Security).remove(locked);
     });
 
     this.actionHistoryService.record(userId, {
@@ -1766,6 +1762,12 @@ export class SecuritiesService {
     input: { query: string },
   ): Promise<DeleteSecurityPreview> {
     const security = await this.resolveSecurityForManage(userId, input.query);
+    refuseWhileReferenced(
+      security.symbol,
+      await withScopedDb(this.dataSource, (m) =>
+        findSecurityReferences(m, userId, security.id),
+      ),
+    );
     return {
       securityId: security.id,
       symbol: security.symbol,

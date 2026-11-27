@@ -11,7 +11,9 @@ import { DeleteCategoryDialog } from './DeleteCategoryDialog';
 import { categoriesApi } from '@/lib/categories';
 import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
-import { getErrorMessage } from '@/lib/errors';
+import { getErrorMessage, getRecordInUseEntries, type RecordInUseEntry } from '@/lib/errors';
+import { categoryInUseHref } from '@/lib/record-in-use-hrefs';
+import { RecordInUseDialog } from '@/components/ui/RecordInUseDialog';
 import { useTableDensity, type DensityLevel } from '@/hooks/useTableDensity';
 import { useDensityPreference } from '@/store/densityStore';
 import { HIGHLIGHT_FLASH, HIGHLIGHT_FLASH_CELL, useScrollIntoViewWhen } from '@/hooks/useHighlightTarget';
@@ -310,6 +312,7 @@ export function CategoryList({
   const tc = useTranslations('common');
   const router = useRouter();
   const [deleteCategory, setDeleteCategory] = useState<Category | null>(null);
+  const [inUse, setInUse] = useState<{ category: Category; entries: RecordInUseEntry[] } | null>(null);
   const [actionSheet, setActionSheet] = useState<{ open: boolean; category: Category | null }>({ open: false, category: null });
   const { density } = useDensityPreference('categories');
   const [localSortField, setLocalSortField] = useState<SortField>('name');
@@ -368,17 +371,13 @@ export function CategoryList({
     onClick: (category) => router.push(`/categories/${category.id}`),
   });
 
-  const handleConfirmDelete = async (reassignToCategoryId: string | null) => {
+  const handleConfirmDelete = async (reassignToCategoryId?: string | null) => {
     if (!deleteCategory) return;
 
     try {
-      // Check if there are transactions to reassign
-      const count = await categoriesApi.getTransactionCount(deleteCategory.id);
-      if (count > 0) {
-        await categoriesApi.reassignTransactions(deleteCategory.id, reassignToCategoryId);
-      }
-
-      await categoriesApi.delete(deleteCategory.id);
+      // One request: the server moves the rows and deletes in one transaction,
+      // so a refusal leaves everything where it was.
+      await categoriesApi.delete(deleteCategory.id, reassignToCategoryId);
       toast.success(t('toasts.deleted'));
       if (onDelete) {
         onDelete(deleteCategory.id);
@@ -386,8 +385,13 @@ export function CategoryList({
         onRefresh();
       }
     } catch (error) {
-      toast.error(getErrorMessage(error, t('toasts.deleteFailed')));
-      logger.error(error);
+      const entries = getRecordInUseEntries(error);
+      if (entries) {
+        setInUse({ category: deleteCategory, entries });
+      } else {
+        toast.error(getErrorMessage(error, t('toasts.deleteFailed')));
+        logger.error(error);
+      }
     } finally {
       setDeleteCategory(null);
     }
@@ -544,6 +548,12 @@ export function CategoryList({
         categories={categories}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteCategory(null)}
+      />
+
+      <RecordInUseDialog
+        inUse={inUse && { name: inUse.category.name, entries: inUse.entries }}
+        hrefFor={(entry) => (inUse ? categoryInUseHref(inUse.category.id, entry) : undefined)}
+        onClose={() => setInUse(null)}
       />
 
       <RowActionSheet

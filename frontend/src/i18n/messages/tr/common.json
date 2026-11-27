@@ -296,7 +296,24 @@
       "loanOverpaymentPayee": "{count, plural, other {# kredi hesabı (ek ödeme alıcısı)}}",
       "sharedPeople": "{count, plural, other {# paylaşılan gider kişisi}}",
       "sharedPostings": "{count, plural, other {# paylaşılan gider kaydı}}",
-      "rules": "{count, plural, other {# kural}}"
-    }
+      "rules": "{count, plural, other {# kural}}",
+      "subcategories": "{count, plural, other {# alt kategori}}",
+      "budgetLines": "{count, plural, other {# bütçe satırı}}",
+      "budgetPeriods": "{count, plural, other {# bütçe dönemi}}",
+      "payrollDeductionRules": "{count, plural, other {# maaş kesintisi kuralı}}",
+      "loanFees": "{count, plural, other {# kredi ücreti}}",
+      "loanAccounts": "{count, plural, other {# kredi hesabı}}",
+      "customReports": "{count, plural, other {# özel rapor}}",
+      "holdings": "{count, plural, other {# pozisyon}}",
+      "investmentTransactions": "{count, plural, other {# yatırım işlemi}}",
+      "gemStrategies": "{count, plural, other {# GEM stratejisi}}",
+      "securityDocuments": "{count, plural, other {# menkul kıymet belgesi}}",
+      "bankSyncLinks": "{count, plural, other {# banka eşitleme bağlantısı}}",
+      "sharedIntegrations": "{count, plural, other {# ortak gider entegrasyonu}}",
+      "linkedAccounts": "{count, plural, other {# bağlı hesap}}",
+      "securities": "{count, plural, other {# menkul kıymet}}"
+    },
+    "title": "\"{name}\" silinemez",
+    "close": "Kapat"
   }
 }

@@ -1,4 +1,4 @@
-import { BadRequestException } from "@nestjs/common";
+import { ConflictException } from "@nestjs/common";
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { AccountsModule } from "@/accounts/accounts.module";
@@ -81,7 +81,7 @@ describe("Account delete checks and deletes under one lock (integration)", () =>
       /transaction/i,
     );
     expect((outcome.a as PromiseRejectedResult).reason).toBeInstanceOf(
-      BadRequestException,
+      ConflictException,
     );
     const [{ n }] = await db.query(
       `SELECT count(*)::int AS n FROM transactions WHERE account_id = $1`,

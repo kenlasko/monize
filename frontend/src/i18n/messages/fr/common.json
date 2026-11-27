@@ -296,7 +296,24 @@
       "loanOverpaymentPayee": "{count, plural, one {# compte de prêt (bénéficiaire des remboursements anticipés)} other {# comptes de prêt (bénéficiaire des remboursements anticipés)}}",
       "sharedPeople": "{count, plural, one {# personne de dépenses partagées} other {# personnes de dépenses partagées}}",
       "sharedPostings": "{count, plural, one {# écriture de dépenses partagées} other {# écritures de dépenses partagées}}",
-      "rules": "{count, plural, one {# règle} other {# règles}}"
-    }
+      "rules": "{count, plural, one {# règle} other {# règles}}",
+      "subcategories": "{count, plural, one {# sous-catégorie} other {# sous-catégories}}",
+      "budgetLines": "{count, plural, one {# ligne de budget} other {# lignes de budget}}",
+      "budgetPeriods": "{count, plural, one {# période budgétaire} other {# périodes budgétaires}}",
+      "payrollDeductionRules": "{count, plural, one {# règle de retenue sur salaire} other {# règles de retenue sur salaire}}",
+      "loanFees": "{count, plural, one {# frais de prêt} other {# frais de prêt}}",
+      "loanAccounts": "{count, plural, one {# compte de prêt} other {# comptes de prêt}}",
+      "customReports": "{count, plural, one {# rapport personnalisé} other {# rapports personnalisés}}",
+      "holdings": "{count, plural, one {# position} other {# positions}}",
+      "investmentTransactions": "{count, plural, one {# opération d'investissement} other {# opérations d'investissement}}",
+      "gemStrategies": "{count, plural, one {# stratégie GEM} other {# stratégies GEM}}",
+      "securityDocuments": "{count, plural, one {# document de titre} other {# documents de titre}}",
+      "bankSyncLinks": "{count, plural, one {# lien de synchronisation bancaire} other {# liens de synchronisation bancaire}}",
+      "sharedIntegrations": "{count, plural, one {# intégration de dépenses partagées} other {# intégrations de dépenses partagées}}",
+      "linkedAccounts": "{count, plural, one {# compte lié} other {# comptes liés}}",
+      "securities": "{count, plural, one {# titre} other {# titres}}"
+    },
+    "title": "Impossible de supprimer \"{name}\"",
+    "close": "Fermer"
   }
 }

@@ -1,4 +1,5 @@
 import { ConflictException } from "@nestjs/common";
+import { EntityManager } from "typeorm";
 import { tr } from "../../i18n/translate";
 
 /**
@@ -39,4 +40,45 @@ export function recordInUseException(
     errorCode: RECORD_IN_USE_CODE,
     errors: entries,
   });
+}
+
+/**
+ * One counting query for `countReferences`: `$1` is the user, `$2` the record
+ * (or `%id%` when `like`, for an id kept inside JSON). `ids` means the query
+ * returns the rows' `id`s, which are reported and counted; otherwise it
+ * returns one `count`. `count` replaces the query where another helper counts.
+ */
+export type ReferenceCount = { kind: string } & (
+  | { sql: string; ids?: boolean; like?: boolean }
+  | { count: () => Promise<number> }
+);
+
+/** Sum each kind's counts, keep the kinds above zero, in the order first counted. */
+export async function countReferences(
+  m: EntityManager,
+  userId: string,
+  id: string,
+  entries: readonly ReferenceCount[],
+): Promise<RecordInUseEntry[]> {
+  const found = new Map<string, RecordInUseEntry>();
+  for (const e of entries) {
+    let n: number;
+    let ids: string[] | undefined;
+    if ("count" in e) {
+      n = await e.count();
+    } else {
+      const rows: { count?: number; id?: string }[] = await m.query(e.sql, [
+        userId,
+        e.like ? `%${id}%` : id,
+      ]);
+      ids = e.ids ? rows.map((r) => r.id as string) : undefined;
+      n = ids ? ids.length : Number(rows[0]?.count) || 0;
+    }
+    if (n <= 0) continue;
+    const entry = found.get(e.kind) ?? { kind: e.kind, count: 0 };
+    entry.count += n;
+    if (ids) entry.ids = [...(entry.ids ?? []), ...ids];
+    found.set(e.kind, entry);
+  }
+  return [...found.values()];
 }

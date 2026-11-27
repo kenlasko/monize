@@ -11,7 +11,9 @@ import {
   Query,
   ParseBoolPipe,
   ParseUUIDPipe,
+  ForbiddenException,
 } from "@nestjs/common";
+import { tr } from "../i18n/translate";
 import {
   ApiTags,
   ApiOperation,
@@ -27,6 +29,7 @@ import { CategoryDetailService } from "./category-detail.service";
 import { CategoryDetailDto } from "./dto/category-detail.dto";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
+import { RemoveCategoryQueryDto } from "./dto/remove-category-query.dto";
 import { ReassignTransactionsDto } from "./dto/reassign-transactions.dto";
 import { ImportDefaultsDto } from "./dto/import-defaults.dto";
 import { DEFAULT_CATEGORY_COUNTRY_CODES } from "./country-category-additions";
@@ -291,8 +294,25 @@ export class CategoriesController {
   @ApiResponse({ status: 404, description: "Category not found" })
   @AllowDelegate()
   @DelegateRequiresCapability("categories", "delete")
-  remove(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
-    return this.categoriesService.remove(req.user.id, id);
+  remove(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Query() query: RemoveCategoryQueryDto,
+  ) {
+    // Moving rows rewrites the owner's whole ledger, which POST /:id/reassign
+    // keeps owner-only; a delegate may delete only a category nothing uses.
+    const realUserId = req.user.realUserId ?? req.user.id;
+    // An empty `reassignTo=` is absent, as the DTO treats it.
+    const reassignTo = query.reassignTo || undefined;
+    if (reassignTo !== undefined && realUserId !== req.user.id) {
+      throw new ForbiddenException(
+        tr(
+          "errors.categories.reassignOwnerOnly",
+          "Only the owner can move transactions to another category",
+        ),
+      );
+    }
+    return this.categoriesService.remove(req.user.id, id, reassignTo);
   }
 
   @Get(":id/transaction-count")

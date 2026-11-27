@@ -39,6 +39,18 @@ describe('categoriesApi', () => {
     expect(apiClient.patch).toHaveBeenCalledWith('/categories/cat-1', { name: 'Updated' });
   });
 
+  it('delete with a target sends reassignTo, and null means uncategorized', async () => {
+    vi.mocked(apiClient.delete).mockResolvedValue({});
+    await categoriesApi.delete('cat-1', 'cat-2');
+    expect(apiClient.delete).toHaveBeenCalledWith('/categories/cat-1', {
+      params: { reassignTo: 'cat-2' },
+    });
+    await categoriesApi.delete('cat-1', null);
+    expect(apiClient.delete).toHaveBeenCalledWith('/categories/cat-1', {
+      params: { reassignTo: 'uncategorized' },
+    });
+  });
+
   it('delete calls DELETE /categories/:id', async () => {
     vi.mocked(apiClient.delete).mockResolvedValue({});
     await categoriesApi.delete('cat-1');

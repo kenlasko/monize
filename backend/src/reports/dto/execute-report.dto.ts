@@ -115,7 +115,7 @@ export interface ReportSummary {
 
 export interface ReportResult {
   reportId: string;
-  /** Present when this server settled TOTAL_AMOUNT as signed net movement. */
+  /** Present for aggregates computed from signed postings, including average numerators. */
   signedTotal?: true;
   name: string;
   viewType: string;

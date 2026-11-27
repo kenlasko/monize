@@ -296,7 +296,24 @@
       "loanOverpaymentPayee": "{count, plural, other {#个贷款账户（额外还款收款方）}}",
       "sharedPeople": "{count, plural, other {#位共享支出成员}}",
       "sharedPostings": "{count, plural, other {#条共享支出记录}}",
-      "rules": "{count, plural, other {#条规则}}"
-    }
+      "rules": "{count, plural, other {#条规则}}",
+      "subcategories": "{count, plural, other {#个子类别}}",
+      "budgetLines": "{count, plural, other {#个预算行}}",
+      "budgetPeriods": "{count, plural, other {#个预算期间}}",
+      "payrollDeductionRules": "{count, plural, other {#个工资扣减规则}}",
+      "loanFees": "{count, plural, other {#个贷款费用}}",
+      "loanAccounts": "{count, plural, other {#个贷款账户}}",
+      "customReports": "{count, plural, other {#个自定义报表}}",
+      "holdings": "{count, plural, other {#个持仓}}",
+      "investmentTransactions": "{count, plural, other {#个投资交易}}",
+      "gemStrategies": "{count, plural, other {#个GEM 策略}}",
+      "securityDocuments": "{count, plural, other {#个证券文档}}",
+      "bankSyncLinks": "{count, plural, other {#个银行同步链接}}",
+      "sharedIntegrations": "{count, plural, other {#个共享支出集成}}",
+      "linkedAccounts": "{count, plural, other {#个关联账户}}",
+      "securities": "{count, plural, other {#个证券}}"
+    },
+    "title": "无法删除“{name}”",
+    "close": "关闭"
   }
 }

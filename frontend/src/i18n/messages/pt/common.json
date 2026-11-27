@@ -296,7 +296,24 @@
       "loanOverpaymentPayee": "{count, plural, one {# conta de empréstimo (beneficiário de pagamentos extra)} other {# contas de empréstimo (beneficiário de pagamentos extra)}}",
       "sharedPeople": "{count, plural, one {# pessoa de despesas partilhadas} other {# pessoas de despesas partilhadas}}",
       "sharedPostings": "{count, plural, one {# lançamento de despesas partilhadas} other {# lançamentos de despesas partilhadas}}",
-      "rules": "{count, plural, one {# regra} other {# regras}}"
-    }
+      "rules": "{count, plural, one {# regra} other {# regras}}",
+      "subcategories": "{count, plural, one {# subcategoria} other {# subcategorias}}",
+      "budgetLines": "{count, plural, one {# linha de orçamento} other {# linhas de orçamento}}",
+      "budgetPeriods": "{count, plural, one {# período orçamental} other {# períodos orçamentais}}",
+      "payrollDeductionRules": "{count, plural, one {# regra de dedução salarial} other {# regras de dedução salarial}}",
+      "loanFees": "{count, plural, one {# comissão de empréstimo} other {# comissões de empréstimo}}",
+      "loanAccounts": "{count, plural, one {# conta de empréstimo} other {# contas de empréstimo}}",
+      "customReports": "{count, plural, one {# relatório personalizado} other {# relatórios personalizados}}",
+      "holdings": "{count, plural, one {# posição} other {# posições}}",
+      "investmentTransactions": "{count, plural, one {# transação de investimento} other {# transações de investimento}}",
+      "gemStrategies": "{count, plural, one {# estratégia GEM} other {# estratégias GEM}}",
+      "securityDocuments": "{count, plural, one {# documento de título} other {# documentos de título}}",
+      "bankSyncLinks": "{count, plural, one {# ligação de sincronização bancária} other {# ligações de sincronização bancária}}",
+      "sharedIntegrations": "{count, plural, one {# integração de despesas partilhadas} other {# integrações de despesas partilhadas}}",
+      "linkedAccounts": "{count, plural, one {# conta associada} other {# contas associadas}}",
+      "securities": "{count, plural, one {# título} other {# títulos}}"
+    },
+    "title": "Não é possível eliminar \"{name}\"",
+    "close": "Fechar"
   }
 }

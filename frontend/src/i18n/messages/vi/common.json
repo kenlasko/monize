@@ -296,7 +296,24 @@
       "loanOverpaymentPayee": "{count, plural, other {# tài khoản vay (người nhận khoản trả thêm)}}",
       "sharedPeople": "{count, plural, other {# người chia sẻ chi tiêu}}",
       "sharedPostings": "{count, plural, other {# bút toán chi tiêu chung}}",
-      "rules": "{count, plural, other {# quy tắc}}"
-    }
+      "rules": "{count, plural, other {# quy tắc}}",
+      "subcategories": "{count, plural, other {# danh mục con}}",
+      "budgetLines": "{count, plural, other {# dòng ngân sách}}",
+      "budgetPeriods": "{count, plural, other {# kỳ ngân sách}}",
+      "payrollDeductionRules": "{count, plural, other {# quy tắc khấu trừ lương}}",
+      "loanFees": "{count, plural, other {# phí khoản vay}}",
+      "loanAccounts": "{count, plural, other {# tài khoản vay}}",
+      "customReports": "{count, plural, other {# báo cáo tùy chỉnh}}",
+      "holdings": "{count, plural, other {# khoản nắm giữ}}",
+      "investmentTransactions": "{count, plural, other {# giao dịch đầu tư}}",
+      "gemStrategies": "{count, plural, other {# chiến lược GEM}}",
+      "securityDocuments": "{count, plural, other {# tài liệu chứng khoán}}",
+      "bankSyncLinks": "{count, plural, other {# liên kết đồng bộ ngân hàng}}",
+      "sharedIntegrations": "{count, plural, other {# tích hợp chi phí chung}}",
+      "linkedAccounts": "{count, plural, other {# tài khoản liên kết}}",
+      "securities": "{count, plural, other {# chứng khoán}}"
+    },
+    "title": "Không thể xóa \"{name}\"",
+    "close": "Đóng"
   }
 }

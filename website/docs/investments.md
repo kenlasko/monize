@@ -291,7 +291,7 @@ Securities can be added:
 
 ### Deactivating and Deleting Securities
 
-A security you no longer hold can be **Deactivated** from its row: it disappears from the Active list but keeps its history. While it is deactivated its investment transactions cannot be added, edited, deleted or voided, so its share count stays where it was; to correct one, **Activate** it from its row first (the button is always offered on an inactive security), make the change, and deactivate it again. A security that is not used by any holding or investment transaction can be **Deleted**, which also deletes its price history. A security that is still referenced cannot be deleted until those transactions are removed.
+A security you no longer hold can be **Deactivated** from its row: it disappears from the Active list but keeps its history. While it is deactivated its investment transactions cannot be added, edited, deleted or voided, so its share count stays where it was; to correct one, **Activate** it from its row first (the button is always offered on an inactive security), make the change, and deactivate it again. A security that nothing uses can be **Deleted**, which also deletes its price history. The delete is refused, with a count and a link to each kind of item, while a holding, an investment transaction, a bill or deposit, a GEM strategy or a security document still uses the security. Remove or change those first, or deactivate the security instead.
 
 ### Exchange Priority
 

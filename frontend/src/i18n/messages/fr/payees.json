@@ -81,10 +81,8 @@
       "deleteFailed": "Échec de la suppression du bénéficiaire"
     },
     "inUse": {
-      "title": "Impossible de supprimer « {name} »",
       "mergeHint": "Pour conserver ces éléments, fusionnez ce bénéficiaire avec un autre. La fusion déplace tous les éléments vers le bénéficiaire que vous choisissez.",
-      "mergeInstead": "Fusionner à la place",
-      "close": "Fermer"
+      "mergeInstead": "Fusionner à la place"
     }
   },
   "form": {

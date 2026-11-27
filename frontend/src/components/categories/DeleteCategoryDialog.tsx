@@ -12,7 +12,8 @@ interface DeleteCategoryDialogProps {
   isOpen: boolean;
   category: Category | null;
   categories: Category[];
-  onConfirm: (reassignToCategoryId: string | null) => void;
+  /** `undefined` when nothing uses the category, so nothing is moved. */
+  onConfirm: (reassignToCategoryId?: string | null) => void;
   onCancel: () => void;
 }
 
@@ -72,8 +73,9 @@ export function DeleteCategoryDialog({
 
   const availableCategories = getAvailableCategories();
 
+  // Nothing to move: a plain delete, which an acting delegate may also run.
   const handleConfirm = () => {
-    onConfirm(reassignTo || null);
+    onConfirm(transactionCount ? reassignTo || null : undefined);
   };
 
   // Don't render if no category (Modal handles isOpen check)

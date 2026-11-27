@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Payee } from '@/types/payee';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { payeesApi, payeeInUseHref } from '@/lib/payees';
-import { RecordInUseNotice } from '@/components/ui/RecordInUseNotice';
-import { Modal } from '@/components/ui/Modal';
+import { RecordInUseDialog } from '@/components/ui/RecordInUseDialog';
 import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
@@ -754,38 +753,25 @@ export function PayeeList({
         onCancel={() => setDeletePayee(null)}
       />
 
-      <Modal
-        isOpen={inUse !== null}
+      <RecordInUseDialog
+        inUse={inUse && { name: inUse.payee.name, entries: inUse.entries }}
+        hrefFor={(entry) => (inUse ? payeeInUseHref(inUse.payee.id, entry) : undefined)}
         onClose={() => setInUse(null)}
-        maxWidth="md"
-        padding="md"
-        title={t('list.inUse.title', { name: inUse?.payee.name ?? '' })}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setInUse(null)}>
-              {t('list.inUse.close')}
+        hint={<p className="mt-3 text-sm text-gray-600 dark:text-gray-300">{t('list.inUse.mergeHint')}</p>}
+        actions={
+          onMerge && inUse?.payee.isActive && (
+            <Button
+              onClick={() => {
+                const payee = inUse.payee;
+                setInUse(null);
+                onMerge(payee);
+              }}
+            >
+              {t('list.inUse.mergeInstead')}
             </Button>
-            {onMerge && inUse?.payee.isActive && (
-              <Button
-                onClick={() => {
-                  const payee = inUse.payee;
-                  setInUse(null);
-                  onMerge(payee);
-                }}
-              >
-                {t('list.inUse.mergeInstead')}
-              </Button>
-            )}
-          </>
+          )
         }
-      >
-        {inUse && (
-          <>
-            <RecordInUseNotice entries={inUse.entries} hrefFor={(entry) => payeeInUseHref(inUse.payee.id, entry)} />
-            <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">{t('list.inUse.mergeHint')}</p>
-          </>
-        )}
-      </Modal>
+      />
 
       <RowActionSheet
         isOpen={actionSheet.open}

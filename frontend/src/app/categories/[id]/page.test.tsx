@@ -422,9 +422,26 @@ describe('CategoryDetailPage', () => {
       fireEvent.click(screen.getAllByRole('button', { name: /Delete/ }).at(-1)!);
     });
 
-    expect(mockDeleteCategory).toHaveBeenCalledWith('cat-1');
+    expect(mockDeleteCategory).toHaveBeenCalledWith('cat-1', undefined);
     expect(mockReassignTransactions).not.toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith('/categories');
+  });
+
+  it('reassigns and deletes in one DELETE request when the category has transactions', async () => {
+    mockGetTransactionCount.mockResolvedValue(3);
+    mockDeleteCategory.mockResolvedValue(undefined);
+
+    await renderPage();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: /Delete/ }).at(-1)!);
+    });
+
+    expect(mockDeleteCategory).toHaveBeenCalledWith('cat-1', null);
+    expect(mockReassignTransactions).not.toHaveBeenCalled();
   });
 
   describe('Top Payees range toggle', () => {

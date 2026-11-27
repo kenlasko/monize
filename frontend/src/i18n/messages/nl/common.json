@@ -296,7 +296,24 @@
       "loanOverpaymentPayee": "{count, plural, one {# leningrekening (begunstigde voor extra aflossingen)} other {# leningrekeningen (begunstigde voor extra aflossingen)}}",
       "sharedPeople": "{count, plural, one {# persoon voor gedeelde uitgaven} other {# personen voor gedeelde uitgaven}}",
       "sharedPostings": "{count, plural, one {# boeking van gedeelde uitgaven} other {# boekingen van gedeelde uitgaven}}",
-      "rules": "{count, plural, one {# regel} other {# regels}}"
-    }
+      "rules": "{count, plural, one {# regel} other {# regels}}",
+      "subcategories": "{count, plural, one {# subcategorie} other {# subcategorieën}}",
+      "budgetLines": "{count, plural, one {# budgetregel} other {# budgetregels}}",
+      "budgetPeriods": "{count, plural, one {# budgetperiode} other {# budgetperiodes}}",
+      "payrollDeductionRules": "{count, plural, one {# loonaftrekregel} other {# loonaftrekregels}}",
+      "loanFees": "{count, plural, one {# leningvergoeding} other {# leningvergoedingen}}",
+      "loanAccounts": "{count, plural, one {# leningrekening} other {# leningrekeningen}}",
+      "customReports": "{count, plural, one {# aangepast rapport} other {# aangepaste rapporten}}",
+      "holdings": "{count, plural, one {# positie} other {# posities}}",
+      "investmentTransactions": "{count, plural, one {# beleggingstransactie} other {# beleggingstransacties}}",
+      "gemStrategies": "{count, plural, one {# GEM-strategie} other {# GEM-strategieën}}",
+      "securityDocuments": "{count, plural, one {# effectendocument} other {# effectendocumenten}}",
+      "bankSyncLinks": "{count, plural, one {# bankkoppeling} other {# bankkoppelingen}}",
+      "sharedIntegrations": "{count, plural, one {# integratie voor gedeelde uitgaven} other {# integraties voor gedeelde uitgaven}}",
+      "linkedAccounts": "{count, plural, one {# gekoppelde rekening} other {# gekoppelde rekeningen}}",
+      "securities": "{count, plural, one {# effect} other {# effecten}}"
+    },
+    "title": "\"{name}\" kan niet worden verwijderd",
+    "close": "Sluiten"
   }
 }

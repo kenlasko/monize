@@ -17,7 +17,9 @@ import { moneyDecimalsForCurrency, roundMoney } from '@/lib/format';
 import { useAuthStore } from '@/store/authStore';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import toast from 'react-hot-toast';
-import { getErrorMessage } from '@/lib/errors';
+import { getErrorMessage, getRecordInUseEntries, type RecordInUseEntry } from '@/lib/errors';
+import { accountInUseHref } from '@/lib/record-in-use-hrefs';
+import { RecordInUseDialog } from '@/components/ui/RecordInUseDialog';
 import {
   AccountRow,
   buildAccountActions,
@@ -258,6 +260,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToClose, setAccountToClose] = useState<Account | null>(null);
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
+  const [inUse, setInUse] = useState<{ account: Account; entries: RecordInUseEntry[] } | null>(null);
   const [isClosing, setIsClosing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   // Optimistic favourite state so toggling the star does not trigger a full
@@ -747,15 +750,35 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
     if (!accountToDelete) return;
 
     setIsDeleting(true);
+    // The half a refusal names, so the dialog and its links use that id.
+    let current = accountToDelete;
+    let deletedAny = false;
     try {
       // Both ledgers of a pair go, brokerage first. The server unlinks the
-      // partner rather than cascading, so if the second call fails the
-      // survivor is an ordinary cash account -- the least bad failure shape,
-      // and one every surface already handles.
+      // partner rather than cascading, so a failure of the second call leaves
+      // an ordinary cash account.
+      let halves = [accountToDelete];
       const cashHalf = logicalById.get(accountToDelete.id)?.cash;
-      await accountsApi.delete(accountToDelete.id);
       if (cashHalf) {
-        await accountsApi.delete(cashHalf.id);
+        halves = [accountToDelete, cashHalf];
+        // Ask about both before deleting either, so a refusal leaves the pair
+        // whole. The DELETE of the blocked half writes nothing; it only
+        // returns the entries the dialog shows.
+        const checks = await Promise.all(halves.map((h) => accountsApi.canDelete(h.id)));
+        const blockedAt = checks.findIndex((c) => !c.canDelete);
+        if (blockedAt >= 0) {
+          current = halves[blockedAt];
+          await accountsApi.delete(current.id);
+          // It was deletable after all (a change since the check): carry on
+          // with the other half.
+          deletedAny = true;
+          halves = halves.filter((_, i) => i !== blockedAt);
+        }
+      }
+      for (const half of halves) {
+        current = half;
+        await accountsApi.delete(half.id);
+        deletedAny = true;
       }
       // Deleting a brokerage removes its holdings from the portfolio, so the
       // account list is not the only cached view that just went stale.
@@ -765,7 +788,22 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
       setAccountToDelete(null);
       onRefresh();
     } catch (error) {
-      toast.error(getErrorMessage(error, t('toast.deleteFailed')));
+      // A half may already be gone: the list must not keep showing it, nor
+      // the dialog keep offering to delete it again.
+      if (deletedAny) {
+        invalidateBalanceCaches();
+        onRefresh();
+      }
+      const entries = getRecordInUseEntries(error);
+      if (entries || deletedAny) {
+        setDeleteDialogOpen(false);
+        setAccountToDelete(null);
+      }
+      if (entries) {
+        setInUse({ account: current, entries });
+      } else {
+        toast.error(getErrorMessage(error, t('toast.deleteFailed')));
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -1206,6 +1244,12 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
         variant="danger"
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
+      />
+
+      <RecordInUseDialog
+        inUse={inUse && { name: inUse.account.name, entries: inUse.entries }}
+        hrefFor={(entry) => (inUse ? accountInUseHref(inUse.account.id, entry) : undefined)}
+        onClose={() => setInUse(null)}
       />
     </div>
   );

@@ -1,3 +1,4 @@
+import { ForbiddenException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { CategoriesController } from "./categories.controller";
 import { CategoriesService } from "./categories.service";
@@ -269,12 +270,56 @@ describe("CategoriesController", () => {
     it("delegates to categoriesService.remove with userId and id", () => {
       mockCategoriesService.remove!.mockReturnValue("removed");
 
-      const result = controller.remove(mockReq, "cat-1");
+      const result = controller.remove(mockReq, "cat-1", {});
 
       expect(result).toBe("removed");
       expect(mockCategoriesService.remove).toHaveBeenCalledWith(
         "user-1",
         "cat-1",
+        undefined,
+      );
+    });
+
+    it("passes reassignTo through", () => {
+      controller.remove(mockReq, "cat-1", { reassignTo: "uncategorized" });
+
+      expect(mockCategoriesService.remove).toHaveBeenCalledWith(
+        "user-1",
+        "cat-1",
+        "uncategorized",
+      );
+    });
+
+    it("treats an empty reassignTo as absent", () => {
+      controller.remove(mockReq, "cat-1", { reassignTo: "" });
+      expect(mockCategoriesService.remove).toHaveBeenCalledWith(
+        expect.anything(),
+        "cat-1",
+        undefined,
+      );
+    });
+
+    it("refuses reassignTo from an acting delegate and calls nothing", () => {
+      const delegateReq = { user: { id: "user-1", realUserId: "delegate-1" } };
+      mockCategoriesService.remove!.mockClear();
+
+      expect(() =>
+        controller.remove(delegateReq, "cat-1", {
+          reassignTo: "uncategorized",
+        }),
+      ).toThrow(ForbiddenException);
+      expect(mockCategoriesService.remove).not.toHaveBeenCalled();
+    });
+
+    it("lets an acting delegate delete without reassigning", () => {
+      const delegateReq = { user: { id: "user-1", realUserId: "delegate-1" } };
+
+      controller.remove(delegateReq, "cat-1", {});
+
+      expect(mockCategoriesService.remove).toHaveBeenCalledWith(
+        "user-1",
+        "cat-1",
+        undefined,
       );
     });
   });

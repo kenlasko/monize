@@ -296,7 +296,24 @@
       "loanOverpaymentPayee": "{count, plural, other {#개의 대출 계좌(추가 상환 수취인)}}",
       "sharedPeople": "{count, plural, other {#명의 공동 지출 인원}}",
       "sharedPostings": "{count, plural, other {#건의 공동 지출 항목}}",
-      "rules": "{count, plural, other {#개의 규칙}}"
-    }
+      "rules": "{count, plural, other {#개의 규칙}}",
+      "subcategories": "{count, plural, other {#개의 하위 카테고리}}",
+      "budgetLines": "{count, plural, other {#개의 예산 항목}}",
+      "budgetPeriods": "{count, plural, other {#개의 예산 기간}}",
+      "payrollDeductionRules": "{count, plural, other {#개의 급여 공제 규칙}}",
+      "loanFees": "{count, plural, other {#개의 대출 수수료}}",
+      "loanAccounts": "{count, plural, other {#개의 대출 계좌}}",
+      "customReports": "{count, plural, other {#개의 사용자 지정 보고서}}",
+      "holdings": "{count, plural, other {#개의 보유 종목}}",
+      "investmentTransactions": "{count, plural, other {#개의 투자 거래}}",
+      "gemStrategies": "{count, plural, other {#개의 GEM 전략}}",
+      "securityDocuments": "{count, plural, other {#개의 증권 문서}}",
+      "bankSyncLinks": "{count, plural, other {#개의 은행 동기화 연결}}",
+      "sharedIntegrations": "{count, plural, other {#개의 공유 경비 연동}}",
+      "linkedAccounts": "{count, plural, other {#개의 연결된 계좌}}",
+      "securities": "{count, plural, other {#개의 증권}}"
+    },
+    "title": "\"{name}\"을(를) 삭제할 수 없습니다",
+    "close": "닫기"
   }
 }

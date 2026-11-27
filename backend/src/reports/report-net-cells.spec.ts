@@ -134,8 +134,8 @@ describe("NetCells", () => {
 
   it.each([
     [MetricType.TOTAL_AMOUNT, 4930],
-    [MetricType.AVERAGE, 5070],
-    [MetricType.NONE, 5070],
+    [MetricType.AVERAGE, 4930],
+    [MetricType.NONE, 4930],
     [MetricType.BUDGET_VARIANCE, 5070],
   ])(
     "settles Both %s with the sign convention for the metric",

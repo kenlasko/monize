@@ -99,6 +99,11 @@ import { assertMortgageMethodTerms } from "./mortgage-installment.util";
 import { assertAccountCurrencyKindIn } from "./account-currency-kind.util";
 import { applyMortgageMethodColumns } from "./mortgage-method-columns.util";
 import { countSchedulesReferencingAccounts } from "./account-schedule-references";
+import { findAccountReferences } from "./account-references";
+import {
+  recordInUseException,
+  recordInUseSummary,
+} from "../common/helpers/record-in-use";
 import {
   assertLoanSourceAccount,
   reassignLoanSourceAccount,
@@ -1637,9 +1642,10 @@ export class AccountsService {
   }
 
   /**
-   * What would stop the account's delete: its ledger rows and the schedules
-   * naming it. The one answer both the refusal and `getTransactionCount` read,
-   * so the can-delete answer and the delete cannot disagree.
+   * The ledger rows and schedules naming the account, as counts. A cheap
+   * pre-check for the account list; the delete itself refuses on every kind
+   * `findAccountReferences` finds, so `canDelete` from the list can say true
+   * where the delete's 409 lists more (`getTransactionCount` asks the finder).
    */
   private async countDeletionBlockers(
     m: EntityManager,
@@ -1671,45 +1677,26 @@ export class AccountsService {
   }
 
   /**
-   * Refuses the delete of an account that holds any ledger row or that a
-   * scheduled transaction names.
+   * Refuses (409 RECORD_IN_USE, with the counts) the delete of an account that
+   * any other row still uses. The loan's own payment schedule is not counted:
+   * `delete` removes it.
    */
-  private async assertAccountEmpty(
+  private async assertAccountUnreferenced(
     m: EntityManager,
-    accountId: string,
+    userId: string,
+    account: { id: string; name: string },
   ): Promise<void> {
-    const {
-      transactionCount,
-      investmentTransactionCount,
-      scheduledTransactionCount,
-    } = await this.countDeletionBlockers(m, accountId);
-    if (transactionCount > 0) {
-      throw new BadRequestException(
-        tr(
-          "errors.accounts.deleteWithTransactions",
-          `Cannot delete account with ${transactionCount} transaction(s). Close the account instead.`,
-          { transactionCount },
-        ),
-      );
-    }
-    if (investmentTransactionCount > 0) {
-      throw new BadRequestException(
-        tr(
-          "errors.accounts.deleteWithInvestmentTransactions",
-          `Cannot delete account with ${investmentTransactionCount} investment transaction(s). Close the account instead.`,
-          { investmentTransactionCount },
-        ),
-      );
-    }
-    if (scheduledTransactionCount > 0) {
-      throw new BadRequestException(
-        tr(
-          "errors.accounts.deleteWithScheduledTransactions",
-          `Cannot delete account used by ${scheduledTransactionCount} scheduled transaction(s). Remove the account from those bills and deposits first, or close the account instead.`,
-          { scheduledTransactionCount },
-        ),
-      );
-    }
+    const references = await findAccountReferences(m, userId, account.id);
+    if (references.length === 0) return;
+    const summary = recordInUseSummary(references);
+    throw recordInUseException(
+      tr(
+        "errors.accounts.inUse",
+        `Account "${account.name}" cannot be deleted: it is still used by ${summary}. Remove these first, or close the account instead.`,
+        { name: account.name, summary },
+      ),
+      references,
+    );
   }
 
   /**
@@ -2529,13 +2516,9 @@ export class AccountsService {
 
     return withScopedDb(this.dataSource, async (m) => {
       const counts = await this.countDeletionBlockers(m, accountId);
-      return {
-        ...counts,
-        canDelete:
-          counts.transactionCount === 0 &&
-          counts.investmentTransactionCount === 0 &&
-          counts.scheduledTransactionCount === 0,
-      };
+      // The same finder the delete refuses on, so the answer cannot disagree.
+      const references = await findAccountReferences(m, userId, accountId);
+      return { ...counts, canDelete: references.length === 0 };
     });
   }
 
@@ -2566,7 +2549,7 @@ export class AccountsService {
         // can land before the removal: a writer either committed (and the count
         // sees it) or waits for this delete.
         await lockAccountsForBalanceWrite(m, [id], userId);
-        await this.assertAccountEmpty(m, id);
+        await this.assertAccountUnreferenced(m, userId, account);
 
         // The loan's own schedule as it stands under the lock, the one the
         // count just left out: a concurrent edit may have replaced the schedule

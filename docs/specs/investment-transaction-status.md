@@ -109,7 +109,11 @@ already-VOID cash leg (last row of the truth table), landing the pair coherent.
 - `update()` keeps its reverse-then-reapply shape: the reversal keys on the
   row's stored (old) status, the reapplication on the new one, so an edit that
   crosses the boundary composes from the same two halves as everything else.
-  An edit recreates the cash leg (existing behaviour) carrying the row's status.
+  An edit updates the cash leg in place (#2370), so its id, tags, attachments and
+  links survive. The leg keeps its own status unless the edit changes its
+  amount, account, date or currency, or crosses the VOID boundary; then it takes
+  the row's status. A row that loses its cash side (BUY to ADD_SHARES) deletes
+  the leg.
 
 ## 6. Imports
 
