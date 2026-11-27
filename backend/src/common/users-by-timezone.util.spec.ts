@@ -1,5 +1,8 @@
 import { DataSource } from "typeorm";
-import { getUsersByEffectiveTimezone } from "./users-by-timezone.util";
+import {
+  getUsersByEffectiveTimezone,
+  resolveStoredTimezone,
+} from "./users-by-timezone.util";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 
 jest.mock("./db/scoped-db", () =>
@@ -92,5 +95,23 @@ describe("getUsersByEffectiveTimezone", () => {
     ]);
     const result = await getUsersByEffectiveTimezone(ds);
     expect(result.get("America/New_York")).toEqual(["u1"]);
+  });
+});
+
+describe("resolveStoredTimezone", () => {
+  it("skips an invalid stored zone and uses a valid cached one", () => {
+    expect(resolveStoredTimezone("Not/AZone", "Asia/Tokyo")).toBe("Asia/Tokyo");
+  });
+
+  it("is undefined when neither value is a real zone", () => {
+    expect(resolveStoredTimezone("Not/AZone", "browser")).toBeUndefined();
+    expect(resolveStoredTimezone(null, " ")).toBeUndefined();
+  });
+
+  it("buckets a user with only invalid zones under UTC", async () => {
+    const ds = makeDataSource([
+      { user_id: "u1", timezone: "Not/AZone", last_client_timezone: null },
+    ]);
+    expect((await getUsersByEffectiveTimezone(ds)).get("UTC")).toEqual(["u1"]);
   });
 });

@@ -32,7 +32,10 @@ import { PatService } from "../auth/pat.service";
 import { McpUserContext, toAuthInfo } from "./mcp-context";
 import { OAuthProviderService } from "../oauth/oauth-provider.service";
 import { ConfigService } from "@nestjs/config";
+import { DataSource } from "typeorm";
 import { withUserContext } from "../common/db/with-context";
+import { withScopedDb } from "../common/db/scoped-db";
+import { getStoredTimezoneOfUser } from "../common/users-by-timezone.util";
 
 const SkipPasswordCheck = () => SetMetadata(SKIP_PASSWORD_CHECK_KEY, true);
 
@@ -51,7 +54,9 @@ const SkipPasswordCheck = () => SetMetadata(SKIP_PASSWORD_CHECK_KEY, true);
  * request as the SDK's `AuthInfo`, which is how a tool handler learns who is
  * calling (`resolveUserContext`) -- identity is a property of the request, not
  * of a session. Individual tools may still re-seed the same id locally
- * (see `transactions.tool.ts`) -- a nested seed of the same user is a no-op.
+ * (see `transactions.tool.ts`), and must pass `getRequestTimezone()` as the
+ * third argument: a nested seed replaces the store, so it would drop the
+ * timezone seeded here.
  */
 @ApiExcludeController()
 @ApiTags("MCP")
@@ -127,6 +132,7 @@ export class McpHttpController implements OnModuleDestroy {
     private readonly patService: PatService,
     private readonly oauthProviderService: OAuthProviderService,
     private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
   ) {
     this.cleanupTimer = setInterval(
       () => this.cleanupExpiredSessions(),
@@ -277,6 +283,31 @@ export class McpHttpController implements OnModuleDestroy {
     return isLegacyRequest(await toWebRequest(req, req.body), req.body);
   }
 
+  /**
+   * Seed the bearer's user as the ambient identity together with their
+   * timezone, so `todayYMD()` in a tool, resource, prompt or the server
+   * instructions is the user's day. Resolved once per POST with
+   * `getStoredTimezoneOfUser`: the first valid IANA zone of the stored
+   * preference, then the cached client zone, otherwise none (the server's
+   * day). MCP carries no client timezone header, so the cached zone stands in
+   * for it. A failed lookup is logged and the request is served without one.
+   */
+  private async runAsUser<T>(userId: string, fn: () => Promise<T>): Promise<T> {
+    let timezone: string | undefined;
+    try {
+      timezone = await withUserContext(userId, () =>
+        withScopedDb(this.dataSource, (m) =>
+          getStoredTimezoneOfUser(m, userId),
+        ),
+      );
+    } catch (error) {
+      this.logger.warn(
+        `MCP timezone lookup failed: ${error instanceof Error ? error.name : "unknown error"}`,
+      );
+    }
+    return withUserContext(userId, fn, timezone);
+  }
+
   private bearerToken(req: Request): string {
     const auth = req.headers.authorization ?? "";
     return auth.startsWith("Bearer ") ? auth.substring(7) : "";
@@ -292,7 +323,7 @@ export class McpHttpController implements OnModuleDestroy {
     if (!authResult) return;
 
     if (!(await this.isLegacy(req))) {
-      await withUserContext(authResult.userId, () =>
+      await this.runAsUser(authResult.userId, () =>
         this.modernNode(req, res, req.body),
       );
       return;
@@ -322,7 +353,7 @@ export class McpHttpController implements OnModuleDestroy {
       if (!this.authorizeExistingSession(sessionId, authResult, res)) {
         return;
       }
-      await withUserContext(authResult.userId, () =>
+      await this.runAsUser(authResult.userId, () =>
         transport.handleRequest(req, res, req.body),
       );
       return;
@@ -355,11 +386,14 @@ export class McpHttpController implements OnModuleDestroy {
       }
     };
 
-    const server = this.mcpServerService.createServer();
-    await server.connect(transport);
-    await withUserContext(authResult.userId, () =>
-      transport.handleRequest(req, res, req.body),
-    );
+    // createServer() reads the user's day for the instructions, so it runs
+    // inside the seeded context too.
+    const server = await this.runAsUser(authResult.userId, async () => {
+      const created = this.mcpServerService.createServer();
+      await created.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+      return created;
+    });
 
     if (transport.sessionId) {
       this.transports.set(transport.sessionId, transport);
