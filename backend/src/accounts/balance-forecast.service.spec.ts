@@ -527,6 +527,86 @@ describe("BalanceForecastService", () => {
     });
   });
 
+  describe("a split with a transfer line", () => {
+    const splitSchedule = {
+      id: "st-split",
+      name: "Loan payment",
+      accountId: "acc-1",
+      transferAccountId: null,
+      isTransfer: false,
+      amount: -100,
+      currencyCode: "CAD",
+      frequency: "MONTHLY",
+      nextDueDate: "2024-07-20",
+      endDate: null,
+      occurrencesRemaining: null,
+      isActive: true,
+      isInvestment: false,
+      isSplit: true,
+      splits: [
+        { transferAccountId: null, amount: -30 },
+        { transferAccountId: "acc-2", amount: -70 },
+      ],
+    };
+
+    it("credits the target account by the negated line amount", async () => {
+      accountsRepo.findOne.mockResolvedValue({ ...chequing, id: "acc-2" });
+      stubBalances("1000");
+      // The candidate-id read, then the schedule read.
+      dataSource.query.mockResolvedValueOnce([{ id: "st-split" }]);
+      scheduledRepo.find.mockResolvedValue([splitSchedule]);
+
+      const result = await service.getBalanceForecast("user-1", "acc-2", 60);
+
+      expect(result.complete).toBe(true);
+      expect(result.points).toContainEqual({
+        date: "2024-07-20",
+        balance: 1070,
+      });
+    });
+
+    it("still charges the source account the whole split", async () => {
+      accountsRepo.findOne.mockResolvedValue(chequing);
+      stubBalances("1000");
+      scheduledRepo.find.mockResolvedValue([splitSchedule]);
+
+      const result = await service.getBalanceForecast("user-1", "acc-1", 60);
+
+      expect(result.points).toContainEqual({
+        date: "2024-07-20",
+        balance: 900,
+      });
+    });
+
+    it("reads the override's lines, not the template's", async () => {
+      accountsRepo.findOne.mockResolvedValue({ ...chequing, id: "acc-2" });
+      stubBalances("1000");
+      dataSource.query.mockResolvedValueOnce([{ id: "st-split" }]);
+      scheduledRepo.find.mockResolvedValue([splitSchedule]);
+      overridesRepo.find.mockResolvedValue([
+        {
+          id: "ovr-1",
+          scheduledTransactionId: "st-split",
+          originalDate: "2024-07-20",
+          overrideDate: "2024-07-20",
+          amount: -100,
+          isSplit: true,
+          splits: [
+            { categoryId: null, transferAccountId: null, amount: -10 },
+            { categoryId: null, transferAccountId: "acc-2", amount: -90 },
+          ],
+        },
+      ]);
+
+      const result = await service.getBalanceForecast("user-1", "acc-2", 60);
+
+      expect(result.points).toContainEqual({
+        date: "2024-07-20",
+        balance: 1090,
+      });
+    });
+  });
+
   describe("per-occurrence overrides", () => {
     it("moves and re-prices an overridden occurrence", async () => {
       accountsRepo.findOne.mockResolvedValue(chequing);

@@ -201,6 +201,12 @@ interface Occurrence {
    * override can be unknown while the base schedule is not, and vice versa.
    */
   unknown: boolean;
+  /**
+   * The transfer lines of this occurrence's split (an override's own when it
+   * replaces them). Each credits its target account by the negated amount; the
+   * all-accounts view counts only `amount` minus these.
+   */
+  transferLines?: TransferLine[];
   /** See `ForecastTransaction.overdueOriginalDate`. */
   overdueOriginalDate?: string;
   /**
@@ -258,6 +264,22 @@ interface OverrideLookup {
   isSplit?: boolean | null;
   hasInvestmentSplits: boolean;
   investmentForecastAmount?: number | null;
+  /** The override's own transfer lines when it replaces the split; `null` otherwise. */
+  transferLines: TransferLine[] | null;
+}
+
+/** A split line that moves money into another of the user's accounts. */
+interface TransferLine {
+  accountId: string;
+  amount: number;
+}
+
+function transferLinesOf(
+  lines: { transferAccountId?: string | null; amount: number | string }[] | null | undefined,
+): TransferLine[] {
+  return (lines ?? []).flatMap(l =>
+    l.transferAccountId ? [{ accountId: l.transferAccountId, amount: Number(l.amount) }] : [],
+  );
 }
 
 interface DeductionPool {
@@ -534,9 +556,16 @@ function generateOccurrences(
     overrideDate?: string;
     amount: number | null;
     isSplit?: boolean | null;
-    splits?: { splitKind?: string; investment?: unknown }[] | null;
+    splits?: { splitKind?: string; investment?: unknown; transferAccountId?: string | null; amount: number }[] | null;
     investmentForecastAmount?: number | null;
   }): OverrideLookup => ({
+    // An override that does not restate the lines inherits the template's.
+    transferLines:
+      o.isSplit === true && o.splits?.length
+        ? transferLinesOf(o.splits)
+        : o.isSplit === false
+          ? []
+          : null,
     // `overrideDate` may be absent on a fallback nextOverride fixture; downstream
     // treats an absent date as "same date" (uses the occurrence's own date).
     overrideDate: o.overrideDate ? o.overrideDate.split('T')[0] : '',
@@ -563,6 +592,9 @@ function generateOccurrences(
   // its server-resolved effective total; a non-investment override uses its stored
   // scalar; a base occurrence uses the base amount.
   const baseIsInvestment = transaction.isInvestment === true;
+  const baseLines = transaction.isSplit ? transferLinesOf(transaction.splits) : [];
+  const linesFor = (override: OverrideLookup | undefined): TransferLine[] =>
+    override?.transferLines ?? baseLines;
   const resolveOccurrence = (
     override: OverrideLookup | undefined,
     dateKey: string,
@@ -618,7 +650,11 @@ function generateOccurrences(
     const effectiveKey = formatDateKey(effectiveDate);
     const placed = place(effectiveTime, effectiveKey, slotKey);
     if (placed && (!txEndTime || effectiveTime <= txEndTime)) {
-      occurrences.push({ ...placed, ...withDeductions(resolveOccurrence(override, effectiveKey), effectiveKey) });
+      occurrences.push({
+        ...placed,
+        ...withDeductions(resolveOccurrence(override, effectiveKey), effectiveKey),
+        transferLines: linesFor(override),
+      });
     }
     return occurrences;
   }
@@ -655,6 +691,7 @@ function generateOccurrences(
       occurrences.push({
         ...placed,
         ...withDeductions(resolveOccurrence(override, effectiveDateKey), effectiveDateKey),
+        transferLines: linesFor(override),
       });
     }
 
@@ -677,13 +714,20 @@ function generateOccurrences(
  * Check if a scheduled transaction is a transfer (affects two accounts, net zero for "all accounts" view)
  */
 function isTransfer(transaction: ScheduledTransaction): boolean {
-  // Check direct transfer field first
-  if (transaction.isTransfer && transaction.transferAccountId) {
-    return true;
-  }
-  // Fallback: check for split-based transfers (legacy)
-  return transaction.isSplit &&
-    (transaction.splits?.some(split => split.transferAccountId != null) ?? false);
+  // A split with a transfer line is NOT one: its category lines are real
+  // income/expense, and only its transfer lines are internal (`transferLines`).
+  return !!(transaction.isTransfer && transaction.transferAccountId);
+}
+
+/** Whether a split schedule's template or any override sends a transfer line to `accountId`. */
+function hasLineInto(transaction: ScheduledTransaction, accountId: string): boolean {
+  const into = (lines: { transferAccountId?: string | null; amount: number | string }[] | null | undefined) =>
+    transferLinesOf(lines).some(l => l.accountId === accountId);
+  return (
+    (transaction.isSplit && into(transaction.splits)) ||
+    [...(transaction.futureOverrides ?? []), ...(transaction.nextOverride ? [transaction.nextOverride] : [])]
+      .some(o => o.isSplit === true && into(o.splits))
+  );
 }
 
 /**
@@ -905,12 +949,14 @@ function hasUnknownForecastRate(transaction: ScheduledTransaction): boolean {
 function scheduledFlowsForAccount(
   transactions: ScheduledTransaction[],
   accountId: string,
-): Array<{ transaction: ScheduledTransaction; isInbound: boolean }> {
+): Array<{ transaction: ScheduledTransaction; isInbound: boolean; lineInbound: boolean }> {
   return transactions
     .filter(
       t =>
         t.isActive &&
-        (t.accountId === accountId || (isTransfer(t) && t.transferAccountId === accountId)),
+        (t.accountId === accountId ||
+          (isTransfer(t) && t.transferAccountId === accountId) ||
+          hasLineInto(t, accountId)),
     )
     .map(transaction => ({
       transaction,
@@ -918,6 +964,8 @@ function scheduledFlowsForAccount(
         isTransfer(transaction) &&
         transaction.transferAccountId === accountId &&
         transaction.accountId !== accountId,
+      // A split whose only tie to this account is a transfer line into it.
+      lineInbound: transaction.accountId !== accountId && !isTransfer(transaction),
     }));
 }
 
@@ -1027,7 +1075,7 @@ export function buildForecast(
       // it would add an unconverted foreign amount to the running balance.
       transactions
         .filter(t => t.isActive && !isTransfer(t) && targetAccountIds.has(t.accountId))
-        .map(transaction => ({ transaction, isInbound: false }))
+        .map(transaction => ({ transaction, isInbound: false, lineInbound: false }))
     : scheduledFlowsForAccount(transactions, accountId);
 
   // Every active schedule, not only the relevant ones: a paycheque on another
@@ -1048,7 +1096,7 @@ export function buildForecast(
     transactionsByDate.set(ft.date, existing);
   }
 
-  for (const { transaction: tx, isInbound } of relevantFlows) {
+  for (const { transaction: tx, isInbound, lineInbound } of relevantFlows) {
     // An unposted occurrence due before today lands on today: the bill is
     // still owed (discussion #1784).
     const occurrences = occurrencesById.get(tx.id) ?? [];
@@ -1071,11 +1119,24 @@ export function buildForecast(
             tx.currencyCode,
         );
       }
+      // Split transfer lines: the target gets the negated line amount; in the
+      // all-accounts view the lines are internal and cancel, so only the rest counts.
+      const lines = occ.transferLines ?? [];
+      const lineSum = (to?: string) =>
+        sumMoney(lines.filter(l => to === undefined || l.accountId === to).map(l => l.amount), unitDecimals);
+      const signed = lineInbound
+        ? -lineSum(accountId as string)
+        : accountId === 'all' && lines.length > 0
+          ? occ.amount - lineSum()
+          : isInbound
+            ? -occ.amount
+            : occ.amount;
+      if (lineInbound && signed === 0 && !lines.some(l => l.accountId === accountId)) continue;
       existing.push({
         name: tx.name,
         amount: occ.unknown
           ? 0
-          : conv(isInbound ? -occ.amount : occ.amount, txAccountId),
+          : conv(signed, lineInbound ? (accountId as string) : txAccountId),
         scheduledTransactionId: tx.id,
         ...(occ.overdueOriginalDate !== undefined && {
           overdueOriginalDate: occ.overdueOriginalDate,

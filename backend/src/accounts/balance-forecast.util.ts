@@ -47,6 +47,11 @@ export interface ForecastOccurrenceInput {
   accountId: string;
   transferAccountId: string | null;
   /**
+   * A split's effective transfer lines: each credits its target account by the
+   * negated line amount, on top of the whole split moving `accountId`.
+   */
+  transferLines?: { transferAccountId: string; amount: number }[];
+  /**
    * The date the occurrence is applied on: the date it falls on (an override's
    * date when one moved it), or the first projected day for one already due
    * (`forecastLanding`).
@@ -114,7 +119,11 @@ function touchesAccount(
   o: ForecastOccurrenceInput,
   accountId: string,
 ): boolean {
-  return o.accountId === accountId || o.transferAccountId === accountId;
+  return (
+    o.accountId === accountId ||
+    o.transferAccountId === accountId ||
+    !!o.transferLines?.some((l) => l.transferAccountId === accountId)
+  );
 }
 
 /**
@@ -130,6 +139,9 @@ function deltaFor(
   let delta = 0;
   if (o.accountId === accountId) delta += amount;
   if (o.transferAccountId === accountId) delta += Math.abs(amount);
+  for (const l of o.transferLines ?? []) {
+    if (l.transferAccountId === accountId) delta -= l.amount;
+  }
   return delta;
 }
 

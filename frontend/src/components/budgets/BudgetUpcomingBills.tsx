@@ -12,6 +12,7 @@ import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 import {
   nextOccurrenceDueDate,
   nextOccurrenceEffectiveAmount,
+  nonTransferAmount,
   sumEffectiveOccurrences,
 } from '@/lib/scheduled-effective-amount';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
@@ -99,7 +100,12 @@ export function BudgetUpcomingBills({
     () =>
       sumEffectiveOccurrences(
         upcomingBills,
-        getEffective,
+        (st) => {
+          const e = getEffective(st);
+          // A split's transfer lines are not spending.
+          const amount = nonTransferAmount(e.amount, st, st.nextOverride);
+          return { ...e, amount, complete: amount !== null };
+        },
         (amount, from) => convert(amount, from, displayCurrency),
         Math.abs,
       ),

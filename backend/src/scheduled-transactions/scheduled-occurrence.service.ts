@@ -148,6 +148,30 @@ export interface OccurrenceCandidateFilter {
 /** An occurrence plus the row it came from, for a server-side consumer. */
 export interface ResolvedScheduledOccurrence extends EffectiveScheduledOccurrence {
   schedule: ScheduledTransaction;
+  /**
+   * The transfer lines of this occurrence's EFFECTIVE splits (an override's own
+   * lines when it replaces them, else the template's): each moves its target
+   * account by the negated amount, like a plain scheduled transfer
+   * (INV-OCCURRENCE-003). Empty for a non-split or a split without such a line.
+   */
+  transferLines: { transferAccountId: string; amount: number }[];
+}
+
+function effectiveTransferLines(
+  row: ScheduledTransaction,
+  override: ScheduledTransactionOverride | undefined,
+): { transferAccountId: string; amount: number }[] {
+  const lines =
+    override?.isSplit === true && override.splits?.length
+      ? override.splits
+      : override?.isSplit === false || !row.isSplit
+        ? []
+        : (row.splits ?? []);
+  return lines.flatMap((l) =>
+    l.transferAccountId
+      ? [{ transferAccountId: l.transferAccountId, amount: Number(l.amount) }]
+      : [],
+  );
 }
 
 /**
@@ -232,6 +256,10 @@ export class ScheduledOccurrenceService {
           estimateStatus: null,
           autoPosts: occurrenceAutoPosts(row, slot.override),
           schedule: row,
+          transferLines: effectiveTransferLines(
+            row,
+            slot.override ?? undefined,
+          ),
         });
       }
     }

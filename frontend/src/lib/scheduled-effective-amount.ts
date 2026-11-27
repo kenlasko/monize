@@ -114,6 +114,31 @@ export function overrideEffectiveAmount(
 }
 
 /**
+ * What counts as spending in a bills total: an occurrence amount less the
+ * split's transfer lines, which move money between the user's own accounts.
+ * `override` is the occurrence's override when it replaces the lines; without
+ * it the template's lines are read (a later occurrence's own override lines are
+ * not on the client). `null` stays `null`.
+ */
+export function nonTransferAmount(
+  amount: number | null,
+  st: ScheduledTransaction,
+  override?: ScheduledTransactionOverride | null,
+): number | null {
+  if (amount === null) return null;
+  const lines =
+    override?.isSplit === true && override.splits?.length
+      ? override.splits
+      : override?.isSplit === false || !st.isSplit
+        ? []
+        : (st.splits ?? []);
+  const transfers = lines.filter((l) => l.transferAccountId).map((l) => Number(l.amount));
+  return transfers.length === 0
+    ? amount
+    : sumMoney([amount, ...transfers.map((a) => -a)], moneyDecimalsForCurrency(st.currencyCode));
+}
+
+/**
  * The amount the schedule's *next* occurrence would post today -- the one figure
  * a surface listing "what is coming up" should show. Honours the per-occurrence
  * override on that date when the server sent one.

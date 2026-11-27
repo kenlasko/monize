@@ -31,7 +31,7 @@ import { exportToCsv } from '@/lib/csv-export';
 import { useReportData } from '@/hooks/useReportData';
 import { ReportError } from '@/components/reports/ReportError';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
-import { sumEffectiveOccurrences } from '@/lib/scheduled-effective-amount';
+import { nonTransferAmount, sumEffectiveOccurrences } from '@/lib/scheduled-effective-amount';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { isComplete, type ConvertedTotal } from '@/lib/currency-total';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -226,11 +226,11 @@ export function UpcomingBillsReport() {
         ? { value: 0, missingCurrencies: [], excludedCount: 1 }
         : sumEffectiveOccurrences(
             bills.filter((b) => !b.scheduledTransaction.isTransfer),
-            (b) => ({
-              amount: b.amount,
-              currencyCode: b.currencyCode,
-              complete: b.amount !== null,
-            }),
+            (b) => {
+              // A split's transfer lines are not spending.
+              const amount = nonTransferAmount(b.amount, b.scheduledTransaction);
+              return { amount, currencyCode: b.currencyCode, complete: amount !== null };
+            },
             convertToDefault,
             Math.abs,
           );

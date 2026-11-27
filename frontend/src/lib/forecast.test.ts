@@ -645,19 +645,52 @@ describe('buildForecast', () => {
 
   // --- Split-based transfer detection ---
   describe('transfer detection', () => {
-    it('excludes split-based transfers in all-account mode', () => {
-      const accounts = [makeAccount({ currentBalance: 5000 })];
-      const transactions = [makeScheduled({
-        nextDueDate: '2025-01-20',
-        amount: -500,
-        frequency: 'ONCE',
-        isTransfer: false,
-        isSplit: true,
-        splits: [{ transferAccountId: 'acc-2' } as any],
-      })];
-      const result = forecastPoints(accounts, transactions, 'month', 'all');
-      const allBalances = result.map(dp => dp.balance);
-      expect(allBalances.every(b => b === 5000)).toBe(true);
+    // A split with a transfer line: category -30, transfer -70 to acc-2 (total -100).
+    const splitWithTransfer = () => makeScheduled({
+      nextDueDate: '2025-01-20',
+      amount: -100,
+      frequency: 'ONCE',
+      isSplit: true,
+      splits: [
+        { transferAccountId: null, amount: -30 } as any,
+        { transferAccountId: 'acc-2', amount: -70 } as any,
+      ],
+    });
+
+    // Was: the whole schedule was dropped as a transfer, including its real -30.
+    it('counts only the non-transfer lines of a split in all-account mode', () => {
+      const accounts = [makeAccount({ currentBalance: 1000 }), makeAccount({ id: 'acc-2', currentBalance: 1000 })];
+      const result = forecastPoints(accounts, [splitWithTransfer()], 'month', 'all');
+      expect(result[result.length - 1].balance).toBe(1970);
+    });
+
+    it('credits the transfer line to its target account', () => {
+      const accounts = [makeAccount({ id: 'acc-2', currentBalance: 1000 })];
+      const result = forecastPoints(accounts, [splitWithTransfer()], 'month', 'acc-2');
+      expect(result.find(dp => dp.date === '2025-01-20')?.balance).toBe(1070);
+    });
+
+    it('charges the source account the whole split', () => {
+      const result = forecastPoints([makeAccount({ currentBalance: 1000 })], [splitWithTransfer()], 'month', 'acc-1');
+      expect(result.find(dp => dp.date === '2025-01-20')?.balance).toBe(900);
+    });
+
+    it('reads an override that replaces the lines', () => {
+      const t = makeScheduled({
+        ...splitWithTransfer(),
+        nextOverride: {
+          overrideDate: '2025-01-20',
+          originalDate: '2025-01-20',
+          amount: -100,
+          isSplit: true,
+          splits: [
+            { transferAccountId: null, amount: -10 },
+            { transferAccountId: 'acc-2', amount: -90 },
+          ],
+        } as any,
+      });
+      const result = forecastPoints([makeAccount({ id: 'acc-2', currentBalance: 1000 })], [t], 'month', 'acc-2');
+      expect(result.find(dp => dp.date === '2025-01-20')?.balance).toBe(1090);
     });
 
     it('includes transfers when filtering by source account', () => {

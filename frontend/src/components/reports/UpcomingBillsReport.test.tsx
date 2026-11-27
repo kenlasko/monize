@@ -244,6 +244,23 @@ describe('UpcomingBillsReport', () => {
     expect(card?.textContent).not.toContain('2400');
   });
 
+  it('counts only the non-transfer lines of a split in the totals', async () => {
+    mockGetAll.mockResolvedValue([
+      makeTransaction({
+        id: 'st-1', name: 'Loan payment', amount: -100, nextDueDate: '2026-02-20',
+        isSplit: true,
+        splits: [{ transferAccountId: null, amount: -30 }, { transferAccountId: 'acc-2', amount: -70 }],
+      }),
+    ]);
+    render(<UpcomingBillsReport />);
+    await waitFor(() => {
+      expect(screen.getByText('This Month')).toBeInTheDocument();
+    });
+    const card = screen.getByText('This Month').parentElement;
+    expect(card?.textContent).toContain('$30');
+    expect(card?.textContent).not.toContain('$100');
+  });
+
   it('renders summary cards and view controls with data', async () => {
     const futureDateStr = '2026-02-19';
     mockGetAll.mockResolvedValue([makeTransaction({ nextDueDate: futureDateStr })]);
