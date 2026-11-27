@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
 import {
   CategoryType,
+  categoryTypeIs,
   isIncomeCategory,
 } from "../categories/category-type.util";
 import { tr } from "../i18n/translate";
@@ -36,6 +37,10 @@ import {
   assertOneTransferLinePerAccount,
   assertTransferAccountsOwned,
 } from "./budget-transfer-lines.util";
+
+/** No Transfer category on the leg or line whose category column is named. */
+const NOT_TRANSFER_CATEGORY = (column: string): string =>
+  `NOT EXISTS (SELECT 1 FROM categories tc WHERE tc.id = ${column} AND ${categoryTypeIs("tc", "transfer")})`;
 
 export interface CategoryAnalysis {
   categoryId: string;
@@ -191,9 +196,18 @@ export class BudgetGeneratorService {
         ? sumMoney(incomeAnalysis.map((i) => i.median))
         : 0;
 
-    const totalBudgeted = sumMoney(expenseAnalysis.map((c) => c.suggested));
+    // A Transfer category's outgoing line is a transfer, never spending
+    // (docs/specs/transfer-categories.md section 6.1).
+    const isTransferLine = (c: CategoryAnalysis) =>
+      c.categoryType === "transfer";
+    const totalBudgeted = sumMoney(
+      expenseAnalysis.filter((c) => !isTransferLine(c)).map((c) => c.suggested),
+    );
 
-    const totalTransfers = sumMoney(transfers.map((t) => t.suggested));
+    const totalTransfers = sumMoney([
+      ...transfers.map((t) => t.suggested),
+      ...expenseAnalysis.filter(isTransferLine).map((c) => c.suggested),
+    ]);
 
     return {
       categories: allCategories,
@@ -695,6 +709,11 @@ export class BudgetGeneratorService {
           window,
         )
           .innerJoin("lt.account", "a")
+          // A leg holding a Transfer category is suggested on that
+          // category's own line (the expense analysis above), and the line
+          // wins over the account's once applied (docs/specs/
+          // transfer-categories.md section 6.3), so it is not planned twice.
+          .andWhere(NOT_TRANSFER_CATEGORY("t.category_id"))
           .select("a.id", "accountId")
           .addSelect("a.name", "accountName")
           .addSelect("a.account_type", "accountType")
@@ -712,6 +731,7 @@ export class BudgetGeneratorService {
           window,
         )
           .innerJoin("s.transferAccount", "a")
+          .andWhere(NOT_TRANSFER_CATEGORY("s.category_id"))
           .select("a.id", "accountId")
           .addSelect("a.name", "accountName")
           .addSelect("a.account_type", "accountType")

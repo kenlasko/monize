@@ -1077,8 +1077,10 @@ export function MonthlyCategoryBreakdownReport() {
       model.totalIncomeAvg,
     ]);
     // Transfer rows carry their own sign already ("from" positive, "to"
-    // negative), so they are exported as-is.
-    for (const transfer of model.transfers.rows) {
+    // negative), so they are exported as-is. A parent's roll-up is left out,
+    // as the server leaves it out of the group total: it shares its parent's
+    // label, and the exported rows add up to Total transfers.
+    for (const transfer of model.transfers.rows.filter((tr) => !tr.isSubtotal)) {
       rows.push([
         t('monthlyCategoryBreakdown.transfers'),
         transfer.displayName,

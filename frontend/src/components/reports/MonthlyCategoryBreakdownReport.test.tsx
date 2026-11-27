@@ -753,6 +753,24 @@ describe('MonthlyCategoryBreakdownReport', () => {
       expect(screen.getAllByText('+ $1500.00').length).toBeGreaterThan(0);
     });
 
+    it('exports the category rows without the roll-ups, so they add up to Total transfers', async () => {
+      mockGetMonthlyCategoryBreakdown.mockResolvedValue(response);
+      render(<MonthlyCategoryBreakdownReport />);
+      await waitFor(() => {
+        expect(screen.getByText('Savings contributions, outgoing')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Export CSV'));
+      });
+      const rows = mockExportToCsv.mock.calls[0][2] as unknown[][];
+      const names = rows.filter((r) => r[0] === 'Transfers').map((r) => r[1]);
+      expect(names).toEqual([
+        'Savings contributions, outgoing',
+        'Savings contributions, incoming',
+        'From Chequing',
+      ]);
+    });
+
     it("drills a category row into its Transfer category, a roll-up into its tree's", async () => {
       mockGetMonthlyCategoryBreakdown.mockResolvedValue(response);
       render(<MonthlyCategoryBreakdownReport />);

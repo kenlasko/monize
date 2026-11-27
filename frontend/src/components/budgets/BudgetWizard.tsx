@@ -17,6 +17,7 @@ import {
 } from '@/types/budget';
 import type { Account } from '@/types/account';
 import { newClientId } from '@/lib/client-id';
+import { wizardDefaultGroup } from './utils/wizard-totals';
 import {
   findBudgetBucketPreset,
   materializeBudgetBucketPreset,
@@ -168,7 +169,7 @@ export function BudgetWizard({
           amount: cat.suggested,
           isIncome: cat.isIncome,
           rolloverType: defaultRollover,
-          ...(is503020 && !cat.isIncome ? { categoryGroup: 'NEED' as CategoryGroup } : {}),
+          ...(is503020 && !cat.isIncome ? { categoryGroup: wizardDefaultGroup(cat) } : {}),
         });
       }
 

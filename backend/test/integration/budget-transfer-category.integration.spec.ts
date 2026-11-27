@@ -337,6 +337,22 @@ describe("budget lines on a Transfer category (integration)", () => {
       ]);
       // An Expense category on a transfer is no spending suggestion, as before.
       expect(suggested.map(([id]) => id)).not.toContain(categories.Mortgage);
+      // The categorized leg is planned once, on its category's line: not on
+      // HISA's account line too. The Mortgage leg stays on its account's.
+      const destinations = result.transfers.map((t) => t.accountId);
+      expect(destinations).not.toContain(accounts.HISA);
+      expect(destinations).toContain(accounts.Mortgage);
+      const savings = result.categories.find(
+        (c) => c.categoryId === categories["Savings contributions"],
+      );
+      const mortgage = result.transfers.find(
+        (t) => t.accountId === accounts.Mortgage,
+      );
+      // Spending holds no transfer; the transfers hold both legs' lines.
+      expect(result.totalBudgeted).toBe(0);
+      expect(result.totalTransfers).toBe(
+        (savings?.suggested ?? NaN) + (mortgage?.suggested ?? NaN),
+      );
     });
   });
 

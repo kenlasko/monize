@@ -318,5 +318,22 @@ describe("custom report: the transfer measure (integration)", () => {
       });
       expect(net.result.summary.total).toBeNull();
     });
+
+    it("keeps an ungrouped total none of whose legs converted, as unknown", async () => {
+      rates.set("CAD->EUR", [{ date: "2026-03-10", rate: 0.67 }]);
+      const result = await run({
+        measure: TransferMeasure.INCOMING,
+        accountIds: [brokerage],
+        groupBy: GroupByType.NONE,
+      });
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]).toMatchObject({
+        label: "Total",
+        value: null,
+        incomplete: true,
+      });
+      expect(result.summary.total).toBeNull();
+      expect(result.missingCurrencies).toEqual(["USD"]);
+    });
   });
 });

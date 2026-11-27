@@ -1,5 +1,5 @@
 import { roundMoney, sumMoney } from '@/lib/format';
-import type { ApplyBudgetCategoryData, CategoryAnalysis } from '@/types/budget';
+import type { ApplyBudgetCategoryData, CategoryAnalysis, CategoryGroup } from '@/types/budget';
 
 /**
  * The wizard's planned figures, read the way the budget reads its actuals
@@ -65,4 +65,15 @@ export function wizardPlannedTotals(input: {
     totalTransfers,
     net: roundMoney(totalIncome - totalExpenses - totalTransfers),
   };
+}
+
+/**
+ * The 50/30/20 group an outgoing analysed line starts in: a Transfer
+ * category's line is a saving, as a per-account transfer line is; every other
+ * line starts as a need.
+ */
+export function wizardDefaultGroup(
+  cat: Pick<CategoryAnalysis, 'categoryType'>,
+): CategoryGroup {
+  return cat.categoryType === 'transfer' ? 'SAVING' : 'NEED';
 }

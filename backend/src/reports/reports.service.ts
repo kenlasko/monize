@@ -1345,7 +1345,9 @@ export class ReportsService {
     }
 
     const bucket = cells.settle().get("total");
-    if (!bucket || bucket.count === 0) return [];
+    // A transfer measure keeps a total none of whose parts converted, marked
+    // incomplete, as a grouped report keeps the group (section 10).
+    if (!bucket || (bucket.count === 0 && !bucket.incomplete)) return [];
 
     return [
       {

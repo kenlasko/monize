@@ -25,7 +25,7 @@ import {
 } from './BudgetWizardBuckets';
 import { BudgetWizardTableHead, useWizardTableSort } from './BudgetWizardTableHead';
 import { CARD_CLASS } from '@/components/ui/Card';
-import { transferCategoryIds, wizardPlannedTotals } from './utils/wizard-totals';
+import { transferCategoryIds, wizardDefaultGroup, wizardPlannedTotals } from './utils/wizard-totals';
 
 function BudgetAmountInput({
   categoryId,
@@ -296,7 +296,7 @@ export function BudgetWizardCategories({
           categoryId: cat.categoryId,
           amount: cat.suggested,
           isIncome: cat.isIncome,
-          ...(is503020 && !cat.isIncome ? { categoryGroup: 'NEED' as CategoryGroup } : {}),
+          ...(is503020 && !cat.isIncome ? { categoryGroup: wizardDefaultGroup(cat) } : {}),
         });
       }
     } else {

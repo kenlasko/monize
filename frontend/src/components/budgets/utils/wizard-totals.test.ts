@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { transferCategoryIds, wizardPlannedTotals } from './wizard-totals';
+import { transferCategoryIds, wizardDefaultGroup, wizardPlannedTotals } from './wizard-totals';
 import type { ApplyBudgetCategoryData } from '@/types/budget';
 
 const line = (data: ApplyBudgetCategoryData): [string, ApplyBudgetCategoryData] => [
@@ -64,5 +64,13 @@ describe('wizardPlannedTotals', () => {
       totalTransfers: 300,
       net: 3400,
     });
+  });
+});
+
+describe('wizardDefaultGroup', () => {
+  it('starts a Transfer category\'s line as a saving and every other as a need', () => {
+    expect(wizardDefaultGroup({ categoryType: 'transfer' })).toBe('SAVING');
+    expect(wizardDefaultGroup({ categoryType: 'expense' })).toBe('NEED');
+    expect(wizardDefaultGroup({})).toBe('NEED');
   });
 });
