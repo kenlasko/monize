@@ -226,8 +226,8 @@ implied.
 | INV-HA-003 | A single-use artifact is consumed at most once across every replica | enforced |
 | INV-HA-004 | One deployment publishes one OIDC signing key set, stable across restarts | enforced |
 | INV-HA-005 | A relay prompt is claimed by exactly one agent poll of the credential serving the chat, and answered at most once, by that credential | enforced |
-| INV-CATEGORY-001 | A Transfer category is held only by a transfer row: no ordinary row, split category line, scheduled category row or override of one holds one | partial |
-| INV-CATEGORY-002 | A category write on a transfer sets both of its legs, the writer's leg only across two owners | unenforced |
+| INV-CATEGORY-001 | A Transfer category is held only by a transfer row: no ordinary row, split category line, scheduled category row or override of one holds one | enforced |
+| INV-CATEGORY-002 | A category write on a transfer sets both of its legs, the writer's leg only across two owners | enforced |
 | INV-CATEGORY-003 | A category's type is its parent's, and `is_income` mirrors it while the column exists | partial |
 | INV-CATEGORY-004 | An expense is a category of type expense, never one that is merely not income | enforced |
 | INV-RULE-001 | A transaction rule never changes the matched row's amount, account, date or status; the only balance it moves is a structural action's counterpart | partial |
@@ -9565,18 +9565,23 @@ Source of truth     The category's type (categories.category_type, added in
                     transaction_splits.transfer_account_id, their scheduled
                     counterparts, and for an override its schedule's
                     is_transfer.
-Enforcement         None today. Planned: one server fit helper called by every
-                    path that writes a category (PR 3), a source scan that
-                    fails a category write bypassing it, and a BEFORE row
-                    trigger under an advisory lock per category owner on
-                    transactions,
+Enforcement         The fit helper (fitCategory, fitCategories in
+                    backend/src/categories/category-fit.ts), asked by every
+                    path that writes a category onto a row inside its write
+                    transaction and before the first write, with the row's
+                    holder; a command over many rows (bulk update, a rule run,
+                    an import) skips the rows a category does not fit, with a
+                    reason. A source scan
+                    (backend/src/categories/category-fit.guard.spec.ts) fails
+                    a category write on a row entity or row table that does
+                    not ask the helper. The BEFORE row trigger under an
+                    advisory lock per category owner on transactions,
                     transaction_splits, scheduled_transactions and
                     scheduled_transaction_splits, and an override's
                     category_id checked against its schedule, shipped with
-                    the type in PR 2 (specification sections 11 and 13; its
-                    cost is measured in section 13.1). The override's split
-                    JSON is held by the service and refused at the post at
-                    the latest.
+                    the type in PR 2 (specification sections 11 and 13); the
+                    override's split JSON is held by the service, and a line
+                    that does not fit refuses the post.
 Concurrency scope   category owner: every category write takes the owner's
                     advisory lock shared and a type change takes it
                     exclusive (specification section 12; the mechanism the
@@ -9588,17 +9593,18 @@ Failure response    400 from the service; from the backstop, SQLSTATE 23514
                     with constraint name category_fits_row, which alone is
                     answered as 400 (every other 23514 stays a 500).
 Required tests      The entry-point integration matrix of specification
-                    section 4; the backstop on each table; a two-connection
-                    race of a type change against a row write.
-Status              unenforced
+                    section 4 (backend/test/integration/category-fit-*.spec.ts);
+                    the backstop on each table; a two-connection race of a
+                    type change against a row write.
+Status              enforced
 ```
 
-No category has a type of its own yet, so no row violates the statement today.
-Nothing would refuse a violation either: every write path checks only that the
-category belongs to the caller (`assertCategoryOwned`,
-`validateCategoryOwnership`), and the scheduled write paths not even that. The
-first release that can create a Transfer category must already refuse it on a
-category row, which is why the backstop ships with the type.
+Every path the specification's section 4 lists asks the helper, and the
+matrix holds each with a Transfer, an Income or Expense, and no category. A
+stored setting a previous release wrote (a payee default, an asset category) is
+skipped where it is applied, the row written uncategorized. A Money import that
+merges a file category into an existing Transfer category of the same name
+writes no category row with it (`fitMnyCategory`).
 
 ### INV-CATEGORY-002 -- one category per transfer
 
@@ -9613,30 +9619,37 @@ Statement           A category write on a transfer sets both of its legs to
 Source of truth     transactions.category_id on both legs (linked by
                     linked_transaction_id); transaction_splits.category_id and
                     the linked row's category_id.
-Enforcement         None as a rule. Some paths happen to hold it:
-                    transferLegColumns (create) and updateTransfer write both
-                    legs of a same-owner transfer, and the scheduled post
-                    passes one category to both. Planned: every category write
-                    on a transfer through the transfer write helpers, held by
-                    the same integration matrix (PR 3).
-Concurrency scope   transfer: both legs locked in ascending account id,
-                    transactions before splits
+Enforcement         Every category write on a transfer sets its other side in
+                    the same transaction: transferLegColumns (create),
+                    updateTransfer and the conversions write both legs; the
+                    plain patch, bulk update, a rule's set_category and the
+                    assistant's categorize action reach the other leg, or a
+                    split transfer line together with its linked row, through
+                    backend/src/transactions/transfer-category-partner.ts,
+                    locked with the row and recorded for undo; a split's
+                    transfer line writes its linked row; the scheduled post
+                    passes one category to both; a Money import gives both
+                    legs the outgoing leg's category. Across two owners there
+                    is no partner and the writer's leg alone is written.
+Concurrency scope   transfer: both legs locked in ascending id
+                    (lockTransactionRows), a split parent before the row its
+                    transfer line links, transactions before splits
                     (docs/concurrency-and-idempotency.md section 5).
 Retry semantics     Idempotent: a repeated write sets the same values.
 Crash semantics     -- (both legs in one transaction)
 Failure response    -- (a write either sets both legs or refuses)
 Required tests      The entry-point integration matrix of specification
                     section 4, each row checking both legs.
-Status              unenforced
+Status              enforced
 ```
 
-Paths that write one leg today, each cited by the specification's section 4:
-the plain `PATCH /transactions/:id`, bulk update (deliberately, per its
-comment), `updateSplitTransferLeg` (the linked row without its line), a rule's
-`convert_to_transfer` with `clearCategory: false` (the kept row only), the QIF
-import's payee default (this file's leg only), the Money importer (each leg its
-own category from the file), and the removal of a split line that collapses the
-split into a transfer. No constraint keeps the legs equal.
+Each of the one-legged paths the specification's section 4 cited (the plain
+`PATCH /transactions/:id`, bulk update, `updateSplitTransferLeg`, a rule's
+`convert_to_transfer` with `clearCategory: false`, the QIF payee default, the
+Money importer, the removal of a split line collapsing into a transfer) now
+writes both sides or none, and the matrix checks both. Legs that already
+differed keep their values until the next category write; nothing rewrites
+them.
 
 ### INV-CATEGORY-003 -- a category's type is its parent's
 
