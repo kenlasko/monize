@@ -4520,6 +4520,22 @@ describe("ActionHistoryService", () => {
         expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
       });
 
+      it("is refused for a split with an investment line", async () => {
+        mockRepository.findOne.mockResolvedValue(
+          undoneCreate({
+            id: "tx-1",
+            accountId: "acc-1",
+            splits: [{ id: "s1", kind: "investment", amount: -5 }],
+          }),
+        );
+        await expect(service.redo(userId)).rejects.toMatchObject({
+          response: expect.objectContaining({
+            errorCode: "REDO_CREATE_WITH_LEGS",
+          }),
+        });
+        expect(mockQueryRunner.query).not.toHaveBeenCalled();
+      });
+
       it("is refused for a split with a linked leg", async () => {
         mockRepository.findOne.mockResolvedValue(
           undoneCreate({

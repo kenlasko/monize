@@ -185,11 +185,33 @@ describe("Undo of an edit of a split with a transfer line (integration)", () => 
       }),
     );
     const [leg] = await db.query(
-      `SELECT id FROM transactions WHERE account_id = $1`,
+      `SELECT id, linked_transaction_id AS "linkedTransactionId"
+         FROM transactions WHERE account_id = $1`,
       [accountB],
     );
-    // The service method deletes this one row, not the pair.
-    await asUser(() => transactions.remove(userId, leg.id));
+    // A recorded single-leg delete exists only in older history entries, so the
+    // row is deleted by SQL and its entry recorded as `remove` once wrote it.
+    await db.query(`DELETE FROM transactions WHERE id = $1`, [leg.id]);
+    await asUser(() =>
+      history.record(userId, {
+        entityType: "transaction",
+        entityId: leg.id,
+        action: "delete",
+        beforeData: {
+          id: leg.id,
+          accountId: accountB,
+          transactionDate: "2026-01-15",
+          amount: 25,
+          currencyCode: "USD",
+          isTransfer: true,
+          linkedTransactionId: leg.linkedTransactionId,
+          splits: [],
+          tagIds: [],
+        },
+        afterData: null,
+        description: "Deleted transaction",
+      }),
+    );
     const settled = await balances();
 
     await expect(settledUndo()).rejects.toMatchObject({

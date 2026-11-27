@@ -97,11 +97,7 @@ function assertTransactionCreateRedoable(action: ActionHistory): void {
   const splits: unknown[] = Array.isArray(after?.splits) ? after.splits : [];
   const hasLegs =
     (after?.isTransfer === true && !!after?.linkedTransactionId) ||
-    splits.some(
-      (split) =>
-        !!(split as { linkedTransactionId?: string | null })
-          ?.linkedTransactionId,
-    );
+    (splits as SplitSnapshot[]).some(isLegSplit);
   if (!hasLegs) return;
   throw new ConflictException({
     message: tr(
@@ -293,7 +289,7 @@ function assertDeletedRowRestorable(
     throw new ConflictException({
       message: tr(
         "errors.actionHistory.undoTransferLegDeleted",
-        "This was one side of a transfer. Undo cannot restore one side alone. Enter the transfer again.",
+        "This row was one side of a transfer or of a split. Undo cannot restore it alone. Check the other account: edit the side that is still there, or enter the transaction again if nothing is left.",
       ),
       errorCode: "UNDO_TRANSFER_LEG_DELETED",
     });
