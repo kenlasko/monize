@@ -135,12 +135,12 @@ export const NOTIFICATION_EMAIL_MESSAGES = {
     'The "{{ group }}" flex group has used {{ spent }} of its combined {{ budgeted }} budget ({{ percent }}%).',
   "budget.incomeTitle": "Income below expected",
   "budget.incomeMessage":
-    "Your actual income ({{ actual }}) is at {{ ratio }}% of expected income ({{ expected }}) at this point in the period.",
+    "Your total budget funding ({{ actual }}) is at {{ ratio }}% of expected income ({{ expected }}) at this point in the period.",
   "budget.netActivityTitle": "Budget activity",
   "budget.netSpendingMessage":
     "Net spending: {{ spent }}. Budget: {{ budgeted }}.",
   "budget.netIncomeMessage":
-    "Net income: {{ actual }}. Expected income to date: {{ expected }}.",
+    "Net budget funding: {{ actual }}. Expected income to date: {{ expected }}.",
   "budget.milestoneTitle": "Budget on track",
   "budget.milestoneMessage":
     "You are {{ progress }}% through the period and have only used {{ percent }}% of your total budget. Keep it up!",

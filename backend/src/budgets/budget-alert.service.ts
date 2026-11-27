@@ -688,8 +688,8 @@ export class BudgetAlertService {
         title: "Income below expected",
         message:
           totalActualIncome < 0
-            ? `Net income: ${n.formatCurrency(totalActualIncome, currencyCode)}. Expected income to date: ${n.formatCurrency(expectedSoFar, currencyCode)}.`
-            : `Your actual income (${n.formatCurrency(totalActualIncome, currencyCode)}) is at ${n.formatPercent(Math.round(incomeRatio * 100), 0)} of expected income (${n.formatCurrency(expectedSoFar, currencyCode)}) at this point in the period.`,
+            ? `Net budget funding: ${n.formatCurrency(totalActualIncome, currencyCode)}. Expected income to date: ${n.formatCurrency(expectedSoFar, currencyCode)}.`
+            : `Your total budget funding (${n.formatCurrency(totalActualIncome, currencyCode)}) is at ${n.formatPercent(Math.round(incomeRatio * 100), 0)} of expected income (${n.formatCurrency(expectedSoFar, currencyCode)}) at this point in the period.`,
         data: {
           actualIncome: totalActualIncome,
           categoryIncome,

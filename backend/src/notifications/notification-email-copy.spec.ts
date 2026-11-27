@@ -330,7 +330,7 @@ describe("notification email copy", () => {
       message: "Net spending: -$20.00. Budget: $100.00.",
     });
     expect(notificationEmailCopy(income, englishEmailT, "en").message).toBe(
-      "Net income: -$25.00. Expected income to date: $100.00.",
+      "Net budget funding: -$25.00. Expected income to date: $100.00.",
     );
     const french = notificationEmailCopy(
       spending,

@@ -901,7 +901,7 @@ describe("BudgetAlertService", () => {
         0.5,
       );
       expect(alert?.message).toBe(
-        "Net income: -$25.00. Expected income to date: $100.00.",
+        "Net budget funding: -$25.00. Expected income to date: $100.00.",
       );
       expect(alert?.data).toMatchObject({
         actualIncome: -25,

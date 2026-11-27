@@ -496,6 +496,37 @@ describe('ReportChart', () => {
     expect(tableData.totalRow[1]).toBe('$0.30 (partial)');
   });
 
+  it('marks a partial and a withheld transfer measure row in both exports (transfer categories, section 10)', async () => {
+    const { exportToCsv } = await import('@/lib/csv-export');
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    (exportToCsv as any).mockClear();
+    (exportToPdf as any).mockClear();
+    render(
+      <ReportChart
+        viewType={ReportViewType.TABLE}
+        data={[
+          { id: 'a', label: 'Savings contributions', value: 700 },
+          { id: 'b', label: 'Investment outgoing', value: 917.9, incomplete: true },
+          { id: 'c', label: 'Investment net', value: null, knownValue: -917.9, incomplete: true },
+        ]}
+        groupBy={GroupByType.CATEGORY}
+        tableColumns={[TableColumn.LABEL, TableColumn.VALUE]}
+      />
+    );
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+    await act(async () => { fireEvent.click(screen.getByText(/CSV/i)); });
+    const rows = (exportToCsv as any).mock.calls[0][2];
+    expect(rows[0]).toEqual(['Savings contributions', 700]);
+    expect(rows[1]).toEqual(['Investment outgoing', '917.9 (partial: a rate is missing)']);
+    expect(rows[2]).toEqual(['Investment net', 'Unknown (-917.9 known) (partial: a rate is missing)']);
+
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+    await act(async () => { fireEvent.click(screen.getByText(/PDF/i)); });
+    const { tableData } = (exportToPdf as any).mock.calls[0][0];
+    expect(tableData.rows[1][1]).toMatch(/^\$917\.90 \(partial: a rate is missing\)$/);
+    expect(tableData.rows[2][1]).toMatch(/^Unknown \(.*917\.90 known\) \(partial: a rate is missing\)$/);
+  });
+
   it('exports csv with the metric-aware Total row, marked when partial', async () => {
     const { exportToCsv } = await import('@/lib/csv-export');
     (exportToCsv as any).mockClear();

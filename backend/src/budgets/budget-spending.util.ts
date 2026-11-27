@@ -1,3 +1,4 @@
+import { categoryTypeIs } from "../categories/category-type.util";
 import { ObjectLiteral, Repository, SelectQueryBuilder } from "typeorm";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
@@ -443,7 +444,7 @@ export async function queryCategorySpendingBuckets(
             ARRAY(
               SELECT DISTINCT bc.category_id::text FROM budget_categories bc
                 JOIN categories c ON c.id = bc.category_id
-              WHERE bc.budget_id = b.id AND c.category_type = 'transfer'
+              WHERE bc.budget_id = b.id AND ${categoryTypeIs("c", "transfer")}
             ) AS transfer_category_ids
        FROM budgets b WHERE b.id = $1`,
     [budgetId],
@@ -504,7 +505,15 @@ export async function queryCategorySpendingBuckets(
   const transferRows: SpendingRow[] = [];
   const incomeTransferRows: SpendingRow[] = [];
 
-  if (categoryIds.length > 0) {
+  // A Transfer category's legs convert at the rate their two posted amounts
+  // imply, as they did on the per-account line the overlap rule took them
+  // from (INV-FX-002); every other category reads as it always has.
+  const transferTyped = new Set(lineTransferCategoryIds);
+  const readCategoryRows = async (
+    ids: string[],
+    transferBasis: boolean,
+  ): Promise<void> => {
+    if (ids.length === 0) return;
     const directQb = transactionsRepository
       .createQueryBuilder("t")
       .select("t.category_id", "key")
@@ -512,7 +521,7 @@ export async function queryCategorySpendingBuckets(
       .addSelect(dateExpr, "txDate")
       .addSelect("COALESCE(SUM(t.amount), 0)", "total")
       .where("t.user_id = :userId", { userId })
-      .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
+      .andWhere("t.category_id IN (:...categoryIds)", { categoryIds: ids })
       .andWhere("t.transaction_date >= :periodStart", { periodStart })
       .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
       .andWhere("t.status != :void", { void: "VOID" })
@@ -522,20 +531,24 @@ export async function queryCategorySpendingBuckets(
     // The estimates among the transfer legs a Transfer category's line takes
     // over. A leg holding an Income or Expense category is not tracked on its
     // category line, as before.
-    if (lineTransferCategoryIds.length > 0)
-      directQb
-        .addSelect(
-          "ARRAY_AGG(DISTINCT t.id::text) FILTER (WHERE t.amount_is_provisional = true AND t.is_transfer = true AND t.category_id IN (:...lineTransferCategoryIds))",
-          "provisionalIds",
-        )
-        .setParameter("lineTransferCategoryIds", lineTransferCategoryIds);
+    if (transferBasis)
+      directQb.addSelect(
+        "ARRAY_AGG(DISTINCT t.id::text) FILTER (WHERE t.amount_is_provisional = true AND t.is_transfer = true)",
+        "provisionalIds",
+      );
     excludeBudgetAccounts(directQb, excludedAccountIds)
       .groupBy("t.category_id")
       .addGroupBy("t.currency_code")
       .addGroupBy("t.transaction_date");
-    splitByRateBasis(directQb, OWN_RATE_COLUMNS, currency, { byDay: false });
-    const directRows = await directQb.getRawMany();
-    categoryRows.push(...directRows);
+    splitByRateBasis(
+      directQb,
+      transferBasis
+        ? { ...OWN_RATE_COLUMNS, transferLegs: { transactionAlias: "t" } }
+        : OWN_RATE_COLUMNS,
+      currency,
+      { byDay: false },
+    );
+    categoryRows.push(...(await directQb.getRawMany()));
 
     const splitQb = splitsRepository
       .createQueryBuilder("s")
@@ -545,7 +558,7 @@ export async function queryCategorySpendingBuckets(
       .addSelect(dateExpr, "txDate")
       .addSelect("COALESCE(SUM(s.amount), 0)", "total")
       .where("t.user_id = :userId", { userId })
-      .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
+      .andWhere("s.category_id IN (:...categoryIds)", { categoryIds: ids })
       .andWhere("t.transaction_date >= :periodStart", { periodStart })
       .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
       .andWhere("t.status != :void", { void: "VOID" });
@@ -554,10 +567,28 @@ export async function queryCategorySpendingBuckets(
       .groupBy("s.category_id")
       .addGroupBy("t.currency_code")
       .addGroupBy("t.transaction_date");
-    splitByRateBasis(splitQb, OWN_RATE_COLUMNS, currency, { byDay: false });
-    const splitRows = await splitQb.getRawMany();
-    categoryRows.push(...splitRows);
-  }
+    splitByRateBasis(
+      splitQb,
+      transferBasis
+        ? {
+            ...OWN_RATE_COLUMNS,
+            transferLegs: { transactionAlias: "t", splitAlias: "s" },
+          }
+        : OWN_RATE_COLUMNS,
+      currency,
+      { byDay: false },
+    );
+    categoryRows.push(...(await splitQb.getRawMany()));
+  };
+  // In turn, not together: one transaction, one connection.
+  await readCategoryRows(
+    categoryIds.filter((id) => !transferTyped.has(id)),
+    false,
+  );
+  await readCategoryRows(
+    categoryIds.filter((id) => transferTyped.has(id)),
+    true,
+  );
 
   if (transferBudgetCategories.length > 0) {
     const window: OutgoingTransferWindow = {

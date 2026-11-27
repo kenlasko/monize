@@ -185,6 +185,12 @@ export class BudgetGeneratorService {
         startDateStr,
         endDateStr,
         analysisMonths,
+        // The Transfer categories suggested as lines of their own: their
+        // incoming legs net on that line once applied (section 6.3), so a
+        // source's suggestion leaves them out, as the outgoing one does.
+        expenseAnalysis
+          .filter((c) => c.categoryType === "transfer")
+          .map((c) => c.categoryId),
       )
     ).map((t) => ({
       ...t,
@@ -463,7 +469,7 @@ export class BudgetGeneratorService {
         .andWhere(
           isIncome
             ? "t.is_transfer = false"
-            : "(t.is_transfer = false OR c.category_type = 'transfer')",
+            : `(t.is_transfer = false OR ${categoryTypeIs("c", "transfer")})`,
         )
         .andWhere("t.category_id IS NOT NULL")
         .andWhere(amountCondition)
@@ -505,7 +511,7 @@ export class BudgetGeneratorService {
         .andWhere(
           isIncome
             ? "s.transfer_account_id IS NULL"
-            : "(s.transfer_account_id IS NULL OR c.category_type = 'transfer')",
+            : `(s.transfer_account_id IS NULL OR ${categoryTypeIs("c", "transfer")})`,
         )
         .andWhere("s.category_id IS NOT NULL")
         .andWhere(isIncome ? "s.amount > 0" : "s.amount < 0")
@@ -773,8 +779,16 @@ export class BudgetGeneratorService {
     startDate: string,
     endDate: string,
     analysisMonths: number,
+    linedTransferCategoryIds: readonly string[] = [],
   ): Promise<Omit<TransferAnalysis, "suggested">[]> {
     const window = { userId, periodStart: startDate, periodEnd: endDate };
+    const notLined = (column: string): [string, Record<string, unknown>] =>
+      linedTransferCategoryIds.length === 0
+        ? ["TRUE", {}]
+        : [
+            `(${column} IS NULL OR ${column} NOT IN (:...linedTransferCategoryIds))`,
+            { linedTransferCategoryIds: [...linedTransferCategoryIds] },
+          ];
     const [parentRows, splitRows] = await withScopedDb(
       this.dataSource,
       async (m) => {
@@ -784,6 +798,7 @@ export class BudgetGeneratorService {
         )
           .innerJoin("lt.account", "a")
           .andWhere("a.user_id = :userId")
+          .andWhere(...notLined("t.category_id"))
           .select("a.id", "accountId")
           .addSelect("a.name", "accountName")
           .addSelect("a.account_type", "accountType")
@@ -802,6 +817,7 @@ export class BudgetGeneratorService {
         )
           .innerJoin("s.transferAccount", "a")
           .andWhere("a.user_id = :userId")
+          .andWhere(...notLined("s.category_id"))
           .select("a.id", "accountId")
           .addSelect("a.name", "accountName")
           .addSelect("a.account_type", "accountType")

@@ -245,6 +245,45 @@ describe("budget lines on a Transfer category (integration)", () => {
       expect(spending.outsideTransferIncomeProvisionalCount).toBe(1);
     });
 
+    it("converts a cross-currency leg at its own transfer rate, as the account's line did (INV-FX-002)", async () => {
+      await db.query(
+        `INSERT INTO currencies (code, name, symbol, decimal_places, is_active)
+         VALUES ('USD', 'US Dollar', '$', 2, true)
+         ON CONFLICT (code) DO NOTHING`,
+      );
+      const usd = (
+        await createTestAccount(db, userId, {
+          name: "USD chequing",
+          currencyCode: "USD",
+        })
+      ).id;
+      const own = await categoryLine("Savings contributions", 500);
+      const hisa = await accountLine("HISA", 300);
+      // 100 USD left the budget and 137 CAD arrived in HISA; no market rate
+      // is stored, so only the transfer's own rate can convert it.
+      const inbound = await row({
+        accountId: accounts.HISA,
+        amount: 137,
+        isTransfer: true,
+        categoryId: categories["Savings contributions"],
+      });
+      const outbound = await row({
+        accountId: usd,
+        currencyCode: "USD",
+        amount: -100,
+        isTransfer: true,
+        categoryId: categories["Savings contributions"],
+        linkedTransactionId: inbound.id,
+      });
+      await db.query(
+        `UPDATE transactions SET linked_transaction_id = $2 WHERE id = $1`,
+        [inbound.id, outbound.id],
+      );
+      const spending = await read([own, hisa]);
+      expect(resolveCategorySpentOrNull(own, spending)).toBe(137);
+      expect(resolveCategorySpentOrNull(hisa, spending)).toBe(0);
+    });
+
     it("leaves the account's line counting it when the category has no line", async () => {
       const hisa = await accountLine("HISA", 300);
       await transfer("Chequing", "HISA", 500, "Savings contributions");
@@ -352,6 +391,11 @@ describe("budget lines on a Transfer category (integration)", () => {
         transfer("Chequing", "HISA", 500, "Savings contributions"),
       );
       await at(() => transfer("Chequing", "Mortgage", 1500, "Mortgage"));
+      // A withdrawal on the same category nets on its line once applied, so
+      // HISA is not suggested as a source of income for it either.
+      await at(() =>
+        transfer("HISA", "Chequing", 200, "Savings contributions"),
+      );
       const result = await withUserContext(userId, () =>
         generator.generate(userId, { analysisMonths: 3 }),
       );
@@ -378,6 +422,9 @@ describe("budget lines on a Transfer category (integration)", () => {
       );
       const mortgage = result.transfers.find(
         (t) => t.accountId === accounts.Mortgage,
+      );
+      expect(result.incomeTransfers.map((t) => t.accountId)).not.toContain(
+        accounts.HISA,
       );
       // Spending holds no transfer; the transfers hold both legs' lines.
       expect(result.totalBudgeted).toBe(0);
