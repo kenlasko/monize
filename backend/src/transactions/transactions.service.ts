@@ -4524,17 +4524,22 @@ export class TransactionsService {
       // (a lone delete leaves a half transfer, INV-TRANSFER-001). Same
       // predicate as removeAny (`isTransfer` and a link), so a row with a
       // link but is_transfer = false still deletes here.
-      if (
-        transaction.isTransfer &&
-        locked.linkedTransactionId &&
-        !parentSplit
-      ) {
-        throw new ConflictException(
-          tr(
-            "errors.transactions.transferLegDeleteTransfer",
-            "This is one side of a transfer. Delete the transfer instead.",
-          ),
+      if (locked.linkedTransactionId && !parentSplit) {
+        // Read under the row lock just taken, never from the pre-lock
+        // snapshot: a row converted to a transfer after removeAny's read
+        // would still show false there and slip through.
+        const flag: { is_transfer: boolean }[] = await m.query(
+          `SELECT is_transfer FROM transactions WHERE id = $1 AND user_id = $2`,
+          [id, userId],
         );
+        if (flag[0]?.is_transfer === true) {
+          throw new ConflictException(
+            tr(
+              "errors.transactions.transferLegDeleteTransfer",
+              "This is one side of a transfer. Delete the transfer instead.",
+            ),
+          );
+        }
       }
       if (options?.beforeWrite) await options.beforeWrite(m);
 

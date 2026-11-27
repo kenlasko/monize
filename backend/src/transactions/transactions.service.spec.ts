@@ -3104,7 +3104,43 @@ describe("TransactionsService", () => {
         splits: [],
       });
       mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
-      mockQueryRunner.manager.query.mockResolvedValue([]);
+      // Cash-leg probe: none; then the is_transfer read under the row lock.
+      mockQueryRunner.manager.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ is_transfer: true }]);
+
+      await expect(service.remove("user-1", "tx-1")).rejects.toThrow(
+        ConflictException,
+      );
+
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("refuses a row converted to a transfer after the pre-lock read (reads is_transfer under the lock)", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        isSplit: false,
+        isTransfer: false,
+        linkedTransactionId: null,
+        splits: [],
+      });
+      // The committed row carries the link the snapshot did not see.
+      lockedRow = {
+        id: "tx-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        linkedTransactionId: "tx-2",
+      };
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
+      mockQueryRunner.manager.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ is_transfer: true }]);
 
       await expect(service.remove("user-1", "tx-1")).rejects.toThrow(
         ConflictException,
@@ -3127,6 +3163,9 @@ describe("TransactionsService", () => {
         splits: [],
       });
       mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
+      mockQueryRunner.manager.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ is_transfer: false }]);
 
       await service.remove("user-1", "tx-1");
 
