@@ -1,4 +1,5 @@
 import { rowAffectsBalance, type RunningBalanceRow } from '@/lib/running-balance';
+import type { SortDirection } from '@/hooks/useSortableTable';
 import { getDecimalPlacesForCurrency } from '@/lib/format';
 import { combineTotals, sumConverted, type ConvertedTotal } from '@/lib/currency-total';
 
@@ -105,6 +106,33 @@ export function netByDate(
     net.set(date, { total: sumInto(items, currency), currency });
   }
   return net;
+}
+
+/**
+ * The balance at the end of each date on the page, for the date group's
+ * right-hand figure on a phone (issue #2486): the running balance beside the
+ * date's newest row, which is the balance after everything that date moved.
+ *
+ * It reads `walkRunningBalances`' answer and never derives one. That walk runs
+ * newest row first, so the newest row of a date is its first row on a
+ * newest-first page and its last on an oldest-first one. A date whose newest
+ * row has no balance is absent: unknown, never zero.
+ */
+export function balanceByDate(
+  rows: readonly { id: string; transactionDate: string }[],
+  runningBalances: ReadonlyMap<string, number>,
+  direction: SortDirection,
+): Map<string, number> {
+  const newestFirst = direction === 'asc' ? [...rows].reverse() : rows;
+  const seen = new Set<string>();
+  const out = new Map<string, number>();
+  for (const row of newestFirst) {
+    if (seen.has(row.transactionDate)) continue;
+    seen.add(row.transactionDate);
+    const balance = runningBalances.get(row.id);
+    if (balance !== undefined) out.set(row.transactionDate, balance);
+  }
+  return out;
 }
 
 /** What the page paid out and took in, and the difference, for the Folio footer. */

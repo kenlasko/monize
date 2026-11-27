@@ -62,6 +62,7 @@ import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { useUiStyle } from '@/hooks/useUiStyle';
 import {
   balanceRulePercents,
+  balanceByDate,
   netByDate,
   pageReportingCurrency,
   pageTotals,
@@ -799,12 +800,17 @@ export function TransactionList({
       const reporting = pageReportingCurrency(transactions, defaultCurrency);
       return {
         dayNet: netByDate(transactions, displayAmounts, reporting),
+        // A phone's day heading prints the balance the day ended on where the
+        // register has one; the rows' own balance column is not drawn there.
+        dayBalance: showRunningBalance
+          ? balanceByDate(transactions, runningBalances, dataSort?.direction ?? 'desc')
+          : null,
         totals: pageTotals(transactions, displayAmounts, reporting),
         rulePct: balanceRulePercents(runningBalances),
       };
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-reads each currency's precision
-    [uiStyle, transactions, displayAmounts, defaultCurrency, runningBalances, registryVersion],
+    [uiStyle, transactions, displayAmounts, defaultCurrency, runningBalances, showRunningBalance, dataSort?.direction, registryVersion],
   );
 
   const formatAmount = useCallback((amount: number, currencyCode?: string) => {
@@ -948,6 +954,7 @@ export function TransactionList({
           runningBalances={runningBalances}
           displayAmounts={displayAmounts}
           dayNet={styleData?.dayNet ?? NO_DAY_NET}
+          dayBalance={styleData?.dayBalance ?? null}
           inspectorVisible={inspectorVisible}
           inspectedId={inspectedId}
           deletingId={deletingId}
@@ -1262,6 +1269,14 @@ export function TransactionList({
                         <span>{registerGroupLabel(transaction.transactionDate, locale, today)}</span>
                         <span className="ui-register-group-tools">
                           {wrapped && styleData && (() => {
+                            if (styleData.dayBalance) {
+                              const balance = styleData.dayBalance.get(transaction.transactionDate);
+                              return (
+                                <span className="ui-register-group-net" data-testid="register-day-balance">
+                                  {balance !== undefined ? formatBalance(balance, transaction.currencyCode) : '-'}
+                                </span>
+                              );
+                            }
                             const dayNet = styleData.dayNet.get(transaction.transactionDate);
                             return (
                               <span className="ui-register-group-net">

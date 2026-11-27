@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
+  balanceByDate,
   balanceRulePercents,
   netByDate,
   pageTotals,
@@ -17,6 +18,30 @@ const rows = [
 ];
 
 describe('register style data', () => {
+  it('closes each date on the balance beside its newest row, in either direction', () => {
+    // The walk's answer for a newest-first page under a balance of 1000.
+    const balances = new Map([
+      ['a', 1000],
+      ['b', 800],
+      ['c', 850],
+      ['v', 875.1],
+    ]);
+    const desc = balanceByDate(rows, balances, 'desc');
+    expect(desc.get('2024-01-16')).toBe(1000);
+    expect(desc.get('2024-01-15')).toBe(800);
+    const asc = balanceByDate([...rows].reverse(), balances, 'asc');
+    expect([...asc.entries()]).toEqual([
+      ['2024-01-16', 1000],
+      ['2024-01-15', 800],
+    ]);
+  });
+
+  it('leaves a date out when its newest row has no balance, rather than closing it on another', () => {
+    const closing = balanceByDate(rows, new Map([['c', 850]]), 'desc');
+    expect(closing.has('2024-01-15')).toBe(false);
+    expect(balanceByDate(rows, new Map(), 'desc').size).toBe(0);
+  });
+
   it('nets each date and skips rows that move no money', () => {
     const net = netByDate(rows, new Map(), 'USD');
     expect(net.get('2024-01-15')?.total.value).toBe(-75.1);

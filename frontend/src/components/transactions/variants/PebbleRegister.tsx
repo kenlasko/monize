@@ -45,6 +45,12 @@ export interface PebbleRegisterProps {
   displayAmounts: ReadonlyMap<string, number>;
   /** Each day's net, in the currency it names. */
   dayNet: ReadonlyMap<string, RegisterFigure>;
+  /**
+   * Each day's closing balance, or null when the register has no running
+   * balance. A phone's day heading prints it in place of the net, since the
+   * rows' balance is not drawn below `md` (issue #2486).
+   */
+  dayBalance: ReadonlyMap<string, number> | null;
   inspectorVisible: boolean;
   inspectedId: string | null;
   deletingId: string | null;
@@ -521,13 +527,18 @@ export function PebbleRegister(p: PebbleRegisterProps) {
     const currency =
       figure?.currency ?? p.transactions.find((x) => x.transactionDate === open.date)?.currencyCode;
     const title = groupTitle(open.date);
+    const closing = p.dayBalance?.get(open.date);
+    // One account's register is one currency: the balance is in the rows'.
+    const closingCurrency = p.transactions.find((x) => x.transactionDate === open.date)?.currencyCode;
     nodes.push(
       <section key={open.date} aria-label={title}>
         <div className="flex items-baseline justify-between px-1.5 pt-4 pb-2">
           <h3 className="!font-sans !text-sm font-semibold text-gray-900 dark:text-gray-100">
             {title}
           </h3>
-          <span className={net > 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
+          <span
+            className={`${net > 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}${p.dayBalance ? ' hidden md:inline' : ''}`}
+          >
             {figure ? (
               <PartialTotal total={figure.total} displayCurrency={figure.currency}>
                 {net > 0 ? '+' : ''}{formatCurrency(net, currency)}
@@ -536,6 +547,14 @@ export function PebbleRegister(p: PebbleRegisterProps) {
               formatCurrency(net, currency)
             )}
           </span>
+          {p.dayBalance && (
+            <span
+              data-testid="pebble-day-balance"
+              className={`md:hidden ${closing !== undefined && closing < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}
+            >
+              {closing !== undefined ? formatCurrency(closing, closingCurrency) : '-'}
+            </span>
+          )}
         </div>
         <ul className="rounded-2xl bg-white p-1 shadow-card dark:bg-gray-900 dark:shadow-card-dark">
           {open.rows}
