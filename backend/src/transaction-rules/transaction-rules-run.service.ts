@@ -35,6 +35,8 @@ import { withActionDefaults } from "./rule-references";
 import { PayeeResolution, PlannableRule } from "./rule-effects";
 import { loadAttachmentPresence } from "./rule-facts";
 import {
+  type CandidateSet,
+  type CandidateUnit,
   effectiveRunLimit,
   loadCandidateUnits,
   unitRowInput,
@@ -97,6 +99,21 @@ function narrowToActiveWindow(
     .sort()[0];
   if (startDate && endDate && startDate > endDate) return null;
   return { ...filters, startDate, endDate };
+}
+
+/**
+ * The category the other side of a unit's transfer holds, for the plan
+ * (`RulePlanContext.otherSideCategoryId`): a same-owner pair's other leg, or
+ * the split's transfer line that links the row. None across two owners.
+ */
+function otherSide(
+  unit: CandidateUnit,
+  lineOfRow: CandidateSet["lineOfRow"],
+): { otherSideCategoryId?: string | null } {
+  const otherLeg = unit.legs.find((leg) => leg !== unit.primary);
+  if (otherLeg) return { otherSideCategoryId: otherLeg.categoryId ?? null };
+  const line = lineOfRow?.get(unit.primary.id);
+  return line ? { otherSideCategoryId: line.categoryId } : {};
 }
 
 /** The planner's refusals that a person can act on, in the words of the preview. */
@@ -543,9 +560,9 @@ export class TransactionRulesRunService {
     const settles = rule.actions.some(
       (action) => action.type === SETTLE_LOAN_INSTALLMENT,
     );
-    const { units, truncated, lineParentStatus } =
+    const { units, truncated, lineOfRow } =
       scan === null
-        ? { units: [], truncated: false, lineParentStatus: undefined }
+        ? { units: [], truncated: false, lineOfRow: undefined }
         : await loadCandidateUnits(
             m,
             userId,
@@ -610,6 +627,9 @@ export class TransactionRulesRunService {
           accounts,
           transactionId: primary.id,
           priorSettlements: prior,
+          // The other side the category write sets (INV-CATEGORY-002): a
+          // same-owner pair's other leg, or the line that links this row.
+          ...otherSide(unit, lineOfRow),
         },
         payeeLookups,
         loans,
@@ -634,7 +654,8 @@ export class TransactionRulesRunService {
             (leg) => leg.status === TransactionStatus.RECONCILED,
           ) ||
           (entry.changes.categoryId !== undefined &&
-            lineParentStatus?.get(primary.id) === TransactionStatus.RECONCILED);
+            lineOfRow?.get(primary.id)?.parentStatus ===
+              TransactionStatus.RECONCILED);
         if (reconciled && (await strictLock())) {
           skipped.push({
             transactionId: primary.id,

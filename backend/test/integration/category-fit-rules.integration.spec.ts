@@ -353,6 +353,84 @@ describe("Category fit and one category per transfer: rules (integration)", () =
     );
   });
 
+  describe("set_category on a transfer whose sides differ", () => {
+    const transferRule = () =>
+      rule(
+        ["import"],
+        [{ type: "set_category", categoryId: feesCat, onlyIfEmpty: false }],
+        { field: "type", op: "eq", value: "TRANSFER" },
+      );
+
+    row(
+      "set_category in a run: naming the category the outgoing leg holds sets the other leg too, and undo returns each",
+      async () => {
+        // A QIF import put the payee default on one leg only.
+        const { fromId, toId } = await createTransfer(feesCat);
+        await db.query(
+          `UPDATE transactions SET category_id = NULL WHERE id = $1`,
+          [toId],
+        );
+        const created = await transferRule();
+        const preview = await runNow(created.id);
+        expect(preview.matched.map((r) => r.transactionId)).toEqual([fromId]);
+        expect(await categoryOf(fromId)).toBe(feesCat);
+        expect(await categoryOf(toId)).toBe(feesCat);
+
+        await settlePendingHistoryWrites();
+        await asUser(() => history.undo(userId));
+        expect(await categoryOf(fromId)).toBe(feesCat);
+        expect(await categoryOf(toId)).toBeNull();
+      },
+    );
+
+    row(
+      "set_category in a run: a split's linked row holding the category gives it to its line",
+      async () => {
+        const parent = await asUser(() =>
+          transactions.create(userId, {
+            accountId: chequingId,
+            transactionDate: "2026-03-04",
+            amount: -150,
+            currencyCode: "USD",
+            splits: [
+              { amount: -100, transferAccountId: savingsId },
+              { amount: -50, categoryId: expenseCat },
+            ],
+          } as never),
+        );
+        const [line] = await db.query(
+          `SELECT id, linked_transaction_id FROM transaction_splits
+          WHERE transaction_id = $1 AND transfer_account_id IS NOT NULL`,
+          [parent.id],
+        );
+        await db.query(
+          `UPDATE transactions SET category_id = $2 WHERE id = $1`,
+          [line.linked_transaction_id, feesCat],
+        );
+        const created = await transferRule();
+        await runNow(created.id);
+        const [stored] = await db.query(
+          `SELECT category_id FROM transaction_splits WHERE id = $1`,
+          [line.id],
+        );
+        expect(stored.category_id).toBe(feesCat);
+        expect(await categoryOf(line.linked_transaction_id)).toBe(feesCat);
+      },
+    );
+
+    row(
+      "set_category in a run: a transfer whose legs already agree is no change",
+      async () => {
+        await createTransfer(feesCat);
+        const created = await transferRule();
+        const preview = await asUser(() =>
+          runs.previewRun(userId, created.id, {}),
+        );
+        expect(preview.matched).toEqual([]);
+      },
+    );
+  });
+
   describe("split", () => {
     row(
       "split in a run: a category line naming a Transfer category skips the row with the reason, and the run writes nothing",

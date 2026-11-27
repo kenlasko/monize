@@ -45,13 +45,16 @@ function harness(
         opts.where.id.value.includes(row.id),
       ),
   );
+  // The unlocked read names the parents; the one under their lock answers
+  // with each line's category and its parent's status.
   const query = jest.fn(async (sql: string) =>
-    sql.includes("FROM transaction_splits")
-      ? lines.map(({ rowId, parentId }) => ({ rowId, parentId }))
-      : lines.map(({ parentId, parentStatus }) => ({
-          id: parentId,
-          status: parentStatus,
-        })),
+    sql.includes('"parentStatus"')
+      ? lines.map(({ rowId, parentStatus }) => ({
+          rowId,
+          categoryId: "cat-line",
+          parentStatus,
+        }))
+      : lines.map(({ rowId, parentId }) => ({ rowId, parentId })),
   );
   const manager = {
     getRepository: jest.fn(() => ({ createQueryBuilder: () => qb })),
@@ -346,7 +349,7 @@ describe("loadCandidateUnits", () => {
       expect(units[0].primary).toBe(fresh);
     });
 
-    it("locks a split parent whose transfer line links a candidate before the candidates, and reports its status", async () => {
+    it("locks a split parent whose transfer line links a candidate before the candidates, and reports the line under that lock", async () => {
       // INV-CATEGORY-002: a category written onto the linked row reaches the
       // line, so its parent is locked first (a split parent before its legs).
       const linked = tx({
@@ -359,7 +362,7 @@ describe("loadCandidateUnits", () => {
         [],
         [{ rowId: "linked", parentId: "parent", parentStatus: "RECONCILED" }],
       );
-      const { lineParentStatus } = await loadCandidateUnits(
+      const { lineOfRow } = await loadCandidateUnits(
         em,
         USER,
         {},
@@ -369,7 +372,10 @@ describe("loadCandidateUnits", () => {
         [em, ["parent"], USER],
         [em, ["linked"], USER],
       ]);
-      expect(lineParentStatus?.get("linked")).toBe("RECONCILED");
+      expect(lineOfRow?.get("linked")).toEqual({
+        categoryId: "cat-line",
+        parentStatus: "RECONCILED",
+      });
     });
 
     it("drops a row deleted before the lock was taken", async () => {

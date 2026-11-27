@@ -155,6 +155,55 @@ describe("planRuleEffects: actions", () => {
     expect(plan.trace[0].skipped[0].reason).toBe("no_change");
   });
 
+  it("set_category naming the category one side holds is a write while the other side holds another (INV-CATEGORY-002)", () => {
+    const transfer = facts({
+      categoryId: CAT,
+      isTransfer: true,
+      toAccountId: uuid(30),
+    });
+    const differing = planRuleEffects(
+      transfer,
+      [rule([setCategory(CAT, false)])],
+      {
+        otherSideCategoryId: null,
+      },
+    );
+    expect(differing.changes.categoryId).toBe(CAT);
+    // The trace names the side that moves.
+    expect(differing.trace[0].changes.categoryId).toEqual({
+      before: null,
+      after: CAT,
+    });
+
+    const agreeing = planRuleEffects(
+      transfer,
+      [rule([setCategory(CAT, false)])],
+      {
+        otherSideCategoryId: CAT,
+      },
+    );
+    expect("categoryId" in agreeing.changes).toBe(false);
+    expect(agreeing.trace[0].skipped[0].reason).toBe("no_change");
+  });
+
+  it("a later set_category on a transfer whose sides a first one made agree is no change", () => {
+    const transfer = facts({
+      categoryId: CAT,
+      isTransfer: true,
+      toAccountId: uuid(30),
+    });
+    const plan = planRuleEffects(
+      transfer,
+      [
+        rule([setCategory(OTHER_CAT, false)]),
+        rule([setCategory(OTHER_CAT, false)]),
+      ],
+      { otherSideCategoryId: null },
+    );
+    expect(plan.changes.categoryId).toBe(OTHER_CAT);
+    expect(plan.trace[1].skipped[0].reason).toBe("no_change");
+  });
+
   it("set_category is refused on a row with splits and the rest of the rule still runs", () => {
     const plan = planRuleEffects(facts({ hasSplits: true }), [
       rule([setCategory(CAT), addTags(TAG_A)]),

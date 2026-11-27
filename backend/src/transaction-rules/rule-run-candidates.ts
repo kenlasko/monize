@@ -34,12 +34,16 @@ export interface CandidateSet {
   readonly units: CandidateUnit[];
   readonly truncated: boolean;
   /**
-   * For each candidate a split's transfer line links, the status of that
-   * split's parent: a category written onto the row is written onto the line
-   * too (INV-CATEGORY-002), so a reconciled parent keeps the row as it is
+   * For each candidate a split's transfer line links, that line's category
+   * and its parent's status, read under the parent's lock: a category written
+   * onto the row is written onto the line too (INV-CATEGORY-002), so the line
+   * is the row's other side, and a reconciled parent keeps the row as it is
    * under the strict lock. Absent: no candidate is such a row.
    */
-  readonly lineParentStatus?: ReadonlyMap<string, string | null>;
+  readonly lineOfRow?: ReadonlyMap<
+    string,
+    { readonly categoryId: string | null; readonly parentStatus: string | null }
+  >;
 }
 
 /** The limit a caller asked for, inside 1..max (the run's ceiling unless the caller names its own). */
@@ -202,20 +206,26 @@ export async function loadCandidateUnits(
   if (options.lock && parentIds.length > 0) {
     await lockTransactionRows(m, parentIds, userId);
   }
-  const parentStatus = new Map(
-    parentIds.length > 0
-      ? (
-          (await m.query(
-            `SELECT id, status FROM transactions WHERE id = ANY($1) AND user_id = $2`,
-            [parentIds, userId],
-          )) as { id: string; status: string | null }[]
-        ).map((parent) => [parent.id, parent.status])
-      : [],
-  );
-  const lineParentStatus = new Map(
-    lineParents.map((line) => [
-      line.rowId,
-      parentStatus.get(line.parentId) ?? null,
+  // The lines again, now under their parents' lock, with what they hold.
+  const lineOfRow = new Map(
+    (parentIds.length > 0
+      ? ((await m.query(
+          `SELECT s.linked_transaction_id AS "rowId",
+                  s.category_id AS "categoryId",
+                  p.status AS "parentStatus"
+             FROM transaction_splits s
+             JOIN transactions p ON p.id = s.transaction_id
+            WHERE s.linked_transaction_id = ANY($1) AND p.user_id = $2`,
+          [transferIds, userId],
+        )) as {
+          rowId: string;
+          categoryId: string | null;
+          parentStatus: string | null;
+        }[])
+      : []
+    ).map(({ rowId, categoryId, parentStatus }) => [
+      rowId,
+      { categoryId, parentStatus },
     ]),
   );
 
@@ -250,7 +260,7 @@ export async function loadCandidateUnits(
   return {
     units,
     truncated,
-    ...(lineParentStatus.size > 0 ? { lineParentStatus } : {}),
+    ...(lineOfRow.size > 0 ? { lineOfRow } : {}),
   };
 }
 

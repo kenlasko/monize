@@ -147,6 +147,14 @@ export interface RulePlanContext {
    */
   readonly transferCategoryIds?: ReadonlySet<string>;
   /**
+   * The category the other side of this transfer holds, when the write sets
+   * that side too (a same-owner pair's other leg, a split's transfer line):
+   * one category per transfer (INV-CATEGORY-002), so a `set_category` naming
+   * the category the row holds is still a write while the other side holds
+   * another. Absent: there is no other side the write reaches.
+   */
+  readonly otherSideCategoryId?: string | null;
+  /**
    * The owner's accounts a structural action may target, with their currency.
    * The planner does no I/O; an account missing here is refused as
    * `transfer_account_unavailable`.
@@ -308,6 +316,8 @@ interface WorkingState {
   readonly structure: RuleStructurePlan | null;
   /** The settlement a `settle_loan_installment` planned with `structure`. */
   readonly loanSettlement: LoanSettlementPlan | null;
+  /** `RulePlanContext.otherSideCategoryId`, then what the write leaves on it. */
+  readonly otherSideCategoryId?: string | null;
 }
 
 const NO_CHANGES: RuleTraceChanges = Object.freeze({});
@@ -405,7 +415,15 @@ function step(
       if (action.onlyIfEmpty && state.categoryId !== null) {
         return skip(state, action, "already_set");
       }
-      if (state.categoryId === action.categoryId) {
+      // A value difference against either side of a transfer
+      // (INV-CATEGORY-002): the category both sides already hold writes
+      // nothing; the one the row holds, while the other side holds another,
+      // is a write that sets that side.
+      if (
+        state.categoryId === action.categoryId &&
+        (state.otherSideCategoryId === undefined ||
+          state.otherSideCategoryId === action.categoryId)
+      ) {
         return skip(state, action, "no_change");
       }
       const chain = context.categoryChains?.get(action.categoryId);
@@ -414,6 +432,9 @@ function step(
           ...state,
           categoryId: action.categoryId,
           categoryAncestorIds: chain ?? [action.categoryId],
+          ...(state.otherSideCategoryId === undefined
+            ? {}
+            : { otherSideCategoryId: action.categoryId }),
         },
         applied: { type: action.type },
       };
@@ -654,9 +675,17 @@ function diffState(
   after: WorkingState,
 ): RuleTraceChanges {
   return {
-    ...(before.categoryId !== after.categoryId
+    ...(categoryWritten(before, after)
       ? {
-          categoryId: { before: before.categoryId, after: after.categoryId },
+          // When only the other side moves, its category is the one that
+          // changes, and the trace says so.
+          categoryId: {
+            before:
+              before.categoryId === after.categoryId
+                ? (before.otherSideCategoryId ?? null)
+                : before.categoryId,
+            after: after.categoryId,
+          },
         }
       : {}),
     ...(before.payeeId !== after.payeeId
@@ -739,11 +768,17 @@ export function ruleConditionMatches(
   );
 }
 
+/** Whether the pass moved the category of the row or of the other side. */
+function categoryWritten(first: WorkingState, last: WorkingState): boolean {
+  return (
+    first.categoryId !== last.categoryId ||
+    first.otherSideCategoryId !== last.otherSideCategoryId
+  );
+}
+
 function netChanges(first: WorkingState, last: WorkingState): RuleNetChanges {
   return {
-    ...(first.categoryId !== last.categoryId
-      ? { categoryId: last.categoryId }
-      : {}),
+    ...(categoryWritten(first, last) ? { categoryId: last.categoryId } : {}),
     ...(last.payeeCreate !== null
       ? { createPayee: last.payeeCreate, payeeName: last.payeeCreate }
       : first.payeeId !== last.payeeId
@@ -795,6 +830,9 @@ export function planRuleEffects(
     hasSplits: facts.hasSplits,
     structure: null,
     loanSettlement: null,
+    ...(context.otherSideCategoryId === undefined
+      ? {}
+      : { otherSideCategoryId: context.otherSideCategoryId }),
   };
   let state = initial;
   const trace: RuleTraceEntry[] = [];
