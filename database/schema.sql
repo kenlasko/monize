@@ -2544,6 +2544,9 @@ CREATE TABLE budget_periods (
     period_start DATE NOT NULL,
     period_end DATE NOT NULL,
     actual_income NUMERIC(24, 8) DEFAULT 0,
+    -- The Transfer Funding part of actual_income, frozen at the close; NULL
+    -- for a period closed before it was recorded (unknown, not zero).
+    transfer_funding NUMERIC(24, 8),
     actual_expenses NUMERIC(24, 8) DEFAULT 0,
     total_budgeted NUMERIC(24, 8) DEFAULT 0,
     status VARCHAR(20) DEFAULT 'OPEN',

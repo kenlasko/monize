@@ -1,3 +1,4 @@
+import { isTransferFundingLine } from "./budget-funding.util";
 import {
   Injectable,
   NotFoundException,
@@ -180,6 +181,14 @@ export class BudgetPeriodService {
 
       // `config.transfersInAsIncome` is income no line carries (issue #2141).
       const incomeParts: number[] = [actuals.outsideTransferIncome];
+      // The Transfer Funding part, frozen beside the total
+      // (docs/specs/transfer-categories.md section 6.6): the toggle, the
+      // transfer income lines and the income lines on a Transfer category,
+      // each line's kind and type read now, at the close.
+      const transferParts: number[] = [actuals.outsideTransferIncome];
+      const linesById = new Map(
+        (budget.categories ?? []).map((line) => [line.id, line]),
+      );
       const expenseParts: number[] = [];
 
       // An expense line can join the budget after this month was opened. Its first
@@ -231,6 +240,8 @@ export class BudgetPeriodService {
 
         if (bcEntry?.isIncome) {
           incomeParts.push(actual);
+          const line = linesById.get(pc.budgetCategoryId) ?? bcEntry;
+          if (isTransferFundingLine(line)) transferParts.push(actual);
         } else {
           expenseParts.push(actual);
         }
@@ -239,6 +250,7 @@ export class BudgetPeriodService {
       }
 
       openPeriod.actualIncome = sumMoney(incomeParts);
+      openPeriod.transferFunding = sumMoney(transferParts);
       openPeriod.actualExpenses = sumMoney(expenseParts);
       openPeriod.status = PeriodStatus.CLOSED;
 

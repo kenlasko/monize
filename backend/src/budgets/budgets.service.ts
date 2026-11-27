@@ -1,3 +1,4 @@
+import { budgetFunding, isTransferFundingLine } from "./budget-funding.util";
 import {
   Injectable,
   NotFoundException,
@@ -111,6 +112,12 @@ export interface CategoryActualRow {
   isIncome: boolean;
   /** A transfer line: outgoing savings, or transfer income when `isIncome`. */
   isTransfer: boolean;
+  /**
+   * An income line whose actual is Transfer Funding: a transfer income line
+   * or one on a Transfer category (`isTransferFundingLine`). False on every
+   * outgoing line.
+   */
+  isTransferFunding: boolean;
   percentage: number | null;
   /**
    * Provisional transfer legs (an imported estimate) inside `spent`; 0 on a
@@ -618,6 +625,17 @@ export class BudgetsService {
     percentUsed: number;
     incomeLinked: boolean;
     actualIncome: number | null;
+    /**
+     * Actual Income: the income lines on an Income or Expense category
+     * (docs/specs/transfer-categories.md section 6.2). With `transferFunding`
+     * it makes `totalIncome`, Total Budget Funding.
+     */
+    categoryIncome: number;
+    /**
+     * Transfer Funding: transfer income lines, income lines on a Transfer
+     * category and `outsideTransferIncome`.
+     */
+    transferFunding: number;
     /** Included in `totalIncome`; `0` unless `config.transfersInAsIncome`. */
     outsideTransferIncome: number;
     categoryBreakdown: CategoryActualRow[];
@@ -648,10 +666,13 @@ export class BudgetsService {
 
     const totalBudgeted = sumMoney(expenseCategories.map((c) => c.budgeted));
     const totalSpent = sumMoney(expenseCategories.map((c) => c.spent));
-    const totalIncome = sumMoney([
-      ...incomeCategories.map((c) => c.spent),
+    const { totalIncome, categoryIncome, transferFunding } = budgetFunding(
+      incomeCategories.map((c) => ({
+        actual: c.spent,
+        isTransferFunding: c.isTransferFunding,
+      })),
       outsideTransferIncome,
-    ]);
+    );
     const remaining = roundMoney(totalBudgeted - totalSpent);
     const percentUsed =
       totalBudgeted > 0
@@ -674,6 +695,8 @@ export class BudgetsService {
       percentUsed,
       incomeLinked: budget.incomeLinked,
       actualIncome,
+      categoryIncome,
+      transferFunding,
       outsideTransferIncome,
       categoryBreakdown,
       provisionalCount,
@@ -1335,6 +1358,7 @@ export class BudgetsService {
         percentUsed,
         isIncome: bc.isIncome,
         isTransfer: bc.isTransfer,
+        isTransferFunding: isTransferFundingLine(bc),
         percentage,
         provisionalCount: resolveCategoryProvisionalCount(bc, spending),
       };

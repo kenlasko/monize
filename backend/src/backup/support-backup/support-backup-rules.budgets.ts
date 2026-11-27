@@ -76,6 +76,7 @@ export const BUDGET_RULES: Record<string, TableRules> = {
     period_start: keep,
     period_end: keep,
     actual_income: scale,
+    transfer_funding: scale,
     actual_expenses: scale,
     total_budgeted: scale,
     status: keep,

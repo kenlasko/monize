@@ -1,3 +1,4 @@
+import { categoryTypeOfOrUndefined } from "../categories/category-type.util";
 import { Injectable, Logger } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -268,10 +269,16 @@ export class BudgetHealthReportsService {
     const incomeLines = incomeCategories.filter(
       (bc) => bc.categoryId !== null || isTransferIncomeLine(bc),
     );
+    // An outgoing line on a Transfer category moves money out of the budget
+    // as a per-account outgoing transfer line does, so it is no spending
+    // here either (docs/specs/transfer-categories.md section 6.1).
     const spendingLines = [
       ...incomeLines,
       ...expenseCategories.filter(
-        (bc) => bc.categoryId !== null && !bc.isTransfer,
+        (bc) =>
+          bc.categoryId !== null &&
+          !bc.isTransfer &&
+          categoryTypeOfOrUndefined(bc.category) !== "transfer",
       ),
     ];
 
