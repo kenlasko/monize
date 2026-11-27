@@ -10,6 +10,10 @@ import { AccountType } from "../accounts/entities/account.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { SplitKind } from "../transactions/entities/split-kind.enum";
 import { ImportResultDto } from "./dto/import.dto";
+import {
+  answerCategoryFindOne,
+  categoryFitRepoMock,
+} from "../test-helpers/category-fit-testing";
 
 describe("ImportRegularProcessorService", () => {
   let service: ImportRegularProcessorService;
@@ -70,7 +74,11 @@ describe("ImportRegularProcessorService", () => {
       return Promise.resolve(entity);
     }),
     find: jest.fn().mockResolvedValue([]),
-    findOne: jest.fn().mockResolvedValue(null),
+    // A category the file maps to is the person's (`categoryIdForCategoryRow`
+    // reads it); every other read finds nothing.
+    findOne: jest
+      .fn()
+      .mockImplementation(answerCategoryFindOne(categoryFitRepoMock())),
     update: jest.fn().mockResolvedValue({ affected: 1 }),
     // `updateAccountBalance` moves a balance with one atomic
     // `current_balance = current_balance + $1` statement.

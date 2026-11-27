@@ -54,3 +54,16 @@ export function answerCategoryFinds(
   return (entity, options) =>
     entity === Category ? categories.find(options) : rest(entity, options);
 }
+
+/**
+ * A `manager.findOne` implementation that answers `findOne(Category, ...)` from
+ * `categories` (the `fitCategory` and `categoryIdForCategoryRow` read) and
+ * everything else with `rest`.
+ */
+export function answerCategoryFindOne(
+  categories: { findOne: jest.Mock },
+  rest: (entity: unknown, options: unknown) => unknown = async () => null,
+): (entity: unknown, options: unknown) => unknown {
+  return (entity, options) =>
+    entity === Category ? categories.findOne(options) : rest(entity, options);
+}

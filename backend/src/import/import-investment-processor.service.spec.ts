@@ -13,6 +13,10 @@ import {
 import { Security } from "../securities/entities/security.entity";
 import { Holding } from "../securities/entities/holding.entity";
 import { ImportResultDto } from "./dto/import.dto";
+import {
+  answerCategoryFindOne,
+  categoryFitRepoMock,
+} from "../test-helpers/category-fit-testing";
 
 describe("ImportInvestmentProcessorService", () => {
   let service: ImportInvestmentProcessorService;
@@ -57,7 +61,11 @@ describe("ImportInvestmentProcessorService", () => {
       }
       return Promise.resolve(entity);
     }),
-    findOne: jest.fn().mockResolvedValue(null),
+    // A category the file maps to is the person's (`categoryIdForCategoryRow`
+    // reads it); every other read finds nothing.
+    findOne: jest
+      .fn()
+      .mockImplementation(answerCategoryFindOne(categoryFitRepoMock())),
     update: jest.fn().mockResolvedValue({ affected: 1 }),
     // `updateAccountBalance` moves a balance with one atomic
     // `current_balance = current_balance + $1` statement.
