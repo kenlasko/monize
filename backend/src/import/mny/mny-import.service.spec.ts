@@ -357,6 +357,7 @@ describe("MnyImportService", () => {
     mockedWriteTransactions.mockResolvedValue({
       transactionsCreated: 7,
       splitsCreated: 2,
+      categoriesNotFitting: 0,
       linksApplied: 4,
       tagLinksApplied: 0,
       affectedAccountIds: new Set(["account-1"]),
@@ -1105,6 +1106,7 @@ describe("MnyImportService", () => {
       mockedWriteTransactions.mockResolvedValue({
         transactionsCreated: 4,
         splitsCreated: 0,
+        categoriesNotFitting: 0,
         linksApplied: 0,
         tagLinksApplied: 0,
         affectedAccountIds: new Set(["account-1"]),
@@ -1164,6 +1166,7 @@ describe("MnyImportService", () => {
       mockedWriteTransactions.mockResolvedValue({
         transactionsCreated: 1,
         splitsCreated: 0,
+        categoriesNotFitting: 0,
         linksApplied: 0,
         tagLinksApplied: 0,
         affectedAccountIds: new Set(["account-1"]),
@@ -1828,6 +1831,7 @@ describe("MnyImportService", () => {
         mockedWriteTransactions.mockResolvedValue({
           transactionsCreated: 1,
           splitsCreated: 0,
+          categoriesNotFitting: 0,
           linksApplied: 0,
           tagLinksApplied: 0,
           affectedAccountIds: new Set(["account-1"]),
