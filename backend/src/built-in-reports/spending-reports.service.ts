@@ -89,6 +89,22 @@ export function isNetSpending(total: number): boolean {
   return total > 0;
 }
 
+/**
+ * A bucket whose category has a known type keeps its signed net, even after a
+ * full or excess refund; an uncategorized or unclassified bucket keeps the
+ * positive-net rule. The bucket's category may be the income parent of an
+ * expense leaf (a legacy mixed-type tree), so the type decides only whether it
+ * is known, never whether it is spending: the query already left income leaves
+ * out. A Transfer category is a named flow, never spending (INV-REPORT-003).
+ */
+export function includesClassifiedBucket(
+  total: number,
+  type?: CategoryType,
+): boolean {
+  if (type === "transfer") return false;
+  return type !== undefined || isNetSpending(total);
+}
+
 /** Classified expenses keep their signed net even after a full or excess refund. */
 export function includesSpendingCategory(
   total: number,
@@ -315,7 +331,7 @@ export class SpendingReportsService {
     // excluded by the query, so an expense row at zero represents activity.
     const spent = Array.from(parentTotals.entries()).filter(
       ([, { agg, category }]) =>
-        includesSpendingCategory(agg.sign, categoryTypeOfOrUndefined(category)),
+        includesClassifiedBucket(agg.sign, categoryTypeOfOrUndefined(category)),
     );
     const spending = FxAggregate.sum(spent.map(([, { agg }]) => agg));
     const knownSpending = spending.knownSubtotalAt(places);
@@ -584,7 +600,7 @@ export class SpendingReportsService {
     const spendingCategories = new Set(
       Array.from(allCategoryTotals.entries())
         .filter(([id, overall]) =>
-          includesSpendingCategory(
+          includesClassifiedBucket(
             overall.sign,
             categoryTypeOfOrUndefined(categoryMap.get(id)),
           ),
