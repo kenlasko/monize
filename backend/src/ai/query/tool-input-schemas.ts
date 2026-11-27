@@ -3,6 +3,7 @@ import { decimalPlacesOf } from "../../common/amount-precision.util";
 import { MONEY_SCALE } from "../../common/round.util";
 import {
   directionSchema,
+  listDirectionSchema,
   isoDateSchema,
   positiveIntSchema,
   numberArg,
@@ -74,7 +75,7 @@ export const listTransactionsSchema = z.object({
   maxAmount: numberArg(
     z.number().min(-999999999999).max(999999999999),
   ).optional(),
-  direction: directionSchema.optional(),
+  direction: listDirectionSchema.optional(),
   groupBy: z
     .enum(["category", "payee", "year", "month", "week", "none"])
     .optional(),

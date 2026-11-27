@@ -3429,7 +3429,8 @@ describe("TransactionAnalyticsService", () => {
       const calls = (mockQueryBuilder.andWhere.mock.calls as any[][])
         .map((c) => c[0])
         .join(" | ");
-      expect(calls).toMatch(/< 0/);
+      expect(calls).toContain("expenseCategory.category_type = 'expense'");
+      expect(calls).toContain("COALESCE(ts.amount, t.amount) <> 0");
     });
 
     it("applies the income direction to the breakdown query", async () => {
@@ -3592,7 +3593,8 @@ describe("TransactionAnalyticsService", () => {
       const calls = (mockQueryBuilder.andWhere.mock.calls as any[][])
         .map((c) => c[0])
         .join(" | ");
-      expect(calls).toMatch(/< 0/);
+      expect(calls).toContain("expenseCategory.category_type = 'expense'");
+      expect(calls).toContain("COALESCE(ts.amount, t.amount) <> 0");
     });
 
     it("nets a refund into its category instead of adding it", async () => {
