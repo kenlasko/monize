@@ -13,16 +13,16 @@ The five `money20*.mny` files are copied verbatim from the
 They are small, purpose-built sample files created by that project for its own
 codec tests; they contain no real personal financial data.
 
-| File                             | Money era           | Encryption                                       | Password                                    |
-| -------------------------------- | ------------------- | ------------------------------------------------ | ------------------------------------------- |
-| `money2001.mny`                  | Money 2001          | old (Jet-style RC4, key derived from the header) | none                                        |
-| `money2001-pwd.mny`              | Money 2001          | old (Jet-style RC4, key derived from the header) | none -- opens without one, same as jackcess |
-| `money2002.mny`                  | Money 2002          | new (MD5 digest, `0x298` flag bit `0x20` clear)  | none                                        |
-| `money2008.mny`                  | Money Plus / Sunset | new (SHA-1 digest, `0x298` flag bit `0x20` set)  | none                                        |
-| `money2008-pwd.mny`              | Money Plus / Sunset | new (SHA-1 digest)                               | `Test12345`                                 |
-| `sample-cd-redemption.mny`       | Money Plus / Sunset | new (SHA-1 digest)                               | none                                        |
-| `sample-money99.mny`             | Money 99            | none (plain Jet 3)                               | none                                        |
-| `sample-money99-investments.mny` | Money 99            | none (plain Jet 3)                               | none                                        |
+| File | Money era | Encryption | Password |
+|---|---|---|---|
+| `money2001.mny` | Money 2001 | old (Jet-style RC4, key derived from the header) | none |
+| `money2001-pwd.mny` | Money 2001 | old (Jet-style RC4, key derived from the header) | none -- opens without one, same as jackcess |
+| `money2002.mny` | Money 2002 | new (MD5 digest, `0x298` flag bit `0x20` clear) | none |
+| `money2008.mny` | Money Plus / Sunset | new (SHA-1 digest, `0x298` flag bit `0x20` set) | none |
+| `money2008-pwd.mny` | Money Plus / Sunset | new (SHA-1 digest) | `Test12345` |
+| `sample-cd-redemption.mny` | Money Plus / Sunset | new (SHA-1 digest) | none |
+| `sample-money99.mny` | Money 99 | none (plain Jet 3) | none |
+| `sample-money99-investments.mny` | Money 99 | none (plain Jet 3) | none |
 
 `sample-money99.mny` is a Money 99 (Spanish locale) file with fabricated data, built by
 the author of the community converter

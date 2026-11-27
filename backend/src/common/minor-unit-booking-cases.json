@@ -55,16 +55,8 @@
       "name": "the principal line of a mortgage payment, even when interest is larger",
       "lines": [
         { "amount": -900, "transferAccountId": null, "memo": "Interest" },
-        {
-          "amount": -100,
-          "transferAccountId": "mortgage-1",
-          "memo": "Extra Principal"
-        },
-        {
-          "amount": -300,
-          "transferAccountId": "mortgage-1",
-          "memo": "Principal"
-        }
+        { "amount": -100, "transferAccountId": "mortgage-1", "memo": "Extra Principal" },
+        { "amount": -300, "transferAccountId": "mortgage-1", "memo": "Principal" }
       ],
       "accountTypes": { "mortgage-1": "MORTGAGE" },
       "expected": 2

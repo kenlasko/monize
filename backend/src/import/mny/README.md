@@ -29,14 +29,14 @@ do not know, and `MNY_UNCONFIRMED_ACTIONS` names the ones whose meaning is infer
 check them against. The one entry a bug report could check was wrong, and yearly
 bills imported recurring every two months for every user with one (issue #1150).
 `BILL` holds one row per occurrence, so the spacing between a series' `dt`
-values _is_ its recurrence: `map/bill-cadence.ts` reads it and `map/map-bills.ts`
+values *is* its recurrence: `map/bill-cadence.ts` reads it and `map/map-bills.ts`
 prefers that to `frq`, which now maps only the codes there is evidence for (0, 1,
 2, 3, 5) and reports the rest. Before adding an unconfirmed constant, look for
 the column that already carries the same fact as data.
 
 ### A bit mask cannot warn you, so measure it before you trust it
 
-That null-and-warn rule protects lookups over a _value_ -- an unknown `at` or `act` has no entry,
+That null-and-warn rule protects lookups over a *value* -- an unknown `at` or `act` has no entry,
 so it is visibly unknown. A **bit mask** has no such failure mode: a wrong mask silently matches
 some other flag and the import completes clean. `MNY_TRANSACTION_FLAG.VOID` was 0x80 for four
 phases; 0x80 is the bit every loan and mortgage row carries, so every loan payment imported VOID,
@@ -101,7 +101,7 @@ An upload is buffered whole and decrypted in place, and the reader works on its 
 those bytes (see the `mdb-reader` trap below), so peak usage is roughly **twice the file
 size** above baseline. `MNY_IMPORT_LIMIT_MB` (default 300) bounds it; the pod needs at least
 `2x` that plus headroom, which the default Helm limit of `150Mi` is nowhere near. A pod that hits
-its limit mid-import is OOM-killed and the wizard reports a _stalled job_, naming the symptom and
+its limit mid-import is OOM-killed and the wizard reports a *stalled job*, naming the symptom and
 not the cause -- see `helm/README.md` for the sizing table.
 
 ## Layering rules
@@ -117,7 +117,7 @@ not the cause -- see `helm/README.md` for the sizing table.
   maps the code to an i18n key; nothing below the controller formats user-facing text, and no
   message ever contains the file password. An untyped error escaping this layer is a defect
   twice over: the wizard gets a 500 with nothing to branch on, and a running job records the
-  failure as _retryable_, offering Try again on a file that can never import.
+  failure as *retryable*, offering Try again on a file that can never import.
 - **Progress goes through `throttleProgress`, never straight from a chunk loop.** Each report
   escapes the import transaction by design, so it costs a second pool connection while the long
   transaction is open -- and the wizard only polls every 1500 ms, so a report per 500-row chunk
@@ -147,12 +147,12 @@ cannot do.
 
 Money's model and Monize's are not the same shape, and the gaps are silent. A transfer from a
 bank account into an investment account is one Money row on each side, and the investment side is
-_both_ the arriving cash and the trade. Monize splits those: originally the trade's cash leg always
+*both* the arriving cash and the trade. Monize splits those: originally the trade's cash leg always
 came out of the brokerage's cash sleeve, so something had to pay into it, and Money has no row for
 that -- `buildCashCounterparts` synthesizes one.
 
 The failure mode when it does not is that money leaves an account and arrives nowhere, and no
-warning can fire because every row the file _has_ was imported correctly. On the maintainer's file
+warning can fire because every row the file *has* was imported correctly. On the maintainer's file
 3,255 transfers were affected and the sleeves silently absorbed $553,225.57.
 
 (The premise that a trade's cash leg always comes out of the sleeve turned out to be wrong -- see
@@ -162,7 +162,7 @@ trade this import writes, or is one that moves no cash. The rule the section sta
 for those.)
 
 So when a mapper is about to warn that it cannot represent something, check first whether the
-right answer is to _create_ the row Monize needs rather than to report the mismatch. A warning
+right answer is to *create* the row Monize needs rather than to report the mismatch. A warning
 about 3,255 rows the user cannot act on is a sign the mapping is wrong, not that the file is.
 
 ### A row Monize writes itself has to say why it exists
@@ -182,7 +182,7 @@ The general rule: when the importer synthesizes a row Money has no copy of, ask 
 would have held had a person entered it. An empty column on a row nobody wrote reads as missing
 data rather than as a row that never had any.
 
-### And the same gap read the other way: a row Money _does_ store may be one Monize writes anyway
+### And the same gap read the other way: a row Money *does* store may be one Monize writes anyway
 
 The mirror of the rule above, and the way it goes wrong. When a trade is funded from the
 brokerage's **own** cash companion, Money already has the cash-side row -- an ordinary `TRN` in
@@ -192,7 +192,7 @@ recorded twice.
 
 It presented as three rows in the cash register where Money shows one (issue #1175): the purchase,
 a transfer in and a transfer out. The two extras are Money's row plus the counterpart
-`buildCashCounterparts` synthesized for it, which for this shape lands in that row's _own_
+`buildCashCounterparts` synthesized for it, which for this shape lands in that row's *own*
 account -- so they cancelled, every balance reconciled, and nothing in the verification report
 could see it. `classifyTradeCashSides` (`map/map-transactions.ts`) names those rows and they are not
 imported; because membership in that set is exactly "its synthesized counterpart mirrored it into
@@ -210,11 +210,11 @@ else falling through to the synthesized counterpart. That left two shapes wrong 
 the sleeve one had been, and for the same reason -- a `TRN_XFER` pairing whose far side is a trade
 is never an ordinary transfer, wherever the near side lives:
 
-| Money's near side                    | Monize's model                                                                           | Issue |
-| ------------------------------------ | ---------------------------------------------------------------------------------------- | ----- |
-| A row in the trade's own cash sleeve | Drop it; `writeInvestments` writes the leg from `cashAmount`                             | #1175 |
-| A top-level row in another account   | That row **is** the cash leg; the trade names it as its `funding_account_id`             | #1212 |
-| A leg of a split transaction         | The trade is embedded in the leg (`transaction_split_id`), and no cash row exists at all | #1211 |
+| Money's near side | Monize's model | Issue |
+|---|---|---|
+| A row in the trade's own cash sleeve | Drop it; `writeInvestments` writes the leg from `cashAmount` | #1175 |
+| A top-level row in another account | That row **is** the cash leg; the trade names it as its `funding_account_id` | #1212 |
+| A leg of a split transaction | The trade is embedded in the leg (`transaction_split_id`), and no cash row exists at all | #1211 |
 
 `classifyTradeCashSides` (`map/map-transactions.ts`) answers all three at once, and
 `map/investment-cash.ts` feeds the answer back to the trades. Two consequences worth stating:
@@ -250,14 +250,14 @@ together, per account.
   A second read of the same buffer returns every currency value with its sign stripped
   (`-20.0000` reads back as `20.0000`) while row counts, dates and text stay correct, so
   nothing looks wrong until a ledger of pure credits arrives. The wizard reads a buffer twice
-  by design -- `POST /parse` reads the upload and stages _those same bytes_, and the job reads
+  by design -- `POST /parse` reads the upload and stages *those same bytes*, and the job reads
   them again -- so this made every imported transaction a credit, both sides of every transfer
   positive, and account opening balances absolute (they share `toAmount`). `openDatabase` hands
   the reader its own copy, which is what makes `openMnyFile` a door you may walk through twice.
   Do not "optimise" that copy away.
 - **Decrypt each buffer exactly once; RC4 is symmetric.** A second pass re-encrypts pages
   1..0xE, and the only symptom is `MnyUnreadableDatabaseError` from a layer that looks
-  unrelated. Staged bytes are stored _decrypted_ so the password is spent on the parse request
+  unrelated. Staged bytes are stored *decrypted* so the password is spent on the parse request
   and never persisted (ADR-2, ADR-7), so anything re-reading them uses `openDecryptedMnyFile`
   (or `parse({ alreadyDecrypted: true })`), never `openMnyFile`. This shipped broken through
   three phases because **every test staged raw fixture bytes** -- making the job's decrypt the
@@ -306,7 +306,7 @@ together, per account.
   card, $91.00 on a plan sleeve and $350.00 on a mortgage -- and accounted for two of the three
   holdings mismatches. All 67 are unreconciled in a file that is 74% reconciled, all fall in one
   eleven-month window, and every one also carries `0x200000`. `ACCT.amtEndRec` could not settle
-  it on its own (a _reconciled_ balance excludes unreconciled rows either way); the maintainer
+  it on its own (a *reconciled* balance excludes unreconciled rows either way); the maintainer
   confirmed against Money that the rows are absent from the register. Dropped silently, like the
   loan-payment family: Money does not show them, so there is nothing to fix.
 - **`act` 12 credits units that no cash pays for.** It opens lots with a value and a quantity,
@@ -319,7 +319,7 @@ together, per account.
   is stored positive, so a quantity sign proves nothing.
 - **Read `act` off `LOT`, never off a format reference.** `LOT.htrnBuy` and `LOT.htrnSell` name
   the transactions that opened and closed each tax lot, so whatever `act` those rows carry
-  acquires and disposes _by definition_. PR #192's reference had `act` 1 as SELL; in both Money
+  acquires and disposes *by definition*. PR #192's reference had `act` 1 as SELL; in both Money
   Plus files available (the maintainer's, 4,616 lots, and the `sample.mny` shipped with Money
   Plus) `act` 1 opens lots and closes none. Every purchase imported as a sale, so no cash ever
   left a brokerage sleeve and holdings replayed negative. Money Plus uses
@@ -346,7 +346,7 @@ together, per account.
   `billActivityAnchor` anchors the horizon to the newest `BILL` instance the file holds,
   falling back to `asOf` for a file still in use. Judging against `todayIsoDate()` meant the
   same file imported differently depending on the day it was run, and a file a quarter old
-  lost _every_ bill -- 292 series reduced to one candidate.
+  lost *every* bill -- 292 series reduced to one candidate.
 - **A series is judged against its own cadence.** The window is
   `max(BILL_FUTURE_HORIZON_DAYS, one cycle + BILL_PAST_HORIZON_DAYS)`. A flat quarter declared
   a yearly bill dead 100 days after its last occurrence, on a current file. Detection erring
