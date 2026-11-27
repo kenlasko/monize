@@ -448,6 +448,8 @@
     "labelMetric": "指標",
     "labelDirection": "方向",
     "labelCategoryType": "類別類型",
+    "labelTransferMeasure": "Transfer Measure",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "checkboxTransfers": "包含轉帳",
     "checkboxFavourites": "加入最愛",
     "sortByPlaceholder": "預設",
@@ -471,8 +473,13 @@
       "netAmount": "淨額",
       "netCashMovement": "淨現金變動",
       "unsignedTotal": "類別金額（不計正負）合計",
-      "unsignedAverage": "類別金額（不計正負）平均值"
+      "unsignedAverage": "類別金額（不計正負）平均值",
+      "transfersOutgoing": "Outgoing transfers",
+      "transfersIncoming": "Incoming transfers",
+      "transfersNet": "Net transfers"
     },
+    "unknownKnownPart": "Unknown ({amount} known)",
+    "partialRow": "(partial: a rate is missing)",
     "truncatedNotice": "此報表已達到列數上限，僅顯示最早的列，因此數值不完整。請縮小時間範圍或篩選條件以檢視全部。",
     "toasts": {
       "loadFailed": "載入報表失敗",
@@ -1971,6 +1978,12 @@
       "COUNT": "交易次數",
       "AVERAGE": "平均金額",
       "BUDGET_VARIANCE": "預算差異"
+    },
+    "transferMeasure": {
+      "NONE": "None (income and expenses)",
+      "OUTGOING": "Outgoing transfers",
+      "INCOMING": "Incoming transfers",
+      "NET": "Net transfers"
     },
     "categoryType": {
       "ALL": "全部",

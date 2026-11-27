@@ -632,6 +632,7 @@
   "reports": {
     "notFound": "Rapport met ID {{ id }} niet gevonden",
     "customTimeframeMissingDates": "Aangepast tijdsbestek vereist zowel een begin- als einddatum",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "investmentNotFound": "Beleggingsrapport met ID {{ id }} niet gevonden"
   },
   "scheduled": {

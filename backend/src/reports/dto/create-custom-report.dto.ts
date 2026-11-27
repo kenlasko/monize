@@ -28,6 +28,7 @@ import {
   MetricType,
   DirectionFilter,
   ReportCategoryType,
+  TransferMeasure,
   TableColumn,
   SortDirection,
 } from "../entities/custom-report.entity";
@@ -144,6 +145,19 @@ export class ReportConfigDto {
   @IsOptional()
   @IsEnum(ReportCategoryType)
   categoryType?: ReportCategoryType;
+
+  @ApiPropertyOptional({
+    description:
+      "Measure transfer legs only: OUTGOING (what left, a magnitude), " +
+      "INCOMING (what arrived) or NET (their signed sum), a category's legs " +
+      "netted within it. Direction and includeTransfers do not apply under " +
+      "it; null clears it.",
+    enum: TransferMeasure,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsEnum(TransferMeasure)
+  transferMeasure?: TransferMeasure | null;
 
   @ApiPropertyOptional({
     description: "Custom start date for CUSTOM timeframe (YYYY-MM-DD)",

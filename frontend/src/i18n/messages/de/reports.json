@@ -448,6 +448,8 @@
     "labelMetric": "Kennzahl",
     "labelDirection": "Richtung",
     "labelCategoryType": "Kategorietyp",
+    "labelTransferMeasure": "Transfer Measure",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "checkboxTransfers": "Überweisungen einbeziehen",
     "checkboxFavourites": "Zu Favoriten hinzufügen",
     "sortByPlaceholder": "Standard",
@@ -471,8 +473,13 @@
       "netAmount": "Nettobetrag",
       "netCashMovement": "Netto-Geldbewegung",
       "unsignedTotal": "Summe der vorzeichenlosen Kategoriebeträge",
-      "unsignedAverage": "Durchschnitt der vorzeichenlosen Kategoriebeträge"
+      "unsignedAverage": "Durchschnitt der vorzeichenlosen Kategoriebeträge",
+      "transfersOutgoing": "Outgoing transfers",
+      "transfersIncoming": "Incoming transfers",
+      "transfersNet": "Net transfers"
     },
+    "unknownKnownPart": "Unknown ({amount} known)",
+    "partialRow": "(partial: a rate is missing)",
     "truncatedNotice": "Dieser Bericht hat das Zeilenlimit erreicht und zeigt nur die ältesten Zeilen, daher sind seine Zahlen unvollständig. Grenzen Sie den Zeitraum oder die Filter ein, um alle zu sehen.",
     "toasts": {
       "loadFailed": "Bericht konnte nicht geladen werden",
@@ -1971,6 +1978,12 @@
       "COUNT": "Buchungsanzahl",
       "AVERAGE": "Durchschnittsbetrag",
       "BUDGET_VARIANCE": "Budgetabweichung"
+    },
+    "transferMeasure": {
+      "NONE": "None (income and expenses)",
+      "OUTGOING": "Outgoing transfers",
+      "INCOMING": "Incoming transfers",
+      "NET": "Net transfers"
     },
     "categoryType": {
       "ALL": "Alle",

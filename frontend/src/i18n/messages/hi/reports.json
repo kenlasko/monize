@@ -448,6 +448,8 @@
     "labelMetric": "मेट्रिक",
     "labelDirection": "दिशा",
     "labelCategoryType": "श्रेणी का प्रकार",
+    "labelTransferMeasure": "Transfer Measure",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "checkboxTransfers": "स्थानांतरण शामिल करें",
     "checkboxFavourites": "पसंदीदा में जोड़ें",
     "sortByPlaceholder": "डिफ़ॉल्ट",
@@ -471,8 +473,13 @@
       "netAmount": "निवल राशि",
       "netCashMovement": "निवल नकद संचलन",
       "unsignedTotal": "बिना चिह्न वाली श्रेणी राशियों का योग",
-      "unsignedAverage": "बिना चिह्न वाली श्रेणी राशियों का औसत"
+      "unsignedAverage": "बिना चिह्न वाली श्रेणी राशियों का औसत",
+      "transfersOutgoing": "Outgoing transfers",
+      "transfersIncoming": "Incoming transfers",
+      "transfersNet": "Net transfers"
     },
+    "unknownKnownPart": "Unknown ({amount} known)",
+    "partialRow": "(partial: a rate is missing)",
     "truncatedNotice": "यह रिपोर्ट पंक्ति सीमा तक पहुँच गई है और केवल सबसे पुरानी पंक्तियाँ दिखाती है, इसलिए इसके आँकड़े अधूरे हैं। सभी देखने के लिए समय-सीमा या फ़िल्टर सीमित करें।",
     "toasts": {
       "loadFailed": "रिपोर्ट लोड करने में विफल",
@@ -1971,6 +1978,12 @@
       "COUNT": "लेनदेन संख्या",
       "AVERAGE": "औसत राशि",
       "BUDGET_VARIANCE": "बजट विचरण"
+    },
+    "transferMeasure": {
+      "NONE": "None (income and expenses)",
+      "OUTGOING": "Outgoing transfers",
+      "INCOMING": "Incoming transfers",
+      "NET": "Net transfers"
     },
     "categoryType": {
       "ALL": "सभी",

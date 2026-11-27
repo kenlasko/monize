@@ -448,6 +448,8 @@
     "labelMetric": "Метрика",
     "labelDirection": "Напрямок",
     "labelCategoryType": "Тип категорії",
+    "labelTransferMeasure": "Transfer Measure",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "checkboxTransfers": "Включати перекази",
     "checkboxFavourites": "Додати до вибраного",
     "sortByPlaceholder": "За замовчуванням",
@@ -471,8 +473,13 @@
       "netAmount": "Чиста сума",
       "netCashMovement": "Чистий рух коштів",
       "unsignedTotal": "Підсумок сум за категоріями без урахування знака",
-      "unsignedAverage": "Середнє сум за категоріями без урахування знака"
+      "unsignedAverage": "Середнє сум за категоріями без урахування знака",
+      "transfersOutgoing": "Outgoing transfers",
+      "transfersIncoming": "Incoming transfers",
+      "transfersNet": "Net transfers"
     },
+    "unknownKnownPart": "Unknown ({amount} known)",
+    "partialRow": "(partial: a rate is missing)",
     "truncatedNotice": "Звіт досяг обмеження кількості рядків і показує лише найстаріші рядки, тому його підсумки неповні. Звузьте період або фільтри, щоб побачити все.",
     "toasts": {
       "loadFailed": "Не вдалося завантажити звіт",
@@ -1971,6 +1978,12 @@
       "COUNT": "Кількість операцій",
       "AVERAGE": "Середня сума",
       "BUDGET_VARIANCE": "Відхилення від бюджету"
+    },
+    "transferMeasure": {
+      "NONE": "None (income and expenses)",
+      "OUTGOING": "Outgoing transfers",
+      "INCOMING": "Incoming transfers",
+      "NET": "Net transfers"
     },
     "categoryType": {
       "ALL": "Усі",

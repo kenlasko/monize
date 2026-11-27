@@ -3419,7 +3419,14 @@ Statement           A transfer leg appears in a report only as a NAMED FLOW, and
                       accounts", or an inflow "From savings & investments",
                       "Borrowed" or "From other accounts", decided by the
                       counterpart account's type
-                      (docs/specs/sankey-cash-flow.md sections 3-5).
+                      (docs/specs/sankey-cash-flow.md sections 3-5);
+                    - a row of the Monthly Category Breakdown's Transfers
+                      group: a Transfer category's outgoing or incoming row
+                      for the legs holding it, an account's for every other
+                      leg (docs/specs/transfer-categories.md section 7);
+                    - a custom report's transfer measure (Outgoing,
+                      Incoming or Net), which reads transfer legs only
+                      (docs/specs/transfer-categories.md section 8).
                     Each leg counts once, by its own account and its own sign.
                     Without one of those two, a report excludes transfers
                     exactly as before. Transfers never enter income, expenses or
@@ -3435,7 +3442,12 @@ Enforcement         Every income/expense query keeps t.is_transfer = false and
                     and write only taggedInflows / taggedOutflows. The Sankey's
                     transfer queries write only the class:* / inflow:* nodes,
                     which its totals report as outflows / inflows beside
-                    expenses / income rather than inside them.
+                    expenses / income rather than inside them. The
+                    breakdown's transfer query writes only its Transfers
+                    group, outside income, expenses and balance
+                    (monthly-category-breakdown.service.ts); a transfer
+                    measure replaces the report's direction and reads legs
+                    only (reports.service.ts, report-config.ts).
 Concurrency scope   -- (read path)
 Retry semantics     -- (read path)
 Crash semantics     -- (read path)
@@ -3445,6 +3457,9 @@ Required tests      income-reports.service.spec.ts: a parity spec proves the
                     tagged transfer in taggedInflows and not in income.
                     cash-flow-sankey.service.spec.ts: a transfer leg lands on its
                     class node and never in totals.income or totals.expenses.
+                    transfer-category-reads.integration.spec.ts: the
+                    breakdown's Transfer category rows leave income,
+                    expenses and balance at zero.
 Status              enforced
 ```
 
@@ -3542,7 +3557,13 @@ Statement           A category's figure in a report is the signed sum of its
                     the cost of an expense category already assigned to the
                     posting. Activity with zero net stays visible; when refunds
                     exceed debits the category has negative net spending.
-                    Transfers are not a category and are not netted.
+                    Transfers are not a category and are not netted, except
+                    under a custom report's transfer measure: there a
+                    category's transfer legs (whole legs and split transfer
+                    lines) net within that category, and the measure reads
+                    the negative legs as a magnitude (Outgoing), the
+                    positive legs (Incoming) or their signed sum (Net)
+                    (docs/specs/transfer-categories.md section 8).
 Source of truth     The signed amounts on transactions and transaction_splits.
 Enforcement         Spending by Category sums NET_SPEND_AMOUNT within each
                     group. An assigned expense category with qualifying activity
@@ -3568,6 +3589,11 @@ Enforcement         Spending by Category sums NET_SPEND_AMOUNT within each
                     The signed measures use "Net amount" or "Net cash movement"
                     with transfers. See customReportMeasure in
                     frontend/src/lib/custom-report-measure.ts.
+                    Under a transfer measure (config.transferMeasure,
+                    aggregationConfig in backend/src/reports/report-config.ts)
+                    netLinesOf keys a transfer leg's cell by its category
+                    rather than by the leg, and a group a rate is missing
+                    from is marked incomplete, a net's value withheld.
                     The loan history's Interest Paid
                     (frontend/src/lib/loan-history.ts) sums each interest row
                     signed, so a lender's refund nets (A26-S15-05).
@@ -3583,7 +3609,10 @@ Required tests      Integration:
                     with signed groups.) reports.service.spec.ts also covers
                     signed tag totals over overlapping groups;
                     frontend/src/lib/loan-history.test.ts "nets an interest
-                    refund".
+                    refund";
+                    backend/test/integration/report-custom-transfer-measure.integration.spec.ts
+                    (the numerical example of docs/specs/transfer-categories.md
+                    section 8.3 in CAD and EUR, and its missing-rate case).
 Known gap           No source scan holds the rule: a new aggregator summing
                     Math.abs per row passes every guard.
 Status              partial

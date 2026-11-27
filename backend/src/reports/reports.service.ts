@@ -42,8 +42,9 @@ import {
   ReportFilters,
   TableColumn,
   SortDirection,
+  TransferMeasure,
 } from "./entities/custom-report.entity";
-import { resolveReportConfig } from "./report-config";
+import { aggregationConfig, resolveReportConfig } from "./report-config";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
@@ -52,6 +53,7 @@ import { Tag } from "../tags/entities/tag.entity";
 import { CreateCustomReportDto } from "./dto/create-custom-report.dto";
 import { UpdateCustomReportDto } from "./dto/update-custom-report.dto";
 import {
+  AggregatedDataPoint,
   ExecuteReportDto,
   ReportResult,
   ReportSummary,
@@ -267,6 +269,7 @@ export class ReportsService {
     dto: CreateCustomReportDto,
   ): Promise<CustomReport> {
     this.validateCustomTimeframe(dto.timeframeType, dto.config);
+    this.validateTransferMeasure(dto.config);
 
     const saved = await withScopedDb(this.dataSource, (m) => {
       const repo = m.getRepository(CustomReport);
@@ -341,6 +344,7 @@ export class ReportsService {
       ? { ...report.config, ...dto.config }
       : report.config;
     this.validateCustomTimeframe(effectiveTimeframe, effectiveConfig);
+    this.validateTransferMeasure(effectiveConfig);
 
     // SECURITY: Explicit property mapping instead of Object.assign to prevent mass assignment
     if (dto.name !== undefined) report.name = dto.name;
@@ -409,7 +413,15 @@ export class ReportsService {
     id: string,
     overrides?: ExecuteReportDto,
   ): Promise<ReportResult> {
-    const report = await this.findOne(userId, id);
+    const stored = await this.findOne(userId, id);
+    this.validateTransferMeasure(stored.config);
+    // Under a transfer measure the aggregation reads legs only, the measure in
+    // the direction's place (`aggregationConfig`); the SQL reads the measure
+    // itself. Without one this is the stored configuration.
+    const report = {
+      ...stored,
+      config: aggregationConfig(stored.groupBy, stored.config),
+    };
 
     // Use override timeframe if provided, otherwise use saved report timeframe
     const effectiveTimeframe = overrides?.timeframeType || report.timeframeType;
@@ -541,6 +553,25 @@ export class ReportsService {
     };
   }
 
+  /**
+   * A transfer measure reads transfer legs, which no budget plans: a budget
+   * variance under one is refused (docs/specs/transfer-categories.md section
+   * 8.2).
+   */
+  private validateTransferMeasure(config?: Partial<ReportConfig> | null): void {
+    if (
+      config?.transferMeasure &&
+      config.metric === MetricType.BUDGET_VARIANCE
+    ) {
+      throw new BadRequestException(
+        tr(
+          "errors.reports.transferMeasureBudgetVariance",
+          "A transfer measure cannot be combined with a budget variance",
+        ),
+      );
+    }
+  }
+
   private validateCustomTimeframe(
     timeframeType?: TimeframeType,
     config?: Partial<ReportConfig>,
@@ -653,6 +684,19 @@ export class ReportsService {
     transactions: Transaction[],
     config: ReportConfig,
   ): Transaction[] {
+    // A transfer measure reads a split's transfer lines only (the query
+    // selected them; this holds the parent to them whatever it hydrated).
+    if (config.transferMeasure) {
+      return transactions.flatMap((tx) => {
+        if (!tx.isSplit || !tx.splits || tx.splits.length === 0) return [tx];
+        const lines = tx.splits.filter(
+          (split) => split.transferAccountId != null,
+        );
+        return lines.length === 0
+          ? []
+          : [{ ...tx, splits: lines } as Transaction];
+      });
+    }
     // The query selects direction and category on the joined posting. Transfer
     // splits still require their own eligibility check before aggregation.
     if (config.includeTransfers) return transactions;
@@ -872,11 +916,25 @@ export class ReportsService {
       // both directions and both category types in the same transaction.
       const amount =
         "CASE WHEN transaction.isSplit THEN splits.amount ELSE transaction.amount END";
-      if (config.direction === DirectionFilter.INCOMING)
+      const measure = config.transferMeasure;
+      if (measure) {
+        // Transfer legs only, whatever category they hold: a whole leg or a
+        // split's transfer line (INV-REPORT-006). The measure, not the
+        // direction, picks the sign, and Include transfers does not apply
+        // (docs/specs/transfer-categories.md section 8.2).
+        queryBuilder.andWhere(
+          "(transaction.isTransfer = true OR splits.transferAccountId IS NOT NULL)",
+        );
+        if (measure === TransferMeasure.OUTGOING)
+          queryBuilder.andWhere(`${amount} < 0`);
+        if (measure === TransferMeasure.INCOMING)
+          queryBuilder.andWhere(`${amount} > 0`);
+      }
+      if (!measure && config.direction === DirectionFilter.INCOMING)
         queryBuilder.andWhere(`${amount} > 0`);
-      if (config.direction === DirectionFilter.OUTGOING)
+      if (!measure && config.direction === DirectionFilter.OUTGOING)
         queryBuilder.andWhere(`${amount} < 0`);
-      const categoryType = config.categoryType;
+      const categoryType = measure ? undefined : config.categoryType;
       if (
         categoryType === ReportCategoryType.INCOME ||
         categoryType === ReportCategoryType.EXPENSE
@@ -899,7 +957,7 @@ export class ReportsService {
       }
 
       // Filter transfers
-      if (!config.includeTransfers) {
+      if (!measure && !config.includeTransfers) {
         queryBuilder.andWhere("transaction.isTransfer = false");
       }
 
@@ -1101,6 +1159,30 @@ export class ReportsService {
     }
   }
 
+  /**
+   * A group's figure. Under a transfer measure a group a part was left out of
+   * for want of a rate says so (`incomplete`): a net missing a side is never
+   * shown as the net, so its value is withheld and its known part named, and
+   * a group none of whose parts converted is unknown under every measure
+   * (docs/specs/transfer-categories.md section 10, INV-DISPLAY-002).
+   */
+  private groupFigure(
+    data: NetGroup,
+    metric: MetricType,
+    conv: RowConverter,
+    config: ReportConfig,
+  ): Pick<AggregatedDataPoint, "value" | "incomplete" | "knownValue"> {
+    const value = metricValue(data.agg, data.count, metric, conv.places);
+    if (!config.transferMeasure || !data.incomplete) return { value };
+    const withheld =
+      data.known === false ||
+      (config.transferMeasure === TransferMeasure.NET &&
+        metric !== MetricType.COUNT);
+    return withheld
+      ? { value: null, knownValue: value, incomplete: true }
+      : { value, incomplete: true };
+  }
+
   private formatCategoryLabel(
     category: Category | null | undefined,
   ): string | undefined {
@@ -1254,9 +1336,10 @@ export class ReportsService {
       metric,
       this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
+      !!config.transferMeasure,
     );
     for (const tx of transactions) {
-      for (const line of netLinesOf(tx, false)) {
+      for (const line of netLinesOf(tx, false, !!config.transferMeasure)) {
         cells.add("total", line, conv.convert(line.amount, tx, line.split));
       }
     }
@@ -1269,7 +1352,7 @@ export class ReportsService {
         point: {
           id: "total",
           label: "Total",
-          value: metricValue(bucket.agg, bucket.count, metric, conv.places),
+          ...this.groupFigure(bucket, metric, conv, config),
           percentage: isSignedMoney(config.direction, metric) ? undefined : 100,
           count: bucket.count,
         },
@@ -1290,12 +1373,13 @@ export class ReportsService {
       metric,
       this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
+      !!config.transferMeasure,
     );
     // An embedded investment line carries no category by definition, so
     // `netLinesOf` leaves it out: counting it here filed a securities purchase
     // under "Uncategorized" spending (re-audit F-CUSTOM-001).
     for (const tx of transactions) {
-      for (const line of netLinesOf(tx, true)) {
+      for (const line of netLinesOf(tx, true, !!config.transferMeasure)) {
         cells.add(
           line.category,
           line,
@@ -1326,12 +1410,15 @@ export class ReportsService {
         ? parent
           ? `${parent.name}: ${category.name}`
           : category.name
-        : "Uncategorized";
+        : config.transferMeasure
+          ? // Legs holding no category, never ordinary uncategorized rows.
+            "No category"
+          : "Uncategorized";
       result.push({
         point: {
           id: categoryId,
           label,
-          value: metricValue(data.agg, data.count, metric, conv.places),
+          ...this.groupFigure(data, metric, conv, config),
           color: category?.color || undefined,
           percentage: whole && shareOf(data.agg, whole),
           count: data.count,
@@ -1355,13 +1442,14 @@ export class ReportsService {
       metric,
       this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
+      !!config.transferMeasure,
     );
     const payeeNames = new Map<string, string>();
 
     for (const tx of transactions) {
       // `tx.amount` on a split parent is the sum of EVERY line, so a payee's
       // cells are read per ordinary line; a parent with none adds nothing.
-      const lines = netLinesOf(tx, false);
+      const lines = netLinesOf(tx, false, !!config.transferMeasure);
       if (lines.length === 0) continue;
       const payeeId = tx.payeeId || "unknown";
       for (const line of lines) {
@@ -1384,7 +1472,7 @@ export class ReportsService {
         point: {
           id: payeeId,
           label: payee?.name || payeeNames.get(payeeId) || "Unknown",
-          value: metricValue(data.agg, data.count, metric, conv.places),
+          ...this.groupFigure(data, metric, conv, config),
           percentage: whole && shareOf(data.agg, whole),
           count: data.count,
         },
@@ -1416,11 +1504,12 @@ export class ReportsService {
       metric,
       uniqueCells ? undefined : this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
+      !!config.transferMeasure,
     );
     const tagInfo = new Map<string, { tagName: string; color?: string }>();
 
     for (const tx of transactions) {
-      const lines = netLinesOf(tx, false);
+      const lines = netLinesOf(tx, false, !!config.transferMeasure);
       if (lines.length === 0) continue;
       // Converted once per line, so a row under several tags records one gap.
       const converted = lines.map((line) => ({
@@ -1466,7 +1555,7 @@ export class ReportsService {
         point: {
           id: tagId,
           label: info?.tagName ?? "Untagged",
-          value: metricValue(data.agg, data.count, metric, conv.places),
+          ...this.groupFigure(data, metric, conv, config),
           color: info?.color,
           percentage: whole && shareOf(data.agg, whole),
           count: data.count,
@@ -1498,11 +1587,12 @@ export class ReportsService {
       metric,
       this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
+      !!config.transferMeasure,
     );
     const labels = new Map<string, string>();
 
     for (const tx of transactions) {
-      const lines = netLinesOf(tx, false);
+      const lines = netLinesOf(tx, false, !!config.transferMeasure);
       if (lines.length === 0) continue;
       const date = parseISO(tx.transactionDate);
       let key: string;
@@ -1540,7 +1630,7 @@ export class ReportsService {
         point: {
           id: key,
           label: labels.get(key) ?? key,
-          value: metricValue(data.agg, data.count, metric, conv.places),
+          ...this.groupFigure(data, metric, conv, config),
           count: data.count,
         },
         sum: data.agg,

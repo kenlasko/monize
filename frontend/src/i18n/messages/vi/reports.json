@@ -448,6 +448,8 @@
     "labelMetric": "Chỉ số",
     "labelDirection": "Hướng",
     "labelCategoryType": "Loại danh mục",
+    "labelTransferMeasure": "Transfer Measure",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "checkboxTransfers": "Bao gồm chuyển tiền",
     "checkboxFavourites": "Thêm vào mục yêu thích",
     "sortByPlaceholder": "Mặc định",
@@ -471,8 +473,13 @@
       "netAmount": "Số tiền thuần",
       "netCashMovement": "Biến động tiền thuần",
       "unsignedTotal": "Tổng số tiền danh mục không tính dấu",
-      "unsignedAverage": "Trung bình số tiền danh mục không tính dấu"
+      "unsignedAverage": "Trung bình số tiền danh mục không tính dấu",
+      "transfersOutgoing": "Outgoing transfers",
+      "transfersIncoming": "Incoming transfers",
+      "transfersNet": "Net transfers"
     },
+    "unknownKnownPart": "Unknown ({amount} known)",
+    "partialRow": "(partial: a rate is missing)",
     "truncatedNotice": "Báo cáo này đã chạm giới hạn số dòng và chỉ hiển thị các dòng cũ nhất, nên số liệu chưa đầy đủ. Hãy thu hẹp khoảng thời gian hoặc bộ lọc để xem tất cả.",
     "toasts": {
       "loadFailed": "Không thể tải báo cáo",
@@ -1971,6 +1978,12 @@
       "COUNT": "Số giao tác",
       "AVERAGE": "Số tiền trung bình",
       "BUDGET_VARIANCE": "Phương sai ngân sách"
+    },
+    "transferMeasure": {
+      "NONE": "None (income and expenses)",
+      "OUTGOING": "Outgoing transfers",
+      "INCOMING": "Incoming transfers",
+      "NET": "Net transfers"
     },
     "categoryType": {
       "ALL": "Tất cả",

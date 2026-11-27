@@ -632,6 +632,7 @@
   "reports": {
     "notFound": "Отчёт с ID {{ id }} не найден",
     "customTimeframeMissingDates": "Для пользовательского периода требуются даты начала и окончания",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "investmentNotFound": "Инвестиционный отчёт с ID {{ id }} не найден"
   },
   "scheduled": {

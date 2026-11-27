@@ -632,6 +632,7 @@
   "reports": {
     "notFound": "ID {{ id }} のレポートが見つかりません",
     "customTimeframeMissingDates": "カスタム期間には開始日と終了日の両方が必要です",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "investmentNotFound": "ID {{ id }} の投資レポートが見つかりません"
   },
   "scheduled": {

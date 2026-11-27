@@ -146,6 +146,27 @@ describe('ReportChart', () => {
     expect(screen.getByText('Total')).toBeInTheDocument();
   });
 
+  // docs/specs/transfer-categories.md section 10: a measure row a rate is
+  // missing from is labelled partial, and a withheld net names its known part.
+  it('labels a partial transfer measure row and a withheld net', () => {
+    render(
+      <ReportChart
+        viewType={ReportViewType.TABLE}
+        data={[
+          { id: 'a', label: 'Savings contributions', value: 700 },
+          { id: 'b', label: 'Investment contributions', value: null, knownValue: -917.9, incomplete: true },
+        ]}
+        groupBy={GroupByType.CATEGORY}
+        tableColumns={[TableColumn.LABEL, TableColumn.VALUE]}
+      />
+    );
+    const row = screen.getByText('Investment contributions').closest('tr')!;
+    expect(row).toHaveTextContent('(partial: a rate is missing)');
+    expect(row).toHaveTextContent(/Unknown \(.*917\.90 known\)/);
+    const complete = screen.getByText('Savings contributions').closest('tr')!;
+    expect(complete).not.toHaveTextContent('partial');
+  });
+
   it('renders table with custom columns', () => {
     render(
       <ReportChart

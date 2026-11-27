@@ -448,6 +448,8 @@
     "labelMetric": "Métrica",
     "labelDirection": "Direção",
     "labelCategoryType": "Tipo de categoria",
+    "labelTransferMeasure": "Transfer Measure",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "checkboxTransfers": "Incluir transferências",
     "checkboxFavourites": "Adicionar aos favoritos",
     "sortByPlaceholder": "Padrão",
@@ -471,8 +473,13 @@
       "netAmount": "Valor líquido",
       "netCashMovement": "Movimentação de caixa líquida",
       "unsignedTotal": "Total dos valores de categoria sem sinal",
-      "unsignedAverage": "Média dos valores de categoria sem sinal"
+      "unsignedAverage": "Média dos valores de categoria sem sinal",
+      "transfersOutgoing": "Outgoing transfers",
+      "transfersIncoming": "Incoming transfers",
+      "transfersNet": "Net transfers"
     },
+    "unknownKnownPart": "Unknown ({amount} known)",
+    "partialRow": "(partial: a rate is missing)",
     "truncatedNotice": "Este relatório atingiu o limite de linhas e mostra apenas as mais antigas, então os valores são parciais. Restrinja o período ou os filtros para ver todas.",
     "toasts": {
       "loadFailed": "Falha ao carregar relatório",
@@ -1971,6 +1978,12 @@
       "COUNT": "Contagem de Transações",
       "AVERAGE": "Valor Médio",
       "BUDGET_VARIANCE": "Variação do Orçamento"
+    },
+    "transferMeasure": {
+      "NONE": "None (income and expenses)",
+      "OUTGOING": "Outgoing transfers",
+      "INCOMING": "Incoming transfers",
+      "NET": "Net transfers"
     },
     "categoryType": {
       "ALL": "Todas",

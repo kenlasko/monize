@@ -448,6 +448,8 @@
     "labelMetric": "Metric",
     "labelDirection": "Direction",
     "labelCategoryType": "Category Type",
+    "labelTransferMeasure": "Transfer Measure",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "checkboxTransfers": "Include transfers",
     "checkboxFavourites": "Add to favourites",
     "sortByPlaceholder": "Default",
@@ -471,8 +473,13 @@
       "netAmount": "Net amount",
       "netCashMovement": "Net cash movement",
       "unsignedTotal": "Total of unsigned category amounts",
-      "unsignedAverage": "Average of unsigned category amounts"
+      "unsignedAverage": "Average of unsigned category amounts",
+      "transfersOutgoing": "Outgoing transfers",
+      "transfersIncoming": "Incoming transfers",
+      "transfersNet": "Net transfers"
     },
+    "unknownKnownPart": "Unknown ({amount} known)",
+    "partialRow": "(partial: a rate is missing)",
     "truncatedNotice": "This report reached the row limit and shows only the oldest rows, so its figures are partial. Narrow the timeframe or the filters to see all of them.",
     "toasts": {
       "loadFailed": "Failed to load report",
@@ -1971,6 +1978,12 @@
       "COUNT": "Transaction Count",
       "AVERAGE": "Average Amount",
       "BUDGET_VARIANCE": "Budget Variance"
+    },
+    "transferMeasure": {
+      "NONE": "None (income and expenses)",
+      "OUTGOING": "Outgoing transfers",
+      "INCOMING": "Incoming transfers",
+      "NET": "Net transfers"
     },
     "categoryType": {
       "ALL": "All",

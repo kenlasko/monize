@@ -632,6 +632,7 @@
   "reports": {
     "notFound": "ID {{ id }} वाली रिपोर्ट नहीं मिली",
     "customTimeframeMissingDates": "कस्टम समय-सीमा के लिए प्रारंभ और समाप्ति दोनों तिथियाँ आवश्यक हैं",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "investmentNotFound": "ID {{ id }} वाली निवेश रिपोर्ट नहीं मिली"
   },
   "scheduled": {

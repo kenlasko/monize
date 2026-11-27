@@ -632,6 +632,7 @@
   "reports": {
     "notFound": "Nie znaleziono raportu o ID {{ id }}",
     "customTimeframeMissingDates": "Niestandardowy zakres czasu wymaga zarówno daty początkowej, jak i końcowej",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "investmentNotFound": "Nie znaleziono raportu inwestycyjnego o ID {{ id }}"
   },
   "scheduled": {

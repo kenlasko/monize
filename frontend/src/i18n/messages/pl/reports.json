@@ -448,6 +448,8 @@
     "labelMetric": "Metryka",
     "labelDirection": "Kierunek",
     "labelCategoryType": "Typ kategorii",
+    "labelTransferMeasure": "Transfer Measure",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "checkboxTransfers": "Uwzględnij przelewy",
     "checkboxFavourites": "Dodaj do ulubionych",
     "sortByPlaceholder": "Domyślna",
@@ -471,8 +473,13 @@
       "netAmount": "Kwota netto",
       "netCashMovement": "Ruch środków netto",
       "unsignedTotal": "Suma kwot kategorii bez znaku",
-      "unsignedAverage": "Średnia kwot kategorii bez znaku"
+      "unsignedAverage": "Średnia kwot kategorii bez znaku",
+      "transfersOutgoing": "Outgoing transfers",
+      "transfersIncoming": "Incoming transfers",
+      "transfersNet": "Net transfers"
     },
+    "unknownKnownPart": "Unknown ({amount} known)",
+    "partialRow": "(partial: a rate is missing)",
     "truncatedNotice": "Ten raport osiągnął limit wierszy i pokazuje tylko najstarsze wiersze, więc jego wartości są niepełne. Zawęź okres lub filtry, aby zobaczyć wszystkie wiersze.",
     "toasts": {
       "loadFailed": "Nie udało się załadować raportu",
@@ -1971,6 +1978,12 @@
       "COUNT": "Liczba transakcji",
       "AVERAGE": "Średnia kwota",
       "BUDGET_VARIANCE": "Odchylenie od budżetu"
+    },
+    "transferMeasure": {
+      "NONE": "None (income and expenses)",
+      "OUTGOING": "Outgoing transfers",
+      "INCOMING": "Incoming transfers",
+      "NET": "Net transfers"
     },
     "categoryType": {
       "ALL": "Wszystkie",

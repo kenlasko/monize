@@ -518,7 +518,16 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   )}
                   {columns.includes(TableColumn.VALUE) && (
                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
-                      {item.value === null ? '-' : formatValue(item.value)}
+                      {item.value === null
+                        ? item.knownValue !== undefined
+                          ? t('customReportViewer.unknownKnownPart', { amount: formatValue(item.knownValue) })
+                          : '-'
+                        : formatValue(item.value)}
+                      {item.incomplete && (
+                        <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">
+                          {t('customReportViewer.partialRow')}
+                        </span>
+                      )}
                     </td>
                   )}
                   {columns.includes(TableColumn.ACCOUNT_AMOUNT) && (

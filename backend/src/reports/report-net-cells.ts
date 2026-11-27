@@ -78,7 +78,16 @@ export interface NetLine {
  * hydrated ordinary lines are empty represents no cash and has no line.
  * `perLine` is the category grouping, which counts lines rather than rows.
  */
-export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
+export function netLinesOf(
+  tx: Transaction,
+  perLine: boolean,
+  /**
+   * Under a transfer measure a category's transfer legs net within it
+   * (INV-REPORT-004 as amended, docs/specs/transfer-categories.md section
+   * 8.2); otherwise each leg is a cell of its own.
+   */
+  netTransfers = false,
+): NetLine[] {
   const unitOf = (index: number) => (perLine ? `${tx.id}:${index}` : tx.id);
 
   if (tx.isSplit && tx.splits) {
@@ -86,7 +95,7 @@ export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
       const category = split.categoryId || "uncategorized";
       return {
         cell:
-          split.transferAccountId != null
+          split.transferAccountId != null && !netTransfers
             ? `transfer:${tx.id}:${index}`
             : category,
         category,
@@ -102,7 +111,7 @@ export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
   const category = tx.categoryId || "uncategorized";
   return [
     {
-      cell: tx.isTransfer ? `transfer:${tx.id}:0` : category,
+      cell: tx.isTransfer && !netTransfers ? `transfer:${tx.id}:0` : category,
       category,
       amount: Number(tx.amount),
       unit: unitOf(0),
@@ -131,6 +140,14 @@ type Cell = Map<string, CellPart>;
 export interface NetGroup {
   agg: FxAggregate;
   count: number;
+  /**
+   * A part of the group was left out for want of a rate. Read only under a
+   * transfer measure, where a group whose every part was left out is kept
+   * too, `known` false (docs/specs/transfer-categories.md section 10).
+   */
+  incomplete?: boolean;
+  /** Some part of the group converted and was kept. */
+  known?: boolean;
 }
 
 export function isSignedMoney(
@@ -187,6 +204,8 @@ export function createNetCells(
   metric: MetricType,
   onLeftOut: (currency: string, unit: string) => void = () => undefined,
   onProvisional: (row: string) => void = () => undefined,
+  /** Keep, and mark, a group a part was left out of (a transfer measure). */
+  markIncomplete = false,
 ): NetCells {
   const groups = new Map<string, Map<string, Cell>>();
   const signedMoney = isSignedMoney(direction, metric);
@@ -251,6 +270,7 @@ export function createNetCells(
       const agg = new FxAggregate();
       const units = new Set<string>();
       let kept = false;
+      let groupIncomplete = false;
       for (const [cellKey, cell] of cells) {
         // The count metric keeps every line; a money figure keeps only the
         // parts whose every line converted.
@@ -262,6 +282,7 @@ export function createNetCells(
             return [part];
           }
           for (const unit of part.convertedUnits) leftOut.set(unit, currency);
+          groupIncomplete = true;
           return [];
         });
         if (parts.length === 0) continue;
@@ -293,7 +314,16 @@ export function createNetCells(
           for (const row of part.provisionalRows) provisional.add(row);
         }
       }
-      if (kept) settled.set(group, { agg, count: units.size });
+      if (markIncomplete && groupIncomplete) {
+        settled.set(group, {
+          agg,
+          count: units.size,
+          incomplete: true,
+          known: kept,
+        });
+      } else if (kept) {
+        settled.set(group, { agg, count: units.size });
+      }
     }
     for (const [unit, currency] of leftOut) {
       if (signedTotal || !keptUnits.has(unit)) onLeftOut(currency, unit);

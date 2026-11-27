@@ -44,6 +44,17 @@ export enum DirectionFilter {
   BOTH = 'BOTH',
 }
 
+/**
+ * A transfer measure (docs/specs/transfer-categories.md section 8.2): the
+ * report reads transfer legs only, a category's legs netted within it, as what
+ * left (a magnitude), what arrived, or their signed net.
+ */
+export enum TransferMeasure {
+  OUTGOING = 'OUTGOING',
+  INCOMING = 'INCOMING',
+  NET = 'NET',
+}
+
 export enum ReportCategoryType {
   ALL = 'ALL',
   INCOME = 'INCOME',
@@ -101,6 +112,8 @@ export interface ReportConfig {
   includeTransfers: boolean;
   direction: DirectionFilter;
   categoryType?: ReportCategoryType;
+  /** Absent: the report reads as it always has. `null` on a save clears it. */
+  transferMeasure?: TransferMeasure | null;
   customStartDate?: string;
   customEndDate?: string;
   tableColumns?: TableColumn[];
@@ -151,6 +164,13 @@ export interface AggregatedDataPoint {
    * total (`excludedCount` counts it).
    */
   value: number | null;
+  /**
+   * Under a transfer measure, a part of the group had no rate: the figure is
+   * partial (`value` the known part) or, for a net or a group nothing of which
+   * converted, withheld (`value` null, `knownValue` the known part).
+   */
+  incomplete?: true;
+  knownValue?: number;
   id?: string;
   color?: string;
   percentage?: number;

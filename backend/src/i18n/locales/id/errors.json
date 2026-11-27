@@ -632,6 +632,7 @@
   "reports": {
     "notFound": "Laporan dengan ID {{ id }} tidak ditemukan",
     "customTimeframeMissingDates": "Rentang waktu kustom memerlukan tanggal awal dan akhir",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "investmentNotFound": "Laporan investasi dengan ID {{ id }} tidak ditemukan"
   },
   "scheduled": {

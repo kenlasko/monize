@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DirectionFilter, GroupByType, MetricType } from '@/types/custom-report';
+import { DirectionFilter, GroupByType, MetricType, TransferMeasure } from '@/types/custom-report';
 import { customReportMeasure, isSignedTransactionList } from './custom-report-measure';
 
 const report = (
@@ -61,5 +61,25 @@ describe('isSignedTransactionList', () => {
     expect(
       isSignedTransactionList(report(MetricType.NONE, DirectionFilter.BOTH, false, GroupByType.CATEGORY)),
     ).toBe(false);
+  });
+});
+
+// docs/specs/transfer-categories.md section 8.2.
+describe('a transfer measure', () => {
+  const measured = (metric: MetricType, transferMeasure: TransferMeasure, groupBy = GroupByType.CATEGORY) => ({
+    groupBy,
+    config: { metric, direction: DirectionFilter.BOTH, includeTransfers: false, transferMeasure },
+  });
+
+  it('names its figures whatever the stored direction', () => {
+    expect(customReportMeasure(measured(MetricType.TOTAL_AMOUNT, TransferMeasure.OUTGOING))).toBe('transfersOutgoing');
+    expect(customReportMeasure(measured(MetricType.AVERAGE, TransferMeasure.INCOMING))).toBe('transfersIncoming');
+    expect(customReportMeasure(measured(MetricType.TOTAL_AMOUNT, TransferMeasure.NET), true)).toBe('transfersNet');
+    expect(customReportMeasure(measured(MetricType.COUNT, TransferMeasure.NET))).toBeNull();
+  });
+
+  it('lists each leg with its own sign', () => {
+    expect(isSignedTransactionList(measured(MetricType.NONE, TransferMeasure.OUTGOING, GroupByType.NONE))).toBe(true);
+    expect(isSignedTransactionList(measured(MetricType.NONE, TransferMeasure.OUTGOING))).toBe(false);
   });
 });

@@ -21,6 +21,7 @@ import {
   MetricType,
   DirectionFilter,
   ReportCategoryType,
+  TransferMeasure,
   TableColumn,
   SortDirection,
   FilterGroup,
@@ -34,6 +35,7 @@ import {
 } from '@/types/custom-report';
 import { Account } from '@/types/account';
 import { Category } from '@/types/category';
+import { isTransferCategory } from '@/lib/category-type';
 import { Payee } from '@/types/payee';
 import { Tag } from '@/types/tag';
 import { accountsApi } from '@/lib/accounts';
@@ -103,6 +105,8 @@ const customReportSchema = z.object({
   direction: z.nativeEnum(DirectionFilter),
   categoryType: z.nativeEnum(ReportCategoryType),
   includeTransfers: z.boolean(),
+  /** '' is no measure: the report reads as it always has. */
+  transferMeasure: z.union([z.nativeEnum(TransferMeasure), z.literal('')]),
   customStartDate: z.string().optional(),
   customEndDate: z.string().optional(),
   isFavourite: z.boolean().optional(),
@@ -110,6 +114,13 @@ const customReportSchema = z.object({
   sortBy: z.nativeEnum(TableColumn).optional().nullable(),
   sortDirection: z.nativeEnum(SortDirection).optional(),
 }).superRefine((data, ctx) => {
+  if (data.transferMeasure && data.metric === MetricType.BUDGET_VARIANCE) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'A transfer measure cannot be combined with a budget variance',
+      path: ['transferMeasure'],
+    });
+  }
   if (data.timeframeType === TimeframeType.CUSTOM) {
     if (!data.customStartDate) {
       ctx.addIssue({
@@ -170,6 +181,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
           direction: report.config.direction,
           categoryType: report.config.categoryType ?? ReportCategoryType.ALL,
           includeTransfers: report.config.includeTransfers,
+          transferMeasure: report.config.transferMeasure ?? '',
           customStartDate: report.config.customStartDate || '',
           customEndDate: report.config.customEndDate || '',
           isFavourite: report.isFavourite,
@@ -189,6 +201,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
           direction: DirectionFilter.BOTH,
           categoryType: ReportCategoryType.EXPENSE,
           includeTransfers: false,
+          transferMeasure: '',
           customStartDate: '',
           customEndDate: '',
           isFavourite: false,
@@ -202,6 +215,26 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
 
   const watchTimeframeType = useWatch({ control, name: 'timeframeType' });
   const watchViewType = useWatch({ control, name: 'viewType' });
+  const watchTransferMeasure = useWatch({ control, name: 'transferMeasure' });
+  const watchMetric = useWatch({ control, name: 'metric' });
+
+  // A Transfer category holds transfer legs only, so a filter naming one
+  // matches nothing without them: choosing one turns Include transfers on
+  // (docs/specs/transfer-categories.md section 8.1). The server does not infer
+  // it; a saved report means what it says.
+  const handleFilterGroupsChange = (groups: FilterGroup[]) => {
+    const transferIds = new Set(categories.filter(isTransferCategory).map((c) => c.id));
+    const before = new Set(
+      filterGroups.flatMap((g) => g.conditions).filter((c) => c.field === 'category').flatMap((c) => [c.value].flat()),
+    );
+    const namesNewTransferCategory = groups
+      .flatMap((g) => g.conditions)
+      .filter((c) => c.field === 'category')
+      .flatMap((c) => [c.value].flat())
+      .some((id) => transferIds.has(id) && !before.has(id));
+    if (namesNewTransferCategory) setValue('includeTransfers', true, { shouldDirty: true });
+    setFilterGroups(groups);
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -242,6 +275,13 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
         direction: data.direction,
         categoryType: data.categoryType,
         includeTransfers: data.includeTransfers,
+        // null clears a measure the report held; a report without one never
+        // sends it, so it saves as it always has.
+        ...(data.transferMeasure
+          ? { transferMeasure: data.transferMeasure }
+          : report?.config.transferMeasure
+            ? { transferMeasure: null }
+            : {}),
         customStartDate: data.timeframeType === TimeframeType.CUSTOM ? data.customStartDate : undefined,
         customEndDate: data.timeframeType === TimeframeType.CUSTOM ? data.customEndDate : undefined,
         tableColumns: data.viewType === ReportViewType.TABLE ? data.tableColumns : undefined,
@@ -450,7 +490,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
         </h3>
         <FilterBuilder
           value={filterGroups}
-          onChange={setFilterGroups}
+          onChange={handleFilterGroupsChange}
           accounts={accounts}
           categories={categories}
           payees={payees}
@@ -471,32 +511,55 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
             error={errors.metric?.message}
           />
           <Select
-            label={t('customReport.labelDirection')}
-            options={directionOptions}
-            {...register('direction')}
-            error={errors.direction?.message}
+            label={t('customReport.labelTransferMeasure')}
+            options={[
+              { value: '', label: t('customReportLabels.transferMeasure.NONE') },
+              ...Object.values(TransferMeasure).map((value) => ({
+                value,
+                label: t(`customReportLabels.transferMeasure.${value}`),
+              })),
+            ]}
+            {...register('transferMeasure')}
+            error={
+              watchTransferMeasure && watchMetric === MetricType.BUDGET_VARIANCE
+                ? t('customReport.transferMeasureBudgetVariance')
+                : errors.transferMeasure?.message
+            }
           />
-          <Select
-            label={t('customReport.labelCategoryType')}
-            options={Object.values(ReportCategoryType).map((value) => ({
-              value,
-              label: t(`customReportLabels.categoryType.${value}`),
-            }))}
-            {...register('categoryType')}
-            error={errors.categoryType?.message}
-          />
-          <div className="md:col-span-2">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                {...register('includeTransfers')}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          {/* A transfer measure reads transfer legs only, by its own sign, so
+              the direction, the category type and Include transfers do not
+              apply to it (docs/specs/transfer-categories.md section 8.2). */}
+          {!watchTransferMeasure && (
+            <>
+              <Select
+                label={t('customReport.labelDirection')}
+                options={directionOptions}
+                {...register('direction')}
+                error={errors.direction?.message}
               />
-              <span className="text-sm text-gray-700 dark:text-gray-300">
-                {t('customReport.checkboxTransfers')}
-              </span>
-            </label>
-          </div>
+              <Select
+                label={t('customReport.labelCategoryType')}
+                options={Object.values(ReportCategoryType).map((value) => ({
+                  value,
+                  label: t(`customReportLabels.categoryType.${value}`),
+                }))}
+                {...register('categoryType')}
+                error={errors.categoryType?.message}
+              />
+              <div className="md:col-span-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    {...register('includeTransfers')}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {t('customReport.checkboxTransfers')}
+                  </span>
+                </label>
+              </div>
+            </>
+          )}
           <div className="md:col-span-2">
             <label className="flex items-center gap-2">
               <input

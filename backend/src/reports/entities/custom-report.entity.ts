@@ -109,10 +109,24 @@ export interface ReportFilters {
   filterGroups?: FilterGroup[];
 }
 
+/**
+ * A custom report's transfer measure (docs/specs/transfer-categories.md
+ * section 8.2): the report reads transfer legs only, a category's legs net
+ * within it, and the figure is what left (a magnitude), what arrived, or their
+ * signed net. Absent on every report saved before it, which reads as before.
+ */
+export enum TransferMeasure {
+  OUTGOING = "OUTGOING",
+  INCOMING = "INCOMING",
+  NET = "NET",
+}
+
 export interface ReportConfig {
   metric: MetricType;
   includeTransfers: boolean;
   direction: DirectionFilter;
+  /** Absent: the report reads as it always has; null on a request clears it. */
+  transferMeasure?: TransferMeasure | null;
   categoryType?: ReportCategoryType;
   customStartDate?: string;
   customEndDate?: string;
