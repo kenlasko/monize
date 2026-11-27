@@ -1,3 +1,4 @@
+import { fitMnyCategory, type MnyCategoryInput } from "./fit-mny-category";
 import { randomUUID } from "node:crypto";
 import { EntityManager } from "typeorm";
 import { ScheduledTransaction } from "../../../scheduled-transactions/entities/scheduled-transaction.entity";
@@ -21,7 +22,7 @@ import { tagIdsFor } from "./write-tags";
  *   that only reminds is noise; one that posts money is a real error.
  */
 
-export interface WriteBillsInput {
+export interface WriteBillsInput extends MnyCategoryInput {
   /** The wizard's selection -- candidates whose handle is in `options.bills`. */
   readonly bills: readonly MappedBill[];
   readonly accountIdByKey: ReadonlyMap<string, string>;
@@ -96,14 +97,17 @@ export async function writeBills(
       bill.payeeHandle === null
         ? null
         : (input.payeeNameByHandle.get(bill.payeeHandle) ?? null);
-    const categoryId =
-      bill.categoryHandle === null
-        ? null
-        : (input.categoryIdByHandle.get(bill.categoryHandle) ?? null);
     const transferAccountId =
       bill.transferAccountKey === null
         ? null
         : (input.accountIdByKey.get(bill.transferAccountKey) ?? null);
+    // A scheduled transfer takes a category of any type, a scheduled
+    // ordinary transaction only Income or Expense (INV-CATEGORY-001).
+    const categoryId = fitMnyCategory(
+      input,
+      bill.categoryHandle,
+      bill.isTransfer ? "transfer" : "category",
+    );
 
     const investment = bill.investment;
     const securityId =
@@ -170,10 +174,13 @@ export async function writeBills(
           split.kind === SplitKind.TRANSFER && splitTransferAccountId === null
             ? SplitKind.CATEGORY
             : split.kind,
-        categoryId:
-          split.categoryHandle === null
-            ? null
-            : (input.categoryIdByHandle.get(split.categoryHandle) ?? null),
+        categoryId: fitMnyCategory(
+          input,
+          split.categoryHandle,
+          split.kind === SplitKind.TRANSFER && splitTransferAccountId !== null
+            ? "transfer"
+            : "category",
+        ),
         transferAccountId: splitTransferAccountId,
         amount: roundMoney(split.amount, places),
         memo: split.memo,

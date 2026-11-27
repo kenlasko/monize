@@ -351,6 +351,7 @@
     "viewInvestments": "Investitionen anzeigen",
     "viewTransactions": "Buchungen anzeigen",
     "importMoreFiles": "Weitere Dateien importieren",
+    "categoriesNotFitting": "{count, plural, one {# transaction was} other {# transactions were}} imported without a category: the category in the file is a Transfer category, which goes only on a transfer.",
     "bondRowsWithoutSeries": "{count, plural, one {# Anleihekauf wurde ohne Serie importiert. Wählen Sie die Serie in den Anleihe-Tranchen des Wertpapiers.} other {# Anleihekäufe wurden ohne Serie importiert. Wählen Sie die Serien in den Anleihe-Tranchen des Wertpapiers.}}",
     "skipReasonKeptExisting": "Stattdessen wurde Ihre vorhandene Buchung beibehalten",
     "skipReasonPossibleDuplicate": "Ähnelt einer Buchung, die bereits im Konto ist",

@@ -269,6 +269,7 @@ export class DemoResetService {
                   );
 
             await manager.query(
+              // category-fit-ok: the demo's own Income and Expense categories
               `INSERT INTO transactions (
                 user_id, account_id, transaction_date, payee_id, payee_name,
                 category_id, amount, currency_code, description, status

@@ -47,6 +47,7 @@ export async function undoSharedPosting(
       (!link.created || keepBankIds.includes(row.id))
     ) {
       await manager.query(
+        // category-fit-ok: the undo restores the category the row held
         `UPDATE transactions SET is_split = $4, is_transfer = false,
         category_id = (SELECT id FROM categories WHERE id = $3 AND user_id = $2),
         shared_expense_posting_id = NULL WHERE id = $1 AND user_id = $2`,
@@ -110,6 +111,7 @@ async function insertRow(
     accounts[0].currency_code,
   );
   await manager.query(
+    // category-fit-ok: writeSharedFinance fits every category it passes
     `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, description, category_id, payee_id, is_transfer, linked_transaction_id, status, shared_expense_posting_id)
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
     [
@@ -257,6 +259,7 @@ export async function writeSharedFinance(
         [bankId],
       );
     await manager.query(
+      // category-fit-ok: clears the category, writes none
       `UPDATE transactions SET is_transfer=$3, is_split=$4, category_id=NULL, linked_transaction_id=$5, shared_expense_posting_id=$6 WHERE id=$1 AND user_id=$2`,
       [bankId, userId, !split, split, split ? null : counterpartId, postingId],
     );
@@ -278,6 +281,7 @@ export async function writeSharedFinance(
       ]) {
         if (amount === "0.0000") continue;
         await manager.query(
+          // category-fit-ok: planSharedFinance refuses a Transfer category on every line it plans
           "INSERT INTO transaction_splits (transaction_id,kind,category_id,amount) VALUES ($1,'category',$2,$3)",
           [bankId, categoryId, amount],
         );

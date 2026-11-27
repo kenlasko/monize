@@ -351,6 +351,7 @@
     "viewInvestments": "投資を表示",
     "viewTransactions": "取引を表示",
     "importMoreFiles": "さらにファイルをインポート",
+    "categoriesNotFitting": "{count, plural, one {# transaction was} other {# transactions were}} imported without a category: the category in the file is a Transfer category, which goes only on a transfer.",
     "bondRowsWithoutSeries": "{count, plural, other {#件の債券購入がシリーズなしでインポートされました。銘柄の債券ロットでシリーズを選択してください。}}",
     "skipReasonKeptExisting": "代わりに既存の取引を残しました",
     "skipReasonPossibleDuplicate": "この勘定科目に既にある取引と同じようです",

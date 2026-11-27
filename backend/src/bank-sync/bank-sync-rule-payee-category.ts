@@ -1,3 +1,4 @@
+import { categoryFits } from "../categories/category-fit";
 import { EntityManager, In } from "typeorm";
 import { Payee } from "../payees/entities/payee.entity";
 import type {
@@ -80,6 +81,15 @@ export async function loadPayeeDefaultCategories(
   });
   for (const payee of payees) {
     if (payee.defaultCategoryId === null) continue;
+    // A bank row is an ordinary row: a default that is a Transfer category
+    // (only a previous-release pod can have stored one) is skipped, as if
+    // the payee had none (INV-CATEGORY-001).
+    if (
+      payee.defaultCategory &&
+      !categoryFits(payee.defaultCategory, "category")
+    ) {
+      continue;
+    }
     found.set(payee.id, {
       categoryId: payee.defaultCategoryId,
       categoryName: payee.defaultCategory?.name ?? null,

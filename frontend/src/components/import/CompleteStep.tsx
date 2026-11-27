@@ -260,6 +260,11 @@ export function CompleteStep({
                 })}
               </p>
             )}
+            {(importResult.categoriesNotFitting ?? 0) > 0 && (
+              <p className="mt-4 text-sm text-amber-800 dark:text-amber-300">
+                {t('complete.categoriesNotFitting', { count: importResult.categoriesNotFitting ?? 0 })}
+              </p>
+            )}
             {(importResult.bondRowsWithoutSeries ?? 0) > 0 && (
               <p className="mt-4 text-sm text-amber-800 dark:text-amber-300">
                 {t('complete.bondRowsWithoutSeries', { count: importResult.bondRowsWithoutSeries ?? 0 })}

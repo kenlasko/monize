@@ -351,6 +351,7 @@
     "viewInvestments": "Yatırımları Görüntüle",
     "viewTransactions": "İşlemleri Görüntüle",
     "importMoreFiles": "Daha Fazla Dosya İçe Aktar",
+    "categoriesNotFitting": "{count, plural, one {# transaction was} other {# transactions were}} imported without a category: the category in the file is a Transfer category, which goes only on a transfer.",
     "bondRowsWithoutSeries": "{count, plural, one {# tahvil alımı seri olmadan içe aktarıldı. Serisini menkul kıymetin tahvil lotlarında seçin.} other {# tahvil alımı seri olmadan içe aktarıldı. Serilerini menkul kıymetin tahvil lotlarında seçin.}}",
     "skipReasonKeptExisting": "Bunun yerine mevcut işleminiz korundu",
     "skipReasonPossibleDuplicate": "Hesapta zaten bulunan bir işleme benziyor",

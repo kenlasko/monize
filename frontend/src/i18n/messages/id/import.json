@@ -351,6 +351,7 @@
     "viewInvestments": "Lihat Investasi",
     "viewTransactions": "Lihat Transaksi",
     "importMoreFiles": "Impor File Lainnya",
+    "categoriesNotFitting": "{count, plural, one {# transaction was} other {# transactions were}} imported without a category: the category in the file is a Transfer category, which goes only on a transfer.",
     "bondRowsWithoutSeries": "{count, plural, other {# pembelian obligasi diimpor tanpa seri. Pilih serinya di lot obligasi sekuritas.}}",
     "skipReasonKeptExisting": "Transaksi Anda yang sudah ada dipertahankan sebagai gantinya",
     "skipReasonPossibleDuplicate": "Mirip dengan transaksi yang sudah ada di akun",

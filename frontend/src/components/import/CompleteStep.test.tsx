@@ -533,6 +533,19 @@ describe('CompleteStep', () => {
     expect(screen.getByText(/2 transactions/)).toBeInTheDocument();
   });
 
+  it('says how many rows were imported without the Transfer category the file named, and nothing when none were', () => {
+    const { unmount } = render(<CompleteStep {...defaultProps} />);
+    expect(screen.queryByText(/imported without a category/)).not.toBeInTheDocument();
+    unmount();
+    render(
+      <CompleteStep
+        {...defaultProps}
+        importResult={{ ...defaultProps.importResult!, categoriesNotFitting: 3 }}
+      />,
+    );
+    expect(screen.getByText(/3 transactions were imported without a category/)).toBeInTheDocument();
+  });
+
   it('shows how many bond purchases were imported without a series', () => {
     render(
       <CompleteStep

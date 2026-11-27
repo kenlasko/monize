@@ -351,6 +351,7 @@
     "viewInvestments": "निवेश देखें",
     "viewTransactions": "लेनदेन देखें",
     "importMoreFiles": "अधिक फ़ाइलें आयात करें",
+    "categoriesNotFitting": "{count, plural, one {# transaction was} other {# transactions were}} imported without a category: the category in the file is a Transfer category, which goes only on a transfer.",
     "bondRowsWithoutSeries": "{count, plural, one {# बॉन्ड खरीद बिना सीरीज़ के आयात की गई। सिक्योरिटी के बॉन्ड लॉट में उसकी सीरीज़ चुनें।} other {# बॉन्ड खरीद बिना सीरीज़ के आयात की गईं। सिक्योरिटी के बॉन्ड लॉट में उनकी सीरीज़ चुनें।}}",
     "skipReasonKeptExisting": "इसके बजाय आपका मौजूदा लेन-देन रखा गया",
     "skipReasonPossibleDuplicate": "खाते में पहले से मौजूद किसी लेन-देन जैसा लगता है",

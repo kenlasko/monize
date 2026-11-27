@@ -116,17 +116,25 @@ export class ImportRegularProcessorService {
     const { categoryId, isLoanPaymentTx, transferAccountId } =
       this.resolveTransactionTarget(ctx, qifTx, isSplit);
 
-    // If payee has a default category and no category was resolved from the import, use the payee's default
-    // A stored Transfer category (a payee default or an asset category written
-    // by a pod of the previous release) is skipped: the row is imported
-    // uncategorized (INV-CATEGORY-001).
+    const isTransfer = !isSplit && (qifTx.isTransfer || isLoanPaymentTx);
+
+    // If payee has a default category and no category was resolved from the
+    // import, use the payee's default; never on a transfer, whose category is
+    // the transfer's own (docs/specs/transfer-categories.md section 4.5). The
+    // file's category, or the account's asset category, is a Transfer
+    // category only when the person mapped one: on a category row it is
+    // imported uncategorized and counted, as is a stored Transfer payee
+    // default (written by a pod of the previous release), uncounted
+    // (INV-CATEGORY-001).
     const effectiveCategoryId = isSplit
       ? null
-      : await categoryIdForCategoryRow(
-          ctx.manager,
-          ctx.userId,
-          categoryId || resolvedPayee.defaultCategoryId || null,
-        );
+      : isTransfer
+        ? null
+        : await this.fittingCategory(
+            ctx,
+            categoryId,
+            resolvedPayee.defaultCategoryId,
+          );
 
     // Generate unique createdAt timestamp
     const counter = ctx.dateCounters.get(qifTx.date) || 0;
@@ -139,7 +147,6 @@ export class ImportRegularProcessorService {
     const status = statusFromQifFlags(qifTx);
 
     // Create transaction (use canonical payee name if alias-matched)
-    const isTransfer = !isSplit && (qifTx.isTransfer || isLoanPaymentTx);
     const transaction = ctx.manager.create(Transaction, {
       userId: ctx.userId,
       accountId: ctx.accountId,
@@ -489,6 +496,36 @@ export class ImportRegularProcessorService {
     return true;
   }
 
+  /**
+   * The category a category row or line is written with: the file's (or the
+   * account's asset category), else the payee's default, each only when it
+   * fits a category row. The file's category skipped for being a Transfer
+   * category is counted in `categoriesNotFitting`; a skipped payee default
+   * is not, since the file named none.
+   */
+  private async fittingCategory(
+    ctx: ImportContext,
+    fileCategoryId: string | null,
+    payeeDefaultCategoryId: string | null,
+  ): Promise<string | null> {
+    if (fileCategoryId) {
+      const fitting = await categoryIdForCategoryRow(
+        ctx.manager,
+        ctx.userId,
+        fileCategoryId,
+      );
+      if (fitting) return fitting;
+      ctx.importResult.categoriesNotFitting =
+        (ctx.importResult.categoriesNotFitting ?? 0) + 1;
+      return null;
+    }
+    return categoryIdForCategoryRow(
+      ctx.manager,
+      ctx.userId,
+      payeeDefaultCategoryId,
+    );
+  }
+
   private resolveTransactionTarget(
     ctx: ImportContext,
     qifTx: any,
@@ -570,7 +607,12 @@ export class ImportRegularProcessorService {
             ctx.loanCategoryMap.get(split.category) || null;
           isLoanPayment = true;
         } else {
-          splitCategoryId = ctx.categoryMap.get(split.category) || null;
+          // A category line takes only Income or Expense (INV-CATEGORY-001).
+          splitCategoryId = await this.fittingCategory(
+            ctx,
+            ctx.categoryMap.get(split.category) || null,
+            null,
+          );
         }
       }
 

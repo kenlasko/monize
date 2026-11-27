@@ -351,6 +351,7 @@
     "viewInvestments": "Ver Investimentos",
     "viewTransactions": "Ver Transações",
     "importMoreFiles": "Importar Mais Arquivos",
+    "categoriesNotFitting": "{count, plural, one {# transaction was} other {# transactions were}} imported without a category: the category in the file is a Transfer category, which goes only on a transfer.",
     "bondRowsWithoutSeries": "{count, plural, one {# compra de títulos foi importada sem série. Escolha a série nos lotes de títulos do ativo.} other {# compras de títulos foram importadas sem série. Escolha as séries nos lotes de títulos do ativo.}}",
     "skipReasonKeptExisting": "sua transação existente foi mantida",
     "skipReasonPossibleDuplicate": "parece uma transação que já está na conta",

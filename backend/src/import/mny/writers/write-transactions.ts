@@ -5,6 +5,7 @@ import { SplitKind } from "../../../transactions/entities/split-kind.enum";
 import { FIAT_MONEY_DECIMALS, roundMoney } from "../../../common/round.util";
 import { MappedTransaction } from "../model/mny-import-model";
 import { INSERT_CHUNK_SIZE, chunk } from "./chunk";
+import { fitMnyCategory, type MnyCategoryInput } from "./fit-mny-category";
 import {
   TagLink,
   tagIdsFor,
@@ -28,7 +29,7 @@ import {
 
 export { INSERT_CHUNK_SIZE };
 
-export interface WriteTransactionsInput {
+export interface WriteTransactionsInput extends MnyCategoryInput {
   readonly transactions: readonly MappedTransaction[];
   /** Import-local account key -> Monize account id. */
   readonly accountIdByKey: ReadonlyMap<string, string>;
@@ -110,11 +111,11 @@ export async function writeTransactions(
           transaction.payeeHandle === null
             ? null
             : (input.payeeNameByHandle.get(transaction.payeeHandle) ?? null),
-        categoryId:
-          transaction.categoryHandle === null
-            ? null
-            : (input.categoryIdByHandle.get(transaction.categoryHandle) ??
-              null),
+        categoryId: fitMnyCategory(
+          input,
+          transaction.categoryHandle,
+          transaction.isTransfer ? "transfer" : "category",
+        ),
         description: transaction.description,
         referenceNumber: transaction.referenceNumber,
         isSplit: transaction.splits.length > 0,
@@ -219,10 +220,17 @@ async function writeSplits(
       id: split.id,
       transactionId: transaction.id,
       kind: split.kind,
-      categoryId:
-        split.categoryHandle === null
-          ? null
-          : (input.categoryIdByHandle.get(split.categoryHandle) ?? null),
+      // A transfer line whose account did not import is written as a
+      // category line below, so it is fitted as the line it will be.
+      categoryId: fitMnyCategory(
+        input,
+        split.categoryHandle,
+        split.kind === SplitKind.TRANSFER &&
+          split.transferAccountKey &&
+          input.accountIdByKey.has(split.transferAccountKey)
+          ? "transfer"
+          : "category",
+      ),
       transferAccountId: split.transferAccountKey
         ? (input.accountIdByKey.get(split.transferAccountKey) ?? null)
         : null,

@@ -1,3 +1,4 @@
+import { transferCategoryIdsAmong } from "./writers/fit-mny-category";
 import {
   Inject,
   Injectable,
@@ -561,6 +562,14 @@ export class MnyImportService {
         parsed,
         categories.idByFullName,
       );
+      // The file's categories merged into existing ones a person made
+      // Transfer categories: no category row is written with one
+      // (`fitMnyCategory`, INV-CATEGORY-001).
+      const transferCategoryIds = await transferCategoryIdsAmong(
+        manager,
+        userId,
+        categoryIdByHandle,
+      );
       const payeeIdByHandle = this.payeeIdsByHandle(parsed, payees.idByName);
 
       // Throttled, not per chunk: a chunk report is a whole extra transaction on
@@ -570,6 +579,7 @@ export class MnyImportService {
         transactions: parsed.transactions.transactions,
         accountIdByKey: accounts.idByKey,
         categoryIdByHandle,
+        transferCategoryIds,
         payeeIdByHandle,
         payeeNameByHandle: parsed.payees.nameByHandle,
         tagIdByHandle: tags.idByHandle,
@@ -624,6 +634,7 @@ export class MnyImportService {
         accountIdByKey: accounts.idByKey,
         securityIdByHandle: securities.idByHandle,
         categoryIdByHandle,
+        transferCategoryIds,
         payeeIdByHandle,
         payeeNameByHandle: parsed.payees.nameByHandle,
         symbolByHandle: new Map(
@@ -673,6 +684,7 @@ export class MnyImportService {
         payeeIdByHandle,
         payeeNameByHandle: parsed.payees.nameByHandle,
         categoryIdByHandle,
+        transferCategoryIds,
         securityIdByHandle: securities.idByHandle,
         linkedKeyByKey: new Map(
           parsed.accounts.accounts

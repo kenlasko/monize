@@ -64,6 +64,7 @@ export async function restoreBankSplits(
 ): Promise<void> {
   for (const row of rows) {
     await manager.query(
+      // category-fit-ok: stored category lines; writeSharedFinance fits them
       `INSERT INTO transaction_splits (id, transaction_id, kind, amount, category_id, memo, created_at)
        VALUES ($1,$2,'category',$3,(SELECT id FROM categories WHERE id = $4 AND user_id = $7),$5,$6)`,
       [

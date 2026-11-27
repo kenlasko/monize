@@ -1270,6 +1270,7 @@ export class ActionHistoryService {
             id: splitData.id,
             transactionId: action.entityId,
             kind: splitKindOf(splitData),
+            // category-fit-ok: the undo restores the line as its history recorded it
             categoryId: splitData.categoryId,
             transferAccountId: splitData.transferAccountId || null,
             linkedTransactionId: splitData.linkedTransactionId || null,
@@ -1470,6 +1471,7 @@ export class ActionHistoryService {
 
     // Re-insert the transaction
     await manager.query(
+      // category-fit-ok: the undo restores the row as its history recorded it
       `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, exchange_rate,
         payee_id, payee_name, category_id, description, reference_number, status, is_split,
         parent_transaction_id, is_transfer, linked_transaction_id, reconciled_date, created_at,
@@ -1512,6 +1514,7 @@ export class ActionHistoryService {
       );
       for (const splitData of before.splits) {
         await manager.query(
+          // category-fit-ok: the undo restores the lines as their history recorded them
           `INSERT INTO transaction_splits (id, transaction_id, category_id, transfer_account_id, linked_transaction_id, amount, memo)
            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
           [
@@ -1630,6 +1633,7 @@ export class ActionHistoryService {
     // Re-insert both transactions without linked IDs first
     for (const txData of [fromTransaction, toTransaction]) {
       await manager.query(
+        // category-fit-ok: the undo restores the legs as their history recorded them
         `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, exchange_rate,
           payee_id, payee_name, category_id, description, reference_number, status, is_split,
           is_transfer, linked_transaction_id, created_at, original_amount, original_currency_code,
@@ -2057,6 +2061,7 @@ export class ActionHistoryService {
 
     for (const txData of action.beforeData.transactions) {
       await manager.query(
+        // category-fit-ok: the undo restores the rows as their history recorded them
         `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, exchange_rate,
           payee_id, payee_name, category_id, description, reference_number, status, is_split,
           is_transfer, linked_transaction_id, created_at, original_amount, original_currency_code,
@@ -2158,6 +2163,7 @@ export class ActionHistoryService {
       if (Array.isArray(txData.splits)) {
         for (const split of txData.splits) {
           await manager.query(
+            // category-fit-ok: the undo restores the lines as their history recorded them
             `UPDATE transaction_splits SET category_id = $1
               WHERE id = $2
                 AND EXISTS (

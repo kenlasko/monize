@@ -164,7 +164,13 @@ describe("PayeesService", () => {
 
     categoriesRepository = {
       find: jest.fn().mockResolvedValue([]),
-      findOne: jest.fn(),
+      // The backfill's fit check (`fitCategory`): the user's Expense category
+      // unless a test says otherwise.
+      findOne: jest.fn(async (opts?: { where?: { id?: string } }) =>
+        opts?.where?.id
+          ? { id: opts.where.id, name: opts.where.id, categoryType: "expense" }
+          : null,
+      ),
       createQueryBuilder: jest.fn(() => categoryQueryBuilderMock),
     };
 

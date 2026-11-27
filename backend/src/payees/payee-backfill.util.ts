@@ -81,6 +81,7 @@ export async function backfillPayeeCategory(
   const result = await manager.update(
     Transaction,
     backfillableWhere(userId, payeeId),
+    // category-fit-ok: a payee's default, refused as a Transfer category when set (payees.service.ts)
     { categoryId },
   );
   return result.affected ?? 0;
@@ -116,6 +117,7 @@ export async function applyPayeeCategoryToAll(
   const result = await manager.update(
     Transaction,
     recategorizableWhere(userId, payeeId),
+    // category-fit-ok: a payee's default, refused as a Transfer category when set (payees.service.ts)
     { categoryId },
   );
   return result.affected ?? 0;

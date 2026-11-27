@@ -351,6 +351,7 @@
     "viewInvestments": "Переглянути інвестиції",
     "viewTransactions": "Переглянути транзакції",
     "importMoreFiles": "Імпортувати ще файли",
+    "categoriesNotFitting": "{count, plural, one {# transaction was} other {# transactions were}} imported without a category: the category in the file is a Transfer category, which goes only on a transfer.",
     "bondRowsWithoutSeries": "{count, plural, one {# купівлю облігацій імпортовано без серії. Виберіть серію в лотах облігацій папера.} few {# купівлі облігацій імпортовано без серії. Виберіть серії в лотах облігацій папера.} many {# купівель облігацій імпортовано без серії. Виберіть серії в лотах облігацій папера.} other {# купівлі облігацій імпортовано без серії. Виберіть серії в лотах облігацій папера.}}",
     "skipReasonKeptExisting": "Натомість залишено вашу наявну транзакцію",
     "skipReasonPossibleDuplicate": "Схоже на транзакцію, яка вже є на рахунку",

@@ -1,3 +1,4 @@
+import { categoryIdForCategoryRow } from "../categories/category-row-gate";
 import { statusFromQifFlags } from "./qif-status.util";
 import { Injectable, Logger } from "@nestjs/common";
 import { Account, AccountSubType } from "../accounts/entities/account.entity";
@@ -501,6 +502,16 @@ export class ImportInvestmentProcessorService {
       }
     }
 
+    // A cash-only row is a category row: a Transfer category the file's
+    // category maps to is left off, the row imported uncategorized and counted
+    // (INV-CATEGORY-001). A transfer takes a category of any type.
+    const fittedCategoryId = transferAccountId
+      ? categoryId
+      : await categoryIdForCategoryRow(ctx.manager, ctx.userId, categoryId);
+    if (categoryId && !fittedCategoryId) {
+      ctx.importResult.categoriesNotFitting =
+        (ctx.importResult.categoriesNotFitting ?? 0) + 1;
+    }
     const cashTx = ctx.manager.create(Transaction, {
       userId: ctx.userId,
       accountId: cashAccountId,
@@ -510,7 +521,7 @@ export class ImportInvestmentProcessorService {
       description: qifTx.memo || null,
       status,
       currencyCode: cashCurrencyCode,
-      categoryId,
+      categoryId: fittedCategoryId,
       isTransfer: !!transferAccountId,
     });
     const savedCashTx = await ctx.manager.save(cashTx);

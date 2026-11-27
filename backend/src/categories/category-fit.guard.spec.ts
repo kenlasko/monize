@@ -82,36 +82,6 @@ const SQL_WRITE = new RegExp(
   "i",
 );
 
-/**
- * The writes a later step of PR 3 converts, as `file function`
- * (`docs/future-plans/transfer-categories-tasks.md`). Each step removes its
- * entries; shrink-only, and empty when PR 3 is done.
- */
-const NOT_YET_CONVERTED = new Set<string>([
-  "action-history/action-history.service.ts undoBulkDelete",
-  "action-history/action-history.service.ts undoBulkUpdate",
-  "action-history/action-history.service.ts undoTransactionDelete",
-  "action-history/action-history.service.ts undoTransactionUpdate",
-  "action-history/action-history.service.ts undoTransferDelete",
-  "bank-sync/bank-sync-writer.service.ts applyRulePayeeCategories",
-  "bank-sync/bank-sync-writer.service.ts write",
-  "database/demo-reset.service.ts generateIntradayTransactionsWithinContext",
-  "database/demo-seed.service.ts seedScheduledTransactions",
-  "database/demo-seed.service.ts seedTransactions",
-  "import/import-investment-processor.service.ts processCashTransfer",
-  "import/import-regular-processor.service.ts processSplits",
-  "import/mny/writers/write-bills.ts writeBills",
-  "import/mny/writers/write-investments.ts writeInvestments",
-  "import/mny/writers/write-transactions.ts writeTransactions",
-  "loan-fees/loan-fees.service.ts syncTemplate",
-  "payees/payee-backfill.util.ts applyPayeeCategoryToAll",
-  "payees/payee-backfill.util.ts backfillPayeeCategory",
-  "shared-expenses/shared-bank-splits.ts restoreBankSplits",
-  "shared-expenses/shared-finance-write.ts insertRow",
-  "shared-expenses/shared-finance-write.ts undoSharedPosting",
-  "shared-expenses/shared-finance-write.ts writeSharedFinance",
-]);
-
 export interface CategoryWrite {
   readonly file: string;
   readonly line: number;
@@ -517,21 +487,14 @@ describe("a category write goes through the fit helper (INV-CATEGORY-001)", () =
     if (!/categoryId|category_id/.test(source)) return [];
     return findCategoryWrites(relative(SRC_ROOT, file), source);
   });
-  const key = (w: CategoryWrite) => `${w.file} ${w.fn}`;
-
   it("finds no category write that skips the fit helper", () => {
-    const offenders = writes
-      .filter((w) => !NOT_YET_CONVERTED.has(key(w)))
-      .map((w) => `${w.file}:${w.line} [${w.shape}] in ${w.fn}`);
+    const offenders = writes.map(
+      (w) => `${w.file}:${w.line} [${w.shape}] in ${w.fn}`,
+    );
     // A failure names the write; ask `fitCategory` / `fitCategories`
     // (src/categories/category-fit.ts) in the function that writes, or mark a
     // write that only copies an already-fitted value with the marker above.
     expect(offenders).toEqual([]);
-  });
-
-  it("keeps the not-yet-converted list to writes that still exist", () => {
-    const found = new Set(writes.map(key));
-    expect([...NOT_YET_CONVERTED].filter((k) => !found.has(k))).toEqual([]);
   });
 
   describe("the scan", () => {

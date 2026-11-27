@@ -1002,6 +1002,40 @@ function collectInvestmentCashSources(
  * transfer splits are fully wired before the first INSERT and the writer needs no
  * second pass to discover them.
  */
+/**
+ * One category per transfer (INV-CATEGORY-002,
+ * `docs/specs/transfer-categories.md` section 4.5): both legs of a linked
+ * pair take the file's category. Money records one per row, so when the two
+ * legs name different ones the outgoing leg's is kept; when only one names a
+ * category, both take it. A row that is not one leg of a two-way pair is left
+ * as mapped.
+ */
+export function withOneCategoryPerTransfer(
+  transactions: readonly MappedTransaction[],
+): MappedTransaction[] {
+  const byId = new Map(transactions.map((row) => [row.id, row]));
+  const chosen = new Map<string, number | null>();
+  for (const row of transactions) {
+    if (!row.isTransfer || row.linkedTransactionId === null) continue;
+    const partner = byId.get(row.linkedTransactionId);
+    if (partner === undefined || partner.linkedTransactionId !== row.id) {
+      continue;
+    }
+    const outgoing =
+      row.amount < 0 || (row.amount === partner.amount && row.id < partner.id)
+        ? row
+        : partner;
+    const incoming = outgoing === row ? partner : row;
+    chosen.set(row.id, outgoing.categoryHandle ?? incoming.categoryHandle);
+  }
+  return transactions.map((row) => {
+    const categoryHandle = chosen.get(row.id);
+    return categoryHandle === undefined || categoryHandle === row.categoryHandle
+      ? row
+      : { ...row, categoryHandle };
+  });
+}
+
 export function mapTransactions(
   input: MapTransactionsInput,
 ): MappedTransactions {
@@ -1038,12 +1072,12 @@ export function mapTransactions(
     warnings,
   };
 
-  const transactions = [
+  const transactions = withOneCategoryPerTransfer([
     ...rows
       .filter((row) => isImportablePosting(row, indexes, input))
       .map((row) => mapOne(row, accountKeyOf(row, input) as string, context)),
     ...cashCounterparts.values(),
-  ];
+  ]);
 
   const referencedPayees = new Set(
     transactions

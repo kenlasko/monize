@@ -204,6 +204,11 @@ export async function planSharedFinance(
       );
     if (categories.length !== categoryIds.length)
       sharedError("financeCategory");
+    // Every category a posting writes goes on a category row or line (the
+    // cost row, the private remainder, the FX difference, the kept private
+    // lines), which takes only Income or Expense (INV-CATEGORY-001).
+    if (categories.some((c) => c.category_type === "transfer"))
+      sharedError("financeCategory");
     if (
       personal !== 0n &&
       categories.find((c) => c.id === categoryId)?.category_type !==
