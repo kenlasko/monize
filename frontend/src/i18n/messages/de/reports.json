@@ -448,8 +448,8 @@
     "labelMetric": "Kennzahl",
     "labelDirection": "Richtung",
     "labelCategoryType": "Kategorietyp",
-    "labelTransferMeasure": "Transfer Measure",
-    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
+    "labelTransferMeasure": "Überweisungsmaß",
+    "transferMeasureBudgetVariance": "Ein Überweisungsmaß kann nicht mit einer Budgetabweichung kombiniert werden",
     "checkboxTransfers": "Überweisungen einbeziehen",
     "checkboxFavourites": "Zu Favoriten hinzufügen",
     "sortByPlaceholder": "Standard",
@@ -474,12 +474,12 @@
       "netCashMovement": "Netto-Geldbewegung",
       "unsignedTotal": "Summe der vorzeichenlosen Kategoriebeträge",
       "unsignedAverage": "Durchschnitt der vorzeichenlosen Kategoriebeträge",
-      "transfersOutgoing": "Outgoing transfers",
-      "transfersIncoming": "Incoming transfers",
-      "transfersNet": "Net transfers"
+      "transfersOutgoing": "Ausgehende Überweisungen",
+      "transfersIncoming": "Eingehende Überweisungen",
+      "transfersNet": "Netto-Überweisungen"
     },
-    "unknownKnownPart": "Unknown ({amount} known)",
-    "partialRow": "(partial: a rate is missing)",
+    "unknownKnownPart": "Unbekannt ({amount} bekannt)",
+    "partialRow": "(teilweise: ein Wechselkurs fehlt)",
     "truncatedNotice": "Dieser Bericht hat das Zeilenlimit erreicht und zeigt nur die ältesten Zeilen, daher sind seine Zahlen unvollständig. Grenzen Sie den Zeitraum oder die Filter ein, um alle zu sehen.",
     "toasts": {
       "loadFailed": "Bericht konnte nicht geladen werden",
@@ -1227,8 +1227,8 @@
     "totalTransfers": "Überweisungen gesamt",
     "transferFrom": "Von",
     "transferTo": "Nach",
-    "transferCategoryOut": "{name}, outgoing",
-    "transferCategoryIn": "{name}, incoming",
+    "transferCategoryOut": "{name}, ausgehend",
+    "transferCategoryIn": "{name}, eingehend",
     "overallTotal": "Gesamtsumme",
     "includeCurrentMonth": "Laufenden Monat einbeziehen",
     "includeCurrentYear": "Laufendes Jahr einbeziehen",
@@ -1980,10 +1980,10 @@
       "BUDGET_VARIANCE": "Budgetabweichung"
     },
     "transferMeasure": {
-      "NONE": "None (income and expenses)",
-      "OUTGOING": "Outgoing transfers",
-      "INCOMING": "Incoming transfers",
-      "NET": "Net transfers"
+      "NONE": "Keine (Einnahmen und Ausgaben)",
+      "OUTGOING": "Ausgehende Überweisungen",
+      "INCOMING": "Eingehende Überweisungen",
+      "NET": "Netto-Überweisungen"
     },
     "categoryType": {
       "ALL": "Alle",

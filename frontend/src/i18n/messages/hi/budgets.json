@@ -293,7 +293,7 @@
       "income": "आय",
       "expenses": "व्यय",
       "transfers": "स्थानांतरण / बचत",
-      "transferCategories": "Transfer Categories",
+      "transferCategories": "ट्रांसफर श्रेणियां",
       "transfersIn": "आने वाले ट्रांसफ़र (आय)",
       "trendMedian": "प्रवृत्ति / मध्यम",
       "amount": "राशि"
@@ -760,11 +760,11 @@
     "targetAmount": "प्रति अवधि {amount}"
   },
   "funding": {
-    "actualIncome": "Actual Income",
-    "transferFunding": "Transfer Funding",
-    "totalFunding": "Total Budget Funding",
-    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
-    "thisPeriod": "This period",
-    "parts": "Actual Income {income}, Transfer Funding {transfers}"
+    "actualIncome": "वास्तविक आय",
+    "transferFunding": "ट्रांसफर से वित्तपोषण",
+    "totalFunding": "कुल बजट वित्तपोषण",
+    "hint": "ट्रांसफर से वित्तपोषण आपके अपने खातों से लाया गया पैसा है। यह बजट को वित्तपोषित करता है, लेकिन आपकी रिपोर्ट में आय नहीं है।",
+    "thisPeriod": "यह अवधि",
+    "parts": "वास्तविक आय {income}, ट्रांसफर से वित्तपोषण {transfers}"
   }
 }

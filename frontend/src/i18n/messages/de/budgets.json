@@ -293,7 +293,7 @@
       "income": "Einnahmen",
       "expenses": "Ausgaben",
       "transfers": "Überweisungen / Ersparnisse",
-      "transferCategories": "Transfer Categories",
+      "transferCategories": "Überweisungskategorien",
       "transfersIn": "Eingehende Überweisungen (Einkommen)",
       "trendMedian": "Trend / Median",
       "amount": "Betrag"
@@ -760,11 +760,11 @@
     "targetAmount": "{amount} pro Periode"
   },
   "funding": {
-    "actualIncome": "Actual Income",
-    "transferFunding": "Transfer Funding",
-    "totalFunding": "Total Budget Funding",
-    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
-    "thisPeriod": "This period",
-    "parts": "Actual Income {income}, Transfer Funding {transfers}"
+    "actualIncome": "Tatsächliche Einnahmen",
+    "transferFunding": "Überweisungsfinanzierung",
+    "totalFunding": "Gesamtfinanzierung des Budgets",
+    "hint": "Die Überweisungsfinanzierung ist Geld, das von Ihren eigenen Konten hereingeholt wurde. Sie finanziert das Budget, ist aber in Ihren Berichten keine Einnahme.",
+    "thisPeriod": "Dieser Zeitraum",
+    "parts": "Tatsächliche Einnahmen {income}, Überweisungsfinanzierung {transfers}"
   }
 }

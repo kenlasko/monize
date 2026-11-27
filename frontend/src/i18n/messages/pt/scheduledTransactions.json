@@ -270,7 +270,7 @@
     "toAccountPlaceholder": "Selecionar conta de destino...",
     "transferAmountLabel": "Montante da Transferência",
     "transferCategoryLabel": "Categoria (opcional)",
-    "transferCategoryNote": "Opcional: categorize esta transferência (por exemplo, uma contribuição de investimento recorrente) para que apareça no resumo mensal por categoria. Não conta como receita nem despesa.",
+    "transferCategoryNote": "Opcional: categorize esta transferência (p. ex., uma contribuição de investimento recorrente). Uma categoria de transferência lista-a nessa categoria na discriminação mensal por categoria. Não conta como receita nem como despesa.",
     "actionLabel": "Ação",
     "securityLabel": "Título",
     "securityPlaceholder": "Selecionar título...",

@@ -368,6 +368,15 @@
         "vacationPay": "有給休暇手当"
       }
     },
-    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
+    "transfers": {
+      "name": "振替",
+      "sub": {
+        "betweenOwnAccounts": "自分の口座間",
+        "cashWithdrawals": "現金引き出し",
+        "creditCardPayments": "クレジットカードの支払い",
+        "investmentContributions": "投資の積立",
+        "savingsContributions": "貯蓄の積立"
+      }
+    }
   }
 }

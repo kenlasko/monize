@@ -233,7 +233,7 @@
       "directionFrom": "Thu: tiền đến từ tài khoản khác",
       "clearCategory": "Xóa danh mục",
       "clearCategoryHelp": "Giao dịch chuyển khoản không có danh mục. Tắt để giữ danh mục mà giao dịch đã có.",
-      "convertCategory": "Category for the transfer (optional)",
+      "convertCategory": "Danh mục cho khoản chuyển (tùy chọn)",
       "splitPayee": "Người nhận của giao dịch (tùy chọn)",
       "splitHint": "Mỗi phần lấy số tiền từ một giá trị bắt được trong các mẫu ở trên, hoặc lấy phần còn lại. Các phần phải cộng lại bằng số tiền của giao dịch, nếu không quy tắc sẽ bỏ qua giao dịch đó.",
       "splitNoCaptures": "Chưa có giá trị bắt nào được định nghĩa. Hãy đặt một tên trong dấu ngoặc nhọn ở một mẫu phía trên, ví dụ PRINCIPAL: {example}, để dùng làm số tiền ở đây.",
@@ -459,7 +459,7 @@
     },
     "skipReasons": {
       "reconciled_locked": "đã đối chiếu và bị khóa",
-      "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
+      "transfer_category_on_category_row": "đây không phải là chuyển khoản, và danh mục chuyển khoản chỉ dùng được cho chuyển khoản",
       "split_category": "đã được chia nhỏ nên danh mục thuộc về các phần chia",
       "cross_owner_transfer_payee": "là chuyển khoản cho chủ sở hữu khác, người nhận của nó quy tắc này không được thay đổi",
       "empty_render": "văn bản của một hành động bị trống đối với nó",

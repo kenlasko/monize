@@ -18,8 +18,8 @@
     "summaryExpense": "Категорії витрат",
     "summaryTopLevel": "Верхнього рівня",
     "eyebrow": "План категорій",
-    "filterTransfers": "Transfers ({count})",
-    "summaryTransfer": "Transfer Categories"
+    "filterTransfers": "Перекази ({count})",
+    "summaryTransfer": "Категорії переказів"
   },
   "empty": {
     "heading": "Ще немає категорій",
@@ -73,7 +73,7 @@
     "descriptionLabel": "Опис (необов'язково)",
     "submitCreate": "Створити категорію",
     "submitUpdate": "Оновити категорію",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "Переказ"
   },
   "list": {
     "emptyHeading": "Категорій не знайдено",
@@ -88,7 +88,7 @@
     "systemBadge": "(Системна)",
     "inheritedColorTitle": "Успадкований від батьківської",
     "viewTransactionsTitle": "Переглянути транзакції в цій категорії",
-    "badgeTransfer": "Transfer"
+    "badgeTransfer": "Переказ"
   },
   "deleteDialog": {
     "title": "Видалити \"{name}\"",

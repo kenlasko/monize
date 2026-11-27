@@ -50,8 +50,8 @@
     "collapseAria": "Ocultar información de la categoría",
     "show": "Mostrar información de la categoría",
     "amountUnavailable": "Sin tipo",
-    "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "transfer": "Transferencia",
+    "totalTransferred": "Total transferido"
   },
   "accountWidget": {
     "currentBalance": "Saldo actual",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "El otro lado de esta transferencia está en una cuenta que ya no se comparte contigo. Su importe, fecha y cuentas están bloqueados, pero aún puedes editar los detalles de esta transacción.",
-    "transferCategoryNote": "Opcional. La transferencia seguirá sin contar como ingreso o gasto, pero esta categoría permite que aparezca en el desglose mensual por categorías (p. ej., aportaciones mensuales de inversión).",
+    "transferCategoryNote": "Opcional. La transferencia seguirá sin contar como ingreso ni como gasto. Una categoría de transferencia la muestra bajo esa categoría en el desglose mensual por categorías (p. ej., aportaciones mensuales de inversión); una categoría de ingresos o de gastos sigue contando como antes.",
     "amountReceivedNote": "Cantidad recibida después de la conversión de moneda",
     "splitTransaction": "Desglosar transacción",
     "splitDisabledDuringTour": "No disponible durante el recorrido guiado",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "Desglose {number}",
     "accountForSplit": "Cuenta de la división {number}",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "Categoría de la división {number}",
+    "transferCategoryPlaceholder": "Categoría (opcional)",
     "columns": {
       "type": "Tipo",
       "categoryAccount": "Categoría / Cuenta",

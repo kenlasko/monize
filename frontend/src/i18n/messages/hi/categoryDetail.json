@@ -17,7 +17,7 @@
     "switchPlaceholder": "श्रेणियाँ छाँटें...",
     "switchNoMatches": "कोई श्रेणी मेल नहीं खाती",
     "since": "{date} से श्रेणी",
-    "transferPill": "Transfer"
+    "transferPill": "ट्रांसफर"
   },
   "summary": {
     "spentThisYear": "इस वर्ष खर्च",
@@ -31,9 +31,9 @@
     "lastTransaction": "अंतिम लेन-देन",
     "convertedNote": "{currency} में परिवर्तित",
     "partialRatesNote": "कुछ महीनों के लिए विनिमय दर नहीं है",
-    "outgoingThisYear": "Outgoing This Year",
-    "incomingThisYear": "Incoming This Year",
-    "netThisYear": "Net This Year"
+    "outgoingThisYear": "इस वर्ष जाने वाले",
+    "incomingThisYear": "इस वर्ष आने वाले",
+    "netThisYear": "इस वर्ष शुद्ध"
   },
   "topPayees": {
     "title": "शीर्ष भुगतानकर्ता",
@@ -82,7 +82,7 @@
     "defaultFor": "इनकी डिफ़ॉल्ट श्रेणी",
     "defaultForMore": "+{count} और",
     "description": "विवरण",
-    "transfer": "Transfer"
+    "transfer": "ट्रांसफर"
   },
   "tabs": {
     "ariaLabel": "श्रेणी के अनुभाग",

@@ -233,7 +233,7 @@
       "directionFrom": "Revenu : l'argent vient d'un autre compte",
       "clearCategory": "Retirer la catégorie",
       "clearCategoryHelp": "Un virement n'a pas de catégorie. Désactivez pour conserver la catégorie déjà présente sur la transaction.",
-      "convertCategory": "Category for the transfer (optional)",
+      "convertCategory": "Catégorie du virement (facultatif)",
       "splitPayee": "Bénéficiaire de la transaction (facultatif)",
       "splitHint": "Chaque partie prend son montant dans une capture des motifs ci-dessus, ou prend le reste. Les parties doivent totaliser le montant de la transaction, sinon la règle la laisse telle quelle.",
       "splitNoCaptures": "Aucune capture n'est encore définie. Placez un nom entre accolades dans un motif ci-dessus, par exemple PRINCIPAL: {example}, pour l'utiliser ici comme montant.",
@@ -459,7 +459,7 @@
     },
     "skipReasons": {
       "reconciled_locked": "elle est rapprochée et verrouillée",
-      "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
+      "transfer_category_on_category_row": "ce n'est pas un virement, et une catégorie de virement ne peut s'appliquer qu'à un virement",
       "split_category": "elle est ventilée, donc la catégorie appartient aux lignes de ventilation",
       "cross_owner_transfer_payee": "c’est un virement vers un autre propriétaire, dont la règle ne peut pas modifier le bénéficiaire",
       "empty_render": "le texte d'une action est resté vide pour elle",

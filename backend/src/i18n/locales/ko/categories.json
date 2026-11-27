@@ -368,6 +368,15 @@
         "vacationPay": "휴가 수당"
       }
     },
-    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
+    "transfers": {
+      "name": "이체",
+      "sub": {
+        "betweenOwnAccounts": "내 계좌 간",
+        "cashWithdrawals": "현금 인출",
+        "creditCardPayments": "신용카드 결제",
+        "investmentContributions": "투자 납입",
+        "savingsContributions": "저축 납입"
+      }
+    }
   }
 }

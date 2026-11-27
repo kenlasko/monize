@@ -233,7 +233,7 @@
       "directionFrom": "収入: お金が別の口座から入ります",
       "clearCategory": "カテゴリを消去",
       "clearCategoryHelp": "振替にはカテゴリがありません。取引がすでに持っているカテゴリを残す場合はオフにします。",
-      "convertCategory": "Category for the transfer (optional)",
+      "convertCategory": "振替のカテゴリ（任意）",
       "splitPayee": "取引の支払先(任意)",
       "splitHint": "各パーツの金額は、上のパターンのキャプチャから取るか、残りになります。パーツの合計が取引の金額と一致しない場合、ルールはその取引を変更しません。",
       "splitNoCaptures": "キャプチャがまだ定義されていません。上のパターンで名前を波括弧で囲む(例: PRINCIPAL: {example})と、ここで金額として使えます。",
@@ -459,7 +459,7 @@
     },
     "skipReasons": {
       "reconciled_locked": "照合済みでロックされています",
-      "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
+      "transfer_category_on_category_row": "振替ではなく、振替カテゴリは振替にのみ使用できます",
       "split_category": "分割されているため、カテゴリは分割行に属します",
       "cross_owner_transfer_payee": "他の所有者への振替で、その支払先はこのルールでは変更できません",
       "empty_render": "アクションのテキストが空になったため",

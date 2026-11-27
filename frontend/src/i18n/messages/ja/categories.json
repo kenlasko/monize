@@ -18,8 +18,8 @@
     "summaryExpense": "支出カテゴリ",
     "summaryTopLevel": "トップレベル",
     "eyebrow": "カテゴリ一覧",
-    "filterTransfers": "Transfers ({count})",
-    "summaryTransfer": "Transfer Categories"
+    "filterTransfers": "振替（{count}）",
+    "summaryTransfer": "振替カテゴリ"
   },
   "empty": {
     "heading": "カテゴリがまだありません",
@@ -73,7 +73,7 @@
     "descriptionLabel": "説明（任意）",
     "submitCreate": "カテゴリを作成",
     "submitUpdate": "カテゴリを更新",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "振替"
   },
   "list": {
     "emptyHeading": "カテゴリが見つかりません",
@@ -88,7 +88,7 @@
     "systemBadge": "（システム）",
     "inheritedColorTitle": "親から継承",
     "viewTransactionsTitle": "このカテゴリの取引を表示",
-    "badgeTransfer": "Transfer"
+    "badgeTransfer": "振替"
   },
   "deleteDialog": {
     "title": "「{name}」を削除",

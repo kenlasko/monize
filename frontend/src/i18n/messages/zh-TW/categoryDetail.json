@@ -17,7 +17,7 @@
     "switchPlaceholder": "篩選分類...",
     "switchNoMatches": "沒有符合的分類",
     "since": "自 {date} 起的分類",
-    "transferPill": "Transfer"
+    "transferPill": "轉帳"
   },
   "summary": {
     "spentThisYear": "今年支出",
@@ -31,9 +31,9 @@
     "lastTransaction": "最近交易",
     "convertedNote": "已換算為 {currency}",
     "partialRatesNote": "部分月份沒有匯率",
-    "outgoingThisYear": "Outgoing This Year",
-    "incomingThisYear": "Incoming This Year",
-    "netThisYear": "Net This Year"
+    "outgoingThisYear": "今年轉出",
+    "incomingThisYear": "今年轉入",
+    "netThisYear": "今年淨額"
   },
   "topPayees": {
     "title": "主要收款人",
@@ -82,7 +82,7 @@
     "defaultFor": "作為以下收款人的預設分類",
     "defaultForMore": "還有 {count} 個",
     "description": "說明",
-    "transfer": "Transfer"
+    "transfer": "轉帳"
   },
   "tabs": {
     "ariaLabel": "分類各區塊",

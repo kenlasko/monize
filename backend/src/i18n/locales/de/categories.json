@@ -368,6 +368,15 @@
         "vacationPay": "Urlaubsgeld"
       }
     },
-    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
+    "transfers": {
+      "name": "Überweisungen",
+      "sub": {
+        "betweenOwnAccounts": "Zwischen eigenen Konten",
+        "cashWithdrawals": "Bargeldabhebungen",
+        "creditCardPayments": "Kreditkartenzahlungen",
+        "investmentContributions": "Anlagebeiträge",
+        "savingsContributions": "Sparbeiträge"
+      }
+    }
   }
 }

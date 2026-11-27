@@ -368,6 +368,15 @@
         "vacationPay": "Pago de vacaciones"
       }
     },
-    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
+    "transfers": {
+      "name": "Transferencias",
+      "sub": {
+        "betweenOwnAccounts": "Entre cuentas propias",
+        "cashWithdrawals": "Retiradas de efectivo",
+        "creditCardPayments": "Pagos de tarjeta de crédito",
+        "investmentContributions": "Aportaciones de inversión",
+        "savingsContributions": "Aportaciones de ahorro"
+      }
+    }
   }
 }

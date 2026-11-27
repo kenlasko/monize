@@ -448,8 +448,8 @@
     "labelMetric": "Метрика",
     "labelDirection": "Напрямок",
     "labelCategoryType": "Тип категорії",
-    "labelTransferMeasure": "Transfer Measure",
-    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
+    "labelTransferMeasure": "Показник переказів",
+    "transferMeasureBudgetVariance": "Показник переказів не можна поєднувати з відхиленням від бюджету",
     "checkboxTransfers": "Включати перекази",
     "checkboxFavourites": "Додати до вибраного",
     "sortByPlaceholder": "За замовчуванням",
@@ -474,12 +474,12 @@
       "netCashMovement": "Чистий рух коштів",
       "unsignedTotal": "Підсумок сум за категоріями без урахування знака",
       "unsignedAverage": "Середнє сум за категоріями без урахування знака",
-      "transfersOutgoing": "Outgoing transfers",
-      "transfersIncoming": "Incoming transfers",
-      "transfersNet": "Net transfers"
+      "transfersOutgoing": "Вихідні перекази",
+      "transfersIncoming": "Вхідні перекази",
+      "transfersNet": "Чисті перекази"
     },
-    "unknownKnownPart": "Unknown ({amount} known)",
-    "partialRow": "(partial: a rate is missing)",
+    "unknownKnownPart": "Невідомо (відомо {amount})",
+    "partialRow": "(частково: бракує курсу обміну)",
     "truncatedNotice": "Звіт досяг обмеження кількості рядків і показує лише найстаріші рядки, тому його підсумки неповні. Звузьте період або фільтри, щоб побачити все.",
     "toasts": {
       "loadFailed": "Не вдалося завантажити звіт",
@@ -1227,8 +1227,8 @@
     "totalTransfers": "Усього переказів",
     "transferFrom": "Від",
     "transferTo": "До",
-    "transferCategoryOut": "{name}, outgoing",
-    "transferCategoryIn": "{name}, incoming",
+    "transferCategoryOut": "{name}, вихідні",
+    "transferCategoryIn": "{name}, вхідні",
     "overallTotal": "Загальний підсумок",
     "includeCurrentMonth": "Включати поточний місяць",
     "includeCurrentYear": "Включати поточний рік",
@@ -1980,10 +1980,10 @@
       "BUDGET_VARIANCE": "Відхилення від бюджету"
     },
     "transferMeasure": {
-      "NONE": "None (income and expenses)",
-      "OUTGOING": "Outgoing transfers",
-      "INCOMING": "Incoming transfers",
-      "NET": "Net transfers"
+      "NONE": "Немає (доходи та витрати)",
+      "OUTGOING": "Вихідні перекази",
+      "INCOMING": "Вхідні перекази",
+      "NET": "Чисті перекази"
     },
     "categoryType": {
       "ALL": "Усі",

@@ -368,6 +368,15 @@
         "vacationPay": "Indennità di ferie"
       }
     },
-    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
+    "transfers": {
+      "name": "Trasferimenti",
+      "sub": {
+        "betweenOwnAccounts": "Tra conti propri",
+        "cashWithdrawals": "Prelievi di contanti",
+        "creditCardPayments": "Pagamenti con carta di credito",
+        "investmentContributions": "Contributi di investimento",
+        "savingsContributions": "Contributi di risparmio"
+      }
+    }
   }
 }

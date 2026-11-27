@@ -368,6 +368,15 @@
         "vacationPay": "Uang Cuti"
       }
     },
-    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
+    "transfers": {
+      "name": "Transfer",
+      "sub": {
+        "betweenOwnAccounts": "Antar rekening sendiri",
+        "cashWithdrawals": "Penarikan tunai",
+        "creditCardPayments": "Pembayaran kartu kredit",
+        "investmentContributions": "Kontribusi investasi",
+        "savingsContributions": "Kontribusi tabungan"
+      }
+    }
   }
 }

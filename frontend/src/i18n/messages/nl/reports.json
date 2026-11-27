@@ -448,8 +448,8 @@
     "labelMetric": "Metriek",
     "labelDirection": "Richting",
     "labelCategoryType": "Categorietype",
-    "labelTransferMeasure": "Transfer Measure",
-    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
+    "labelTransferMeasure": "Overboekingsmaat",
+    "transferMeasureBudgetVariance": "Een overboekingsmaat kan niet worden gecombineerd met een budgetafwijking",
     "checkboxTransfers": "Overboekingen opnemen",
     "checkboxFavourites": "Toevoegen aan favorieten",
     "sortByPlaceholder": "Standaard",
@@ -474,12 +474,12 @@
       "netCashMovement": "Netto kasbeweging",
       "unsignedTotal": "Totaal van categoriebedragen zonder teken",
       "unsignedAverage": "Gemiddelde van categoriebedragen zonder teken",
-      "transfersOutgoing": "Outgoing transfers",
-      "transfersIncoming": "Incoming transfers",
-      "transfersNet": "Net transfers"
+      "transfersOutgoing": "Uitgaande overboekingen",
+      "transfersIncoming": "Inkomende overboekingen",
+      "transfersNet": "Netto overboekingen"
     },
-    "unknownKnownPart": "Unknown ({amount} known)",
-    "partialRow": "(partial: a rate is missing)",
+    "unknownKnownPart": "Onbekend ({amount} bekend)",
+    "partialRow": "(gedeeltelijk: een wisselkoers ontbreekt)",
     "truncatedNotice": "Dit rapport heeft de rijlimiet bereikt en toont alleen de oudste rijen, dus de cijfers zijn onvolledig. Beperk de periode of de filters om alles te zien.",
     "toasts": {
       "loadFailed": "Rapport kon niet worden geladen",
@@ -1227,8 +1227,8 @@
     "totalTransfers": "Totaal overboekingen",
     "transferFrom": "Van",
     "transferTo": "Naar",
-    "transferCategoryOut": "{name}, outgoing",
-    "transferCategoryIn": "{name}, incoming",
+    "transferCategoryOut": "{name}, uitgaand",
+    "transferCategoryIn": "{name}, inkomend",
     "overallTotal": "Totaal-generaal",
     "includeCurrentMonth": "Huidige maand opnemen",
     "includeCurrentYear": "Huidig jaar opnemen",
@@ -1980,10 +1980,10 @@
       "BUDGET_VARIANCE": "Budgetafwijking"
     },
     "transferMeasure": {
-      "NONE": "None (income and expenses)",
-      "OUTGOING": "Outgoing transfers",
-      "INCOMING": "Incoming transfers",
-      "NET": "Net transfers"
+      "NONE": "Geen (inkomsten en uitgaven)",
+      "OUTGOING": "Uitgaande overboekingen",
+      "INCOMING": "Inkomende overboekingen",
+      "NET": "Netto overboekingen"
     },
     "categoryType": {
       "ALL": "Alle",

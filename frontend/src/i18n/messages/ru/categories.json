@@ -18,8 +18,8 @@
     "summaryExpense": "Категории расходов",
     "summaryTopLevel": "Верхнего уровня",
     "eyebrow": "План категорий",
-    "filterTransfers": "Transfers ({count})",
-    "summaryTransfer": "Transfer Categories"
+    "filterTransfers": "Переводы ({count})",
+    "summaryTransfer": "Категории переводов"
   },
   "empty": {
     "heading": "Категорий ещё нет",
@@ -73,7 +73,7 @@
     "descriptionLabel": "Описание (необязательно)",
     "submitCreate": "Создать категорию",
     "submitUpdate": "Обновить категорию",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "Перевод"
   },
   "list": {
     "emptyHeading": "Категории не найдены",
@@ -88,7 +88,7 @@
     "systemBadge": "(Система)",
     "inheritedColorTitle": "Унаследован от родителя",
     "viewTransactionsTitle": "Просмотреть проводки в этой категории",
-    "badgeTransfer": "Transfer"
+    "badgeTransfer": "Перевод"
   },
   "deleteDialog": {
     "title": "Удалить «{name}»",

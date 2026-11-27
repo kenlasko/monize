@@ -270,7 +270,7 @@
     "toAccountPlaceholder": "選擇目的科目...",
     "transferAmountLabel": "轉帳金額",
     "transferCategoryLabel": "類別（選填）",
-    "transferCategoryNote": "選填：為此轉帳設定類別（例如定期投資繳款），使其顯示在每月類別明細中。它不會計為收入或支出。",
+    "transferCategoryNote": "選填：為這筆轉帳分類（例如定期投資提撥）。選擇轉帳類別後，它會顯示在每月類別明細中該類別之下。它不計為收入或支出。",
     "actionLabel": "操作",
     "securityLabel": "證券",
     "securityPlaceholder": "選擇證券...",

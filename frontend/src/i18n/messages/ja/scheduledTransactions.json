@@ -270,7 +270,7 @@
     "toAccountPlaceholder": "振替先口座を選択...",
     "transferAmountLabel": "振替金額",
     "transferCategoryLabel": "カテゴリ（任意）",
-    "transferCategoryNote": "任意: この振替を分類すると（例: 定期的な投資拠出）、月別カテゴリ内訳に表示されます。収入や支出としては計上されません。",
+    "transferCategoryNote": "任意：この振替を分類します（例：定期的な投資の積立）。振替カテゴリを選ぶと、月別カテゴリ内訳のそのカテゴリの下に表示されます。収入にも支出にもカウントされません。",
     "actionLabel": "アクション",
     "securityLabel": "証券",
     "securityPlaceholder": "証券を選択...",

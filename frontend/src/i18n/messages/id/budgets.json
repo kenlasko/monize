@@ -293,7 +293,7 @@
       "income": "Pendapatan",
       "expenses": "Pengeluaran",
       "transfers": "Transfer / Tabungan",
-      "transferCategories": "Transfer Categories",
+      "transferCategories": "Kategori transfer",
       "transfersIn": "Transfer masuk (pendapatan)",
       "trendMedian": "Tren / Median",
       "amount": "Jumlah"
@@ -760,11 +760,11 @@
     "targetAmount": "{amount} per periode"
   },
   "funding": {
-    "actualIncome": "Actual Income",
-    "transferFunding": "Transfer Funding",
-    "totalFunding": "Total Budget Funding",
-    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
-    "thisPeriod": "This period",
-    "parts": "Actual Income {income}, Transfer Funding {transfers}"
+    "actualIncome": "Pemasukan aktual",
+    "transferFunding": "Pendanaan transfer",
+    "totalFunding": "Total pendanaan anggaran",
+    "hint": "Pendanaan transfer adalah uang yang dipindahkan dari rekening Anda sendiri. Ini mendanai anggaran tetapi bukan pemasukan dalam laporan Anda.",
+    "thisPeriod": "Periode ini",
+    "parts": "Pemasukan aktual {income}, pendanaan transfer {transfers}"
   }
 }

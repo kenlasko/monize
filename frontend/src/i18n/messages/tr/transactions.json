@@ -51,7 +51,7 @@
     "show": "Kategori bilgisini göster",
     "amountUnavailable": "Kur yok",
     "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "totalTransferred": "Toplam aktarılan"
   },
   "accountWidget": {
     "currentBalance": "Mevcut Bakiye",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "Bu transferin diğer tarafı artık sizinle paylaşılmayan bir hesapta. Tutarı, tarihi ve hesapları kilitli, ancak bu işlemin kendi ayrıntılarını yine de düzenleyebilirsiniz.",
-    "transferCategoryNote": "İsteğe bağlı. Transfer yine de gelir veya gider olarak sayılmaz, ancak bu kategori onun aylık kategori dökümünde görünmesini sağlar (ör. aylık yatırım katkıları).",
+    "transferCategoryNote": "İsteğe bağlı. Transfer yine gelir veya gider sayılmaz. Bir transfer kategorisi, transferi aylık kategori dökümünde o kategorinin altında listeler (ör. aylık yatırım katkıları); gelir veya gider kategorisi eskisi gibi sayılmaya devam eder.",
     "amountReceivedNote": "Para birimi dönüşümünden sonra alınan tutar",
     "splitTransaction": "İşlemi Böl",
     "splitDisabledDuringTour": "Rehberli tur sırasında kullanılamaz",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "Bölüm {number}",
     "accountForSplit": "Bölüm {number} hesabı",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "{number}. bölünme için kategori",
+    "transferCategoryPlaceholder": "Kategori (isteğe bağlı)",
     "columns": {
       "type": "Tür",
       "categoryAccount": "Kategori / Hesap",

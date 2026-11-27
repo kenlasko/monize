@@ -293,7 +293,7 @@
       "income": "Thu nhập",
       "expenses": "Chi tiêu",
       "transfers": "Chuyển khoản / Tiết kiệm",
-      "transferCategories": "Transfer Categories",
+      "transferCategories": "Danh mục chuyển khoản",
       "transfersIn": "Chuyển khoản vào (thu nhập)",
       "trendMedian": "Xu hướng / Trung vị",
       "amount": "Số tiền"
@@ -760,11 +760,11 @@
     "targetAmount": "{amount} mỗi kỳ"
   },
   "funding": {
-    "actualIncome": "Actual Income",
-    "transferFunding": "Transfer Funding",
-    "totalFunding": "Total Budget Funding",
-    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
-    "thisPeriod": "This period",
-    "parts": "Actual Income {income}, Transfer Funding {transfers}"
+    "actualIncome": "Thu nhập thực tế",
+    "transferFunding": "Nguồn vốn từ chuyển khoản",
+    "totalFunding": "Tổng nguồn vốn ngân sách",
+    "hint": "Nguồn vốn từ chuyển khoản là tiền được chuyển vào từ các tài khoản của chính bạn. Nó cấp vốn cho ngân sách nhưng không phải là thu nhập trong báo cáo của bạn.",
+    "thisPeriod": "Kỳ này",
+    "parts": "Thu nhập thực tế {income}, nguồn vốn từ chuyển khoản {transfers}"
   }
 }

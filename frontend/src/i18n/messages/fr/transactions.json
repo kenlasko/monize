@@ -50,8 +50,8 @@
     "collapseAria": "Masquer les informations de la catégorie",
     "show": "Afficher les informations de la catégorie",
     "amountUnavailable": "Pas de taux",
-    "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "transfer": "Virement",
+    "totalTransferred": "Total viré"
   },
   "accountWidget": {
     "currentBalance": "Solde actuel",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "L'autre côté de ce virement se trouve dans un compte qui n'est plus partagé avec vous. Son montant, sa date et ses comptes sont verrouillés, mais vous pouvez toujours modifier les détails de cette transaction.",
-    "transferCategoryNote": "Facultatif. Le transfert ne comptera toujours pas comme un revenu ni une dépense, mais cette catégorie lui permet d'apparaître dans la répartition mensuelle par catégorie (par exemple des versements d'investissement mensuels).",
+    "transferCategoryNote": "Facultatif. Le virement ne comptera toujours ni comme un revenu ni comme une dépense. Une catégorie de virement le liste sous cette catégorie dans la ventilation mensuelle par catégorie (par exemple des contributions d'investissement mensuelles) ; une catégorie de revenus ou de dépenses compte comme avant.",
     "amountReceivedNote": "Montant reçu après conversion de devise",
     "splitTransaction": "Répartir la transaction",
     "splitDisabledDuringTour": "Indisponible pendant la visite guidée",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "Répartition {number}",
     "accountForSplit": "Compte de la ventilation {number}",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "Catégorie de la ventilation {number}",
+    "transferCategoryPlaceholder": "Catégorie (facultatif)",
     "columns": {
       "type": "Type",
       "categoryAccount": "Catégorie / Compte",

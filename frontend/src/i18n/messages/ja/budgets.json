@@ -293,7 +293,7 @@
       "income": "収入",
       "expenses": "支出",
       "transfers": "振替 / 貯蓄",
-      "transferCategories": "Transfer Categories",
+      "transferCategories": "振替カテゴリ",
       "transfersIn": "入金振替（収入）",
       "trendMedian": "トレンド / 中央値",
       "amount": "金額"
@@ -760,11 +760,11 @@
     "targetAmount": "1期間あたり {amount}"
   },
   "funding": {
-    "actualIncome": "Actual Income",
-    "transferFunding": "Transfer Funding",
-    "totalFunding": "Total Budget Funding",
-    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
-    "thisPeriod": "This period",
-    "parts": "Actual Income {income}, Transfer Funding {transfers}"
+    "actualIncome": "実際の収入",
+    "transferFunding": "振替による資金",
+    "totalFunding": "予算の資金合計",
+    "hint": "振替による資金は、ご自身の口座から移された資金です。予算の資金にはなりますが、レポート上は収入ではありません。",
+    "thisPeriod": "今期",
+    "parts": "実際の収入 {income}、振替による資金 {transfers}"
   }
 }

@@ -293,7 +293,7 @@
       "income": "Revenus",
       "expenses": "Dépenses",
       "transfers": "Virements / Épargne",
-      "transferCategories": "Transfer Categories",
+      "transferCategories": "Catégories de virement",
       "transfersIn": "Virements reçus (revenu)",
       "trendMedian": "Tendance / Médiane",
       "amount": "Montant"
@@ -760,11 +760,11 @@
     "targetAmount": "{amount} par période"
   },
   "funding": {
-    "actualIncome": "Actual Income",
-    "transferFunding": "Transfer Funding",
-    "totalFunding": "Total Budget Funding",
-    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
-    "thisPeriod": "This period",
-    "parts": "Actual Income {income}, Transfer Funding {transfers}"
+    "actualIncome": "Revenus réels",
+    "transferFunding": "Financement par virements",
+    "totalFunding": "Financement total du budget",
+    "hint": "Le financement par virements est de l'argent déplacé depuis vos propres comptes. Il finance le budget mais n'est pas un revenu dans vos rapports.",
+    "thisPeriod": "Cette période",
+    "parts": "Revenus réels {income}, financement par virements {transfers}"
   }
 }

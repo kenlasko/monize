@@ -17,7 +17,7 @@
     "switchPlaceholder": "Filtruj kategorie...",
     "switchNoMatches": "Brak dopasowanych kategorii",
     "since": "Kategoria od {date}",
-    "transferPill": "Transfer"
+    "transferPill": "Przelew"
   },
   "summary": {
     "spentThisYear": "Wydatki w tym roku",
@@ -31,9 +31,9 @@
     "lastTransaction": "Ostatnia transakcja",
     "convertedNote": "Przeliczono na {currency}",
     "partialRatesNote": "Dla niektórych miesięcy brak kursu wymiany",
-    "outgoingThisYear": "Outgoing This Year",
-    "incomingThisYear": "Incoming This Year",
-    "netThisYear": "Net This Year"
+    "outgoingThisYear": "Wychodzące w tym roku",
+    "incomingThisYear": "Przychodzące w tym roku",
+    "netThisYear": "Netto w tym roku"
   },
   "topPayees": {
     "title": "Najczęstsi odbiorcy",
@@ -82,7 +82,7 @@
     "defaultFor": "Domyślna kategoria dla",
     "defaultForMore": "+{count} więcej",
     "description": "Opis",
-    "transfer": "Transfer"
+    "transfer": "Przelew"
   },
   "tabs": {
     "ariaLabel": "Sekcje kategorii",

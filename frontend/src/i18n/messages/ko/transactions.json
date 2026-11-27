@@ -50,8 +50,8 @@
     "collapseAria": "카테고리 정보 숨기기",
     "show": "카테고리 정보 표시",
     "amountUnavailable": "환율 없음",
-    "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "transfer": "이체",
+    "totalTransferred": "총 이체 금액"
   },
   "accountWidget": {
     "currentBalance": "현재 잔액",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "이 이체의 상대편이 더 이상 공유되지 않는 계좌에 있습니다. 금액, 날짜, 계좌는 잠겨 있지만 이 거래의 세부 정보는 계속 편집할 수 있습니다.",
-    "transferCategoryNote": "선택사항. 이체는 여전히 수입이나 지출로 집계되지 않지만, 이 카테고리를 지정하면 월별 카테고리 분석에 표시됩니다(예: 매월 투자 납입).",
+    "transferCategoryNote": "선택 사항. 이체는 여전히 수입이나 지출로 집계되지 않습니다. 이체 카테고리를 지정하면 월별 카테고리 내역에서 해당 카테고리 아래에 표시됩니다(예: 월별 투자 납입). 수입 또는 지출 카테고리는 이전과 같이 집계됩니다.",
     "amountReceivedNote": "환전 후 수령 금액",
     "splitTransaction": "분할 거래",
     "splitDisabledDuringTour": "가이드 투어 중에는 사용할 수 없습니다",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "분할 {number}",
     "accountForSplit": "분할 {number}의 계좌",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "분할 {number}의 카테고리",
+    "transferCategoryPlaceholder": "카테고리(선택 사항)",
     "columns": {
       "type": "유형",
       "categoryAccount": "카테고리 / 계정",

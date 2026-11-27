@@ -50,8 +50,8 @@
     "collapseAria": "カテゴリ情報を非表示",
     "show": "カテゴリ情報を表示",
     "amountUnavailable": "レートなし",
-    "transfer": "Transfer",
-    "totalTransferred": "Total transferred"
+    "transfer": "振替",
+    "totalTransferred": "振替合計"
   },
   "accountWidget": {
     "currentBalance": "現在残高",
@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "この振替の相手側は、共有が解除された口座にあります。金額、日付、口座はロックされていますが、この取引自体の詳細は引き続き編集できます。",
-    "transferCategoryNote": "任意。この振替は引き続き収入や支出として計上されませんが、このカテゴリを設定すると月次カテゴリ内訳に表示されます（例: 毎月の投資拠出）。",
+    "transferCategoryNote": "任意。振替は引き続き収入にも支出にもカウントされません。振替カテゴリを選ぶと、月別カテゴリ内訳のそのカテゴリの下に表示されます（例：毎月の投資積立）。収入または支出カテゴリはこれまでどおりカウントされます。",
     "amountReceivedNote": "通貨変換後の受取金額",
     "splitTransaction": "取引を分割",
     "splitDisabledDuringTour": "ガイド付きツアー中は利用できません",
@@ -545,8 +545,8 @@
     },
     "splitLabel": "分割{number}",
     "accountForSplit": "分割 {number} の口座",
-    "transferCategoryForSplit": "Category for split {number}",
-    "transferCategoryPlaceholder": "Category (optional)",
+    "transferCategoryForSplit": "分割 {number} のカテゴリ",
+    "transferCategoryPlaceholder": "カテゴリ（任意）",
     "columns": {
       "type": "種類",
       "categoryAccount": "カテゴリ / 口座",

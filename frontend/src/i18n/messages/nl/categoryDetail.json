@@ -17,7 +17,7 @@
     "switchPlaceholder": "Categorieën filteren...",
     "switchNoMatches": "Geen categorieën gevonden",
     "since": "Categorie sinds {date}",
-    "transferPill": "Transfer"
+    "transferPill": "Overboeking"
   },
   "summary": {
     "spentThisYear": "Dit jaar uitgegeven",
@@ -31,9 +31,9 @@
     "lastTransaction": "Laatste transactie",
     "convertedNote": "Omgerekend naar {currency}",
     "partialRatesNote": "Voor sommige maanden ontbreekt een wisselkoers",
-    "outgoingThisYear": "Outgoing This Year",
-    "incomingThisYear": "Incoming This Year",
-    "netThisYear": "Net This Year"
+    "outgoingThisYear": "Uitgaand dit jaar",
+    "incomingThisYear": "Inkomend dit jaar",
+    "netThisYear": "Netto dit jaar"
   },
   "topPayees": {
     "title": "Topbegunstigden",
@@ -82,7 +82,7 @@
     "defaultFor": "Standaardcategorie voor",
     "defaultForMore": "+{count} meer",
     "description": "Beschrijving",
-    "transfer": "Transfer"
+    "transfer": "Overboeking"
   },
   "tabs": {
     "ariaLabel": "Onderdelen van de categorie",

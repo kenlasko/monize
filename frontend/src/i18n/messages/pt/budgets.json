@@ -293,7 +293,7 @@
       "income": "Receita",
       "expenses": "Despesas",
       "transfers": "Transferências / Poupanças",
-      "transferCategories": "Transfer Categories",
+      "transferCategories": "Categorias de transferência",
       "transfersIn": "Transferências recebidas (rendimento)",
       "trendMedian": "Tendência / Mediana",
       "amount": "Montante"
@@ -760,11 +760,11 @@
     "targetAmount": "{amount} por período"
   },
   "funding": {
-    "actualIncome": "Actual Income",
-    "transferFunding": "Transfer Funding",
-    "totalFunding": "Total Budget Funding",
-    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
-    "thisPeriod": "This period",
-    "parts": "Actual Income {income}, Transfer Funding {transfers}"
+    "actualIncome": "Receitas reais",
+    "transferFunding": "Financiamento por transferências",
+    "totalFunding": "Financiamento total do orçamento",
+    "hint": "O financiamento por transferências é dinheiro movido das suas próprias contas. Financia o orçamento, mas não é receita nos seus relatórios.",
+    "thisPeriod": "Este período",
+    "parts": "Receitas reais {income}, financiamento por transferências {transfers}"
   }
 }
