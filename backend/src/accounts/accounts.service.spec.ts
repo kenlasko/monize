@@ -4492,6 +4492,41 @@ describe("AccountsService", () => {
       expect(result.totalAccounts).toBe(4);
     });
 
+    it("converts totalBalance into the default currency, or withholds it with the known subtotal (#2365 R3)", async () => {
+      // Default currency USD; EUR has a rate, GBP has none.
+      exchangeRateService.getRateForDate.mockImplementation(
+        async (from: string) => (from === "EUR" ? 2 : null),
+      );
+      const usd = {
+        ...mockAccount,
+        id: "a1",
+        currencyCode: "USD",
+        currentBalance: 910,
+      };
+      const eur = {
+        ...mockAccount,
+        id: "a2",
+        currencyCode: "EUR",
+        currentBalance: 520,
+      };
+      const gbp = {
+        ...mockAccount,
+        id: "a3",
+        currencyCode: "GBP",
+        currentBalance: 270,
+      };
+
+      stubAccounts([usd, eur]);
+      const complete = await service.getSummary("user-1");
+      expect(complete.totalBalance).toBe(1950);
+      expect(complete.knownTotalBalanceSubtotal).toBe(1950);
+
+      stubAccounts([usd, eur, gbp]);
+      const partial = await service.getSummary("user-1");
+      expect(partial.totalBalance).toBeNull();
+      expect(partial.knownTotalBalanceSubtotal).toBe(1950);
+    });
+
     it("derives assets, liabilities and net worth from the latest monthly snapshot", async () => {
       stubAccounts([{ ...mockAccount, id: "a1", currentBalance: 5000 }]);
       // getLatestNetWorth is the canonical source shared with the dashboard

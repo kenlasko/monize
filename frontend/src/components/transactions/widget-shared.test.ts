@@ -13,10 +13,12 @@ const summary = (
   converted?: TransactionSummary['converted'],
 ): TransactionSummary => {
   const buckets = Object.values(byCurrency ?? {});
+  // As the server sends it: the top-level totals are null across currencies.
+  const one = buckets.length <= 1;
   return {
-    totalIncome: buckets.reduce((s, b) => s + b.totalIncome, 0),
-    totalExpenses: buckets.reduce((s, b) => s + b.totalExpenses, 0),
-    netCashFlow: buckets.reduce((s, b) => s + b.netCashFlow, 0),
+    totalIncome: one ? buckets.reduce((s, b) => s + b.totalIncome, 0) : null,
+    totalExpenses: one ? buckets.reduce((s, b) => s + b.totalExpenses, 0) : null,
+    netCashFlow: one ? buckets.reduce((s, b) => s + b.netCashFlow, 0) : null,
     transactionCount: buckets.reduce((s, b) => s + b.transactionCount, 0),
     byCurrency,
     converted,
@@ -227,6 +229,33 @@ describe('summarizeInDisplayCurrency', () => {
     );
     expect(result.expenses).toBe(110.1234);
     expect(result.net).toBe(-110.1234);
+  });
+
+  it('reads the converted block, never the null native totals, for two buckets even without a conversion strategy', () => {
+    const result = summarizeInDisplayCurrency(
+      summary(
+        {
+          USD: { totalIncome: 100, totalExpenses: 0, netCashFlow: 100, transactionCount: 1 },
+          EUR: { totalIncome: 50, totalExpenses: 0, netCashFlow: 50, transactionCount: 1 },
+        },
+        {
+          currency: 'USD',
+          totalIncome: null,
+          totalExpenses: null,
+          netCashFlow: null,
+          knownIncome: 100,
+          knownExpenses: 0,
+          knownNet: 100,
+          includedTransactionCount: 1,
+          excludedTransactionCount: 1,
+          missingCurrencies: ['EUR'],
+        },
+      ),
+      native('USD'),
+    );
+    expect(result.income).toBe(100);
+    expect(result.missingCurrencies).toEqual(['EUR']);
+    expect(result.excludedTransactionCount).toBe(1);
   });
 
   it('reports every bucket unknown when the server sent no conversion', () => {

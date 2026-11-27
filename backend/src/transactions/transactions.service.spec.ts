@@ -6882,9 +6882,11 @@ describe("TransactionsService", () => {
 
       const result = await service.getSummary("user-1");
 
-      expect(result.totalIncome).toBe(800);
-      expect(result.totalExpenses).toBe(300);
-      expect(result.netCashFlow).toBe(500);
+      // Deliberate change: USD and CAD are unlike units, so the top-level
+      // totals are null across currencies (#2365 R3); `converted` answers.
+      expect(result.totalIncome).toBeNull();
+      expect(result.totalExpenses).toBeNull();
+      expect(result.netCashFlow).toBeNull();
       expect(result.transactionCount).toBe(15);
       expect(result.byCurrency.USD).toEqual({
         totalIncome: 500,

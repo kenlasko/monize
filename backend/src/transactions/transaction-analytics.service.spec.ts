@@ -710,9 +710,11 @@ describe("TransactionAnalyticsService", () => {
 
       const result = await service.getSummary(userId);
 
-      expect(result.totalIncome).toBe(3000);
-      expect(result.totalExpenses).toBe(1700);
-      expect(result.netCashFlow).toBe(1300);
+      // Deliberate change: USD and EUR are unlike units, so the top-level
+      // totals are null across currencies (#2365 R3); `converted` answers.
+      expect(result.totalIncome).toBeNull();
+      expect(result.totalExpenses).toBeNull();
+      expect(result.netCashFlow).toBeNull();
       expect(result.transactionCount).toBe(25);
 
       expect(result.byCurrency.USD).toEqual({
@@ -727,6 +729,21 @@ describe("TransactionAnalyticsService", () => {
         netCashFlow: 800,
         transactionCount: 15,
       });
+    });
+
+    it("keeps the top-level totals for one currency and nulls them for several (#2365 R3)", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          currencyCode: "USD",
+          totalIncome: "1000",
+          totalExpenses: "500",
+          transactionCount: "10",
+        },
+      ]);
+      const one = await service.getSummary(userId);
+      expect(one.totalIncome).toBe(1000);
+      expect(one.totalExpenses).toBe(500);
+      expect(one.netCashFlow).toBe(500);
     });
 
     it("handles null values in raw query results", async () => {
@@ -1822,8 +1839,75 @@ describe("TransactionAnalyticsService", () => {
         outbound: 0.005025,
         net: 0.00747493,
       });
-      expect(result.totalInbound).toBe(0.01249993);
-      expect(result.totalOutbound).toBe(0.005025);
+      // Deliberate change: a BTC wallet with no BTC->USD rate has no converted
+      // total (it was the raw BTC sum); the native figures stay on the row.
+      expect(result.totalInbound).toBeNull();
+      expect(result.totalOutbound).toBeNull();
+      expect(result.fxComplete).toBe(false);
+      expect(result.missingRatePairs).toEqual(["BTC->USD"]);
+    });
+
+    it("converts the rollup into the default currency, or withholds it with the known subtotal and the gap", async () => {
+      // USD reporting (no preference row); EUR has a rate, GBP has none.
+      managerMock.query.mockResolvedValue([
+        storedRate("EUR", "USD", 1.25, "2026-01-30"),
+      ]);
+      const raw = (
+        accountId: string,
+        currencyCode: string,
+        inbound: string,
+        outbound: string,
+      ) => ({
+        accountId,
+        accountName: accountId,
+        currencyCode,
+        inbound,
+        outbound,
+        count: "1",
+      });
+
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        raw("a-usd", "USD", "100", "0"),
+        raw("a-eur", "EUR", "80", "40"),
+      ]);
+      const complete = await service.getTransfersByAccount(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+      expect(complete).toMatchObject({
+        totalInbound: 200,
+        totalOutbound: 50,
+        knownInboundSubtotal: 200,
+        knownOutboundSubtotal: 50,
+        totalsCurrency: "USD",
+        fxComplete: true,
+        missingRatePairs: [],
+      });
+      // Per-account rows stay in their own currency.
+      expect(
+        complete.accounts.find((a) => a.accountId === "a-eur"),
+      ).toMatchObject({ currency: "EUR", inbound: 80, outbound: 40 });
+
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        raw("a-usd", "USD", "100", "0"),
+        raw("a-eur", "EUR", "80", "40"),
+        raw("a-gbp", "GBP", "10", "5"),
+      ]);
+      const partial = await service.getTransfersByAccount(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+      expect(partial).toMatchObject({
+        totalInbound: null,
+        totalOutbound: null,
+        knownInboundSubtotal: 200,
+        knownOutboundSubtotal: 50,
+        totalsCurrency: "USD",
+        fxComplete: false,
+        missingRatePairs: ["GBP->USD"],
+      });
     });
 
     it("selects the account id for deep-links and maps a missing id to null", async () => {

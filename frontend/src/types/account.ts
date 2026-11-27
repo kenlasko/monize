@@ -349,7 +349,10 @@ export interface UpdateAccountData extends Partial<CreateAccountData> {}
  */
 export interface AccountSummary {
   totalAccounts: number;
-  totalBalance: number;
+  /** Book balances converted into the default currency; `null` when one could not be converted. */
+  totalBalance: number | null;
+  /** The part of `totalBalance` that converted. */
+  knownTotalBalanceSubtotal?: number;
   totalAssets: number | null;
   totalLiabilities: number | null;
   netWorth: number | null;

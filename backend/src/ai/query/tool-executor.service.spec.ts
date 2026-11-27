@@ -929,6 +929,8 @@ describe("ToolExecutorService", () => {
         transfers: {
           totalInbound: 500,
           totalOutbound: 300,
+          totalsCurrency: "USD",
+          fxComplete: true,
           net: 200,
           accounts: [],
         },
@@ -943,7 +945,46 @@ describe("ToolExecutorService", () => {
         userId,
         expect.objectContaining({ transfersOnly: true }),
       );
-      expect(result.summary).toContain("Transfers: inbound 500.00");
+      // Deliberate change: the rollup names its currency (it was a bare number).
+      expect(result.summary).toContain("Transfers: inbound 500.00 USD");
+    });
+
+    it("list_transactions says the transfer totals are withheld and what converted when a rate is missing", async () => {
+      analytics.getLlmListTransactions.mockResolvedValueOnce({
+        totalIncome: 0,
+        totalExpenses: 0,
+        netCashFlow: 0,
+        knownIncomeSubtotal: 0,
+        knownExpensesSubtotal: 0,
+        totalsCurrency: "USD",
+        fxComplete: true,
+        missingRatePairs: [],
+        transactionCount: 2,
+        groupedBy: "none",
+        transfers: {
+          totalInbound: null,
+          totalOutbound: null,
+          knownInboundSubtotal: 500,
+          knownOutboundSubtotal: 300,
+          totalsCurrency: "USD",
+          fxComplete: false,
+          missingRatePairs: ["GBP->USD"],
+          transferCount: 3,
+          provisionalCount: 0,
+          accounts: [],
+        },
+      });
+
+      const result = await service.execute(userId, "list_transactions", {
+        transfersOnly: true,
+      });
+
+      expect(result.summary).toContain(
+        "Transfers: totals withheld, no exchange rate for GBP->USD",
+      );
+      expect(result.summary).toContain(
+        "inbound 500.00 USD, outbound 300.00 USD",
+      );
     });
 
     it("list_transactions marks the figures that hold estimated amounts, and none that hold none", async () => {
@@ -962,6 +1003,8 @@ describe("ToolExecutorService", () => {
         transfers: {
           totalInbound: 80,
           totalOutbound: 100,
+          totalsCurrency: "EUR",
+          fxComplete: true,
           transferCount: 2,
           provisionalCount: 2,
           accounts: [],
@@ -976,7 +1019,7 @@ describe("ToolExecutorService", () => {
         "Net: 80.00 EUR (includes 1 estimated amount)",
       );
       expect(result.summary).toContain(
-        "outbound 100.00 (includes 2 estimated amounts).",
+        "outbound 100.00 EUR (includes 2 estimated amounts).",
       );
 
       const plain = await service.execute(userId, "list_transactions", {});

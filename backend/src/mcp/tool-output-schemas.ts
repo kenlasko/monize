@@ -168,6 +168,10 @@ export const listTransactionsOutput = toolOutput({
   byCurrency: z.record(z.string(), looseObject({})).optional(),
   groupedBy: strNull.optional(),
   breakdown: z.unknown().optional(),
+  // The rollup's `totalInbound` / `totalOutbound` are in its own
+  // `totalsCurrency` and null while a pair has no rate (`knownInboundSubtotal`,
+  // `knownOutboundSubtotal`, `fxComplete`, `missingRatePairs` say what
+  // converted); undeclared: the tool is at its `tools/list` budget.
   transfers: looseObject({}).optional(),
   transactions: rows().optional(),
   total: num.optional(),

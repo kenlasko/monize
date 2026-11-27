@@ -47,7 +47,6 @@ import {
 } from "../categories/category-name.util";
 import {
   FIAT_MONEY_DECIMALS,
-  MONEY_SCALE,
   roundMoney,
   sumMoney,
 } from "../common/round.util";
@@ -61,6 +60,7 @@ import { loadReportPlaces, reportPlacesOf } from "../common/report-figure";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import {
   buildRateIndex,
+  convertAtDate,
   RateIndex,
 } from "../common/time-series/rate-index.util";
 import { includesSpendingCategory } from "../built-in-reports/spending-reports.service";
@@ -174,8 +174,19 @@ export interface TransferAccountSummary {
 
 export interface TransfersByAccountResult {
   accounts: TransferAccountSummary[];
-  totalInbound: number;
-  totalOutbound: number;
+  /**
+   * The accounts' amounts converted into `totalsCurrency` at the period-end
+   * rate; `null` unless every one converted (`fxComplete`), the part that did
+   * is in the `known*Subtotal` field. `accounts` stay in their own currency.
+   */
+  totalInbound: number | null;
+  totalOutbound: number | null;
+  knownInboundSubtotal: number;
+  knownOutboundSubtotal: number;
+  totalsCurrency: string;
+  fxComplete: boolean;
+  /** `"CAD->USD"` for each pair with no rate; empty when `fxComplete`. */
+  missingRatePairs: string[];
   transferCount: number;
   /** The provisional legs inside the two totals. */
   provisionalCount: number;
@@ -464,19 +475,51 @@ export class TransactionAnalyticsService {
         };
       });
 
-      // The totals cross currencies unconverted, so they sum at the column
-      // scale: each figure is already at its own precision, a fiat-only sum is
-      // the four-place one it always was, and a coin's places survive.
+      // The per-account figures are period sums with no day to date a rate
+      // by, so each converts at the period-end rate.
+      const reporting = await resolveUserDefaultCurrency(
+        this.dataSource,
+        userId,
+      );
+      const rates = await buildRateIndex(
+        (sql, params) => m.query(sql, params),
+        new Set(accounts.map((a) => a.currency).filter((c) => c !== reporting)),
+        reporting,
+        startDate,
+        endDate,
+      );
+      const inbound = new FxAggregate();
+      const outbound = new FxAggregate();
+      for (const a of accounts) {
+        for (const [agg, amount] of [
+          [inbound, a.inbound],
+          [outbound, a.outbound],
+        ] as const) {
+          if (a.currency === reporting) agg.addConverted(amount);
+          else
+            agg.add(
+              convertAtDate(
+                amount,
+                a.currency,
+                reporting,
+                endDate,
+                rates,
+                this.logger,
+              ),
+              a.currency,
+              reporting,
+            );
+        }
+      }
       return {
         accounts,
-        totalInbound: sumMoney(
-          accounts.map((a) => a.inbound),
-          MONEY_SCALE,
-        ),
-        totalOutbound: sumMoney(
-          accounts.map((a) => a.outbound),
-          MONEY_SCALE,
-        ),
+        totalInbound: inbound.total,
+        totalOutbound: outbound.total,
+        knownInboundSubtotal: inbound.knownSubtotal,
+        knownOutboundSubtotal: outbound.knownSubtotal,
+        totalsCurrency: reporting,
+        fxComplete: inbound.isComplete && outbound.isComplete,
+        missingRatePairs: FxAggregate.sum([inbound, outbound]).missingPairs,
         transferCount: accounts.reduce((s, a) => s + a.transferCount, 0),
         provisionalCount: accounts.reduce((s, a) => s + a.provisionalCount, 0),
       };
@@ -601,9 +644,10 @@ export class TransactionAnalyticsService {
      */
     options: { inReportingCurrency?: boolean } = {},
   ): Promise<{
-    totalIncome: number;
-    totalExpenses: number;
-    netCashFlow: number;
+    /** `null` when the period holds more than one currency: read `converted`. */
+    totalIncome: number | null;
+    totalExpenses: number | null;
+    netCashFlow: number | null;
     transactionCount: number;
     /** The provisional transfer amounts inside the totals above. */
     provisionalCount: number;
@@ -754,10 +798,13 @@ export class TransactionAnalyticsService {
           )
         : undefined;
 
+      // Native sums mean something only inside one currency; across several the
+      // answer is the `converted` block, never a raw sum of unlike units.
+      const oneCurrency = Object.keys(byCurrency).length <= 1;
       return {
-        totalIncome,
-        totalExpenses,
-        netCashFlow: totalIncome - totalExpenses,
+        totalIncome: oneCurrency ? totalIncome : null,
+        totalExpenses: oneCurrency ? totalExpenses : null,
+        netCashFlow: oneCurrency ? totalIncome - totalExpenses : null,
         transactionCount,
         provisionalCount: [...provisional.values()].reduce(
           (sum, count) => sum + count,

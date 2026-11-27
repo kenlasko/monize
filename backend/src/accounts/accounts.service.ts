@@ -36,6 +36,7 @@ import {
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { memoizedRateResolver } from "../common/converting-total";
+import { FxAggregate } from "../common/fx-aggregate";
 import {
   DetectMortgageTypeDto,
   MortgageTypeHistoryDetectionResponseDto,
@@ -57,7 +58,6 @@ import {
   MONEY_SCALE,
   moneyDecimalsFor,
   roundMoney,
-  sumMoney,
 } from "../common/round.util";
 import { assertAmountPrecision } from "../common/amount-precision.util";
 import {
@@ -2175,7 +2175,10 @@ export class AccountsService {
   async getSummary(userId: string): Promise<
     {
       totalAccounts: number;
-      totalBalance: number;
+      /** Book balances converted into the default currency; `null` unless every one converted. */
+      totalBalance: number | null;
+      /** What converted, in the default currency; beside a `null` `totalBalance`. */
+      knownTotalBalanceSubtotal: number;
       /** The provisional legs inside `totalBalance`: the sum over its accounts. */
       totalBalanceProvisionalCount: number;
     } & NetWorthTotals
@@ -2189,7 +2192,8 @@ export class AccountsService {
     const accounts = allAccounts.filter((account) => !account.isClosed);
     const balanceAccounts = allAccounts.filter(accountCarriesBalance);
 
-    // totalBalance is the raw book-balance sum across accounts. Assets,
+    // totalBalance is the book-balance sum across accounts, converted into the
+    // default currency (null when a rate is missing). Assets,
     // liabilities and net worth are derived from the same canonical source as
     // the dashboard Net Worth widget and the `get_account_balances` tool
     // (the latest monthly net-worth snapshot) so every surface reports an
@@ -2197,13 +2201,30 @@ export class AccountsService {
     // here ignored brokerage market value and futureTransactionsSum, producing
     // a different number than the rest of the app.
     //
-    // The sum crosses currencies, so it is summed at the column scale: every
-    // balance is already at its own currency's precision, so a fiat-only sum
-    // is the four-place figure it always was and a coin's places survive.
-    const totalBalance = sumMoney(
-      balanceAccounts.map((account) => Number(account.currentBalance)),
-      MONEY_SCALE,
+    const defaultCurrency = await resolveUserDefaultCurrency(
+      this.dataSource,
+      userId,
     );
+    const rateFor = memoizedRateResolver(
+      this.exchangeRateService,
+      defaultCurrency,
+      todayYMD(),
+    );
+    const balanceTotal = new FxAggregate();
+    for (const account of balanceAccounts) {
+      const amount = Number(account.currentBalance);
+      if (account.currencyCode === defaultCurrency) {
+        balanceTotal.addConverted(amount);
+      } else if (amount !== 0) {
+        // Zero is zero at any rate; only a real balance needs one.
+        const rate = await rateFor(account.currencyCode);
+        balanceTotal.add(
+          rate === null ? null : amount * rate,
+          account.currencyCode,
+          defaultCurrency,
+        );
+      }
+    }
 
     const marketValues =
       await this.portfolioService.getAccountMarketValues(userId);
@@ -2215,7 +2236,8 @@ export class AccountsService {
 
     return {
       totalAccounts: accounts.length,
-      totalBalance,
+      totalBalance: balanceTotal.total,
+      knownTotalBalanceSubtotal: balanceTotal.knownSubtotal,
       // Each balance's count is over the rows inside its `currentBalance`
       // (`findAll`), so the total's is their sum.
       totalBalanceProvisionalCount: balanceAccounts.reduce(
