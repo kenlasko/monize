@@ -91,7 +91,7 @@ export class McpServerService {
     // Surface today's date so the model can resolve relative ranges ("this
     // month", "last 30 days") into YYYY-MM-DD without an extra round trip. A
     // server is built per 2025-era session and per 2026-07-28 request, so this
-    // is never staler than the connection.
+    // is never staler than the connection. On a 2025-era session the "Today is" line is fixed when the session starts, while tools compute the day per request.
     const today = todayYMD();
     const server = new McpServer(
       { name: "monize", version: backendPkg.version },

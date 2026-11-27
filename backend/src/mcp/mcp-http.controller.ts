@@ -35,7 +35,6 @@ import { ConfigService } from "@nestjs/config";
 import { DataSource } from "typeorm";
 import { withUserContext } from "../common/db/with-context";
 import { withScopedDb } from "../common/db/scoped-db";
-import { getEffectiveTimezoneOfUser } from "../common/users-by-timezone.util";
 
 const SkipPasswordCheck = () => SetMetadata(SKIP_PASSWORD_CHECK_KEY, true);
 
@@ -283,16 +282,35 @@ export class McpHttpController implements OnModuleDestroy {
 
   /**
    * Seed the bearer's user as the ambient identity together with their
-   * effective timezone, so `todayYMD()` in a tool, resource, prompt or the
-   * server instructions is the user's day, not the server's. Resolved once per
-   * request, as `RequestContextInterceptor` does for REST.
+   * timezone, so `todayYMD()` in a tool, resource, prompt or the server
+   * instructions is the user's day. Resolved once per POST, as
+   * `RequestContextInterceptor` does for REST: a real stored or cached zone
+   * only, otherwise none (the server's day, as on REST). A failed lookup is
+   * logged and the request is served without a timezone.
    */
   private async runAsUser<T>(userId: string, fn: () => Promise<T>): Promise<T> {
-    const timezone = await withUserContext(userId, () =>
-      withScopedDb(this.dataSource, (m) =>
-        getEffectiveTimezoneOfUser(m, userId),
-      ),
-    );
+    let timezone: string | undefined;
+    try {
+      timezone = await withUserContext(userId, () =>
+        withScopedDb(this.dataSource, async (m) => {
+          const rows: {
+            timezone: string | null;
+            last_client_timezone: string | null;
+          }[] = await m.query(
+            `SELECT timezone, last_client_timezone
+               FROM user_preferences WHERE user_id = $1`,
+            [userId],
+          );
+          return [rows[0]?.timezone, rows[0]?.last_client_timezone]
+            .map((z) => z?.trim())
+            .find((z) => z && z !== "browser");
+        }),
+      );
+    } catch (error) {
+      this.logger.warn(
+        `MCP timezone lookup failed: ${error instanceof Error ? error.name : "unknown error"}`,
+      );
+    }
     return withUserContext(userId, fn, timezone);
   }
 
@@ -431,7 +449,7 @@ export class McpHttpController implements OnModuleDestroy {
       return;
     }
 
-    await this.runAsUser(authResult.userId, () =>
+    await withUserContext(authResult.userId, () =>
       transport.handleRequest(req, res),
     );
   }
@@ -472,7 +490,7 @@ export class McpHttpController implements OnModuleDestroy {
       return;
     }
 
-    await this.runAsUser(authResult.userId, () =>
+    await withUserContext(authResult.userId, () =>
       transport.handleRequest(req, res),
     );
     this.destroySession(sessionId);

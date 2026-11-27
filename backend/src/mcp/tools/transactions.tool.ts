@@ -47,6 +47,7 @@ import { AttachmentToolPrepService } from "../../attachments/attachment-tool-pre
 import { AttachmentsService } from "../../attachments/attachments.service";
 import { sniffAttachmentMime } from "../../attachments/attachment-mime.util";
 import { withUserContext } from "../../common/db/with-context";
+import { getRequestTimezone } from "../../common/request-context";
 import { RELAY_PREVIEW_SHOWN, emitRelayCard } from "../mcp-relay-confirm";
 import {
   resolveUserContext,
@@ -1181,15 +1182,18 @@ export class McpTransactionsTools {
     dtos: AttachmentDto[],
     existingTransactionId?: string,
   ): Promise<AttachmentRefDescriptor[]> {
-    const previews = await withUserContext(userId, () =>
-      this.attachmentPrepService.prepareAttachments(
-        userId,
-        dtos.map((dto) => ({
-          filename: dto.filename,
-          buffer: Buffer.from(dto.data, "base64"),
-        })),
-        existingTransactionId,
-      ),
+    const previews = await withUserContext(
+      userId,
+      () =>
+        this.attachmentPrepService.prepareAttachments(
+          userId,
+          dtos.map((dto) => ({
+            filename: dto.filename,
+            buffer: Buffer.from(dto.data, "base64"),
+          })),
+          existingTransactionId,
+        ),
+      getRequestTimezone(),
     );
     const stored = await this.relayAttachmentStore.store(userId, dtos);
     return previews.map((preview, i) => ({
@@ -1214,16 +1218,19 @@ export class McpTransactionsTools {
     const created: { id: string; filename: string }[] = [];
     for (const dto of dtos) {
       const buffer = Buffer.from(dto.data, "base64");
-      const attachment = await withUserContext(userId, () =>
-        this.attachmentsService.create(
-          userId,
-          { kind: "transaction", id: transactionId },
-          {
-            originalname: dto.filename,
-            buffer,
-            size: buffer.length,
-          },
-        ),
+      const attachment = await withUserContext(
+        userId,
+        () =>
+          this.attachmentsService.create(
+            userId,
+            { kind: "transaction", id: transactionId },
+            {
+              originalname: dto.filename,
+              buffer,
+              size: buffer.length,
+            },
+          ),
+        getRequestTimezone(),
       );
       created.push({ id: attachment.id, filename: attachment.filename });
     }
