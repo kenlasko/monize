@@ -28,13 +28,14 @@ function resolveType(
 ): Record<string, unknown> {
   const resolved: Record<string, unknown> = { ...row };
   const storedType = row[typeKey];
-  if (
-    (storedType === null || storedType === undefined) &&
-    flagKey in row &&
-    row[flagKey] !== null &&
-    row[flagKey] !== undefined
-  ) {
-    resolved[typeKey] = categoryTypeFromIncomeFlag(row[flagKey] === true);
+  if (storedType === null || storedType === undefined) {
+    const flag = row[flagKey];
+    if (flag === null || flag === undefined) {
+      // No type to state: a null would refuse the NOT NULL column.
+      delete resolved[typeKey];
+    } else {
+      resolved[typeKey] = categoryTypeFromIncomeFlag(flag === true);
+    }
   }
   delete resolved[flagKey];
   return resolved;

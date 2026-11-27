@@ -32,11 +32,18 @@ describe("legacy income flag on a category snapshot", () => {
     ).toEqual({ id: "c1", category_type: "transfer" });
   });
 
-  it("leaves a row with neither without a type", () => {
+  it("leaves a row with neither without a type, never a null one", () => {
     expect(withResolvedCategoryTypeColumn({ id: "c1" })).toEqual({ id: "c1" });
     expect(
       withResolvedCategoryTypeColumn({ id: "c1", is_income: null }),
     ).toEqual({ id: "c1" });
+    // `category_type` is NOT NULL: a null passed through would refuse the row.
+    expect(
+      withResolvedCategoryTypeColumn({ id: "c1", category_type: null }),
+    ).toEqual({ id: "c1" });
+    expect(withResolvedCategoryTypeProperty({ categoryType: null })).toEqual(
+      {},
+    );
   });
 
   it("does the same for an undo snapshot's camelCase properties", () => {

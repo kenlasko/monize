@@ -3,11 +3,12 @@
 -- `category_type` is the only statement of a category's type.
 --
 -- contract-after: 1.22.0
--- 1.22.0 is the release that wrote the type beside the flag; from the release
--- after it nothing reads or writes the flag. 1.22.0 still maps the column in
--- its entity, so a 1.22.0 pod fails its category reads and writes for the
--- length of a rolling update onto this schema (the maintainer accepted that on
--- #2478; use a Recreate rollout to avoid it).
+-- 1.22.0 is the release that writes the type beside the flag; from the release
+-- after it nothing reads or writes the flag. Every release up to and including
+-- 1.22.0 maps the column in its entity, so a pod of the previous release fails
+-- its category reads and writes for the length of a rolling update onto this
+-- schema (and a previous release's open tab sending `isIncome` is refused).
+-- The maintainer accepted that on #2478; a Recreate rollout avoids it.
 --
 -- 1. categories_sync_type without the mirror. It keeps its other two jobs: a
 --    child takes its parent's type on insert and on a move, and a category a
