@@ -4730,6 +4730,7 @@ describe("TransactionAnalyticsService", () => {
         {
           id: "cat-1",
           name: "Groceries",
+          categoryType: "expense",
           currencyCode: "CAD",
           total: "-450.7512",
           magnitude: "450.7512",
@@ -4770,10 +4771,17 @@ describe("TransactionAnalyticsService", () => {
       expect(mockQueryBuilder.orWhere).toHaveBeenCalledWith(
         "transaction.isTransfer = false AND splits.transferAccountId IS NULL",
       );
+      // The group's type labels a Transfer category's group a transfer
+      // (docs/specs/transfer-categories.md section 9).
+      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+        "COALESCE(groupSplitCat.categoryType, groupCat.categoryType)",
+        "categoryType",
+      );
       expect(result).toEqual([
         {
           id: "cat-1",
           name: "Groceries",
+          categoryType: "expense",
           currencyCode: "CAD",
           total: -450.7512,
           count: 12,
@@ -4784,6 +4792,7 @@ describe("TransactionAnalyticsService", () => {
         {
           id: null,
           name: null,
+          categoryType: null,
           currencyCode: "CAD",
           total: -25.25,
           count: 2,
@@ -4902,6 +4911,7 @@ describe("TransactionAnalyticsService", () => {
         {
           id: "cat-1",
           name: "Groceries",
+          categoryType: null,
           currencyCode: "USD",
           total: -300,
           count: 3,
@@ -4912,6 +4922,7 @@ describe("TransactionAnalyticsService", () => {
         {
           id: null,
           name: null,
+          categoryType: null,
           currencyCode: "USD",
           total: -10,
           count: 1,

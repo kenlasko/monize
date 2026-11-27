@@ -20,6 +20,7 @@
     "englishOnly": "Die Versionshinweise unten sind nur auf Englisch verfügbar. Monize selbst, einschließlich der geführten Touren, folgt Ihrer Spracheinstellung."
   },
   "transferPayee": "{direction, select, to {Überweisung an {name}} other {Überweisung von {name}}}",
+  "transferBadge": "Transfer",
   "save": "Speichern",
   "cancel": "Abbrechen",
   "delete": "Löschen",

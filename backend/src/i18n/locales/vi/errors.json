@@ -632,6 +632,7 @@
   "reports": {
     "notFound": "Không tìm thấy báo cáo với ID {{ id }}",
     "customTimeframeMissingDates": "Khung thời gian tùy chỉnh yêu cầu cả ngày bắt đầu và ngày kết thúc",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "investmentNotFound": "Không tìm thấy báo cáo đầu tư với ID {{ id }}"
   },
   "scheduled": {

@@ -31,7 +31,9 @@
     "lastTransaction": "Transaksi Terakhir",
     "convertedNote": "Dikonversi ke {currency}",
     "partialRatesNote": "Beberapa bulan tidak memiliki kurs",
-    "transferredThisYear": "Transferred this year"
+    "outgoingThisYear": "Outgoing This Year",
+    "incomingThisYear": "Incoming This Year",
+    "netThisYear": "Net This Year"
   },
   "topPayees": {
     "title": "Penerima Teratas",

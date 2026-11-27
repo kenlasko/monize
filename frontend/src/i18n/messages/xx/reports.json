@@ -448,6 +448,8 @@
     "labelMetric": "[XX-Metric-XX]",
     "labelDirection": "[XX-Direction-XX]",
     "labelCategoryType": "[XX-Category Type-XX]",
+    "labelTransferMeasure": "[XX-Transfer Measure-XX]",
+    "transferMeasureBudgetVariance": "[XX-A transfer measure cannot be combined with a budget variance-XX]",
     "checkboxTransfers": "[XX-Include transfers-XX]",
     "checkboxFavourites": "[XX-Add to favourites-XX]",
     "sortByPlaceholder": "[XX-Default-XX]",
@@ -471,8 +473,13 @@
       "netAmount": "[XX-Net amount-XX]",
       "netCashMovement": "[XX-Net cash movement-XX]",
       "unsignedTotal": "[XX-Total of unsigned category amounts-XX]",
-      "unsignedAverage": "[XX-Average of unsigned category amounts-XX]"
+      "unsignedAverage": "[XX-Average of unsigned category amounts-XX]",
+      "transfersOutgoing": "[XX-Outgoing transfers-XX]",
+      "transfersIncoming": "[XX-Incoming transfers-XX]",
+      "transfersNet": "[XX-Net transfers-XX]"
     },
+    "unknownKnownPart": "[XX-Unknown ({amount} known)-XX]",
+    "partialRow": "[XX-(partial: a rate is missing)-XX]",
     "truncatedNotice": "[XX-This report reached the row limit and shows only the oldest rows, so its figures are partial. Narrow the timeframe or the filters to see all of them.-XX]",
     "toasts": {
       "loadFailed": "[XX-Failed to load report-XX]",
@@ -1220,6 +1227,8 @@
     "totalTransfers": "[XX-Total transfers-XX]",
     "transferFrom": "[XX-From-XX]",
     "transferTo": "[XX-To-XX]",
+    "transferCategoryOut": "[XX-{name}, outgoing-XX]",
+    "transferCategoryIn": "[XX-{name}, incoming-XX]",
     "overallTotal": "[XX-Overall total-XX]",
     "includeCurrentMonth": "[XX-Include current month-XX]",
     "includeCurrentYear": "[XX-Include current year-XX]",
@@ -1969,6 +1978,12 @@
       "COUNT": "[XX-Transaction Count-XX]",
       "AVERAGE": "[XX-Average Amount-XX]",
       "BUDGET_VARIANCE": "[XX-Budget Variance-XX]"
+    },
+    "transferMeasure": {
+      "NONE": "[XX-None (income and expenses)-XX]",
+      "OUTGOING": "[XX-Outgoing transfers-XX]",
+      "INCOMING": "[XX-Incoming transfers-XX]",
+      "NET": "[XX-Net transfers-XX]"
     },
     "categoryType": {
       "ALL": "[XX-All-XX]",

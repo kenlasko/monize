@@ -448,6 +448,8 @@
     "labelMetric": "Ölçüt",
     "labelDirection": "Yön",
     "labelCategoryType": "Kategori türü",
+    "labelTransferMeasure": "Transfer Measure",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "checkboxTransfers": "Transferleri dahil et",
     "checkboxFavourites": "Favorilere ekle",
     "sortByPlaceholder": "Varsayılan",
@@ -471,8 +473,13 @@
       "netAmount": "Net tutar",
       "netCashMovement": "Net nakit hareketi",
       "unsignedTotal": "İşaretsiz kategori tutarlarının toplamı",
-      "unsignedAverage": "İşaretsiz kategori tutarlarının ortalaması"
+      "unsignedAverage": "İşaretsiz kategori tutarlarının ortalaması",
+      "transfersOutgoing": "Outgoing transfers",
+      "transfersIncoming": "Incoming transfers",
+      "transfersNet": "Net transfers"
     },
+    "unknownKnownPart": "Unknown ({amount} known)",
+    "partialRow": "(partial: a rate is missing)",
     "truncatedNotice": "Bu rapor satır sınırına ulaştı ve yalnızca en eski satırları gösteriyor, bu yüzden rakamları kısmidir. Tümünü görmek için dönemi veya filtreleri daraltın.",
     "toasts": {
       "loadFailed": "Rapor yüklenemedi",
@@ -1220,6 +1227,8 @@
     "totalTransfers": "Toplam transferler",
     "transferFrom": "Gönderen",
     "transferTo": "Alıcı",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Genel toplam",
     "includeCurrentMonth": "Mevcut ayı dahil et",
     "includeCurrentYear": "Mevcut yılı dahil et",
@@ -1969,6 +1978,12 @@
       "COUNT": "İşlem Sayısı",
       "AVERAGE": "Ortalama Tutar",
       "BUDGET_VARIANCE": "Bütçe Sapması"
+    },
+    "transferMeasure": {
+      "NONE": "None (income and expenses)",
+      "OUTGOING": "Outgoing transfers",
+      "INCOMING": "Incoming transfers",
+      "NET": "Net transfers"
     },
     "categoryType": {
       "ALL": "Tümü",

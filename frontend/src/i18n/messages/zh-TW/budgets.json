@@ -293,6 +293,7 @@
       "income": "收入",
       "expenses": "支出",
       "transfers": "轉帳 / 儲蓄",
+      "transferCategories": "Transfer Categories",
       "transfersIn": "轉入（收入）",
       "trendMedian": "趨勢 / 中位數",
       "amount": "金額"
@@ -757,5 +758,13 @@
     "carriedOut": "結轉出去",
     "targetPercent": "收入的 {percent}",
     "targetAmount": "每期 {amount}"
+  },
+  "funding": {
+    "actualIncome": "Actual Income",
+    "transferFunding": "Transfer Funding",
+    "totalFunding": "Total Budget Funding",
+    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
+    "thisPeriod": "This period",
+    "parts": "Actual Income {income}, Transfer Funding {transfers}"
   }
 }

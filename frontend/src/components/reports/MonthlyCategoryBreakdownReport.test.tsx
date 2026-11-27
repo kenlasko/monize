@@ -692,6 +692,104 @@ describe('MonthlyCategoryBreakdownReport', () => {
     expect(screen.getAllByText('+ $1300.00').length).toBeGreaterThan(0);
   });
 
+  // docs/specs/transfer-categories.md section 7: Transfer categories with
+  // their tree first, then every other leg by account, under one group total.
+  describe('Transfer categories in the Transfers group', () => {
+    const category = (
+      id: string,
+      name: string,
+      direction: 'from' | 'to',
+      value: number,
+      extra: Record<string, unknown> = {},
+    ) => ({
+      kind: 'category' as const,
+      accountId: null,
+      accountName: null,
+      categoryId: id,
+      categoryName: name,
+      parentId: 'cat-transfers',
+      parentName: 'Transfers',
+      isSubtotal: false,
+      direction,
+      valuesByMonth: { '2025-01': value },
+      ...extra,
+    });
+    const rollUp = (direction: 'from' | 'to', value: number) =>
+      category('cat-transfers', 'Transfers', direction, value, {
+        parentId: null,
+        parentName: null,
+        isSubtotal: true,
+      });
+    const response = {
+      ...transfersResponse,
+      transfers: [
+        category('cat-savings', 'Savings contributions', 'from', 700),
+        category('cat-savings', 'Savings contributions', 'to', -700),
+        rollUp('from', 700),
+        rollUp('to', -700),
+        { ...transfersResponse.transfers[0], kind: 'account' as const },
+      ],
+    };
+
+    it('lists the category rows before the account rows, the roll-up outside the total', async () => {
+      mockGetMonthlyCategoryBreakdown.mockResolvedValue(response);
+      render(<MonthlyCategoryBreakdownReport />);
+      await waitFor(() => {
+        expect(screen.getByText('Savings contributions, outgoing')).toBeInTheDocument();
+      });
+      const names = screen
+        .getAllByRole('button')
+        .map((b) => b.textContent)
+        .filter((text) => /outgoing|incoming|From Chequing/.test(text ?? ''));
+      expect(names).toEqual([
+        'Transfers, outgoing',
+        'Savings contributions, outgoing',
+        'Transfers, incoming',
+        'Savings contributions, incoming',
+        'From Chequing',
+      ]);
+      // 700 - 700 + 500: the roll-ups are not added again.
+      expect(screen.getAllByText('+ $500.00').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('+ $1500.00').length).toBeGreaterThan(0);
+    });
+
+    it('exports the category rows without the roll-ups, so they add up to Total transfers', async () => {
+      mockGetMonthlyCategoryBreakdown.mockResolvedValue(response);
+      render(<MonthlyCategoryBreakdownReport />);
+      await waitFor(() => {
+        expect(screen.getByText('Savings contributions, outgoing')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Export CSV'));
+      });
+      const rows = mockExportToCsv.mock.calls[0][2] as unknown[][];
+      const names = rows.filter((r) => r[0] === 'Transfers').map((r) => r[1]);
+      expect(names).toEqual([
+        'Savings contributions, outgoing',
+        'Savings contributions, incoming',
+        'From Chequing',
+      ]);
+    });
+
+    it("drills a category row into its Transfer category, a roll-up into its tree's", async () => {
+      mockGetMonthlyCategoryBreakdown.mockResolvedValue(response);
+      render(<MonthlyCategoryBreakdownReport />);
+      await waitFor(() => {
+        expect(screen.getByText('Savings contributions, outgoing')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Savings contributions, outgoing'));
+      });
+      expect(mockPush.mock.calls[0][0]).toContain('categoryIds=cat-savings&');
+      await act(async () => {
+        fireEvent.click(screen.getByText('Transfers, outgoing'));
+      });
+      expect(mockPush.mock.calls[1][0]).toContain(
+        `categoryIds=${encodeURIComponent('cat-savings,cat-transfers')}`,
+      );
+    });
+  });
+
   it('excludes the in-progress current month unless opted in', async () => {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(

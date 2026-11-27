@@ -448,6 +448,8 @@
     "labelMetric": "지표",
     "labelDirection": "방향",
     "labelCategoryType": "카테고리 유형",
+    "labelTransferMeasure": "Transfer Measure",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "checkboxTransfers": "이체 포함",
     "checkboxFavourites": "즐겨찾기에 추가",
     "sortByPlaceholder": "기본값",
@@ -471,8 +473,13 @@
       "netAmount": "순액",
       "netCashMovement": "순 현금 이동",
       "unsignedTotal": "부호 없는 카테고리 금액 합계",
-      "unsignedAverage": "부호 없는 카테고리 금액 평균"
+      "unsignedAverage": "부호 없는 카테고리 금액 평균",
+      "transfersOutgoing": "Outgoing transfers",
+      "transfersIncoming": "Incoming transfers",
+      "transfersNet": "Net transfers"
     },
+    "unknownKnownPart": "Unknown ({amount} known)",
+    "partialRow": "(partial: a rate is missing)",
     "truncatedNotice": "이 보고서는 행 한도에 도달하여 가장 오래된 행만 표시하므로 수치가 일부입니다. 모두 보려면 기간이나 필터를 좁히세요.",
     "toasts": {
       "loadFailed": "보고서 불러오기에 실패했습니다",
@@ -1220,6 +1227,8 @@
     "totalTransfers": "총 이체",
     "transferFrom": "출금",
     "transferTo": "입금",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "전체 합계",
     "includeCurrentMonth": "현재 월 포함",
     "includeCurrentYear": "현재 연도 포함",
@@ -1969,6 +1978,12 @@
       "COUNT": "거래 수",
       "AVERAGE": "평균 금액",
       "BUDGET_VARIANCE": "예산 차이"
+    },
+    "transferMeasure": {
+      "NONE": "None (income and expenses)",
+      "OUTGOING": "Outgoing transfers",
+      "INCOMING": "Incoming transfers",
+      "NET": "Net transfers"
     },
     "categoryType": {
       "ALL": "전체",

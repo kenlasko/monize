@@ -65,6 +65,29 @@ export class BudgetPeriod {
   })
   actualIncome: number;
 
+  /**
+   * The Transfer Funding part of `actualIncome` (Total Budget Funding),
+   * frozen at the close: transfer income lines, income lines on a Transfer
+   * category and the `transfersInAsIncome` figure. `null` on a period closed
+   * before it was recorded, whose split is unknown
+   * (docs/specs/transfer-categories.md sections 6.6 and 10).
+   */
+  @Column({
+    type: "decimal",
+    precision: 24,
+    scale: 8,
+    name: "transfer_funding",
+    nullable: true,
+  })
+  transferFunding?: number | null;
+
+  /**
+   * Not a column: Actual Income, `actualIncome` less `transferFunding`, set
+   * by every read of a period (`periodCategoryIncome`). `null` whenever
+   * `transferFunding` is.
+   */
+  categoryIncome?: number | null;
+
   @Column({
     type: "decimal",
     precision: 24,

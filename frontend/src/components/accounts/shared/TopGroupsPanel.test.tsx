@@ -57,6 +57,29 @@ describe('TopGroupsPanel', () => {
     expect(container.innerHTML).not.toContain('var(--chart-expense)');
   });
 
+  // docs/specs/transfer-categories.md section 9: a Transfer category's group
+  // is labelled a transfer and never coloured as income.
+  it('labels a Transfer category group a transfer', () => {
+    render(
+      <TopGroupsPanel
+        title="Top Categories"
+        emptyLabel="No activity"
+        fallbackLabel="Uncategorised"
+        totals={[
+          { id: 'c3', name: 'Reserve draws', currencyCode: 'CAD', total: 400, count: 1, categoryType: 'transfer' },
+          ...totals,
+        ]}
+        currencyCode="CAD"
+        isLoading={false}
+      />,
+    );
+    const items = screen.getAllByRole('listitem');
+    const draws = items.find((item) => item.textContent?.includes('Reserve draws'))!;
+    expect(draws).toHaveTextContent('Transfer');
+    expect(draws.innerHTML).toContain('var(--chart-primary)');
+    expect(items.find((item) => item.textContent?.includes('Rent'))).not.toHaveTextContent('Transfer');
+  });
+
   it('calls onSelect with the group id for identified rows only', () => {
     const onSelect = vi.fn();
     render(

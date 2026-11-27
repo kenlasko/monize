@@ -448,6 +448,8 @@
     "labelMetric": "Mesure",
     "labelDirection": "Direction",
     "labelCategoryType": "Type de catégorie",
+    "labelTransferMeasure": "Transfer Measure",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "checkboxTransfers": "Inclure les virements",
     "checkboxFavourites": "Ajouter aux favoris",
     "sortByPlaceholder": "Par défaut",
@@ -471,8 +473,13 @@
       "netAmount": "Montant net",
       "netCashMovement": "Mouvement de trésorerie net",
       "unsignedTotal": "Total des montants de catégorie sans signe",
-      "unsignedAverage": "Moyenne des montants de catégorie sans signe"
+      "unsignedAverage": "Moyenne des montants de catégorie sans signe",
+      "transfersOutgoing": "Outgoing transfers",
+      "transfersIncoming": "Incoming transfers",
+      "transfersNet": "Net transfers"
     },
+    "unknownKnownPart": "Unknown ({amount} known)",
+    "partialRow": "(partial: a rate is missing)",
     "truncatedNotice": "Ce rapport a atteint la limite de lignes et n'affiche que les plus anciennes, ses chiffres sont donc partiels. Réduisez la période ou les filtres pour tout voir.",
     "toasts": {
       "loadFailed": "Impossible de charger le rapport",
@@ -1220,6 +1227,8 @@
     "totalTransfers": "Total des virements",
     "transferFrom": "De",
     "transferTo": "Vers",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Total général",
     "includeCurrentMonth": "Inclure le mois en cours",
     "includeCurrentYear": "Inclure l’année en cours",
@@ -1969,6 +1978,12 @@
       "COUNT": "Nombre de transactions",
       "AVERAGE": "Montant moyen",
       "BUDGET_VARIANCE": "Écart budgétaire"
+    },
+    "transferMeasure": {
+      "NONE": "None (income and expenses)",
+      "OUTGOING": "Outgoing transfers",
+      "INCOMING": "Incoming transfers",
+      "NET": "Net transfers"
     },
     "categoryType": {
       "ALL": "Toutes",

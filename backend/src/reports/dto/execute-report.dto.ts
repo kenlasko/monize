@@ -59,6 +59,13 @@ export interface AggregatedDataPoint {
    */
   originalAmount?: number;
   originalCurrency?: string;
+  /**
+   * Under a transfer measure, a part of this group was left out for want of a
+   * rate: the figure is partial and is labelled so. Absent otherwise.
+   */
+  incomplete?: true;
+  /** The known part of a group whose `value` is withheld (`incomplete`). */
+  knownValue?: number;
   // Budget variance fields (for BUDGET_VARIANCE metric)
   budgeted?: number;
   actual?: number;

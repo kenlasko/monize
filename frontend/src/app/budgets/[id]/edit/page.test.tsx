@@ -251,6 +251,9 @@ const mockSummary = {
   totalBudgeted: 5200,
   totalSpent: 3100,
   totalIncome: 6000,
+  categoryIncome: 6000,
+  transferFunding: 0,
+  outsideTransferIncome: 0,
   remaining: 2100,
   percentUsed: 59.62,
   categoryBreakdown: [
@@ -582,12 +585,24 @@ describe('BudgetEditPage', () => {
           },
         ],
       });
-      mockGetSummary.mockResolvedValue({ ...mockSummary, outsideTransferIncome: 300 });
+      mockGetSummary.mockResolvedValue({
+        ...mockSummary,
+        outsideTransferIncome: 300,
+        totalIncome: 2300,
+        categoryIncome: 0,
+        transferFunding: 2300,
+      });
       render(<BudgetEditPage />);
 
       expect(await screen.findByText('Transfers from HISA')).toBeInTheDocument();
       expect(screen.getByText('Transfers from accounts outside this budget')).toBeInTheDocument();
       expect(screen.getByText('$300.00')).toBeInTheDocument();
+      // The period's funding as its three figures (transfer categories, 6.2).
+      expect(screen.getByText('Actual Income')).toBeInTheDocument();
+      expect(screen.getByText('$0.00', { selector: 'dd' })).toBeInTheDocument();
+      expect(screen.getByText('Transfer Funding')).toBeInTheDocument();
+      expect(screen.getByText('Total Budget Funding')).toBeInTheDocument();
+      expect(screen.getAllByText('$2300.00', { selector: 'dd' })).toHaveLength(2);
     });
   });
 

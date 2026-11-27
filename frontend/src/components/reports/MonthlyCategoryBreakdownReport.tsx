@@ -160,6 +160,9 @@ const INCOME_GROUP_CLASS =
   'bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100';
 const EXPENSE_GROUP_CLASS =
   'bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-100';
+// The name cell's indent for a Transfers group row, by its depth in the
+// category tree (an account row and a top-level category sit at the first).
+const TRANSFER_DEPTH_CLASS = ['pl-5', 'pl-9', 'pl-12', 'pl-16'];
 const TRANSFER_GROUP_CLASS =
   'bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100';
 
@@ -208,12 +211,108 @@ interface Section {
 }
 
 interface TransferRow {
-  accountId: string;
+  /** Unique within the group. */
+  key: string;
+  /** The account a per-account row drills into; null on a category row. */
+  accountId: string | null;
+  /** The Transfer categories a category row drills into; null on an account row. */
+  categoryIds: string[] | null;
   direction: 'from' | 'to';
   displayName: string;
+  /** How far a category row sits under its parent's roll-up. */
+  depth: number;
+  isSubtotal: boolean;
   values: Record<string, number>;
   total: number;
   avg: number;
+}
+
+type TransferLabel = (name: string) => string;
+
+/**
+ * The Transfers group's category rows in tree order, per direction: each
+ * parent's roll-up, then what sits under it, a parent's own legs first
+ * (docs/specs/transfer-categories.md section 7). The server sends every row and
+ * every figure; this only orders and labels them.
+ */
+function transferCategoryRows(
+  transfers: MonthlyBreakdownTransferRow[],
+  months: string[],
+  outLabel: TransferLabel,
+  inLabel: TransferLabel,
+): TransferRow[] {
+  const rows = transfers.filter((tr) => tr.kind === 'category' && tr.categoryId);
+  const names = new Map<string, { name: string; parentId: string | null }>();
+  for (const tr of rows) {
+    names.set(tr.categoryId!, { name: tr.categoryName ?? '', parentId: tr.parentId ?? null });
+    if (tr.parentId && !names.has(tr.parentId)) {
+      names.set(tr.parentId, { name: tr.parentName ?? '', parentId: null });
+    }
+  }
+  const pathOf = (id: string): string[] => {
+    const path: string[] = [];
+    const seen = new Set<string>();
+    let cursor: string | null = id;
+    while (cursor && !seen.has(cursor)) {
+      seen.add(cursor);
+      const node = names.get(cursor);
+      path.unshift(node?.name ?? '');
+      cursor = node?.parentId ?? null;
+    }
+    return path;
+  };
+  // The ids under a roll-up: the parent's own and every row beneath it.
+  const under = (parentId: string): string[] =>
+    rows
+      .filter((tr) => tr.categoryId === parentId || pathIds(tr.categoryId!).includes(parentId))
+      .map((tr) => tr.categoryId!);
+  const pathIds = (id: string): string[] => {
+    const ids: string[] = [];
+    const seen = new Set<string>();
+    let cursor = names.get(id)?.parentId ?? null;
+    while (cursor && !seen.has(cursor)) {
+      seen.add(cursor);
+      ids.push(cursor);
+      cursor = names.get(cursor)?.parentId ?? null;
+    }
+    return ids;
+  };
+  const hasRollUp = new Set(rows.filter((tr) => tr.isSubtotal).map((tr) => `${tr.direction}|${tr.categoryId}`));
+  const built = rows.map((tr) => {
+    const path = pathOf(tr.categoryId!);
+    // A parent's own legs sit one step under its roll-up.
+    const ownUnderRollUp = !tr.isSubtotal && hasRollUp.has(`${tr.direction}|${tr.categoryId}`);
+    const values: Record<string, number> = {};
+    for (const m of months) values[m] = tr.valuesByMonth[m] || 0;
+    const name = tr.categoryName ?? '';
+    return {
+      // Direction, then the tree path (a parent before what is under it), then
+      // a roll-up before the parent's own legs.
+      sortKey: { direction: tr.direction === 'from' ? 0 : 1, path, rank: tr.isSubtotal ? 0 : 1 },
+      row: {
+        key: `${tr.isSubtotal ? 'subtotal' : 'category'}-${tr.direction}-${tr.categoryId}`,
+        accountId: null,
+        categoryIds: tr.isSubtotal ? Array.from(new Set(under(tr.categoryId!))) : [tr.categoryId!],
+        direction: tr.direction,
+        displayName: tr.direction === 'from' ? outLabel(name) : inLabel(name),
+        depth: path.length - 1 + (ownUnderRollUp ? 1 : 0),
+        isSubtotal: tr.isSubtotal === true,
+        values,
+        total: tr.total,
+        avg: tr.average,
+      } satisfies TransferRow,
+    };
+  });
+  type Key = { direction: number; path: string[]; rank: number };
+  const compare = (a: Key, b: Key): number => {
+    if (a.direction !== b.direction) return a.direction - b.direction;
+    for (let i = 0; i < Math.min(a.path.length, b.path.length); i += 1) {
+      const order = a.path[i].localeCompare(b.path[i]);
+      if (order !== 0) return order;
+    }
+    return a.path.length - b.path.length || a.rank - b.rank;
+  };
+  return built.sort((a, b) => compare(a.sortKey, b.sortKey)).map(({ row }) => row);
 }
 
 // Sort state. A column is the category name, a YYYY-MM month, the total or the
@@ -329,16 +428,19 @@ function processTransfers(
   sortDir: SortDir,
 ): TransferRow[] {
   return transfers
-    .map((tr) => {
+    .filter((tr) => tr.kind !== 'category')
+    .map((tr): TransferRow => {
       const values: Record<string, number> = {};
       for (const m of months) values[m] = tr.valuesByMonth[m] || 0;
+      const name = tr.accountName ?? '';
       return {
+        key: `${tr.direction}-${tr.accountId}`,
         accountId: tr.accountId,
+        categoryIds: null,
         direction: tr.direction,
-        displayName:
-          tr.direction === 'from'
-            ? fromLabel(tr.accountName)
-            : toLabel(tr.accountName),
+        displayName: tr.direction === 'from' ? fromLabel(name) : toLabel(name),
+        depth: 0,
+        isSubtotal: false,
         values,
         total: tr.total,
         avg: tr.average,
@@ -620,6 +722,7 @@ export function MonthlyCategoryBreakdownReport() {
     bucket: period,
   });
   const accountIds = funds.scope.selectedAccountIds;
+  const selectedAccountIds = accountIds;
 
   const { data, isLoading, error, reload } = useReportData(
     () =>
@@ -746,8 +849,16 @@ export function MonthlyCategoryBreakdownReport() {
     const expenseSections = expenseSectionsRaw.map(assignPalette);
     const sections = [...incomeSections, ...expenseSections];
 
-    // Transfers form their own group (signed: "from" positive, "to" negative).
-    const transferRows = processTransfers(
+    // Transfers form their own group (signed: "from" positive, "to" negative):
+    // the Transfer categories with their tree first, then every other leg by
+    // account (docs/specs/transfer-categories.md section 7).
+    const categoryTransferRows = transferCategoryRows(
+      columns.transfers || [],
+      months,
+      (name) => t('monthlyCategoryBreakdown.transferCategoryOut', { name }),
+      (name) => t('monthlyCategoryBreakdown.transferCategoryIn', { name }),
+    );
+    const accountTransferRows = processTransfers(
       columns.transfers || [],
       months,
       (name) => `${t('monthlyCategoryBreakdown.transferFrom')} ${name}`,
@@ -755,6 +866,7 @@ export function MonthlyCategoryBreakdownReport() {
       sortColumn,
       sortDir,
     );
+    const transferRows = [...categoryTransferRows, ...accountTransferRows];
     const { summary } = columns;
     const transfers = {
       rows: transferRows,
@@ -786,7 +898,12 @@ export function MonthlyCategoryBreakdownReport() {
     const incomeCategoryIds = incomeSections.flatMap((s) => s.allCategoryIds);
     const expenseCategoryIds = expenseSections.flatMap((s) => s.allCategoryIds);
     const allCategoryIds = [...incomeCategoryIds, ...expenseCategoryIds];
-    const allTransferAccountIds = transfers.rows.map((r) => r.accountId);
+    // The group total drills into every transfer on the accounts its rows
+    // name; a category row names none, so with one the report's own scope is
+    // the set (empty: every account).
+    const allTransferAccountIds = categoryTransferRows.length > 0
+      ? selectedAccountIds
+      : accountTransferRows.flatMap((r) => (r.accountId ? [r.accountId] : []));
 
     return {
       months,
@@ -814,6 +931,7 @@ export function MonthlyCategoryBreakdownReport() {
     };
   }, [
     columns,
+    selectedAccountIds,
     otherExpensesLabel,
     otherIncomeLabel,
     sortColumn,
@@ -894,6 +1012,19 @@ export function MonthlyCategoryBreakdownReport() {
     const { start, end } = columnRange(month);
     pushTransactions({ categoryIds: ['transfer'], accountIds, start, end });
   };
+  // A Transfers group row: its account's transfers, or its Transfer
+  // categories' within the report's accounts.
+  const drillTransferRow = (row: TransferRow, month?: string) => {
+    if (!row.categoryIds) {
+      if (month) drillTransfersMonth(month, [row.accountId!]);
+      else drillTransfersRange([row.accountId!]);
+      return;
+    }
+    const range = month
+      ? columnRange(month)
+      : { start: reportStart || undefined, end: rangeEnd || undefined };
+    pushTransactions({ categoryIds: row.categoryIds, accountIds: selectedAccountIds, ...range });
+  };
 
   // A column header: the localized month, or the year as it is.
   const columnLabel = (key: string): string =>
@@ -946,8 +1077,10 @@ export function MonthlyCategoryBreakdownReport() {
       model.totalIncomeAvg,
     ]);
     // Transfer rows carry their own sign already ("from" positive, "to"
-    // negative), so they are exported as-is.
-    for (const transfer of model.transfers.rows) {
+    // negative), so they are exported as-is. A parent's roll-up is left out,
+    // as the server leaves it out of the group total: it shares its parent's
+    // label, and the exported rows add up to Total transfers.
+    for (const transfer of model.transfers.rows.filter((tr) => !tr.isSubtotal)) {
       rows.push([
         t('monthlyCategoryBreakdown.transfers'),
         transfer.displayName,
@@ -1284,13 +1417,16 @@ export function MonthlyCategoryBreakdownReport() {
           TRANSFER_GROUP_CLASS,
         )}
         {!isCollapsed('transfer') && tr.rows.map((row) => (
-          <tr key={`${row.direction}-${row.accountId}`} className="group hover:bg-gray-50 dark:hover:bg-gray-700">
+          <tr
+            key={row.key}
+            className={`group hover:bg-gray-50 dark:hover:bg-gray-700${row.isSubtotal ? ' font-semibold' : ''}`}
+          >
             {renderNameCell(
               'sticky left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700 text-gray-900 dark:text-gray-100',
-              'pl-5 pr-2 py-1 sm:max-w-[220px]',
+              `${TRANSFER_DEPTH_CLASS[Math.min(row.depth, TRANSFER_DEPTH_CLASS.length - 1)]} pr-2 py-1 sm:max-w-[220px]`,
               <button
                 type="button"
-                onClick={() => drillTransfersRange([row.accountId])}
+                onClick={() => drillTransferRow(row)}
                 className="block w-full text-left hover:underline sm:truncate"
               >
                 {row.displayName}
@@ -1304,7 +1440,7 @@ export function MonthlyCategoryBreakdownReport() {
                   {value !== 0 ? (
                     <button
                       type="button"
-                      onClick={() => drillTransfersMonth(m, [row.accountId])}
+                      onClick={() => drillTransferRow(row, m)}
                       className="hover:underline"
                     >
                       {formatGrand(value, null, formatCurrency, currency)}
@@ -1318,7 +1454,7 @@ export function MonthlyCategoryBreakdownReport() {
             <td className="px-2 py-1 text-right font-semibold text-gray-900 dark:text-gray-100">
               <button
                 type="button"
-                onClick={() => drillTransfersRange([row.accountId])}
+                onClick={() => drillTransferRow(row)}
                 className="hover:underline"
               >
                 {formatGrand(row.total, null, formatCurrency, currency)}

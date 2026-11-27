@@ -153,6 +153,61 @@ describe("McpRecentTransactionsResource", () => {
     expect(plain.isSplit).toBeUndefined();
   });
 
+  // docs/specs/transfer-categories.md section 9: a transfer holding a
+  // Transfer category is labelled a transfer, not read as spending.
+  it("labels a transfer leg and a split's transfer line with the category's type", async () => {
+    ctx.setUser({ userId: "u1", scopes: "read" });
+    transactionsService.findAll.mockResolvedValue({
+      data: [
+        {
+          transactionDate: "2026-03-10",
+          payeeName: "Transfer to HISA",
+          category: { name: "Savings contributions", categoryType: "transfer" },
+          amount: -500,
+          account: { name: "Checking" },
+          isTransfer: true,
+          isSplit: false,
+        },
+        {
+          transactionDate: "2026-03-11",
+          payeeName: "Bank",
+          category: null,
+          amount: -60,
+          account: { name: "Checking" },
+          isSplit: true,
+          splits: [
+            {
+              id: "s1",
+              amount: -50,
+              transferAccountId: "acc-hisa",
+              category: {
+                name: "Savings contributions",
+                categoryType: "transfer",
+              },
+            },
+            {
+              id: "s2",
+              amount: -10,
+              category: { name: "Fees", categoryType: "expense" },
+            },
+          ],
+        },
+      ],
+      pagination: { total: 2, hasMore: false },
+    });
+    analyticsService.getSummary.mockResolvedValue({});
+
+    const result = await handler("monize://recent-transactions", ctx);
+    const rows = JSON.parse(result.contents[0].text).recentTransactions;
+    expect(
+      rows.map((r: any) => [r.amount, r.categoryType, r.isTransfer]),
+    ).toEqual([
+      [-500, "transfer", true],
+      [-50, "transfer", true],
+      [-10, "expense", undefined],
+    ]);
+  });
+
   it("excludes investment-linked cash transactions from the MCP summary", async () => {
     ctx.setUser({ userId: "u1", scopes: "read" });
     transactionsService.findAll.mockResolvedValue({

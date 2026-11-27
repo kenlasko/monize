@@ -182,9 +182,47 @@ describe('BudgetWizardCategories', () => {
       />,
     );
 
-    expect(screen.getByText('Total Income')).toBeInTheDocument();
+    expect(screen.getByText('Total Budget Funding')).toBeInTheDocument();
     expect(screen.getByText('Total Expenses')).toBeInTheDocument();
     expect(screen.getByText('Remaining')).toBeInTheDocument();
+  });
+
+  it('lists a Transfer category\'s outgoing line with the transfers, never the expenses (transfer categories, 6.1)', () => {
+    const savings = {
+      ...mockAnalysisResult.categories[1],
+      categoryId: 'cat-savings',
+      categoryName: 'Savings contributions',
+      categoryType: 'transfer' as const,
+      median: 500,
+      suggested: 500,
+    };
+    const categories = makeSelectedCategories();
+    categories.set('cat-savings', { categoryId: 'cat-savings', amount: 500, isIncome: false });
+
+    render(
+      <BudgetWizardCategories
+        state={{
+          ...defaultState,
+          analysisResult: {
+            ...mockAnalysisResult,
+            categories: [...mockAnalysisResult.categories, savings],
+          },
+          selectedCategories: categories,
+        }}
+        updateState={mockUpdateState}
+        onNext={mockOnNext}
+        onBack={mockOnBack}
+      />,
+    );
+
+    const transferTable = screen.getByText('Transfer Categories').closest('table')!;
+    expect(within(transferTable).getByText('Savings contributions')).toBeInTheDocument();
+    const expenseTable = screen.getByText('Expenses').closest('table')!;
+    expect(within(expenseTable).queryByText('Savings contributions')).not.toBeInTheDocument();
+    // Expenses stay 600; the 500 sits with the transfers.
+    expect(screen.getByText('Total Expenses').nextElementSibling!.textContent).toContain('600.00');
+    expect(screen.getByText('Transfers').nextElementSibling!.textContent).toContain('500.00');
+    expect(screen.getByText('Remaining').nextElementSibling!.textContent).toContain('3,900.00');
   });
 
   it('treats income equal to expenses as zero remaining, not a float-noise deficit', () => {

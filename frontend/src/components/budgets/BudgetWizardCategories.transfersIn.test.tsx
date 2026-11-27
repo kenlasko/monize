@@ -152,8 +152,12 @@ describe('BudgetWizardCategories: transfers in', () => {
       ]),
     });
 
-    const income = screen.getByText('Total Income').nextElementSibling!;
+    const income = screen.getByText('Total Budget Funding').nextElementSibling!;
     expect(income.textContent).toContain('5,000.00');
+    // The ticked source is Transfer Funding, never Actual Income (6.2).
+    expect(income.nextElementSibling!.textContent).toMatch(
+      /^Actual Income .*3,000\.00, Transfer Funding .*2,000\.00$/,
+    );
 
     fireEvent.click(screen.getByText('Comfortable'));
     const update = updateState.mock.calls.at(-1)![0];

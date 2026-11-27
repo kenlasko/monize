@@ -293,6 +293,7 @@
       "income": "Income",
       "expenses": "Expenses",
       "transfers": "Transfers / Savings",
+      "transferCategories": "Transfer Categories",
       "transfersIn": "Transfers In (Income)",
       "trendMedian": "Trend / Median",
       "amount": "Amount"
@@ -757,5 +758,13 @@
     "carriedOut": "Carried out",
     "targetPercent": "{percent} of income",
     "targetAmount": "{amount} per period"
+  },
+  "funding": {
+    "actualIncome": "Actual Income",
+    "transferFunding": "Transfer Funding",
+    "totalFunding": "Total Budget Funding",
+    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
+    "thisPeriod": "This period",
+    "parts": "Actual Income {income}, Transfer Funding {transfers}"
   }
 }

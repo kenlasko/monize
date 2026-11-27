@@ -172,6 +172,8 @@ export interface AggregatedGroupRow {
    */
   total: number | null;
   count: number;
+  /** The group's category type, carried from its rows (`GroupedTotal.categoryType`). */
+  categoryType?: GroupedTotal['categoryType'];
 }
 
 /**
@@ -198,6 +200,7 @@ export function aggregateGroupedTotals(
             ? null
             : roundMoney(existing.total + converted),
         count: existing.count + row.count,
+        categoryType: existing.categoryType ?? row.categoryType,
       });
     } else {
       byId.set(row.id, {
@@ -205,6 +208,7 @@ export function aggregateGroupedTotals(
         name: row.name,
         total: converted,
         count: row.count,
+        ...(row.categoryType !== undefined ? { categoryType: row.categoryType } : {}),
       });
     }
   }

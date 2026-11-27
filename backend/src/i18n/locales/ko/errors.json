@@ -632,6 +632,7 @@
   "reports": {
     "notFound": "ID가 {{ id }}인 보고서를 찾을 수 없습니다",
     "customTimeframeMissingDates": "사용자 지정 기간에는 시작일과 종료일이 모두 필요합니다",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "investmentNotFound": "ID가 {{ id }}인 투자 보고서를 찾을 수 없습니다"
   },
   "scheduled": {

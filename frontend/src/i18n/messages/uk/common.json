@@ -20,6 +20,7 @@
     "englishOnly": "Нотатки до випуску нижче доступні лише англійською. Сам Monize, зокрема інтерактивні екскурсії, використовує вибрану вами мову."
   },
   "transferPayee": "{direction, select, to {Переказ на {name}} other {Переказ з {name}}}",
+  "transferBadge": "Transfer",
   "save": "Зберегти",
   "cancel": "Скасувати",
   "delete": "Видалити",

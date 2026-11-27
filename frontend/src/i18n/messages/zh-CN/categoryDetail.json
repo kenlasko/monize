@@ -31,7 +31,9 @@
     "lastTransaction": "最近交易",
     "convertedNote": "已换算为 {currency}",
     "partialRatesNote": "部分月份没有汇率",
-    "transferredThisYear": "Transferred this year"
+    "outgoingThisYear": "Outgoing This Year",
+    "incomingThisYear": "Incoming This Year",
+    "netThisYear": "Net This Year"
   },
   "topPayees": {
     "title": "主要收款人",

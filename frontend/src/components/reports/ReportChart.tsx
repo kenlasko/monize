@@ -124,6 +124,13 @@ function ReportChartTooltip({ active, payload, shareOf, formatCurrency, formatPe
           {formatCurrency(item.value)}
           {percentage !== null && <> ({formatPercent(percentage, 1)})</>}
         </p>
+        {/* A transfer-measure group a rate was missing from is a part, said
+            here as in the table (docs/specs/transfer-categories.md section 10). */}
+        {item.incomplete && (
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            {t('customReportViewer.partialRow')}
+          </p>
+        )}
         {item.count != null && (
           <p className="text-sm text-gray-500 dark:text-gray-500">
             {t('customReportViewer.transactionCount', { count: item.count })}
@@ -211,6 +218,22 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     if (col === TableColumn.PERCENTAGE) return t('portfolioValue.csvUnitPercent');
     return t(`customReportLabels.tableColumn.${col}`);
   };
+  // A value an export prints as the table does: a withheld one as unknown with
+  // its known part, a partial one with its mark, so neither leaves the report
+  // reading as a whole figure.
+  const incompleteValueText = (
+    item: AggregatedDataPoint,
+    format: (value: number) => string,
+    blank: string,
+  ): string => {
+    const text =
+      item.value === null
+        ? item.knownValue !== undefined
+          ? t('customReportViewer.unknownKnownPart', { amount: format(item.knownValue) })
+          : blank
+        : format(item.value);
+    return item.incomplete ? `${text} ${t('customReportViewer.partialRow')}`.trim() : text;
+  };
   const handleExportCsv = () => {
     const columnMap = getColumnMap(header, shareOf, signed);
     // An account- or original-currency amount is a raw number in a
@@ -229,6 +252,9 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
       csvColumns.map((col) => {
         if (col === ACCOUNT_CURRENCY_CSV_COLUMN) return item.accountCurrency ?? '';
         if (col === ORIGINAL_CURRENCY_CSV_COLUMN) return item.originalCurrency ?? '';
+        if (col === TableColumn.VALUE && (item.incomplete || item.value === null)) {
+          return incompleteValueText(item, (v) => String(v), '');
+        }
         return columnMap[col]?.getValue(item) ?? '';
       }),
     );
@@ -254,7 +280,9 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     const pdfCell = (col: TableColumn, item: AggregatedDataPoint) => {
       if (col === TableColumn.ACCOUNT_AMOUNT) return formatAccountAmount(item);
       if (col === TableColumn.ORIGINAL_AMOUNT) return formatOriginalAmount(item);
-      if (col === TableColumn.VALUE && item.value === null) return '-';
+      if (col === TableColumn.VALUE && (item.incomplete || item.value === null)) {
+        return incompleteValueText(item, formatValue, '-');
+      }
       const value = columnMap[col]?.getValue(item) ?? '';
       if (typeof value !== 'number') return value;
       if (col === TableColumn.VALUE) return formatValue(value);
@@ -518,7 +546,16 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   )}
                   {columns.includes(TableColumn.VALUE) && (
                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
-                      {item.value === null ? '-' : formatValue(item.value)}
+                      {item.value === null
+                        ? item.knownValue !== undefined
+                          ? t('customReportViewer.unknownKnownPart', { amount: formatValue(item.knownValue) })
+                          : '-'
+                        : formatValue(item.value)}
+                      {item.incomplete && (
+                        <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">
+                          {t('customReportViewer.partialRow')}
+                        </span>
+                      )}
                     </td>
                   )}
                   {columns.includes(TableColumn.ACCOUNT_AMOUNT) && (

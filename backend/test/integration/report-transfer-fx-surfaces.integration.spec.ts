@@ -346,8 +346,16 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
 
     expect(result.transfers).toEqual([
       {
+        // An uncategorized leg stays on its account's row
+        // (docs/specs/transfer-categories.md section 7).
+        kind: "account",
         accountId: usId,
         accountName: "US Chequing",
+        categoryId: null,
+        categoryName: null,
+        parentId: null,
+        parentName: null,
+        isSubtotal: false,
         direction: "from",
         valuesByMonth: { "2026-03": 180 },
         // Issue #2413: the server folds the row's total and its average over

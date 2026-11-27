@@ -632,6 +632,7 @@
   "reports": {
     "notFound": "[XX-Report with ID {{ id }} not found-XX]",
     "customTimeframeMissingDates": "[XX-Custom timeframe requires both start and end dates-XX]",
+    "transferMeasureBudgetVariance": "[XX-A transfer measure cannot be combined with a budget variance-XX]",
     "investmentNotFound": "[XX-Investment report with ID {{ id }} not found-XX]"
   },
   "scheduled": {

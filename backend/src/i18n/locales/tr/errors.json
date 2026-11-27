@@ -632,6 +632,7 @@
   "reports": {
     "notFound": "{{ id }} kimliğine sahip rapor bulunamadı",
     "customTimeframeMissingDates": "Özel zaman dilimi için hem başlangıç hem de bitiş tarihi gereklidir",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "investmentNotFound": "{{ id }} kimliğine sahip yatırım raporu bulunamadı"
   },
   "scheduled": {

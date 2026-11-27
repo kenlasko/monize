@@ -1,3 +1,4 @@
+import { categoryTypeIs } from "../categories/category-type.util";
 import { ObjectLiteral, Repository, SelectQueryBuilder } from "typeorm";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
@@ -281,6 +282,13 @@ export interface CategorySpending {
   /** The same, inside `outsideTransferIncome`. */
   outsideTransferIncomeProvisionalCount: number;
   /**
+   * categoryId -> the same, inside its `spendingMap` figure: the transfer legs
+   * a line on a Transfer category takes off the per-account lines (the overlap
+   * rule, docs/specs/transfer-categories.md section 6.3), so an estimate the
+   * rule moves is still disclosed. Absent for every other category.
+   */
+  categoryProvisionalCounts: Map<string, number>;
+  /**
    * The distinct provisional legs in any transfer figure above, once each
    * however many figures hold it.
    */
@@ -375,6 +383,7 @@ export function emptyCategorySpending(currency: string): CategorySpending & {
     transferProvisionalCounts: new Map(),
     transferIncomeProvisionalCounts: new Map(),
     outsideTransferIncomeProvisionalCount: 0,
+    categoryProvisionalCounts: new Map(),
     provisionalCount: 0,
   };
 }
@@ -424,13 +433,19 @@ export async function queryCategorySpendingBuckets(
     currency_code: string;
     config: unknown;
     transfer_account_ids?: string[] | null;
+    transfer_category_ids?: string[] | null;
   }> = await manager.query(
     `SELECT b.currency_code, b.config,
             ARRAY(
               SELECT bc.transfer_account_id::text FROM budget_categories bc
               WHERE bc.budget_id = b.id AND bc.is_transfer = true
                 AND bc.transfer_account_id IS NOT NULL
-            ) AS transfer_account_ids
+            ) AS transfer_account_ids,
+            ARRAY(
+              SELECT DISTINCT bc.category_id::text FROM budget_categories bc
+                JOIN categories c ON c.id = bc.category_id
+              WHERE bc.budget_id = b.id AND ${categoryTypeIs("c", "transfer")}
+            ) AS transfer_category_ids
        FROM budgets b WHERE b.id = $1`,
     [budgetId],
   );
@@ -461,6 +476,28 @@ export async function queryCategorySpendingBuckets(
       : [],
   );
 
+  // The overlap rule (docs/specs/transfer-categories.md section 6.3): a
+  // transfer leg holding a Transfer category that has its own line here is
+  // counted on that line, and left out of every per-account transfer line and
+  // of the toggle. The leg's own category decides: a whole leg's
+  // `t.category_id`, a split line's `s.category_id`. A line on an Income or
+  // Expense category takes nothing away from them (section 5).
+  // Read off the budget's own lines, as the toggle's named accounts are, so a
+  // caller passing a subset of lines cannot widen a per-account figure.
+  const lineTransferCategoryIds: string[] = (
+    budgetRows[0]?.transfer_category_ids ?? []
+  ).filter((id): id is string => typeof id === "string");
+  const leaveLinedTransferCategories = <T extends ObjectLiteral>(
+    qb: SelectQueryBuilder<T>,
+    column: string,
+  ): SelectQueryBuilder<T> =>
+    lineTransferCategoryIds.length === 0
+      ? qb
+      : qb.andWhere(
+          `(${column} IS NULL OR ${column} NOT IN (:...lineTransferCategoryIds))`,
+          { lineTransferCategoryIds },
+        );
+
   // Every query groups by currency and transaction date as well as by key, so
   // each group is one currency on one day and converts at one rate.
   const dateExpr = "TO_CHAR(t.transaction_date, 'YYYY-MM-DD')";
@@ -468,7 +505,15 @@ export async function queryCategorySpendingBuckets(
   const transferRows: SpendingRow[] = [];
   const incomeTransferRows: SpendingRow[] = [];
 
-  if (categoryIds.length > 0) {
+  // A Transfer category's legs convert at the rate their two posted amounts
+  // imply, as they did on the per-account line the overlap rule took them
+  // from (INV-FX-002); every other category reads as it always has.
+  const transferTyped = new Set(lineTransferCategoryIds);
+  const readCategoryRows = async (
+    ids: string[],
+    transferBasis: boolean,
+  ): Promise<void> => {
+    if (ids.length === 0) return;
     const directQb = transactionsRepository
       .createQueryBuilder("t")
       .select("t.category_id", "key")
@@ -476,20 +521,34 @@ export async function queryCategorySpendingBuckets(
       .addSelect(dateExpr, "txDate")
       .addSelect("COALESCE(SUM(t.amount), 0)", "total")
       .where("t.user_id = :userId", { userId })
-      .andWhere("t.category_id IN (:...categoryIds)", { categoryIds })
+      .andWhere("t.category_id IN (:...categoryIds)", { categoryIds: ids })
       .andWhere("t.transaction_date >= :periodStart", { periodStart })
       .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
       .andWhere("t.status != :void", { void: "VOID" })
       .andWhere("t.is_split = false");
     if (paceThrough)
       directQb.addSelect("SUM(-LEAST(t.amount, 0))", "purchases");
+    // The estimates among the transfer legs a Transfer category's line takes
+    // over. A leg holding an Income or Expense category is not tracked on its
+    // category line, as before.
+    if (transferBasis)
+      directQb.addSelect(
+        "ARRAY_AGG(DISTINCT t.id::text) FILTER (WHERE t.amount_is_provisional = true AND t.is_transfer = true)",
+        "provisionalIds",
+      );
     excludeBudgetAccounts(directQb, excludedAccountIds)
       .groupBy("t.category_id")
       .addGroupBy("t.currency_code")
       .addGroupBy("t.transaction_date");
-    splitByRateBasis(directQb, OWN_RATE_COLUMNS, currency, { byDay: false });
-    const directRows = await directQb.getRawMany();
-    categoryRows.push(...directRows);
+    splitByRateBasis(
+      directQb,
+      transferBasis
+        ? { ...OWN_RATE_COLUMNS, transferLegs: { transactionAlias: "t" } }
+        : OWN_RATE_COLUMNS,
+      currency,
+      { byDay: false },
+    );
+    categoryRows.push(...(await directQb.getRawMany()));
 
     const splitQb = splitsRepository
       .createQueryBuilder("s")
@@ -499,7 +558,7 @@ export async function queryCategorySpendingBuckets(
       .addSelect(dateExpr, "txDate")
       .addSelect("COALESCE(SUM(s.amount), 0)", "total")
       .where("t.user_id = :userId", { userId })
-      .andWhere("s.category_id IN (:...categoryIds)", { categoryIds })
+      .andWhere("s.category_id IN (:...categoryIds)", { categoryIds: ids })
       .andWhere("t.transaction_date >= :periodStart", { periodStart })
       .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
       .andWhere("t.status != :void", { void: "VOID" });
@@ -508,10 +567,28 @@ export async function queryCategorySpendingBuckets(
       .groupBy("s.category_id")
       .addGroupBy("t.currency_code")
       .addGroupBy("t.transaction_date");
-    splitByRateBasis(splitQb, OWN_RATE_COLUMNS, currency, { byDay: false });
-    const splitRows = await splitQb.getRawMany();
-    categoryRows.push(...splitRows);
-  }
+    splitByRateBasis(
+      splitQb,
+      transferBasis
+        ? {
+            ...OWN_RATE_COLUMNS,
+            transferLegs: { transactionAlias: "t", splitAlias: "s" },
+          }
+        : OWN_RATE_COLUMNS,
+      currency,
+      { byDay: false },
+    );
+    categoryRows.push(...(await splitQb.getRawMany()));
+  };
+  // In turn, not together: one transaction, one connection.
+  await readCategoryRows(
+    categoryIds.filter((id) => !transferTyped.has(id)),
+    false,
+  );
+  await readCategoryRows(
+    categoryIds.filter((id) => transferTyped.has(id)),
+    true,
+  );
 
   if (transferBudgetCategories.length > 0) {
     const window: OutgoingTransferWindow = {
@@ -524,7 +601,10 @@ export async function queryCategorySpendingBuckets(
       excludedAccountIds,
     };
 
-    const parentQb = outgoingParentTransfers(transactionsRepository, window)
+    const parentQb = leaveLinedTransferCategories(
+      outgoingParentTransfers(transactionsRepository, window),
+      "t.category_id",
+    )
       .select(PARENT_TRANSFER_DESTINATION, "key")
       .addSelect("t.currency_code", "currencyCode")
       .addSelect(dateExpr, "txDate")
@@ -542,7 +622,10 @@ export async function queryCategorySpendingBuckets(
       { byDay: false },
     );
     transferRows.push(...(await parentQb.getRawMany()));
-    const splitTransferQb = outgoingSplitTransfers(splitsRepository, window)
+    const splitTransferQb = leaveLinedTransferCategories(
+      outgoingSplitTransfers(splitsRepository, window),
+      "s.category_id",
+    )
       .select(SPLIT_TRANSFER_DESTINATION, "key")
       .addSelect("t.currency_code", "currencyCode")
       .addSelect(dateExpr, "txDate")
@@ -573,7 +656,10 @@ export async function queryCategorySpendingBuckets(
       excludedAccountIds,
     };
     // Signed sums: the net change of each source (spec section 2).
-    const parentQb = incomingParentTransfers(transactionsRepository, window)
+    const parentQb = leaveLinedTransferCategories(
+      incomingParentTransfers(transactionsRepository, window),
+      "t.category_id",
+    )
       .select(PARENT_TRANSFER_SOURCE, "key")
       .addSelect("t.currency_code", "currencyCode")
       .addSelect(dateExpr, "txDate")
@@ -589,7 +675,10 @@ export async function queryCategorySpendingBuckets(
       { byDay: false },
     );
     incomeTransferRows.push(...(await parentQb.getRawMany()));
-    const splitQb = incomingSplitTransfers(splitsRepository, window)
+    const splitQb = leaveLinedTransferCategories(
+      incomingSplitTransfers(splitsRepository, window),
+      "s.category_id",
+    )
       .select(SPLIT_TRANSFER_SOURCE, "key")
       .addSelect("t.currency_code", "currencyCode")
       .addSelect(dateExpr, "txDate")
@@ -735,6 +824,10 @@ export async function queryCategorySpendingBuckets(
     // An outgoing line and an income line naming one account can both read
     // the same leg, so the whole count is over distinct ids.
     const provisionalIds = new Set<string>();
+    for (const [key, ids] of categories.provisional) {
+      spending.categoryProvisionalCounts.set(key, ids.size);
+      for (const id of ids) provisionalIds.add(id);
+    }
     for (const [key, ids] of transfers.provisional) {
       spending.transferProvisionalCounts.set(key, ids.size);
       for (const id of ids) provisionalIds.add(id);
@@ -930,15 +1023,17 @@ export function resolveCategorySpent(
 
 /**
  * The provisional transfer legs inside the figure `resolveCategorySpent`
- * reads for `bc`: a transfer line's own count, 0 for a category line, whose
- * rows are never transfer legs.
+ * reads for `bc`: a transfer line's own count; for a line on a Transfer
+ * category, the legs it took over (the overlap rule); 0 for every other
+ * category line.
  */
 export function resolveCategoryProvisionalCount(
   bc: BudgetCategory,
   spending: Pick<
     CategorySpending,
     "transferProvisionalCounts" | "transferIncomeProvisionalCounts"
-  >,
+  > &
+    Partial<Pick<CategorySpending, "categoryProvisionalCounts">>,
 ): number {
   if (isTransferIncomeLine(bc)) {
     return (
@@ -949,6 +1044,9 @@ export function resolveCategoryProvisionalCount(
   }
   if (bc.isTransfer && bc.transferAccountId) {
     return spending.transferProvisionalCounts.get(bc.transferAccountId) ?? 0;
+  }
+  if (bc.categoryId) {
+    return spending.categoryProvisionalCounts?.get(bc.categoryId) ?? 0;
   }
   return 0;
 }

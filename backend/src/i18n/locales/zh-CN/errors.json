@@ -632,6 +632,7 @@
   "reports": {
     "notFound": "未找到 ID 为 {{ id }} 的报告",
     "customTimeframeMissingDates": "自定义时间范围需要开始日期和结束日期",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "investmentNotFound": "未找到 ID 为 {{ id }} 的投资报告"
   },
   "scheduled": {

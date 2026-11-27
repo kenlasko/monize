@@ -100,6 +100,25 @@ describe('CategorySummaryCards', () => {
 
   // Issue #1125: a refund filed against an expense category was dropped from
   // the headline, which then disagreed with the register's own balance.
+  // docs/specs/transfer-categories.md section 9: a Transfer category shows
+  // what left, what arrived and their net, never spent or received.
+  it('shows a Transfer category as outgoing, incoming and net', () => {
+    const flows = { income: 200, expenses: 700, net: -500 };
+    renderCards({
+      detail: detailFixture({ category: category({ categoryType: 'transfer' }) }),
+      lifetime: flows,
+      thisYear: flows,
+    });
+    expect(screen.getByText('Outgoing This Year')).toBeInTheDocument();
+    expect(screen.getByText('Incoming This Year')).toBeInTheDocument();
+    expect(screen.getByText('Net This Year')).toBeInTheDocument();
+    expect(screen.queryByText('Spent This Year')).toBeNull();
+    expect(screen.queryByText('Received This Year')).toBeNull();
+    expect(screen.getByText(/700\.00/)).toBeInTheDocument();
+    expect(screen.getByText(/200\.00/)).toBeInTheDocument();
+    expect(screen.getByText(/-.*500\.00/)).toBeInTheDocument();
+  });
+
   it('nets a credit filed against an expense category out of the headline', () => {
     const netted = { income: 6.18, expenses: 23212.25, net: -23206.07 };
     renderCards({ lifetime: netted, thisYear: netted });

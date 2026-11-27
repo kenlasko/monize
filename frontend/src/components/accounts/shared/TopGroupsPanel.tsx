@@ -6,6 +6,7 @@ import { chartColors } from '@/lib/chart-colors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { GroupedTotal } from '@/types/transaction';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
 import { ProvisionalMark } from '@/components/ui/ProvisionalMark';
 import { provisionalCountOf } from '@/lib/provisional-amount';
 
@@ -94,12 +95,19 @@ export function TopGroupsPanel({
               // stay green so a refund is still distinguishable at a glance.
               // Amount and bar share the one token so the row reads as a single
               // mark.
-              const signColor = amount > 0 ? chartColors.income : chartColors.primary;
+              // A Transfer category's group is a transfer between own
+              // accounts, labelled so and never coloured as income
+              // (docs/specs/transfer-categories.md section 9).
+              const isTransfer = g.categoryType === 'transfer';
+              const signColor = amount > 0 && !isTransfer ? chartColors.income : chartColors.primary;
               const body = (
                 <>
                   <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-gray-700 dark:text-gray-200 truncate">
-                      {g.name ?? fallbackLabel}
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="text-gray-700 dark:text-gray-200 truncate">
+                        {g.name ?? fallbackLabel}
+                      </span>
+                      {isTransfer && <Badge variant="blue">{tCommon('transferBadge')}</Badge>}
                     </span>
                     <span
                       className="font-medium tabular-nums"

@@ -97,7 +97,8 @@ export function serveBreakdown(
   const transferCells: Record<string, number[]> = {};
   const transfers = (fixture.transfers ?? []).map((row) => {
     const valuesByMonth = fold(row.valuesByMonth);
-    for (const [m, value] of Object.entries(valuesByMonth)) {
+    // A parent's roll-up repeats its rows' legs: never in the group total.
+    for (const [m, value] of Object.entries(row.isSubtotal ? {} : valuesByMonth)) {
       transferCells[m] = [...(transferCells[m] ?? []), value];
     }
     return { ...row, valuesByMonth, ...lineOf(valuesByMonth) };

@@ -20,6 +20,7 @@
     "englishOnly": "नीचे दिए गए रिलीज़ नोट्स केवल अंग्रेज़ी में हैं। निर्देशित टूर सहित Monize आपकी भाषा सेटिंग का पालन करता है।"
   },
   "transferPayee": "{direction, select, to {{name} को ट्रांसफर} other {{name} से ट्रांसफर}}",
+  "transferBadge": "Transfer",
   "save": "सहेजें",
   "cancel": "रद्द करें",
   "delete": "हटाएं",

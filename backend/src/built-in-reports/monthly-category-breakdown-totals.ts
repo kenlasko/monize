@@ -148,6 +148,15 @@ function rowFigures(
   };
 }
 
+/** A transfer row's total and average over `columns`, signed as its cells. */
+export function breakdownRowFigures(
+  flows: BreakdownTransferFlows,
+  columns: readonly string[],
+  places: number,
+): { total: number; average: number } {
+  return rowFigures(flows, columns, places, false);
+}
+
 /**
  * Every total of the breakdown over `columns` (the column keys the response
  * lists, months or years). A row's figures are in its own convention, as its

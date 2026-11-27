@@ -212,6 +212,47 @@ describe('BudgetWizardReview', () => {
     expect(screen.getByText('Remaining')).toBeInTheDocument();
   });
 
+  it('files a Transfer category\'s line as a transfer and splits the funding (transfer categories, 6.1 and 6.2)', () => {
+    const categories = new Map(defaultState.selectedCategories);
+    categories.set('cat-savings', { categoryId: 'cat-savings', amount: 500, isIncome: false });
+    const incomeTransfers = new Map([
+      ['acc-reserve', { transferAccountId: 'acc-reserve', isTransfer: true, isIncome: true, amount: 1000 }],
+    ]);
+    render(
+      <BudgetWizardReview
+        state={{
+          ...defaultState,
+          analysisResult: {
+            ...defaultState.analysisResult!,
+            categories: [
+              ...defaultState.analysisResult!.categories,
+              {
+                ...defaultState.analysisResult!.categories[1],
+                categoryId: 'cat-savings',
+                categoryName: 'Savings contributions',
+                categoryType: 'transfer',
+              },
+            ],
+          },
+          selectedCategories: categories,
+          selectedIncomeTransfers: incomeTransfers,
+        }}
+        updateState={mockUpdateState}
+        onComplete={mockOnComplete}
+        onBack={mockOnBack}
+      />,
+    );
+
+    expect(screen.getByText('Est. Income').nextElementSibling!.textContent).toBe('$6,000.00');
+    expect(
+      screen.getByText('Actual Income $5,000.00, Transfer Funding $1,000.00'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Total Expenses').nextElementSibling!.textContent).toBe('$400.00');
+    expect(screen.getByText('Transfers').nextElementSibling!.textContent).toBe('$500.00');
+    const row = screen.getByText('Savings contributions').closest('tr')!;
+    expect(row.textContent).toContain('Transfer');
+  });
+
   it('renders category list with names', () => {
     render(
       <BudgetWizardReview

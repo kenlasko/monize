@@ -106,6 +106,14 @@ export function customReportDrillDownHref(
   filters: ReportFilters | null | undefined,
   result: Pick<ReportResult, 'groupBy' | 'timeframe'>,
   id: string,
+  /**
+   * The report reads transfer legs only (`config.transferMeasure`): a drill
+   * stays on transfers. Its "No category" group is the transfers holding no
+   * category, which the register's `uncategorized` filter leaves out, so it
+   * opens every transfer under the report's filters, as a group the register
+   * cannot filter on keeps them (docs/specs/transfer-categories.md section 8).
+   */
+  options: { transferMeasure?: boolean } = {},
 ): string {
   const register = reportRegisterFilters(filters);
   const { groupBy, timeframe } = result;
@@ -117,11 +125,17 @@ export function customReportDrillDownHref(
   const endDate = bucket && (!timeframe.endDate || timeframe.endDate > bucket.end) ? bucket.end : timeframe.endDate;
   const clicked = (by: GroupByType, valid: boolean, own: string[]): string[] =>
     groupBy === by && valid ? [id] : own;
-  const categoryIds = clicked(
+  const clickedCategories = clicked(
     GroupByType.CATEGORY,
     isUuid(id) || isSpecialCategoryFilterId(id),
     register.categoryIds,
   );
+  const categoryIds = !options.transferMeasure
+    ? clickedCategories
+    : clickedCategories.length === 0 ||
+        (clickedCategories.length === 1 && clickedCategories[0] === 'uncategorized')
+      ? ['transfer']
+      : clickedCategories;
   const payeeIds = clicked(GroupByType.PAYEE, isUuid(id), register.payeeIds);
   const tagIds = clicked(GroupByType.TAG, isUuid(id), register.tagIds);
   // An ungrouped list's rows carry the transaction id; its one aggregate cell

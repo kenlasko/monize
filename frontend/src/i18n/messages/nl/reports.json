@@ -448,6 +448,8 @@
     "labelMetric": "Metriek",
     "labelDirection": "Richting",
     "labelCategoryType": "Categorietype",
+    "labelTransferMeasure": "Transfer Measure",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "checkboxTransfers": "Overboekingen opnemen",
     "checkboxFavourites": "Toevoegen aan favorieten",
     "sortByPlaceholder": "Standaard",
@@ -471,8 +473,13 @@
       "netAmount": "Nettobedrag",
       "netCashMovement": "Netto kasbeweging",
       "unsignedTotal": "Totaal van categoriebedragen zonder teken",
-      "unsignedAverage": "Gemiddelde van categoriebedragen zonder teken"
+      "unsignedAverage": "Gemiddelde van categoriebedragen zonder teken",
+      "transfersOutgoing": "Outgoing transfers",
+      "transfersIncoming": "Incoming transfers",
+      "transfersNet": "Net transfers"
     },
+    "unknownKnownPart": "Unknown ({amount} known)",
+    "partialRow": "(partial: a rate is missing)",
     "truncatedNotice": "Dit rapport heeft de rijlimiet bereikt en toont alleen de oudste rijen, dus de cijfers zijn onvolledig. Beperk de periode of de filters om alles te zien.",
     "toasts": {
       "loadFailed": "Rapport kon niet worden geladen",
@@ -1220,6 +1227,8 @@
     "totalTransfers": "Totaal overboekingen",
     "transferFrom": "Van",
     "transferTo": "Naar",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Totaal-generaal",
     "includeCurrentMonth": "Huidige maand opnemen",
     "includeCurrentYear": "Huidig jaar opnemen",
@@ -1969,6 +1978,12 @@
       "COUNT": "Aantal transacties",
       "AVERAGE": "Gemiddeld bedrag",
       "BUDGET_VARIANCE": "Budgetafwijking"
+    },
+    "transferMeasure": {
+      "NONE": "None (income and expenses)",
+      "OUTGOING": "Outgoing transfers",
+      "INCOMING": "Incoming transfers",
+      "NET": "Net transfers"
     },
     "categoryType": {
       "ALL": "Alle",

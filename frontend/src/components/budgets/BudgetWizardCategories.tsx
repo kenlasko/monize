@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Sparkline } from './Sparkline';
-import { getCurrencySymbol, formatAmount, getDecimalPlacesForCurrency, gainLossColor, roundToDecimals, roundMoney, sumMoney } from '@/lib/format';
+import { getCurrencySymbol, formatAmount, getDecimalPlacesForCurrency, gainLossColor, roundToDecimals } from '@/lib/format';
 import { parseLocaleNumber, formatNumberForEdit } from '@/lib/number-parse';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { WizardState } from './BudgetWizard';
@@ -25,6 +25,7 @@ import {
 } from './BudgetWizardBuckets';
 import { BudgetWizardTableHead, useWizardTableSort } from './BudgetWizardTableHead';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { transferCategoryIds, wizardDefaultGroup, wizardPlannedTotals } from './utils/wizard-totals';
 
 function BudgetAmountInput({
   categoryId,
@@ -145,12 +146,28 @@ export function BudgetWizardCategories({
     [analysisResult],
   );
 
+  // A Transfer category's outgoing line is a transfer, listed with the
+  // transfers and never with the expenses (docs/specs/transfer-categories.md
+  // section 6.1).
+  const transferCategoryIdSet = useMemo(
+    () => transferCategoryIds(analysisResult?.categories),
+    [analysisResult],
+  );
+
   const expenseCategories = useMemo(
     () =>
       analysisResult?.categories
-        .filter((c) => !c.isIncome)
+        .filter((c) => !c.isIncome && !transferCategoryIdSet.has(c.categoryId))
         .sort((a, b) => b.suggested - a.suggested) ?? [],
-    [analysisResult],
+    [analysisResult, transferCategoryIdSet],
+  );
+
+  const transferTypeCategories = useMemo(
+    () =>
+      analysisResult?.categories
+        .filter((c) => !c.isIncome && transferCategoryIdSet.has(c.categoryId))
+        .sort((a, b) => b.suggested - a.suggested) ?? [],
+    [analysisResult, transferCategoryIdSet],
   );
 
   const transferAnalysis = useMemo(
@@ -176,24 +193,19 @@ export function BudgetWizardCategories({
   const incomeTable = useWizardTableSort(incomeCategories, categoryAccessors);
   const incomeTransferTable = useWizardTableSort(incomeTransferAnalysis, transferAccessors(selectedIncomeTransfers));
   const expenseTable = useWizardTableSort(expenseCategories, categoryAccessors);
+  const transferCategoryTable = useWizardTableSort(transferTypeCategories, categoryAccessors);
   const transferTable = useWizardTableSort(transferAnalysis, transferAccessors(selectedTransfers));
 
-  const totals = useMemo(() => {
-    const cats = Array.from(selectedCategories.values());
-    const totalIncome = sumMoney([
-      ...cats.filter((c) => c.isIncome).map((c) => c.amount),
-      ...Array.from(selectedIncomeTransfers.values()).map((t) => t.amount),
-    ]);
-    const totalExpenses = sumMoney(cats.filter((c) => !c.isIncome).map((c) => c.amount));
-    const totalTransfers = sumMoney(Array.from(selectedTransfers.values()).map((t) => t.amount));
-
-    return {
-      totalIncome,
-      totalExpenses,
-      totalTransfers,
-      net: roundMoney(totalIncome - totalExpenses - totalTransfers),
-    };
-  }, [selectedCategories, selectedTransfers, selectedIncomeTransfers]);
+  const totals = useMemo(
+    () =>
+      wizardPlannedTotals({
+        selectedCategories,
+        selectedTransfers,
+        selectedIncomeTransfers,
+        transferCategoryIds: transferCategoryIdSet,
+      }),
+    [selectedCategories, selectedTransfers, selectedIncomeTransfers, transferCategoryIdSet],
+  );
 
   const handleProfileChange = (newProfile: BudgetProfile) => {
     if (!analysisResult) return;
@@ -284,7 +296,7 @@ export function BudgetWizardCategories({
           categoryId: cat.categoryId,
           amount: cat.suggested,
           isIncome: cat.isIncome,
-          ...(is503020 && !cat.isIncome ? { categoryGroup: 'NEED' as CategoryGroup } : {}),
+          ...(is503020 && !cat.isIncome ? { categoryGroup: wizardDefaultGroup(cat) } : {}),
         });
       }
     } else {
@@ -676,7 +688,25 @@ export function BudgetWizardCategories({
         </div>
       </div>
 
-      {/* Transfer categories */}
+      {/* Transfer categories' outgoing lines */}
+      {transferTypeCategories.length > 0 && (
+        <div>
+          <div className={`${CARD_CLASS} overflow-hidden`}>
+            <table className="w-full table-fixed sm:table-auto">
+              <BudgetWizardTableHead
+                tone="transfer"
+                nameLabel={t('wizardCategories.tableHeaders.transferCategories')}
+                table={transferCategoryTable}
+              />
+              <tbody>
+                {transferCategoryTable.rows.map(renderCategoryRow)}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Per-account outgoing transfers */}
       {transferAnalysis.length > 0 && (
         <div>
           <div className={`${CARD_CLASS} overflow-hidden`}>
@@ -699,10 +729,16 @@ export function BudgetWizardCategories({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-center">
           <div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              {t('wizardCategories.totals.totalIncome')}
+              {t('funding.totalFunding')}
             </div>
             <div className="text-lg font-semibold text-green-600 dark:text-green-400">
               {formatCurrency(totals.totalIncome, currencyCode)}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              {t('funding.parts', {
+                income: formatCurrency(totals.categoryIncome, currencyCode),
+                transfers: formatCurrency(totals.transferFunding, currencyCode),
+              })}
             </div>
           </div>
           <div>

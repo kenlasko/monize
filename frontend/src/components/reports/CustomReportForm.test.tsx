@@ -62,7 +62,19 @@ vi.mock('@/components/ui/ColorPicker', () => ({
 }));
 
 vi.mock('@/components/reports/FilterBuilder', () => ({
-  FilterBuilder: () => <div data-testid="filter-builder" />,
+  FilterBuilder: ({ onChange }: any) => (
+    <div data-testid="filter-builder">
+      {['cat-food', 'cat-savings'].map((id) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onChange([{ conditions: [{ field: 'category', value: [id] }] }])}
+        >
+          {`pick ${id}`}
+        </button>
+      ))}
+    </div>
+  ),
 }));
 
 const mockGetAllAccounts = vi.fn();
@@ -349,6 +361,82 @@ describe('CustomReportForm', () => {
     render(<CustomReportForm report={{ ...saved, id: 'report-1' }} onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
     expect(await screen.findByLabelText('Direction')).toHaveValue('INCOMING');
     expect(screen.getByLabelText('Category Type')).toHaveValue('UNCATEGORIZED');
+  });
+
+  // docs/specs/transfer-categories.md section 8.
+  describe('transfer measure', () => {
+    beforeEach(() => {
+      mockGetAllAccounts.mockResolvedValue([]);
+      mockGetAllPayees.mockResolvedValue([]);
+    });
+
+    it('hides the direction, category type and Include transfers under a measure, and saves it', async () => {
+      mockGetAllCategories.mockResolvedValue([]);
+      render(<CustomReportForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
+      const measure = await screen.findByLabelText('Transfer Measure');
+      expect(measure).toHaveValue('');
+      expect(screen.getByLabelText('Direction')).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.change(measure, { target: { value: 'NET' } });
+      });
+      expect(screen.queryByLabelText('Direction')).toBeNull();
+      expect(screen.queryByLabelText('Category Type')).toBeNull();
+      fireEvent.change(screen.getByPlaceholderText('e.g., Monthly Food Spending'), {
+        target: { value: 'Savings flows' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Create Report' }));
+      await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledOnce());
+      expect(mockOnSubmit.mock.calls[0][0].config.transferMeasure).toBe('NET');
+    });
+
+    it('sends no measure for a report without one, and null to clear one', async () => {
+      mockGetAllCategories.mockResolvedValue([]);
+      const first = render(<CustomReportForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
+      fireEvent.change(await screen.findByPlaceholderText('e.g., Monthly Food Spending'), {
+        target: { value: 'Plain' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Create Report' }));
+      await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledOnce());
+      const saved = mockOnSubmit.mock.calls[0][0];
+      expect('transferMeasure' in saved.config).toBe(false);
+      first.unmount();
+
+      render(
+        <CustomReportForm
+          report={{ ...saved, id: 'r1', config: { ...saved.config, transferMeasure: 'OUTGOING' } }}
+          onSubmit={mockOnSubmit}
+          onCancel={mockOnCancel}
+        />,
+      );
+      const measure = await screen.findByLabelText('Transfer Measure');
+      expect(measure).toHaveValue('OUTGOING');
+      await act(async () => {
+        fireEvent.change(measure, { target: { value: '' } });
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Update Report' }));
+      await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledTimes(2));
+      expect(mockOnSubmit.mock.calls[1][0].config.transferMeasure).toBeNull();
+    });
+
+    it('turns Include transfers on when a filter names a Transfer category', async () => {
+      mockGetAllCategories.mockResolvedValue([
+        { id: 'cat-savings', name: 'Savings contributions', parentId: null, categoryType: 'transfer' },
+        { id: 'cat-food', name: 'Groceries', parentId: null, categoryType: 'expense' },
+      ]);
+      render(<CustomReportForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
+      await screen.findByLabelText('Transfer Measure');
+      await waitFor(() => expect(mockGetAllCategories).toHaveBeenCalled());
+      const checkbox = screen.getByLabelText('Include transfers') as HTMLInputElement;
+      expect(checkbox.checked).toBe(false);
+      await act(async () => {
+        fireEvent.click(screen.getByText('pick cat-food'));
+      });
+      expect(checkbox.checked).toBe(false);
+      await act(async () => {
+        fireEvent.click(screen.getByText('pick cat-savings'));
+      });
+      expect(checkbox.checked).toBe(true);
+    });
   });
 
   it('submits form with CUSTOM timeframe dates', async () => {

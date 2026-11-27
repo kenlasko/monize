@@ -31,7 +31,9 @@
     "lastTransaction": "Последняя проводка",
     "convertedNote": "Пересчитано в {currency}",
     "partialRatesNote": "Для некоторых месяцев нет обменного курса",
-    "transferredThisYear": "Transferred this year"
+    "outgoingThisYear": "Outgoing This Year",
+    "incomingThisYear": "Incoming This Year",
+    "netThisYear": "Net This Year"
   },
   "topPayees": {
     "title": "Основные получатели",

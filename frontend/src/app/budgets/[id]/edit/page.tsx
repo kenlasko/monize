@@ -14,6 +14,7 @@ import { BudgetCategoryForm } from '@/components/budgets/BudgetCategoryForm';
 import { BudgetProgressBar } from '@/components/budgets/BudgetProgressBar';
 import { BudgetBackLink } from '@/components/budgets/BudgetBackLink';
 import { TransferIncomeLineForm } from '@/components/budgets/TransferIncomeLineForm';
+import { BudgetFundingFigures } from '@/components/budgets/BudgetFundingFigures';
 import { budgetLineName } from '@/components/budgets/utils/budget-line-name';
 import { Button } from '@/components/ui/Button';
 import { accountsApi } from '@/lib/accounts';
@@ -342,6 +343,15 @@ function BudgetEditContent() {
                         {t('pages.edit.outsideTransferIncomeHint')}
                       </p>
                     </div>
+                  )}
+                  {summary && (
+                    <BudgetFundingFigures
+                      caption={t('funding.thisPeriod')}
+                      categoryIncome={summary.categoryIncome}
+                      transferFunding={summary.transferFunding}
+                      totalFunding={summary.totalIncome}
+                      formatCurrency={(amount) => formatCurrency(amount, budget.currencyCode)}
+                    />
                   )}
                 </div>
               )}

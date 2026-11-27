@@ -21,6 +21,7 @@ import {
 } from "./dto";
 import { investmentExclusionSql } from "../common/investment-filter.util";
 import {
+  breakdownRowFigures,
   breakdownTotals,
   BreakdownTransferFlows,
   sectionKeyOf,
@@ -65,8 +66,126 @@ interface RawTransferAggregate extends RawRateBasis {
   account_name: string;
   outflow: string;
   inflow: string;
+  /** The leg's category when it is a Transfer category, else null. */
+  transfer_category_id: string | null;
   /** The group's provisional legs (`amount_is_provisional`). */
   provisional_count: string;
+}
+
+/** Who a transfer row is: an account, or a Transfer category. */
+type TransferRowTarget = Omit<
+  MonthlyBreakdownTransferRow,
+  "direction" | "valuesByMonth" | "total" | "average"
+>;
+
+/** One transfer row's flows per column, unsigned, before its direction. */
+interface FlowEntry {
+  target: TransferRowTarget;
+  valuesByMonth: Map<string, FxAggregate>;
+}
+
+function accountTarget(
+  accountId: string,
+  accountName: string,
+): TransferRowTarget {
+  return {
+    kind: "account",
+    accountId,
+    accountName,
+    categoryId: null,
+    categoryName: null,
+    parentId: null,
+    parentName: null,
+    isSubtotal: false,
+  };
+}
+
+function transferCategoryTarget(
+  category: Category,
+  categoryMap: ReadonlyMap<string, Category>,
+  isSubtotal = false,
+): TransferRowTarget {
+  const parent = category.parentId
+    ? (categoryMap.get(category.parentId) ?? null)
+    : null;
+  return {
+    kind: "category",
+    accountId: null,
+    accountName: null,
+    categoryId: category.id,
+    categoryName: category.name,
+    parentId: parent?.id ?? null,
+    parentName: parent?.name ?? null,
+    isSubtotal,
+  };
+}
+
+/** The key a target accumulates under; a subtotal never meets its own row. */
+function targetKey(target: TransferRowTarget): string {
+  if (target.kind === "account") return `account|${target.accountId}`;
+  return `${target.isSubtotal ? "subtotal" : "category"}|${target.categoryId}`;
+}
+
+function addFlow(
+  store: Map<string, FlowEntry>,
+  target: TransferRowTarget,
+  month: string,
+  amount: FxAggregate | number,
+): void {
+  const key = targetKey(target);
+  let entry = store.get(key);
+  if (!entry) {
+    entry = { target, valuesByMonth: new Map() };
+    store.set(key, entry);
+  }
+  const sum = entry.valuesByMonth.get(month) ?? new FxAggregate();
+  if (typeof amount === "number") sum.addConverted(amount);
+  else sum.merge(amount);
+  entry.valuesByMonth.set(month, sum);
+}
+
+/**
+ * Each parent Transfer category's roll-up of the category rows in `store`: the
+ * parent's own legs and every descendant's, one row per ancestor of a category
+ * row (a category with only its own legs needs none).
+ */
+function parentSubtotals(
+  store: ReadonlyMap<string, FlowEntry>,
+  categoryMap: ReadonlyMap<string, Category>,
+): Map<string, FlowEntry> {
+  const subtotals = new Map<string, FlowEntry>();
+  const rows = [...store.values()].filter((e) => e.target.kind === "category");
+  const ancestorsOf = (categoryId: string): Category[] => {
+    const chain: Category[] = [];
+    const seen = new Set<string>([categoryId]);
+    let parentId = categoryMap.get(categoryId)?.parentId ?? null;
+    while (parentId && !seen.has(parentId)) {
+      const parent = categoryMap.get(parentId);
+      if (!parent) break;
+      chain.push(parent);
+      seen.add(parentId);
+      parentId = parent.parentId ?? null;
+    }
+    return chain;
+  };
+  const withChildren = new Set(
+    rows.flatMap((e) => ancestorsOf(e.target.categoryId!).map((c) => c.id)),
+  );
+  for (const e of rows) {
+    const id = e.target.categoryId!;
+    // A parent's own legs are in its roll-up; its ancestors' roll-ups too.
+    const into = [
+      ...(withChildren.has(id) ? [categoryMap.get(id)!] : []),
+      ...ancestorsOf(id),
+    ];
+    for (const ancestor of into) {
+      const target = transferCategoryTarget(ancestor, categoryMap, true);
+      for (const [month, sum] of e.valuesByMonth) {
+        addFlow(subtotals, target, month, sum);
+      }
+    }
+  }
+  return subtotals;
 }
 
 /** Adds `amount` to `month`'s aggregate in `byMonth`. */
@@ -261,7 +380,11 @@ export class MonthlyCategoryBreakdownService {
       acc.withdrawalTotal.addConverted(withdrawals);
     }
 
-    const { rows: transferRows, provisionalCount } = await this.getTransferRows(
+    const {
+      rows: transferRows,
+      subtotals: transferSubtotals,
+      provisionalCount,
+    } = await this.getTransferRows(
       userId,
       startDate,
       endDate,
@@ -270,6 +393,7 @@ export class MonthlyCategoryBreakdownService {
       monthSet,
       gaps,
       columnOf,
+      categoryMap,
       accountIds,
     );
 
@@ -290,9 +414,14 @@ export class MonthlyCategoryBreakdownService {
       sectionKey: sectionKeyOf(row),
       ...totals.rows[i],
     }));
-    const transfers: MonthlyBreakdownTransferRow[] = transferRows.map(
-      ({ row }, i) => ({ ...row, ...totals.transfers[i] }),
-    );
+    const transfers: MonthlyBreakdownTransferRow[] = [
+      ...transferRows.map(({ row }, i) => ({ ...row, ...totals.transfers[i] })),
+      // A parent's roll-up has its own total, but no part in the group's.
+      ...transferSubtotals.map(({ row, flows }) => ({
+        ...row,
+        ...breakdownRowFigures(flows, months, places),
+      })),
+    ];
 
     return {
       period,
@@ -317,6 +446,13 @@ export class MonthlyCategoryBreakdownService {
    * per side. Outflows become a "from" row (positive, a source of funds) and
    * inflows become a "to" row (negative, a use of funds). Months that contain
    * transfers but no categorised activity are added to the shared month set.
+   *
+   * A leg holding a Transfer category is counted on that category's row
+   * instead of its account's, and a parent Transfer category gets a subtotal
+   * row per direction (`docs/specs/transfer-categories.md` section 7). A leg
+   * holding an Income or Expense category stays on its account's row, as
+   * before. Every leg is on exactly one non-subtotal row, so the group total is
+   * what it was.
    */
   private async getTransferRows(
     userId: string,
@@ -327,9 +463,15 @@ export class MonthlyCategoryBreakdownService {
     monthSet: Set<string>,
     gaps: ConversionGaps,
     columnOf: (month: string) => string,
+    categoryMap: ReadonlyMap<string, Category>,
     accountIds?: string[],
   ): Promise<{
     rows: {
+      row: Omit<MonthlyBreakdownTransferRow, "total" | "average">;
+      flows: BreakdownTransferFlows;
+    }[];
+    /** Parent roll-ups, not part of the group total. */
+    subtotals: {
       row: Omit<MonthlyBreakdownTransferRow, "total" | "average">;
       flows: BreakdownTransferFlows;
     }[];
@@ -356,6 +498,9 @@ export class MonthlyCategoryBreakdownService {
     // A whole transfer row, or a split's transfer line (counted on its
     // parent's account, at the line's own amount and rate basis). Only a whole
     // leg can be provisional (design section 6, P5), so a line counts none.
+    // The leg's own category decides its row: a whole leg's `t.category_id`,
+    // a line's `ts.category_id`.
+    const transferCategory = `CASE WHEN tc.category_type = 'transfer' THEN tc.id END`;
     const selectList = (line: boolean) => {
       const amt = line ? "ts.amount" : "t.amount";
       return `
@@ -363,6 +508,7 @@ export class MonthlyCategoryBreakdownService {
         TO_CHAR(t.transaction_date, 'YYYY-MM') as month,
         t.account_id,
         a.name as account_name,
+        ${transferCategory} as transfer_category_id,
         t.currency_code,
         ${rateBasisColumnsSql("$3", "t", ownTransferLegs(userId, "$1", line ? "ts" : undefined))},
         SUM(CASE WHEN ${amt} < 0 THEN ABS(${amt}) ELSE 0 END) as outflow,
@@ -371,11 +517,13 @@ export class MonthlyCategoryBreakdownService {
     };
     const groupBy = `
       GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'),
-               t.account_id, a.name, t.currency_code, ${RATE_BASIS_GROUP_BY}
+               t.account_id, a.name, ${transferCategory}, t.currency_code,
+               ${RATE_BASIS_GROUP_BY}
     `;
     const wholeQuery = `${selectList(false)}
       FROM transactions t
       JOIN accounts a ON a.id = t.account_id
+      LEFT JOIN categories tc ON tc.id = t.category_id
       WHERE t.user_id = $1
         AND t.transaction_date <= $2
         AND t.is_transfer = true
@@ -387,6 +535,7 @@ export class MonthlyCategoryBreakdownService {
       FROM transactions t
       JOIN transaction_splits ts ON ts.transaction_id = t.id
       JOIN accounts a ON a.id = t.account_id
+      LEFT JOIN categories tc ON tc.id = ts.category_id
       WHERE t.user_id = $1
         AND t.transaction_date <= $2
         AND ts.transfer_account_id IS NOT NULL
@@ -404,80 +553,54 @@ export class MonthlyCategoryBreakdownService {
       ],
     );
     rawResults.sort((x, y) => x.month.localeCompare(y.month));
+    const groupKey = (row: RawTransferAggregate) =>
+      `transfer|${row.month}|${row.account_id}|${row.transfer_category_id ?? ""}|${row.currency_code}`;
     const convert = wholeGroups(
       rawResults,
       await this.currencyService.buildConverter(rawResults, defaultCurrency),
-      (row) => `transfer|${row.month}|${row.account_id}|${row.currency_code}`,
+      groupKey,
       (row) => [
         toMoneyNumber(row.outflow, MONEY_SCALE),
         toMoneyNumber(row.inflow, MONEY_SCALE),
       ],
     );
 
-    // Accumulate the signed flow per (account, direction) across currencies.
-    const fromByAccount = new Map<
-      string,
-      { name: string; valuesByMonth: Map<string, FxAggregate> }
-    >();
-    const toByAccount = new Map<
-      string,
-      { name: string; valuesByMonth: Map<string, FxAggregate> }
-    >();
-
-    const addFlow = (
-      store: Map<
-        string,
-        { name: string; valuesByMonth: Map<string, FxAggregate> }
-      >,
-      accountId: string,
-      accountName: string,
-      month: string,
-      amount: number,
-    ) => {
-      let entry = store.get(accountId);
-      if (!entry) {
-        entry = { name: accountName, valuesByMonth: new Map() };
-        store.set(accountId, entry);
-      }
-      addTo(entry.valuesByMonth, month, amount);
-    };
+    // Accumulate the flow per (row, direction) across currencies. A row is an
+    // account or a Transfer category, keyed apart so the two never meet.
+    const fromStore = new Map<string, FlowEntry>();
+    const toStore = new Map<string, FlowEntry>();
 
     let provisionalCount = 0;
     for (const row of rawResults) {
       const outflow = convert(toMoneyNumber(row.outflow, MONEY_SCALE), row);
       const inflow = convert(toMoneyNumber(row.inflow, MONEY_SCALE), row);
       if (outflow === null || inflow === null) {
-        gaps.record(
-          row.currency_code,
-          `transfer|${row.month}|${row.account_id}|${row.currency_code}`,
-        );
+        gaps.record(row.currency_code, groupKey(row));
         continue;
       }
       provisionalCount += Number(row.provisional_count) || 0;
       const column = columnOf(row.month);
       monthSet.add(column);
-      if (outflow !== 0) {
-        addFlow(
-          fromByAccount,
-          row.account_id,
-          row.account_name,
-          column,
-          outflow,
-        );
-      }
-      if (inflow !== 0) {
-        addFlow(toByAccount, row.account_id, row.account_name, column, inflow);
-      }
+      // A category the scope cannot see is read as no category: the leg stays
+      // on its account's row.
+      const category =
+        row.transfer_category_id !== null
+          ? (categoryMap.get(row.transfer_category_id) ?? null)
+          : null;
+      const target = category
+        ? transferCategoryTarget(category, categoryMap)
+        : accountTarget(row.account_id, row.account_name);
+      if (outflow !== 0) addFlow(fromStore, target, column, outflow);
+      if (inflow !== 0) addFlow(toStore, target, column, inflow);
     }
 
-    const buildTransferRows = (
-      store: Map<
-        string,
-        { name: string; valuesByMonth: Map<string, FxAggregate> }
-      >,
-      direction: "from" | "to",
-    ) =>
-      Array.from(store.entries()).map(([accountId, entry]) => {
+    // A parent's roll-up per direction: its own legs and its children's,
+    // folded from their aggregates (never their readings).
+    const fromSubtotals = parentSubtotals(fromStore, categoryMap);
+    const toSubtotals = parentSubtotals(toStore, categoryMap);
+
+    const build = (store: Map<string, FlowEntry>, direction: "from" | "to") =>
+      Array.from(store.values()).map((entry) => {
         const valuesByMonth: Record<string, number> = {};
         const flows = new Map<string, FxAggregate>();
         for (const [month, amount] of entry.valuesByMonth) {
@@ -491,16 +614,23 @@ export class MonthlyCategoryBreakdownService {
           valuesByMonth[month] = signed.knownSubtotalAt(places);
         }
         return {
-          row: { accountId, accountName: entry.name, direction, valuesByMonth },
+          row: { ...entry.target, direction, valuesByMonth },
           flows,
         };
       });
 
+    const isCategory = (e: FlowEntry) => e.target.kind === "category";
+    const pick = (store: Map<string, FlowEntry>, category: boolean) =>
+      new Map([...store].filter(([, e]) => isCategory(e) === category));
+
     return {
       rows: [
-        ...buildTransferRows(fromByAccount, "from"),
-        ...buildTransferRows(toByAccount, "to"),
+        ...build(pick(fromStore, true), "from"),
+        ...build(pick(toStore, true), "to"),
+        ...build(pick(fromStore, false), "from"),
+        ...build(pick(toStore, false), "to"),
       ],
+      subtotals: [...build(fromSubtotals, "from"), ...build(toSubtotals, "to")],
       provisionalCount,
     };
   }

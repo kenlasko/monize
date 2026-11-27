@@ -1,4 +1,8 @@
 import {
+  isTransferFundingLine,
+  periodCategoryIncome,
+} from "./budget-funding.util";
+import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -77,12 +81,13 @@ export class BudgetPeriodService {
   async findAll(userId: string, budgetId: string): Promise<BudgetPeriod[]> {
     await this.budgetsService.findOne(userId, budgetId);
 
-    return withScopedDb(this.dataSource, (m) =>
+    const periods = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(BudgetPeriod).find({
         where: { budgetId },
         order: { periodStart: "DESC" },
       }),
     );
+    return periods.map(withCategoryIncome);
   }
 
   async findOne(
@@ -117,7 +122,7 @@ export class BudgetPeriodService {
       );
     }
 
-    return period;
+    return withCategoryIncome(period);
   }
 
   async closePeriod(userId: string, budgetId: string): Promise<BudgetPeriod> {
@@ -180,6 +185,14 @@ export class BudgetPeriodService {
 
       // `config.transfersInAsIncome` is income no line carries (issue #2141).
       const incomeParts: number[] = [actuals.outsideTransferIncome];
+      // The Transfer Funding part, frozen beside the total
+      // (docs/specs/transfer-categories.md section 6.6): the toggle, the
+      // transfer income lines and the income lines on a Transfer category,
+      // each line's kind and type read now, at the close.
+      const transferParts: number[] = [actuals.outsideTransferIncome];
+      const linesById = new Map(
+        (budget.categories ?? []).map((line) => [line.id, line]),
+      );
       const expenseParts: number[] = [];
 
       // An expense line can join the budget after this month was opened. Its first
@@ -231,6 +244,8 @@ export class BudgetPeriodService {
 
         if (bcEntry?.isIncome) {
           incomeParts.push(actual);
+          const line = linesById.get(pc.budgetCategoryId) ?? bcEntry;
+          if (isTransferFundingLine(line)) transferParts.push(actual);
         } else {
           expenseParts.push(actual);
         }
@@ -239,6 +254,7 @@ export class BudgetPeriodService {
       }
 
       openPeriod.actualIncome = sumMoney(incomeParts);
+      openPeriod.transferFunding = sumMoney(transferParts);
       openPeriod.actualExpenses = sumMoney(expenseParts);
       openPeriod.status = PeriodStatus.CLOSED;
 
@@ -257,7 +273,7 @@ export class BudgetPeriodService {
     });
     // A read of the new month may already have cached figures before its carry was posted.
     this.budgetsService.invalidateCategoryActuals(budgetId);
-    return closed;
+    return withCategoryIncome(closed);
   }
 
   async getOrCreateCurrentPeriod(
@@ -623,4 +639,9 @@ export class BudgetPeriodService {
       linkedIncome: resolveBudgetIncome(budgetCategories, spending),
     };
   }
+}
+
+/** The period with its Actual Income beside the stored figures. */
+function withCategoryIncome(period: BudgetPeriod): BudgetPeriod {
+  return { ...period, categoryIncome: periodCategoryIncome(period) };
 }

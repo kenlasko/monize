@@ -129,6 +129,48 @@ describe('customReportDrillDownHref', () => {
     expect(params.get('categoryIds')).toBe(C1);
   });
 
+  describe('under a transfer measure (transfer categories, section 8)', () => {
+    const measure = { transferMeasure: true };
+
+    it('opens a Transfer category group on its own category', () => {
+      const params = paramsOf(
+        customReportDrillDownHref({}, { groupBy: GroupByType.CATEGORY, timeframe: YEAR }, C2, measure),
+      );
+      expect(params.get('categoryIds')).toBe(C2);
+    });
+
+    it('opens the No category group on transfers, which Uncategorized leaves out', () => {
+      const params = paramsOf(
+        customReportDrillDownHref(
+          {},
+          { groupBy: GroupByType.CATEGORY, timeframe: YEAR },
+          'uncategorized',
+          measure,
+        ),
+      );
+      expect(params.get('categoryIds')).toBe('transfer');
+    });
+
+    it('keeps a drill by month on transfers when the report names no category', () => {
+      const params = paramsOf(
+        customReportDrillDownHref({}, { groupBy: GroupByType.MONTH, timeframe: YEAR }, '2025-03', measure),
+      );
+      expect(params.get('categoryIds')).toBe('transfer');
+      expect(params.get('startDate')).toBe('2025-03-01');
+    });
+
+    it('leaves a report without a measure as it was', () => {
+      const params = paramsOf(
+        customReportDrillDownHref(
+          {},
+          { groupBy: GroupByType.CATEGORY, timeframe: YEAR },
+          'uncategorized',
+        ),
+      );
+      expect(params.get('categoryIds')).toBe('uncategorized');
+    });
+  });
+
   it('narrows to the clicked category, keeping the other report filters', () => {
     const params = paramsOf(
       customReportDrillDownHref(christmas, { groupBy: GroupByType.CATEGORY, timeframe: YEAR }, C2),

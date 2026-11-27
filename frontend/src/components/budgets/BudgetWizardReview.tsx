@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { gainLossColor, roundMoney, sumMoney } from '@/lib/format';
+import { gainLossColor } from '@/lib/format';
+import { transferCategoryIds, wizardPlannedTotals } from './utils/wizard-totals';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { budgetsApi } from '@/lib/budgets';
@@ -42,13 +43,26 @@ export function BudgetWizardReview({
     state.selectedIncomeTransfers?.values() ?? [],
   );
 
-  const totalIncome = sumMoney([
-    ...incomeCategories.map((c) => c.amount),
-    ...incomeTransferEntries.map((t) => t.amount),
-  ]);
-  const totalExpenses = sumMoney(expenseCategories.map((c) => c.amount));
-  const totalTransfers = sumMoney(transferEntries.map((t) => t.amount));
-  const net = roundMoney(totalIncome - totalExpenses - totalTransfers);
+  // A Transfer category's outgoing line counts with the transfers, and an
+  // income line's funding is split as the budget splits its actuals
+  // (docs/specs/transfer-categories.md sections 6.1 and 6.2).
+  const transferTypeIds = transferCategoryIds(state.analysisResult?.categories);
+  const isTransferType = (c: ApplyBudgetCategoryData) =>
+    c.categoryId !== undefined && transferTypeIds.has(c.categoryId);
+  const {
+    categoryIncome,
+    transferFunding,
+    totalIncome,
+    totalExpenses,
+    totalTransfers,
+    net,
+  } = wizardPlannedTotals({
+    selectedCategories: state.selectedCategories,
+    selectedTransfers: state.selectedTransfers,
+    selectedIncomeTransfers: state.selectedIncomeTransfers,
+    transferCategoryIds: transferTypeIds,
+  });
+  const expenseLineCount = expenseCategories.filter((c) => !isTransferType(c)).length;
 
   const unknownLabel = 'Unknown';
 
@@ -230,6 +244,12 @@ export function BudgetWizardReview({
           <div className="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">
             {formatCurrency(totalIncome, state.currencyCode)}
           </div>
+          <div className="text-xs text-gray-400 dark:text-gray-500">
+            {t('funding.parts', {
+              income: formatCurrency(categoryIncome, state.currencyCode),
+              transfers: formatCurrency(transferFunding, state.currencyCode),
+            })}
+          </div>
         </div>
         <div className={`${CARD_CLASS} p-4 text-center`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -239,7 +259,7 @@ export function BudgetWizardReview({
             {formatCurrency(totalExpenses, state.currencyCode)}
           </div>
           <div className="text-xs text-gray-400 dark:text-gray-500">
-            {t('wizardReview.categoryCount', { count: expenseCategories.length })}
+            {t('wizardReview.categoryCount', { count: expenseLineCount })}
           </div>
         </div>
         <div className={`${CARD_CLASS} p-4 text-center`}>
@@ -328,11 +348,13 @@ export function BudgetWizardReview({
                   <td className="py-2 px-2 sm:px-4 text-sm text-gray-900 dark:text-gray-100">
                     {getCategoryName(cat.categoryId)}
                   </td>
-                  <td className="py-2 px-2 sm:px-4 text-sm text-right text-gray-900 dark:text-gray-100">
+                  <td className={`py-2 px-2 sm:px-4 text-sm text-right ${isTransferType(cat) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}`}>
                     {formatCurrency(cat.amount, state.currencyCode)}
                   </td>
-                  <td className="hidden sm:table-cell py-2 px-4 text-sm text-right text-gray-500 dark:text-gray-400">
-                    {t('wizardReview.categoryTypes.expense')}
+                  <td className={`hidden sm:table-cell py-2 px-4 text-sm text-right ${isTransferType(cat) ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                    {isTransferType(cat)
+                      ? t('wizardReview.categoryTypes.transfer')
+                      : t('wizardReview.categoryTypes.expense')}
                   </td>
                 </tr>
               ))}

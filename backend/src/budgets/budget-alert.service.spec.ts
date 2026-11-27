@@ -85,6 +85,7 @@ function spending(
     transferProvisionalCounts: new Map(),
     transferIncomeProvisionalCounts: new Map(),
     outsideTransferIncomeProvisionalCount: 0,
+    categoryProvisionalCounts: new Map(),
     provisionalCount: 0,
   };
 }
@@ -900,12 +901,80 @@ describe("BudgetAlertService", () => {
         0.5,
       );
       expect(alert?.message).toBe(
-        "Net income: -$25.00. Expected income to date: $100.00.",
+        "Net budget funding: -$25.00. Expected income to date: $100.00.",
       );
       expect(alert?.data).toMatchObject({
         actualIncome: -25,
         expectedIncome: 100,
         ratio: -25,
+      });
+    });
+
+    it("compares Total Budget Funding and names its two parts (transfer categories, section 6.2)", () => {
+      const line = {
+        currencyCode: "CAD",
+        budgeted: 0,
+        percentUsed: 0,
+        isIncome: true,
+        alertWarnPercent: 80,
+        alertCriticalPercent: 95,
+        flexGroup: null,
+      };
+      const alert = service.checkIncomeShortfall(
+        [
+          {
+            ...line,
+            budgetCategoryId: "l1",
+            categoryId: "salary",
+            categoryName: "Salary",
+            spent: 2000,
+            isTransferFunding: false,
+          },
+          {
+            ...line,
+            budgetCategoryId: "l7",
+            categoryId: "reserve-draws",
+            categoryName: "Reserve draws",
+            spent: 400,
+            isTransferFunding: true,
+          },
+        ],
+        6000,
+        0.5,
+        undefined,
+        { outsideTransferIncome: 250, currencyCode: "CAD" },
+      );
+      // Expected so far 3,000; Total Budget Funding 2,650 is 88%: no alert.
+      expect(alert).toBeNull();
+
+      const short = service.checkIncomeShortfall(
+        [
+          {
+            ...line,
+            budgetCategoryId: "l1",
+            categoryId: "salary",
+            categoryName: "Salary",
+            spent: 1000,
+            isTransferFunding: false,
+          },
+          {
+            ...line,
+            budgetCategoryId: "l7",
+            categoryId: "reserve-draws",
+            categoryName: "Reserve draws",
+            spent: 400,
+            isTransferFunding: true,
+          },
+        ],
+        6000,
+        0.5,
+        undefined,
+        { outsideTransferIncome: 250, currencyCode: "CAD" },
+      );
+      expect(short?.data).toMatchObject({
+        actualIncome: 1650,
+        categoryIncome: 1000,
+        transferFunding: 650,
       });
     });
 

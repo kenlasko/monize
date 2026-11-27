@@ -310,6 +310,7 @@ describe("BudgetGeneratorService", () => {
       categoryId: "cat-1",
       categoryName: "Groceries",
       isIncome: false,
+      categoryType: "expense",
       average: 400,
       median: 350,
       p25: 250,
@@ -353,6 +354,39 @@ describe("BudgetGeneratorService", () => {
       expect(result.totalBudgeted).toBe(0);
       expect(result.projectedMonthlySavings).toBe(0);
       expect(result.analysisWindow.months).toBe(3);
+    });
+
+    // docs/specs/transfer-categories.md section 9: a split's transfer line
+    // holding a category is a transfer, never suggested as spending.
+    it("leaves a split's transfer line out of the category analysis unless its category is a Transfer one", async () => {
+      const splitBuilders: ReturnType<typeof createMockQueryBuilder>[] = [];
+      splitsRepository.createQueryBuilder.mockImplementation(() => {
+        const qb = createMockQueryBuilder();
+        splitBuilders.push(qb);
+        return qb;
+      });
+      await service.generate("user-1", { analysisMonths: 3 });
+      const categoryReads = splitBuilders.filter((qb) =>
+        qb.andWhere.mock.calls.some(
+          ([sql]) => sql === "s.category_id IS NOT NULL",
+        ),
+      );
+      // Income reads no transfer line; the spending read takes only a
+      // Transfer category's, as the outgoing line it suggests.
+      expect(categoryReads).toHaveLength(2);
+      const conditions = categoryReads.map((qb) =>
+        qb.andWhere.mock.calls
+          .map(([sql]) => sql)
+          .find(
+            (sql) =>
+              typeof sql === "string" &&
+              sql.includes("s.transfer_account_id IS NULL"),
+          ),
+      );
+      expect(conditions.sort()).toEqual([
+        "(s.transfer_account_id IS NULL OR c.category_type = 'transfer')",
+        "s.transfer_account_id IS NULL",
+      ]);
     });
 
     it("analyzes spending and returns category suggestions", async () => {

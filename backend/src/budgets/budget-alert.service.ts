@@ -58,6 +58,7 @@ import {
   resolveCategorySpent,
   resolveOutsideTransferIncome,
 } from "./budget-spending.util";
+import { budgetFunding, isTransferFundingLine } from "./budget-funding.util";
 import { FALLBACK_DEFAULT_CURRENCY } from "../common/default-currency.util";
 import {
   NumberT,
@@ -84,6 +85,11 @@ interface CategoryActual {
   spent: number;
   percentUsed: number;
   isIncome: boolean;
+  /**
+   * An income line whose actual is Transfer Funding (`isTransferFundingLine`);
+   * absent reads as Actual Income.
+   */
+  isTransferFunding?: boolean;
   alertWarnPercent: number;
   alertCriticalPercent: number;
   flexGroup: string | null;
@@ -653,10 +659,19 @@ export class BudgetAlertService {
   ): AlertCandidate | null {
     if (periodProgress < 0.5) return null;
 
-    const totalActualIncome = sumMoney([
-      ...incomeActuals.map((cat) => cat.spent),
+    // Total Budget Funding, the figure this alert has always compared, with
+    // its two parts beside it (docs/specs/transfer-categories.md section 6.2).
+    const {
+      totalIncome: totalActualIncome,
+      categoryIncome,
+      transferFunding,
+    } = budgetFunding(
+      incomeActuals.map((cat) => ({
+        actual: cat.spent,
+        isTransferFunding: cat.isTransferFunding === true,
+      })),
       budgetIncome.outsideTransferIncome,
-    ]);
+    );
     const expectedSoFar = expectedIncome * periodProgress;
     const incomeRatio = totalActualIncome / expectedSoFar;
     const currencyCode =
@@ -673,10 +688,12 @@ export class BudgetAlertService {
         title: "Income below expected",
         message:
           totalActualIncome < 0
-            ? `Net income: ${n.formatCurrency(totalActualIncome, currencyCode)}. Expected income to date: ${n.formatCurrency(expectedSoFar, currencyCode)}.`
-            : `Your actual income (${n.formatCurrency(totalActualIncome, currencyCode)}) is at ${n.formatPercent(Math.round(incomeRatio * 100), 0)} of expected income (${n.formatCurrency(expectedSoFar, currencyCode)}) at this point in the period.`,
+            ? `Net budget funding: ${n.formatCurrency(totalActualIncome, currencyCode)}. Expected income to date: ${n.formatCurrency(expectedSoFar, currencyCode)}.`
+            : `Your total budget funding (${n.formatCurrency(totalActualIncome, currencyCode)}) is at ${n.formatPercent(Math.round(incomeRatio * 100), 0)} of expected income (${n.formatCurrency(expectedSoFar, currencyCode)}) at this point in the period.`,
         data: {
           actualIncome: totalActualIncome,
+          categoryIncome,
+          transferFunding,
           expectedIncome: expectedSoFar,
           fullPeriodExpected: expectedIncome,
           ratio: Math.round(incomeRatio * 100),
@@ -1290,6 +1307,7 @@ export class BudgetAlertService {
         spent,
         percentUsed,
         isIncome: bc.isIncome,
+        isTransferFunding: isTransferFundingLine(bc),
         alertWarnPercent: bc.alertWarnPercent,
         alertCriticalPercent: bc.alertCriticalPercent,
         flexGroup: bc.flexGroup,

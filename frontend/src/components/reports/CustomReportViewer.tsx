@@ -147,7 +147,11 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
   // what was clicked; a listed transaction is flashed on its page.
   const handleDataPointClick = (id: string) => {
     if (!result) return;
-    router.push(customReportDrillDownHref(report?.filters, result, id));
+    router.push(
+      customReportDrillDownHref(report?.filters, result, id, {
+        transferMeasure: !!report?.config.transferMeasure,
+      }),
+    );
   };
 
   const timeframeOptions = [
@@ -163,7 +167,8 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
   // A plain "Total" does not say whether a both-direction figure is a signed
   // net or a sum of unsigned category amounts, so the headline names it.
   const measure = report ? customReportMeasure(report, result?.signedTotal) : null;
-  const signed = measure === 'netAmount' || measure === 'netCashMovement' || measure === 'average';
+  const signed =
+    measure === 'netAmount' || measure === 'netCashMovement' || measure === 'average' || measure === 'transfersNet';
   const signedTotal = result?.signedTotal && metric !== MetricType.AVERAGE;
   // A pie encodes only magnitudes, and a zero has no slice to hover or select.
   const signedPie = signed && result?.viewType === ReportViewType.PIE_CHART;

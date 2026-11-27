@@ -293,6 +293,7 @@
       "income": "Доход",
       "expenses": "Расходы",
       "transfers": "Переводы / Сбережения",
+      "transferCategories": "Transfer Categories",
       "transfersIn": "Входящие переводы (доход)",
       "trendMedian": "Тренд / Медиана",
       "amount": "Сумма"
@@ -757,5 +758,13 @@
     "carriedOut": "Перенесено в следующий",
     "targetPercent": "{percent} от дохода",
     "targetAmount": "{amount} за период"
+  },
+  "funding": {
+    "actualIncome": "Actual Income",
+    "transferFunding": "Transfer Funding",
+    "totalFunding": "Total Budget Funding",
+    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
+    "thisPeriod": "This period",
+    "parts": "Actual Income {income}, Transfer Funding {transfers}"
   }
 }

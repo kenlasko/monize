@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
 import {
   CategoryType,
+  categoryTypeIs,
   isIncomeCategory,
 } from "../categories/category-type.util";
 import { tr } from "../i18n/translate";
@@ -37,10 +38,20 @@ import {
   assertTransferAccountsOwned,
 } from "./budget-transfer-lines.util";
 
+/** No Transfer category on the leg or line whose category column is named. */
+const NOT_TRANSFER_CATEGORY = (column: string): string =>
+  `NOT EXISTS (SELECT 1 FROM categories tc WHERE tc.id = ${column} AND ${categoryTypeIs("tc", "transfer")})`;
+
 export interface CategoryAnalysis {
   categoryId: string;
   categoryName: string;
   isIncome: boolean;
+  /**
+   * The category's own type: a `transfer` suggestion is a Transfer category's
+   * outgoing line, read with the transfers, never as spending
+   * (docs/specs/transfer-categories.md section 6.1).
+   */
+  categoryType: CategoryType;
   average: number;
   median: number;
   p25: number;
@@ -174,6 +185,12 @@ export class BudgetGeneratorService {
         startDateStr,
         endDateStr,
         analysisMonths,
+        // The Transfer categories suggested as lines of their own: their
+        // incoming legs net on that line once applied (section 6.3), so a
+        // source's suggestion leaves them out, as the outgoing one does.
+        expenseAnalysis
+          .filter((c) => c.categoryType === "transfer")
+          .map((c) => c.categoryId),
       )
     ).map((t) => ({
       ...t,
@@ -185,9 +202,18 @@ export class BudgetGeneratorService {
         ? sumMoney(incomeAnalysis.map((i) => i.median))
         : 0;
 
-    const totalBudgeted = sumMoney(expenseAnalysis.map((c) => c.suggested));
+    // A Transfer category's outgoing line is a transfer, never spending
+    // (docs/specs/transfer-categories.md section 6.1).
+    const isTransferLine = (c: CategoryAnalysis) =>
+      c.categoryType === "transfer";
+    const totalBudgeted = sumMoney(
+      expenseAnalysis.filter((c) => !isTransferLine(c)).map((c) => c.suggested),
+    );
 
-    const totalTransfers = sumMoney(transfers.map((t) => t.suggested));
+    const totalTransfers = sumMoney([
+      ...transfers.map((t) => t.suggested),
+      ...expenseAnalysis.filter(isTransferLine).map((c) => c.suggested),
+    ]);
 
     return {
       categories: allCategories,
@@ -437,7 +463,14 @@ export class BudgetGeneratorService {
         .andWhere("t.transaction_date <= :endDate", { endDate })
         .andWhere("t.status != :void", { void: "VOID" })
         .andWhere("t.is_split = false")
-        .andWhere("t.is_transfer = false")
+        // A transfer leg is never income or spending, except that the
+        // outgoing legs of a Transfer category are suggested as its outgoing
+        // line (docs/specs/transfer-categories.md section 6.1).
+        .andWhere(
+          isIncome
+            ? "t.is_transfer = false"
+            : `(t.is_transfer = false OR ${categoryTypeIs("c", "transfer")})`,
+        )
         .andWhere("t.category_id IS NOT NULL")
         .andWhere(amountCondition)
         .groupBy("t.category_id")
@@ -470,6 +503,16 @@ export class BudgetGeneratorService {
         .andWhere("t.transaction_date <= :endDate", { endDate })
         .andWhere("t.status != :void", { void: "VOID" })
         .andWhere("t.is_transfer = false")
+        // A split's transfer line is a transfer even when it holds a
+        // category, as a whole transfer leg is left out above
+        // (docs/specs/transfer-categories.md section 9); a Transfer
+        // category's outgoing lines are suggested as its line, as its whole
+        // legs are.
+        .andWhere(
+          isIncome
+            ? "s.transfer_account_id IS NULL"
+            : `(s.transfer_account_id IS NULL OR ${categoryTypeIs("c", "transfer")})`,
+        )
         .andWhere("s.category_id IS NOT NULL")
         .andWhere(isIncome ? "s.amount > 0" : "s.amount < 0")
         .groupBy("s.category_id")
@@ -528,6 +571,7 @@ export class BudgetGeneratorService {
         categoryId: entry.categoryId,
         categoryName: entry.categoryName,
         isIncome: isIncomeCategory(entry),
+        categoryType: entry.categoryType,
         average: roundMoney(this.mean(monthlyAmounts)),
         median: roundMoney(this.percentile(sortedForPercentiles, 50)),
         p25: roundMoney(this.percentile(sortedForPercentiles, 25)),
@@ -671,6 +715,11 @@ export class BudgetGeneratorService {
           window,
         )
           .innerJoin("lt.account", "a")
+          // A leg holding a Transfer category is suggested on that
+          // category's own line (the expense analysis above), and the line
+          // wins over the account's once applied (docs/specs/
+          // transfer-categories.md section 6.3), so it is not planned twice.
+          .andWhere(NOT_TRANSFER_CATEGORY("t.category_id"))
           .select("a.id", "accountId")
           .addSelect("a.name", "accountName")
           .addSelect("a.account_type", "accountType")
@@ -688,6 +737,7 @@ export class BudgetGeneratorService {
           window,
         )
           .innerJoin("s.transferAccount", "a")
+          .andWhere(NOT_TRANSFER_CATEGORY("s.category_id"))
           .select("a.id", "accountId")
           .addSelect("a.name", "accountName")
           .addSelect("a.account_type", "accountType")
@@ -729,8 +779,16 @@ export class BudgetGeneratorService {
     startDate: string,
     endDate: string,
     analysisMonths: number,
+    linedTransferCategoryIds: readonly string[] = [],
   ): Promise<Omit<TransferAnalysis, "suggested">[]> {
     const window = { userId, periodStart: startDate, periodEnd: endDate };
+    const notLined = (column: string): [string, Record<string, unknown>] =>
+      linedTransferCategoryIds.length === 0
+        ? ["TRUE", {}]
+        : [
+            `(${column} IS NULL OR ${column} NOT IN (:...linedTransferCategoryIds))`,
+            { linedTransferCategoryIds: [...linedTransferCategoryIds] },
+          ];
     const [parentRows, splitRows] = await withScopedDb(
       this.dataSource,
       async (m) => {
@@ -740,6 +798,7 @@ export class BudgetGeneratorService {
         )
           .innerJoin("lt.account", "a")
           .andWhere("a.user_id = :userId")
+          .andWhere(...notLined("t.category_id"))
           .select("a.id", "accountId")
           .addSelect("a.name", "accountName")
           .addSelect("a.account_type", "accountType")
@@ -758,6 +817,7 @@ export class BudgetGeneratorService {
         )
           .innerJoin("s.transferAccount", "a")
           .andWhere("a.user_id = :userId")
+          .andWhere(...notLined("s.category_id"))
           .select("a.id", "accountId")
           .addSelect("a.name", "accountName")
           .addSelect("a.account_type", "accountType")

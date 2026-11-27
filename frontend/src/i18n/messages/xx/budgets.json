@@ -293,6 +293,7 @@
       "income": "[XX-Income-XX]",
       "expenses": "[XX-Expenses-XX]",
       "transfers": "[XX-Transfers / Savings-XX]",
+      "transferCategories": "[XX-Transfer Categories-XX]",
       "transfersIn": "[XX-Transfers In (Income)-XX]",
       "trendMedian": "[XX-Trend / Median-XX]",
       "amount": "[XX-Amount-XX]"
@@ -757,5 +758,13 @@
     "carriedOut": "[XX-Carried out-XX]",
     "targetPercent": "[XX-{percent} of income-XX]",
     "targetAmount": "[XX-{amount} per period-XX]"
+  },
+  "funding": {
+    "actualIncome": "[XX-Actual Income-XX]",
+    "transferFunding": "[XX-Transfer Funding-XX]",
+    "totalFunding": "[XX-Total Budget Funding-XX]",
+    "hint": "[XX-Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.-XX]",
+    "thisPeriod": "[XX-This period-XX]",
+    "parts": "[XX-Actual Income {income}, Transfer Funding {transfers}-XX]"
   }
 }

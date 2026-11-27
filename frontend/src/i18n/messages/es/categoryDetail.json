@@ -31,7 +31,9 @@
     "lastTransaction": "Última transacción",
     "convertedNote": "Convertido a {currency}",
     "partialRatesNote": "Algunos meses no tienen tipo de cambio",
-    "transferredThisYear": "Transferred this year"
+    "outgoingThisYear": "Outgoing This Year",
+    "incomingThisYear": "Incoming This Year",
+    "netThisYear": "Net This Year"
   },
   "topPayees": {
     "title": "Beneficiarios principales",

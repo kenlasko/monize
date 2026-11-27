@@ -632,6 +632,7 @@
   "reports": {
     "notFound": "Звіт з ідентифікатором {{ id }} не знайдено",
     "customTimeframeMissingDates": "Власний часовий проміжок вимагає вказати дати початку та закінчення",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "investmentNotFound": "Інвестиційний звіт з ідентифікатором {{ id }} не знайдено"
   },
   "scheduled": {

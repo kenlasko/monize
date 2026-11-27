@@ -139,6 +139,40 @@ describe('BudgetPeriodDetail', () => {
     expect(screen.getByText('$300.00')).toBeInTheDocument();
   });
 
+  it('shows a closed period\'s Actual Income and Transfer Funding beside the total (transfer categories, section 6.6)', () => {
+    render(
+      <BudgetPeriodDetail
+        period={{
+          ...mockPeriod,
+          actualIncome: 7500,
+          transferFunding: '2300.00000000',
+          categoryIncome: 5200,
+        }}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(screen.getByText('Actual Income')).toBeInTheDocument();
+    expect(screen.getByText('$5200.00', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.getByText('Transfer Funding')).toBeInTheDocument();
+    expect(screen.getByText('$2300.00', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.getByText('Total Budget Funding')).toBeInTheDocument();
+    expect(screen.getByText('$7500.00', { selector: 'dd' })).toBeInTheDocument();
+  });
+
+  it('shows one income figure for a period closed before the split was stored (section 10)', () => {
+    render(
+      <BudgetPeriodDetail
+        period={{ ...mockPeriod, transferFunding: null, categoryIncome: null }}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(screen.queryByText('Actual Income')).not.toBeInTheDocument();
+    expect(screen.queryByText('Transfer Funding')).not.toBeInTheDocument();
+    expect(screen.queryByText('Total Budget Funding')).not.toBeInTheDocument();
+  });
+
   it('shows no outside-transfer row when the close froze only the lines\' income', () => {
     render(
       <BudgetPeriodDetail

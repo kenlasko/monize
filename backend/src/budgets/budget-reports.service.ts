@@ -133,7 +133,18 @@ export interface LlmBudgetStatusResult {
   period: { start: string; end: string };
   totalBudgeted: number;
   totalSpent: number;
+  /** Total Budget Funding: `categoryIncome` plus `transferFunding`. */
   totalIncome: number;
+  /**
+   * Actual Income: the income lines on an Income or Expense category
+   * (docs/specs/transfer-categories.md section 6.2).
+   */
+  categoryIncome: number;
+  /**
+   * Transfer Funding: transfer income lines, income lines on a Transfer
+   * category and the transfers in from outside the budget. Not income.
+   */
+  transferFunding: number;
   remaining: number;
   percentUsed: number;
   overBudgetCategories: Array<{
@@ -388,6 +399,8 @@ export class BudgetReportsService {
       totalBudgeted: summary.totalBudgeted,
       totalSpent: summary.totalSpent,
       totalIncome: summary.totalIncome,
+      categoryIncome: summary.categoryIncome,
+      transferFunding: summary.transferFunding,
       remaining: summary.remaining,
       percentUsed: summary.percentUsed,
       overBudgetCategories,

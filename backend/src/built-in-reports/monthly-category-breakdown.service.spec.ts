@@ -328,6 +328,172 @@ describe("MonthlyCategoryBreakdownService", () => {
     );
   });
 
+  // docs/specs/transfer-categories.md section 7: a leg holding a Transfer
+  // category is on its category's row; every other leg, one holding an
+  // Expense category included, stays on its account's row.
+  describe("Transfer categories in the Transfers group", () => {
+    const transferParent = {
+      ...mockParentCategory,
+      id: "cat-transfers",
+      name: "Transfers",
+      categoryType: "transfer",
+    } as Category;
+    const savings = {
+      ...mockChildCategory,
+      id: "cat-savings",
+      parentId: "cat-transfers",
+      name: "Savings contributions",
+      categoryType: "transfer",
+    } as Category;
+    const mortgage = {
+      ...mockParentCategory,
+      id: "cat-mortgage",
+      name: "Mortgage",
+      categoryType: "expense",
+    } as Category;
+    const leg = (
+      account: string,
+      transferCategoryId: string | null,
+      outflow: string,
+      inflow: string,
+    ) => ({
+      month: "2026-03",
+      account_id: `acc-${account}`,
+      account_name: account,
+      transfer_category_id: transferCategoryId,
+      currency_code: "USD",
+      tx_date: FIXTURE_TX_DATE,
+      outflow,
+      inflow,
+      provisional_count: "0",
+    });
+    // Chequing -> HISA 500 and HISA -> Chequing 200 (Savings contributions),
+    // Chequing -> HISA 100 (none), Chequing -> Mortgage 1,500 (Expense:
+    // Mortgage, whose category the SQL does not report as a Transfer one).
+    const allAccounts = [
+      leg("Chequing", "cat-savings", "500", "200"),
+      leg("HISA", "cat-savings", "200", "500"),
+      leg("Chequing", null, "1600", "0"),
+      leg("HISA", null, "0", "100"),
+      leg("Mortgage", null, "0", "1500"),
+    ];
+    const run = async (legs: unknown[]) => {
+      categoriesRepository.find.mockResolvedValue([
+        transferParent,
+        savings,
+        mortgage,
+      ]);
+      scopedManager.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce(legs)
+        .mockResolvedValueOnce([]);
+      return service.getMonthlyCategoryBreakdown(
+        mockUserId,
+        "2026-03-01",
+        "2026-03-31",
+      );
+    };
+    const figure = (
+      rows: { kind: string; direction: string; total: number }[],
+      kind: string,
+      direction: string,
+      name: (r: never) => boolean,
+    ) =>
+      rows.find(
+        (r) => r.kind === kind && r.direction === direction && name(r as never),
+      )?.total;
+
+    it("lists the category's outgoing and incoming rows, all accounts", async () => {
+      const result = await run(allAccounts);
+      const rows = result.transfers.filter((r) => !r.isSubtotal);
+      const byCategory = (dir: string) =>
+        figure(
+          rows,
+          "category",
+          dir,
+          (r: { categoryId: string }) => r.categoryId === "cat-savings",
+        );
+      const byAccount = (dir: string, name: string) =>
+        figure(
+          rows,
+          "account",
+          dir,
+          (r: { accountName: string }) => r.accountName === name,
+        );
+      expect(byCategory("from")).toBe(700);
+      expect(byCategory("to")).toBe(-700);
+      expect(byAccount("from", "Chequing")).toBe(1600);
+      expect(byAccount("to", "Chequing")).toBeUndefined();
+      expect(byAccount("from", "HISA")).toBeUndefined();
+      expect(byAccount("to", "HISA")).toBe(-100);
+      expect(byAccount("to", "Mortgage")).toBe(-1500);
+      expect(rows).toHaveLength(5);
+      // The group total is what it was: every leg is on one row once.
+      expect(result.summary.transfers.total).toBe(0);
+      // The category row names its tree.
+      const row = rows.find((r) => r.categoryId === "cat-savings");
+      expect(row).toMatchObject({
+        categoryName: "Savings contributions",
+        parentId: "cat-transfers",
+        parentName: "Transfers",
+        accountId: null,
+      });
+    });
+
+    it("rolls a parent's rows up per direction, outside the group total", async () => {
+      const result = await run(allAccounts);
+      const subtotals = result.transfers.filter((r) => r.isSubtotal);
+      expect(
+        subtotals.map((r) => [r.categoryId, r.direction, r.total]),
+      ).toEqual([
+        ["cat-transfers", "from", 700],
+        ["cat-transfers", "to", -700],
+      ]);
+      expect(result.summary.transfers.total).toBe(0);
+    });
+
+    it("counts only the scope's legs, Chequing only", async () => {
+      const result = await run([
+        leg("Chequing", "cat-savings", "500", "200"),
+        leg("Chequing", null, "1600", "0"),
+      ]);
+      const rows = result.transfers.filter((r) => !r.isSubtotal);
+      expect(rows.map((r) => [r.kind, r.direction, r.total])).toEqual([
+        ["category", "from", 500],
+        ["category", "to", -200],
+        ["account", "from", 1600],
+      ]);
+      expect(result.summary.transfers.total).toBe(1900);
+    });
+
+    it("reads the leg's own category, a whole leg's and a line's", async () => {
+      await run([]);
+      const [whole, line] = [
+        scopedManager.query.mock.calls[1][0],
+        scopedManager.query.mock.calls[2][0],
+      ];
+      expect(whole).toContain(
+        "LEFT JOIN categories tc ON tc.id = t.category_id",
+      );
+      expect(line).toContain(
+        "LEFT JOIN categories tc ON tc.id = ts.category_id",
+      );
+      expect(whole).toContain("tc.category_type = 'transfer'");
+    });
+
+    it("leaves a leg on its account's row when its category is not in scope", async () => {
+      const result = await run([leg("Chequing", "cat-gone", "50", "0")]);
+      expect(result.transfers).toEqual([
+        expect.objectContaining({
+          kind: "account",
+          accountName: "Chequing",
+          direction: "from",
+          total: 50,
+        }),
+      ]);
+    });
+  });
+
   it("builds an expense row with parent metadata and signed monthly values", async () => {
     scopedManager.query.mockResolvedValueOnce([
       {

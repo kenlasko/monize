@@ -456,6 +456,10 @@ export const getBudgetStatusOutput = toolOutput({
   period: looseObject({ start: str, end: str }).optional(),
   totalBudgeted: num.optional(),
   totalSpent: num.optional(),
+  // Total Budget Funding. Its two parts, categoryIncome (Actual Income) and
+  // transferFunding (transfers that fund the budget, never income), ride in
+  // the loose result unenumerated: tools/list is held to its byte budget
+  // (tools-list-budget.spec.ts), and the names say what they are.
   totalIncome: num.optional(),
   remaining: num.optional(),
   percentUsed: num.optional(),

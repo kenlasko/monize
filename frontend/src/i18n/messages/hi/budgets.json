@@ -293,6 +293,7 @@
       "income": "आय",
       "expenses": "व्यय",
       "transfers": "स्थानांतरण / बचत",
+      "transferCategories": "Transfer Categories",
       "transfersIn": "आने वाले ट्रांसफ़र (आय)",
       "trendMedian": "प्रवृत्ति / मध्यम",
       "amount": "राशि"
@@ -757,5 +758,13 @@
     "carriedOut": "आगे गए",
     "targetPercent": "आय का {percent}",
     "targetAmount": "प्रति अवधि {amount}"
+  },
+  "funding": {
+    "actualIncome": "Actual Income",
+    "transferFunding": "Transfer Funding",
+    "totalFunding": "Total Budget Funding",
+    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
+    "thisPeriod": "This period",
+    "parts": "Actual Income {income}, Transfer Funding {transfers}"
   }
 }

@@ -20,7 +20,7 @@
 | 1 | Specification | -- | none | [ ] |
 | 2 | The category type, end to end | 1 | none while no Transfer category exists | [x] |
 | 3 | Rules for what a row may hold, on every write path | 2 | yes | [x] |
-| 4 | Reports and budgets | 3 | yes | [ ] |
+| 4 | Reports and budgets | 3 | yes | [x] |
 | 5 | Docs, end-to-end tests, locales, release notes | 4 | none | [ ] |
 
 The PRs run strictly in this order.
@@ -68,11 +68,11 @@ Done when the entry-point matrix is green and each importer's existing fixtures 
 
 Every read that shows a Transfer category.
 
-- [ ] Monthly Category Breakdown: Transfers group by Transfer category, then by account for every other transfer; its screen.
-- [ ] Register filters, grouped totals, category detail for a Transfer category, MCP flow totals.
-- [ ] Custom reports: Transfer categories in filters and groups; Outgoing / Incoming / Net; INV-REPORT-004 amended; builder and viewer.
-- [ ] Budget line on a Transfer category; the category line wins over the account line.
-- [ ] Actual Income, Transfer Funding, Total Budget Funding on every budget income surface, period close included; wizard, edit page and period detail.
+- [x] Monthly Category Breakdown: Transfers group by Transfer category, then by account for every other transfer; its screen. (899965ca2)
+- [x] Register filters, grouped totals, category detail for a Transfer category, MCP flow totals. (b33238508)
+- [x] Custom reports: Transfer categories in filters and groups; Outgoing / Incoming / Net; INV-REPORT-004 amended; builder and viewer. (9697f0f08)
+- [x] Budget line on a Transfer category; the category line wins over the account line. (affca042a)
+- [x] Actual Income, Transfer Funding, Total Budget Funding on every budget income surface, period close included; wizard, edit page and period detail. (a9709c1f0, d847cf17a, 961de34f9)
 
 Done when a report or budget with no Transfer category returns the figures it returned before, and the new figures match the specification's numerical examples.
 

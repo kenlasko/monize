@@ -293,6 +293,7 @@
       "income": "Entrate",
       "expenses": "Uscite",
       "transfers": "Trasferimenti / Risparmio",
+      "transferCategories": "Transfer Categories",
       "transfersIn": "Trasferimenti in entrata (reddito)",
       "trendMedian": "Trend / Mediana",
       "amount": "Importo"
@@ -757,5 +758,13 @@
     "carriedOut": "Riportato in uscita",
     "targetPercent": "{percent} delle entrate",
     "targetAmount": "{amount} per periodo"
+  },
+  "funding": {
+    "actualIncome": "Actual Income",
+    "transferFunding": "Transfer Funding",
+    "totalFunding": "Total Budget Funding",
+    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
+    "thisPeriod": "This period",
+    "parts": "Actual Income {income}, Transfer Funding {transfers}"
   }
 }

@@ -6,6 +6,22 @@ import { TransactionAnalyticsService } from "../../transactions/transaction-anal
 import { resolveUserContext, hasScope } from "../mcp-context";
 import { formatDateYMD, todayYMD } from "../../common/date-utils";
 
+/**
+ * What a row is, beside its category's name: a transfer leg (a whole leg or a
+ * split's transfer line) says so, and its category's type is named, so a
+ * Transfer category is read as a transfer between own accounts, never as
+ * spending or income (docs/specs/transfer-categories.md section 9).
+ */
+function flowLabel(
+  category: { categoryType?: string } | null | undefined,
+  isTransfer: boolean,
+): { categoryType?: string; isTransfer?: true } {
+  return {
+    ...(category?.categoryType ? { categoryType: category.categoryType } : {}),
+    ...(isTransfer ? { isTransfer: true as const } : {}),
+  };
+}
+
 @Injectable()
 export class McpRecentTransactionsResource {
   constructor(
@@ -112,6 +128,7 @@ export class McpRecentTransactionsResource {
                               date: t.transactionDate,
                               payeeName: t.payeeName,
                               categoryName: s.category?.name,
+                              ...flowLabel(s.category, !!s.transferAccountId),
                               amount: Number(s.amount),
                               accountName: t.account?.name,
                               isSplit: true,
@@ -121,6 +138,7 @@ export class McpRecentTransactionsResource {
                                 date: t.transactionDate,
                                 payeeName: t.payeeName,
                                 categoryName: t.category?.name,
+                                ...flowLabel(t.category, !!t.isTransfer),
                                 amount: Number(t.amount),
                                 accountName: t.account?.name,
                               },

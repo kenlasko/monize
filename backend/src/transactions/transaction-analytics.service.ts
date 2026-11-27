@@ -5,7 +5,9 @@ import {
 } from "../categories/category-fit";
 import { Injectable, Logger } from "@nestjs/common";
 import {
+  type CategoryType,
   categoryTypeOf,
+  isCategoryType,
   isTransferCategory,
 } from "../categories/category-type.util";
 import {
@@ -1163,6 +1165,14 @@ export class TransactionAnalyticsService {
         groupBy === "category"
           ? "COALESCE(groupSplitCat.name, groupCat.name)"
           : "COALESCE(groupPayee.name, transaction.payeeName)";
+      // A group's category type, so a surface labels a Transfer category's
+      // group a transfer rather than spending or income
+      // (docs/specs/transfer-categories.md section 9). One per id, so it adds
+      // no group.
+      const typeExpr =
+        groupBy === "category"
+          ? "COALESCE(groupSplitCat.categoryType, groupCat.categoryType)"
+          : "NULL";
       if (groupBy === "category") {
         queryBuilder
           .leftJoin("transaction.category", "groupCat")
@@ -1174,8 +1184,10 @@ export class TransactionAnalyticsService {
       queryBuilder
         .select(idExpr, "id")
         .addSelect(nameExpr, "name")
+        .addSelect(typeExpr, "categoryType")
         .groupBy(idExpr)
         .addGroupBy(nameExpr);
+      if (groupBy === "category") queryBuilder.addGroupBy(typeExpr);
 
       queryBuilder
         .addSelect("transaction.currencyCode", "currencyCode")
@@ -1209,6 +1221,9 @@ export class TransactionAnalyticsService {
         (row) => ({
           id: (row.id ?? null) as string | null,
           name: (row.name ?? null) as string | null,
+          categoryType: isCategoryType(row.categoryType)
+            ? row.categoryType
+            : null,
         }),
       );
     });
@@ -3140,6 +3155,12 @@ interface AnalyticsReadFilters {
 export interface GroupedTotalRow {
   id: string | null;
   name: string | null;
+  /**
+   * The group's category type when grouped by category (null for the
+   * uncategorized group and when grouped by payee): a `transfer` group holds
+   * transfer legs, a named flow, never spending or income.
+   */
+  categoryType: CategoryType | null;
   currencyCode: string;
   total: number;
   count: number;

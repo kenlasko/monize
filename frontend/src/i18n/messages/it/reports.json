@@ -448,6 +448,8 @@
     "labelMetric": "Metrica",
     "labelDirection": "Direzione",
     "labelCategoryType": "Tipo di categoria",
+    "labelTransferMeasure": "Transfer Measure",
+    "transferMeasureBudgetVariance": "A transfer measure cannot be combined with a budget variance",
     "checkboxTransfers": "Includi trasferimenti",
     "checkboxFavourites": "Aggiungi ai preferiti",
     "sortByPlaceholder": "Predefinito",
@@ -471,8 +473,13 @@
       "netAmount": "Importo netto",
       "netCashMovement": "Movimento di cassa netto",
       "unsignedTotal": "Totale degli importi di categoria senza segno",
-      "unsignedAverage": "Media degli importi di categoria senza segno"
+      "unsignedAverage": "Media degli importi di categoria senza segno",
+      "transfersOutgoing": "Outgoing transfers",
+      "transfersIncoming": "Incoming transfers",
+      "transfersNet": "Net transfers"
     },
+    "unknownKnownPart": "Unknown ({amount} known)",
+    "partialRow": "(partial: a rate is missing)",
     "truncatedNotice": "Questo report ha raggiunto il limite di righe e mostra solo le più vecchie, quindi i suoi valori sono parziali. Restringi il periodo o i filtri per vederle tutte.",
     "toasts": {
       "loadFailed": "Caricamento report non riuscito",
@@ -1220,6 +1227,8 @@
     "totalTransfers": "Totale trasferimenti",
     "transferFrom": "Da",
     "transferTo": "A",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Totale complessivo",
     "includeCurrentMonth": "Includi mese corrente",
     "includeCurrentYear": "Includi anno corrente",
@@ -1969,6 +1978,12 @@
       "COUNT": "Numero di transazioni",
       "AVERAGE": "Importo medio",
       "BUDGET_VARIANCE": "Varianza budget"
+    },
+    "transferMeasure": {
+      "NONE": "None (income and expenses)",
+      "OUTGOING": "Outgoing transfers",
+      "INCOMING": "Incoming transfers",
+      "NET": "Net transfers"
     },
     "categoryType": {
       "ALL": "Tutte",

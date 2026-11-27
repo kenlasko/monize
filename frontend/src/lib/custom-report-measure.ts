@@ -1,4 +1,4 @@
-import { DirectionFilter, GroupByType, MetricType, type CustomReport } from '@/types/custom-report';
+import { DirectionFilter, GroupByType, MetricType, TransferMeasure, type CustomReport } from '@/types/custom-report';
 
 /**
  * What a custom report's headline measures, when a plain "Total" would not say
@@ -13,16 +13,30 @@ export type CustomReportMeasure =
   | 'netCashMovement'
   | 'unsignedTotal'
   | 'average'
-  | 'unsignedAverage';
+  | 'unsignedAverage'
+  | 'transfersOutgoing'
+  | 'transfersIncoming'
+  | 'transfersNet';
 
 type MeasureReport = Pick<CustomReport, 'groupBy'> & {
-  config: Pick<CustomReport['config'], 'metric' | 'direction' | 'includeTransfers'>;
+  config: Pick<CustomReport['config'], 'metric' | 'direction' | 'includeTransfers'> &
+    Partial<Pick<CustomReport['config'], 'transferMeasure'>>;
+};
+
+/** What a transfer measure's money figures are; a count stays a count. */
+const TRANSFER_MEASURES: Record<TransferMeasure, CustomReportMeasure> = {
+  [TransferMeasure.OUTGOING]: 'transfersOutgoing',
+  [TransferMeasure.INCOMING]: 'transfersIncoming',
+  [TransferMeasure.NET]: 'transfersNet',
 };
 
 /**
  * Only ungrouped No Aggregation lists individual signed transactions.
  */
 export function isSignedTransactionList({ groupBy, config }: MeasureReport): boolean {
+  if (config.transferMeasure) {
+    return groupBy === GroupByType.NONE && config.metric === MetricType.NONE;
+  }
   return (
     groupBy === GroupByType.NONE &&
     config.metric === MetricType.NONE &&
@@ -33,6 +47,12 @@ export function isSignedTransactionList({ groupBy, config }: MeasureReport): boo
 
 export function customReportMeasure(report: MeasureReport, signedTotal = false): CustomReportMeasure | null {
   const { config } = report;
+  // A transfer measure names its figures whatever the stored direction says:
+  // the server reads the measure in its place (docs/specs/transfer-categories.md
+  // section 8.2).
+  if (config.transferMeasure) {
+    return config.metric === MetricType.COUNT ? null : TRANSFER_MEASURES[config.transferMeasure];
+  }
   if (config.direction === DirectionFilter.EXPENSES_ONLY || config.direction === DirectionFilter.INCOME_ONLY) return null;
   const sum = config.metric === MetricType.TOTAL_AMOUNT || config.metric === MetricType.NONE;
   if (isSignedTransactionList(report) || (signedTotal && sum)) {

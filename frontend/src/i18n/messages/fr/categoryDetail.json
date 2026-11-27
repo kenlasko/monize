@@ -31,7 +31,9 @@
     "lastTransaction": "Dernière transaction",
     "convertedNote": "Converti en {currency}",
     "partialRatesNote": "Certains mois n'ont pas de taux de change",
-    "transferredThisYear": "Transferred this year"
+    "outgoingThisYear": "Outgoing This Year",
+    "incomingThisYear": "Incoming This Year",
+    "netThisYear": "Net This Year"
   },
   "topPayees": {
     "title": "Principaux bénéficiaires",

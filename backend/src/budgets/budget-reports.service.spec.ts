@@ -76,6 +76,7 @@ function spending(
     transferProvisionalCounts: new Map(),
     transferIncomeProvisionalCounts: new Map(),
     outsideTransferIncomeProvisionalCount: 0,
+    categoryProvisionalCounts: new Map(),
     provisionalCount: 0,
   };
 }
@@ -2353,6 +2354,24 @@ describe("BudgetReportsService", () => {
       expect(result.nearLimitCategories[0].category).toBe("Rent");
       expect(result.velocity?.safeDailySpend).toBe(75);
       expect(result.healthScore?.score).toBe(82);
+    });
+
+    it("names Actual Income and Transfer Funding beside Total Budget Funding", async () => {
+      budgetsService.getSummary.mockResolvedValue({
+        ...summary,
+        totalIncome: 6650,
+        categoryIncome: 5000,
+        transferFunding: 1650,
+      });
+
+      const result = await service.getLlmBudgetStatus("user-1");
+
+      if ("error" in result) throw new Error("unexpected error payload");
+      expect(result).toMatchObject({
+        totalIncome: 6650,
+        categoryIncome: 5000,
+        transferFunding: 1650,
+      });
     });
 
     it("reports a shortfall on a category with no positive spending base", async () => {
