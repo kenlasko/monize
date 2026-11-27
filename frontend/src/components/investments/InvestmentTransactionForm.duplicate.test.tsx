@@ -137,6 +137,9 @@ beforeEach(() => {
   } as any);
   getRateForDateMock.mockReset();
   getRateForDateMock.mockResolvedValue(null);
+  // Before the render, never after it: the case that sets a count must not
+  // leave it for the next, and a reset at a test's end re-renders outside act().
+  usePreferencesStore.setState({ preferences: null } as any);
 });
 
 describe('duplicating an investment transaction', () => {
