@@ -29,7 +29,10 @@ export type OverrideInvestmentProvenance = Map<
 >;
 import { validateSplitAmountSum } from "../common/split-amount.util";
 import { withScopedDb } from "../common/db/scoped-db";
-import { fitOverrideCategories } from "./scheduled-category-fit";
+import {
+  fitOverrideCategories,
+  lockOverrideCategoryOwner,
+} from "./scheduled-category-fit";
 import { assertAmountPrecision } from "../common/amount-precision.util";
 import {
   loadCurrencyPlaces,
@@ -155,6 +158,9 @@ export class ScheduledTransactionOverrideService {
     amountCurrencyCode?: string,
   ): Promise<ScheduledTransactionOverride> {
     return withScopedDb(this.dataSource, async (m) => {
+      // First lock: the category-owner lock before the schedule's row lock
+      // the checks below take (`common/db/locks.ts`).
+      await lockOverrideCategoryOwner(m, scheduledTransactionId, createDto);
       const decimals = await this.assertOverrideAmountsPrecision(
         m,
         amountCurrencyCode,
@@ -380,6 +386,9 @@ export class ScheduledTransactionOverrideService {
       override.autoPost = updateDto.autoPost;
 
     return withScopedDb(this.dataSource, async (m) => {
+      // First lock: the category-owner lock before the schedule's row lock
+      // the checks below take (`common/db/locks.ts`).
+      await lockOverrideCategoryOwner(m, scheduledTransactionId, override);
       const decimals = await this.assertOverrideAmountsPrecision(
         m,
         amountCurrencyCode,

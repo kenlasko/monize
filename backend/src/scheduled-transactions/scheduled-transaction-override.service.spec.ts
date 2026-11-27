@@ -126,6 +126,29 @@ describe("ScheduledTransactionOverrideService", () => {
       expect(overridesRepository.save).not.toHaveBeenCalled();
     });
 
+    it("takes the category-owner lock before the schedule's row lock when the override names a category", async () => {
+      // `common/db/locks.ts`: the advisory lock first, then the row locks the
+      // auto-post check and the fit take.
+      await service.createOverride(scheduledTransactionId, {
+        originalDate: "2025-02-15",
+        overrideDate: "2025-02-15",
+        amount: -80,
+        categoryId: "cat-1",
+        autoPost: true,
+      });
+      const ownerLock = manager.query.mock.calls.findIndex(([sql]) =>
+        String(sql).includes("pg_advisory_xact_lock_shared"),
+      );
+      const firstRowLock = schedulesRepository.findOne.mock.calls.findIndex(
+        ([options]) => options?.lock !== undefined,
+      );
+      expect(ownerLock).toBeGreaterThanOrEqual(0);
+      expect(firstRowLock).toBeGreaterThanOrEqual(0);
+      expect(manager.query.mock.invocationCallOrder[ownerLock]).toBeLessThan(
+        schedulesRepository.findOne.mock.invocationCallOrder[firstRowLock],
+      );
+    });
+
     it("stores an estimated occurrence's opt-in once it states the amount", async () => {
       schedulesRepository.findOne.mockResolvedValue({
         id: scheduledTransactionId,
