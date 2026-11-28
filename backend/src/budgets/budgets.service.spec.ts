@@ -1,3 +1,4 @@
+import { requestContextStorage } from "../common/request-context";
 import { Test, TestingModule } from "@nestjs/testing";
 import { Currency } from "../currencies/entities/currency.entity";
 import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
@@ -2628,6 +2629,37 @@ describe("BudgetsService", () => {
       expect(result!.safeDailySpend).toBeGreaterThanOrEqual(0);
       expect(typeof result!.daysRemaining).toBe("number");
       expect(result!.daysRemaining).toBeGreaterThanOrEqual(0);
+    });
+
+    it("counts daysRemaining in the user's day, not the server's", async () => {
+      jest.useFakeTimers({
+        now: new Date("2026-10-30T23:30:00Z"),
+        doNotFake: ["nextTick", "setImmediate", "queueMicrotask"],
+      });
+      try {
+        budgetsRepository.findOne.mockResolvedValue({
+          ...mockBudget,
+          categories: [],
+        });
+        transactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            getRawMany: jest.fn().mockResolvedValue([]),
+          }),
+        );
+        splitsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            getRawMany: jest.fn().mockResolvedValue([]),
+          }),
+        );
+        // Pacific/Kiritimati is already on 31 October: the last day, 0 left.
+        const result = await requestContextStorage.run(
+          { userId: "user-1", timezone: "Pacific/Kiritimati" },
+          () => service.getDashboardSummary("user-1"),
+        );
+        expect(result!.daysRemaining).toBe(0);
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("returns zero percentUsed when totalBudgeted is zero", async () => {

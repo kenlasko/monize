@@ -1,6 +1,7 @@
 import { ConflictException, NotFoundException } from "@nestjs/common";
 import { DataSource, EntityManager } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
+import { withUserContext } from "../../common/db/with-context";
 import { CurrenciesService } from "../../currencies/currencies.service";
 import { UsersService } from "../../users/users.service";
 import { ImportPostProcessingService } from "../import-post-processing.service";
@@ -43,7 +44,9 @@ jest.mock("../../common/db/scoped-db", () => ({
 }));
 
 jest.mock("../../common/db/with-context", () => ({
-  withUserContext: <T>(_userId: string, fn: () => T): T => fn(),
+  withUserContext: jest.fn(<T>(_userId: string, fn: () => T, _tz?: string): T =>
+    fn(),
+  ),
   withSystemContext: <T>(fn: () => T): T => fn(),
 }));
 
@@ -90,6 +93,9 @@ jest.mock("./writers/fit-mny-category", () => ({
 }));
 
 const mockedScopedDb = withScopedDb as jest.MockedFunction<typeof withScopedDb>;
+let mockManager: EntityManager;
+// `start` resolves the user's timezone before it hands the job to the worker.
+const flushBackground = () => new Promise((resolve) => setImmediate(resolve));
 const mockedWriteAccounts = writeAccounts as jest.MockedFunction<
   typeof writeAccounts
 >;
@@ -337,7 +343,10 @@ describe("MnyImportService", () => {
       getRepository: jest.fn((entity: { name?: string }) =>
         entity?.name === "UserPreference" ? preferenceRepo : accountRepo,
       ),
+      // The timezone read the job's identity is seeded from.
+      query: jest.fn().mockResolvedValue([]),
     } as unknown as EntityManager;
+    mockManager = manager;
     mockedScopedDb.mockImplementation((_dataSource, fn) => fn(manager));
 
     mockedWriteAccounts.mockResolvedValue({
@@ -474,6 +483,7 @@ describe("MnyImportService", () => {
 
     it("creates the job with resolved options and starts it in the background", async () => {
       const job = await service.start("user-1", { stagedFileId: "staged-1" });
+      await flushBackground();
 
       expect(job).toEqual({ id: "job-1" });
       expect(jobs.create).toHaveBeenCalledWith(
@@ -515,6 +525,7 @@ describe("MnyImportService", () => {
         // the exclusion, via `LockScope.UserImport` and its job row.
         "mny-import",
       );
+      await flushBackground();
       // The wipe re-authenticates, so its credentials must not reach
       // import_jobs.options.
       const [, , options] = jobs.create.mock.calls[0];
@@ -603,8 +614,7 @@ describe("MnyImportService", () => {
       jobs.runClaimed.mockRejectedValue(new Error("pool exhausted"));
 
       await service.start("user-1", { stagedFileId: "staged-1" });
-      await Promise.resolve();
-      await Promise.resolve();
+      await flushBackground();
 
       expect(error).toHaveBeenCalledWith(
         expect.stringContaining("pool exhausted"),
@@ -618,8 +628,7 @@ describe("MnyImportService", () => {
       jobs.runClaimed.mockRejectedValue(new Error("pool exhausted"));
 
       await service.start("user-1", { stagedFileId: "staged-1" });
-      await Promise.resolve();
-      await Promise.resolve();
+      await flushBackground();
 
       expect(jobs.fail).toHaveBeenCalledWith(
         "job-1",
@@ -636,9 +645,27 @@ describe("MnyImportService", () => {
       await expect(
         service.start("user-1", { stagedFileId: "staged-1" }),
       ).resolves.toBeDefined();
-      await Promise.resolve();
-      await Promise.resolve();
+      await flushBackground();
     });
+
+    it.each(["Pacific/Kiritimati", "America/Los_Angeles"])(
+      "seeds the job's identity with the user's timezone (%s), so todayYMD() is the user's day",
+      async (timezone) => {
+        (mockManager.query as jest.Mock).mockResolvedValue([
+          { timezone, last_client_timezone: null },
+        ]);
+        (withUserContext as jest.Mock).mockClear();
+
+        await service.start("user-1", { stagedFileId: "staged-1" });
+        await flushBackground();
+
+        expect(withUserContext).toHaveBeenCalledWith(
+          "user-1",
+          expect.any(Function),
+          timezone,
+        );
+      },
+    );
 
     it("runs the import as the job body", async () => {
       const runImport = jest
@@ -646,6 +673,7 @@ describe("MnyImportService", () => {
         .mockResolvedValue({} as never);
 
       await service.start("user-1", { stagedFileId: "staged-1" });
+      await flushBackground();
       await jobs.runClaimed.mock.calls[0][2](context);
 
       expect(runImport).toHaveBeenCalledWith(
@@ -1570,6 +1598,7 @@ describe("MnyImportService", () => {
         stagedFileId: "staged-1",
         sourceFormat: "kmy",
       });
+      await flushBackground();
       await jobs.runClaimed.mock.calls[0][2](context);
 
       expect(jobs.create).toHaveBeenCalledWith(

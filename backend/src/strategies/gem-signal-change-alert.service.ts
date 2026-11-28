@@ -5,6 +5,7 @@ import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { withSystemContext, withUserContext } from "../common/db/with-context";
 import { returnedRows } from "../common/db/query-result";
+import { getEffectiveTimezoneOfUser } from "../common/users-by-timezone.util";
 import {
   NotificationSeverity,
   NotificationType,
@@ -76,9 +77,18 @@ export class GemSignalChangeAlertService {
       let fired = 0;
       for (const userId of userIds) {
         try {
-          fired += await withUserContext(userId, () =>
-            this.evaluateUser(userId),
-          );
+          // The report is cut at the user's day, so the identity carries the
+          // user's timezone (todayYMD() would otherwise be the server's day).
+          fired += await withUserContext(userId, async () => {
+            const timezone = await withScopedDb(this.dataSource, (m) =>
+              getEffectiveTimezoneOfUser(m, userId),
+            );
+            return withUserContext(
+              userId,
+              () => this.evaluateUser(userId),
+              timezone,
+            );
+          });
         } catch (error) {
           this.logger.error(
             `GEM signal-change evaluation failed for user ${userId}`,

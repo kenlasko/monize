@@ -1054,6 +1054,33 @@ describe("HoldingsService", () => {
       expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
     });
 
+    it("cuts the ledger replay at the user's today, not the server's (#2365 g)", async () => {
+      // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
+      jest.useFakeTimers({
+        now: new Date("2026-11-27T12:00:00Z"),
+        doNotFake: ["nextTick", "setImmediate", "queueMicrotask"],
+      });
+      try {
+        mockQueryRunner.manager.query.mockResolvedValue([
+          { timezone: "Pacific/Kiritimati", last_client_timezone: null },
+        ]);
+        stubReads([{ ...mockHolding, quantity: 150, averageCost: 15 }], []);
+        const ledgerRead = mockQueryRunner.manager.find.mock;
+
+        await service.findLedgerDiscrepancies(
+          USER,
+          mockQueryRunner.manager as never,
+        );
+
+        const call = ledgerRead.calls.find(
+          (c: unknown[]) => c[0] === InvestmentTransaction,
+        );
+        expect(call![1].where.transactionDate._value).toBe("2026-11-28");
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it("reports nothing when the stored row already equals the replay", async () => {
       stubReads(
         [{ ...mockHolding, quantity: 150, averageCost: 2500 / 150 }],

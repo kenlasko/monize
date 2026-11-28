@@ -10,6 +10,7 @@ import {
 import { DataSource, In } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
 import { withUserContext } from "../../common/db/with-context";
+import { getEffectiveTimezoneOfUser } from "../../common/users-by-timezone.util";
 import { Account } from "../../accounts/entities/account.entity";
 import { Holding } from "../../securities/entities/holding.entity";
 import { HoldingsService } from "../../securities/holdings.service";
@@ -243,16 +244,28 @@ export class MnyImportService {
     // Unawaited on purpose (design ADR-3): the request returns the job id and
     // the wizard polls. `withUserContext` keeps an identity for the async chain
     // once the request scope is gone.
-    void withUserContext(userId, () =>
-      this.jobs.runClaimed(userId, job.id, (context) =>
-        format === "mny"
-          ? this.runImport(userId, staged.id, options, context)
-          : this.runImport(userId, staged.id, options, context, {
-              format,
-              filename: staged.filename,
-            }),
-      ),
-    ).catch(async (error) => {
+    //
+    // The identity also carries the user's timezone: the stored balances the
+    // import writes are cut at `todayYMD()`, which is the server's day without
+    // it, so a transaction dated the user's today would be left out.
+    void withUserContext(userId, async () => {
+      const timezone = await withScopedDb(this.dataSource, (m) =>
+        getEffectiveTimezoneOfUser(m, userId),
+      );
+      return withUserContext(
+        userId,
+        () =>
+          this.jobs.runClaimed(userId, job.id, (context) =>
+            format === "mny"
+              ? this.runImport(userId, staged.id, options, context)
+              : this.runImport(userId, staged.id, options, context, {
+                  format,
+                  filename: staged.filename,
+                }),
+          ),
+        timezone,
+      );
+    }).catch(async (error) => {
       const detail = error instanceof Error ? error.message : String(error);
       this.logger.error(`Import job ${job.id} could not be started: ${detail}`);
       // `runClaimed` reports its own body's failures; reaching here means the
