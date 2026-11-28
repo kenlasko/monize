@@ -568,6 +568,7 @@ function InvestmentsContent() {
                   isLoading={data.isLoading}
                   onDelete={handleDeleteTransaction}
                   onEdit={data.handleEditTransaction}
+                  onDuplicate={data.handleDuplicateTransaction}
                   onStatusChanged={data.handleFormCreateAndNew}
                   filters={data.transactionFilters}
                   onFiltersChange={data.handleFiltersChange}
@@ -685,12 +686,20 @@ function InvestmentsContent() {
         isOpen={data.showTransactionForm}
         onClose={closeInvestmentTransactionModal}
         {...investmentTransactionModalProps(investmentFormNeedsConversion)}
-        {...data.modalProps} title={data.editingTransaction ? t('page.editTransaction') : t('page.newInvestmentTransaction')}>
+        {...data.modalProps}
+        title={
+          data.editingTransaction
+            ? t('page.editTransaction')
+            : data.duplicatingTransaction
+              ? t('page.duplicateInvestmentTransaction')
+              : t('page.newInvestmentTransaction')
+        }>
         <InvestmentTransactionForm
           key={`${data.editingTransaction?.id ?? 'new'}-${createOnDate ?? ''}`}
           accounts={data.accounts}
           allAccounts={data.allAccounts}
           transaction={data.editingTransaction}
+          duplicateFrom={data.duplicatingTransaction}
           defaultAccountId={data.getSelectedBrokerageAccountId()}
           defaultDate={createOnDate}
           onSuccess={handleInvestmentTransactionSuccess}

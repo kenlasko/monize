@@ -44,14 +44,17 @@ vi.mock('./InvestmentTransactionForm', () => ({
   InvestmentTransactionForm: ({
     defaultAccountId,
     allAccounts,
+    duplicateFrom,
     onConversionStateChange,
   }: {
     defaultAccountId?: string;
     allAccounts?: { id: string }[];
+    duplicateFrom?: { id: string };
     onConversionStateChange?: (needsConversion: boolean) => void;
   }) => (
     <div data-testid="investment-form">
       {defaultAccountId}
+      <span data-testid="form-duplicate-from">{duplicateFrom?.id ?? ''}</span>
       <span data-testid="form-all-accounts">
         {allAccounts === undefined ? 'undefined' : allAccounts.map((a) => a.id).join(',')}
       </span>
@@ -815,6 +818,40 @@ describe('InvestmentRegisterPanel', () => {
         fireEvent.click(screen.getByText('+ New Brokerage Transaction'));
       });
       expect(document.querySelector('.max-w-xl')).toBeInTheDocument();
+    });
+
+    it('duplicates a trade into a new entry, and a later New starts blank', async () => {
+      (investmentsApi.getTransactions as ReturnType<typeof vi.fn>).mockResolvedValue({
+        data: [
+          {
+            id: 'tx-1',
+            accountId: 'brok',
+            action: 'DIVIDEND',
+            transactionDate: '2026-01-05',
+            quantity: null,
+            price: null,
+            totalAmount: 12,
+            security: { symbol: 'VTI', name: 'Vanguard', currencyCode: 'CAD' },
+          },
+        ],
+        pagination: { total: 1, page: 1, limit: 25, totalPages: 1 },
+      });
+      await renderPanel(brokerage, cash);
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByText('Duplicate')[0]);
+      });
+      expect(screen.getByText('Duplicate Investment Transaction')).toBeInTheDocument();
+      expect(screen.getByTestId('form-duplicate-from')).toHaveTextContent('tx-1');
+
+      await act(async () => {
+        fireEvent.keyDown(document, { key: 'Escape' });
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('+ New Brokerage Transaction'));
+      });
+      expect(screen.getByText('New Investment Transaction')).toBeInTheDocument();
+      expect(screen.getByTestId('form-duplicate-from')).toHaveTextContent('');
     });
 
     it('says Edit Transaction when a row is being edited', async () => {

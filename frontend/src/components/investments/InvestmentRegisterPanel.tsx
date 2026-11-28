@@ -250,6 +250,30 @@ export function InvestmentRegisterPanel({
 
   const brokerageForm = useFormModal<InvestmentTransaction>();
   const cashForm = useFormModal<Transaction>();
+  // The row a new brokerage entry is copied from (Duplicate); every other way
+  // of opening the form clears it.
+  const [duplicatingFrom, setDuplicatingFrom] = useState<InvestmentTransaction | undefined>(
+    undefined,
+  );
+  const { openCreate: openBrokerageCreate, openEdit: openBrokerageEditRaw } = brokerageForm;
+  const openBrokerageNew = useCallback(() => {
+    setDuplicatingFrom(undefined);
+    openBrokerageCreate();
+  }, [openBrokerageCreate]);
+  const openBrokerageEdit = useCallback(
+    (transaction: InvestmentTransaction) => {
+      setDuplicatingFrom(undefined);
+      openBrokerageEditRaw(transaction);
+    },
+    [openBrokerageEditRaw],
+  );
+  const openBrokerageDuplicate = useCallback(
+    (transaction: InvestmentTransaction) => {
+      setDuplicatingFrom(transaction);
+      openBrokerageCreate();
+    },
+    [openBrokerageCreate],
+  );
 
   // Every way out of the brokerage modal resets the conversion width, so
   // reopening it starts narrow rather than at the last form's size.
@@ -265,12 +289,12 @@ export function InvestmentRegisterPanel({
   const handleEditCashRow = useCallback(
     (transaction: Transaction) =>
       editCashRow(transaction, {
-        openInvestment: brokerageForm.openEdit,
+        openInvestment: openBrokerageEdit,
         openCash: cashForm.openEdit,
         onLookupFailed: (error) =>
           toast.error(getErrorMessage(error, t('register.loadFailed'))),
       }),
-    [brokerageForm.openEdit, cashForm.openEdit, t],
+    [openBrokerageEdit, cashForm.openEdit, t],
   );
 
   const handleDeleteBrokerage = useCallback(
@@ -326,8 +350,9 @@ export function InvestmentRegisterPanel({
             accounts={accountsForForm}
             isLoading={isFirstLoad}
             onDelete={handleDeleteBrokerage}
-            onEdit={brokerageForm.openEdit}
-            onNewTransaction={brokerageForm.openCreate}
+            onEdit={openBrokerageEdit}
+            onDuplicate={openBrokerageDuplicate}
+            onNewTransaction={openBrokerageNew}
             onStatusChanged={reload}
             viewToggle={toggle}
             filters={brokerageFilters}
@@ -428,13 +453,16 @@ export function InvestmentRegisterPanel({
         title={
           brokerageForm.editingItem
             ? tInv('page.editTransaction')
-            : tInv('page.newInvestmentTransaction')
+            : duplicatingFrom
+              ? tInv('page.duplicateInvestmentTransaction')
+              : tInv('page.newInvestmentTransaction')
         }
       >
         <InvestmentTransactionForm
           accounts={accountsForForm}
           allAccounts={allAccounts}
           transaction={brokerageForm.editingItem}
+          duplicateFrom={duplicatingFrom}
           defaultAccountId={holdingsAccount.id}
           onSuccess={() => {
             closeBrokerageForm();

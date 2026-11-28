@@ -183,6 +183,34 @@ describe("InvestmentTransactionsController", () => {
   });
 
   describe("findAll", () => {
+    it("passes a security filter through to the service", async () => {
+      service.findAll.mockResolvedValue({ data: [], total: 0 });
+
+      await controller.findAll(
+        req,
+        UUID1,
+        undefined,
+        undefined,
+        undefined,
+        "5",
+        undefined,
+        undefined,
+        UUID2,
+      );
+
+      expect(service.findAll).toHaveBeenCalledWith(
+        "user-1",
+        [UUID1],
+        undefined,
+        undefined,
+        undefined,
+        5,
+        undefined,
+        undefined,
+        UUID2,
+      );
+    });
+
     it("returns paginated transactions with default params", async () => {
       const response = {
         data: [mockTransaction],
@@ -203,6 +231,7 @@ describe("InvestmentTransactionsController", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
       );
       expect(result).toEqual(response);
     });
@@ -215,6 +244,7 @@ describe("InvestmentTransactionsController", () => {
       expect(service.findAll).toHaveBeenCalledWith(
         "user-1",
         [UUID1, UUID2],
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -278,6 +308,7 @@ describe("InvestmentTransactionsController", () => {
         25,
         "AAPL",
         "BUY",
+        undefined,
       );
     });
 
@@ -299,6 +330,7 @@ describe("InvestmentTransactionsController", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
       );
     });
 
@@ -314,6 +346,7 @@ describe("InvestmentTransactionsController", () => {
       expect(service.findAll).toHaveBeenCalledWith(
         "owner-1",
         ["00000000-0000-0000-0000-000000000000"],
+        undefined,
         undefined,
         undefined,
         undefined,

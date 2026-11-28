@@ -96,6 +96,8 @@ const PLAIN: Record<string, string> = {
     'a row from a file being imported: not a transaction yet, and the panel is a diagnostic',
   '/src/components/transactions/RecentTransactionsPopover.tsx':
     'inside the <button> that selects the transaction -- nothing interactive nests in a button',
+  '/src/components/investments/RecentInvestmentTransactionsPopover.tsx':
+    'inside the <button> that selects the transaction -- nothing interactive nests in a button',
   '/src/components/ui/SplitSubmitButton.tsx':
     'a menu option label inside a button, and composed by the app besides',
 };

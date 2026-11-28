@@ -1934,6 +1934,44 @@ describe("InvestmentTransactionsService", () => {
       });
     });
 
+    it("applies security filter by id", async () => {
+      const mockQB = createMockQueryBuilder([], 0);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
+
+      await service.findAll(
+        userId,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        "sec-1",
+      );
+
+      expect(mockQB.andWhere).toHaveBeenCalledWith(
+        "it.securityId = :securityId",
+        { securityId: "sec-1" },
+      );
+    });
+
+    it("applies no security filter when none is given", async () => {
+      const mockQB = createMockQueryBuilder([], 0);
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        mockQB,
+      );
+
+      await service.findAll(userId);
+
+      expect(mockQB.andWhere).not.toHaveBeenCalledWith(
+        "it.securityId = :securityId",
+        expect.anything(),
+      );
+    });
+
     it("uses custom page and limit values", async () => {
       const mockQB = createMockQueryBuilder([], 100);
       investmentTransactionsRepository.createQueryBuilder.mockReturnValue(

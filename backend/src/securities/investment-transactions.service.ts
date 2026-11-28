@@ -3613,6 +3613,7 @@ export class InvestmentTransactionsService {
     limit?: number,
     symbol?: string,
     action?: string,
+    securityId?: string,
   ): Promise<PaginatedResult<InvestmentTransaction>> {
     const {
       page: pageNum,
@@ -3668,6 +3669,10 @@ export class InvestmentTransactionsService {
 
       if (action) {
         query.andWhere("it.action = :action", { action });
+      }
+
+      if (securityId) {
+        query.andWhere("it.securityId = :securityId", { securityId });
       }
 
       const total = await query.getCount();

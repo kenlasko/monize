@@ -120,6 +120,11 @@ export function useInvestmentData() {
     openCreate, openEdit, close, isEditing: _isEditing,
     modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef,
   } = useFormModal<InvestmentTransaction>();
+  // The row a new entry is copied from (the register's Duplicate); cleared by
+  // every other way of opening the form.
+  const [duplicatingTransaction, setDuplicatingTransaction] = useState<
+    InvestmentTransaction | undefined
+  >(undefined);
   const [lastPriceUpdate, setLastPriceUpdate] = useState<string | null>(null);
   const [transactionFilters, setTransactionFilters] = useState<TransactionFilters>({});
   // Bumped by every write on either register and by a price refresh that
@@ -628,12 +633,24 @@ export function useInvestmentData() {
     }
   };
 
-  const handleNewTransaction = () => openCreate();
-  const handleEditTransaction = (transaction: InvestmentTransaction) => openEdit(transaction);
+  const handleNewTransaction = () => {
+    setDuplicatingTransaction(undefined);
+    openCreate();
+  };
+  const handleEditTransaction = (transaction: InvestmentTransaction) => {
+    setDuplicatingTransaction(undefined);
+    openEdit(transaction);
+  };
+  const handleDuplicateTransaction = (transaction: InvestmentTransaction) => {
+    setDuplicatingTransaction(transaction);
+    openCreate();
+  };
 
   // "Create & New" keeps the form open, so the page only refreshes what it
   // shows behind it -- everything `handleFormSuccess` does bar the close.
   const handleFormCreateAndNew = () => {
+    // The form restarts blank, so the modal stops calling it a duplicate.
+    setDuplicatingTransaction(undefined);
     refreshAfterWrite();
   };
 
@@ -737,11 +754,12 @@ export function useInvestmentData() {
     transactions, pagination, currentPage,
     transactionFilters, handleFiltersChange,
     handleDeleteTransaction, handleNewTransaction, handleEditTransaction, handleFormSuccess,
+    handleDuplicateTransaction,
     handleFormCreateAndNew,
     handleSecurityClick, goToPage,
 
     // Transaction form modal
-    showTransactionForm, editingTransaction,
+    showTransactionForm, editingTransaction, duplicatingTransaction,
     close, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef,
     getSelectedBrokerageAccountId,
 
