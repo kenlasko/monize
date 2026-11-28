@@ -818,6 +818,38 @@ describe("built-in reports and investment cash accounts (integration)", () => {
    * over this branch).
    */
   describe("register analytics", () => {
+    it.each(["standalone", "embedded"])(
+      "keeps a %s BUY out of the outgoing breakdown and retains ordinary payments",
+      async (representation) => {
+        await insertTransaction({ amount: -15, categoryId: null });
+        if (representation === "standalone") {
+          await createBuy();
+          await insertTransaction({
+            amount: -60,
+            categoryId: groceriesCategoryId,
+          });
+        } else {
+          await createEmbeddedInvestmentParent({
+            ordinaryAmount: -60,
+            investmentAmount: -500,
+          });
+        }
+        const result = await withUserContext(userId, () =>
+          analytics.getLlmListTransactions(userId, {
+            startDate: START,
+            endDate: END,
+            direction: "outgoing",
+            groupBy: "category",
+          }),
+        );
+        expect(result.totalExpenses).toBe(75);
+        expect(result.breakdown).toMatchObject([
+          { categoryId: groceriesCategoryId, total: 60 },
+          { categoryId: null, total: 15 },
+        ]);
+      },
+    );
+
     it("does not file an embedded investment line under Uncategorized", async () => {
       await createEmbeddedInvestmentParent({
         ordinaryAmount: -60,
