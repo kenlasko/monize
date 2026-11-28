@@ -29,6 +29,8 @@ import { Account } from '@/types/account';
 import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { useLongPress, type LongPressRowHandlers } from '@/hooks/useLongPress';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useUiStyle } from '@/hooks/useUiStyle';
+import { InvestmentDayHeading } from '@/components/investments/variants/InvestmentDayHeading';
 import { RowActions } from '@/components/ui/row-actions/RowActions';
 import { RowActionSheet } from '@/components/ui/row-actions/RowActionSheet';
 import { DensityToggle } from '@/components/ui/DensityToggle';
@@ -179,6 +181,11 @@ interface InvestmentTransactionRowProps {
    * card cannot carry.
    */
   wrapped?: boolean;
+  /**
+   * The wrapped card sits under a date heading (Folio and Pebble on a phone,
+   * `InvestmentDayHeading`), so it drops its own date (issue #2508).
+   */
+  groupedByDate?: boolean;
 }
 
 const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
@@ -199,6 +206,7 @@ const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
   hasActions,
   hidden,
   wrapped = false,
+  groupedByDate = false,
 }: InvestmentTransactionRowProps) {
   const tc = useTranslations('common');
   const actionInfoFor = useInvestmentActionInfo();
@@ -256,6 +264,7 @@ const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
               onCycleStatus={onCycleStatus}
               voidText={voidText}
               hidden={hidden}
+              showDate={!groupedByDate}
             />
           </div>
         </td>
@@ -486,6 +495,12 @@ export function InvestmentTransactionList({
   // the `accounts` they pass, so neither has a column the card cannot carry.
   const isMobile = useIsMobile();
   const wrapped = isMobile && density === 'normal';
+  // Folio and Pebble head each day's cards with its date on a phone, as the
+  // cash register beside this one does (issue #2508); the server orders this
+  // register by date, so a change of date is a new day. Standard keeps the
+  // date on each card.
+  const uiStyle = useUiStyle();
+  const groupedByDate = wrapped && uiStyle !== 'standard';
 
   // The stored `investmentRegister` set (one per table kind), so the
   // Investments page and the account detail page's register panel follow the
@@ -827,6 +842,10 @@ export function InvestmentTransactionList({
                       </td>
                     </tr>
                   )}
+                  {groupedByDate &&
+                    (index === 0 || transactions[index - 1].transactionDate !== tx.transactionDate) && (
+                      <InvestmentDayHeading date={tx.transactionDate} today={today} />
+                    )}
                   <InvestmentTransactionRow
                     tx={tx}
                     accountName={accountMap.get(tx.accountId)}
@@ -845,6 +864,7 @@ export function InvestmentTransactionList({
                     hasActions={!!(onDelete || onEdit || onDuplicate)}
                     hidden={hiddenColumns}
                     wrapped={wrapped}
+                    groupedByDate={groupedByDate}
                   />
                 </Fragment>
               );

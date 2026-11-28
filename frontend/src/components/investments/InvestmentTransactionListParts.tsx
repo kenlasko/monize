@@ -284,6 +284,11 @@ interface InvestmentTransactionCardBodyProps {
   voidText: string;
   /** The register's hidden columns; each is absent from the card as from the tier row. */
   hidden: ReadonlySet<HideableColumn<'investmentRegister'>>;
+  /**
+   * False under a date heading (Folio and Pebble on a phone), which names the
+   * day for every card below it (issue #2508).
+   */
+  showDate?: boolean;
 }
 
 /**
@@ -310,6 +315,7 @@ export function InvestmentTransactionCardBody({
   onCycleStatus,
   voidText,
   hidden,
+  showDate = true,
 }: InvestmentTransactionCardBodyProps) {
   const t = useTranslations('investments');
   const isVisible = (id: string) => !(hidden as ReadonlySet<string>).has(id);
@@ -333,7 +339,11 @@ export function InvestmentTransactionCardBody({
     // 390px, with no word broken and the row down to 207px -- and
     // `documentElement.scrollWidth` and the table's own still equal the
     // viewport at 320, 390 and 800.
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 items-start">
+    // `ui-register-card-grouped` is the cash card's marker for a card under a
+    // date heading; Folio draws that heading as the phone's eyebrow from it.
+    <div
+      className={`grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 items-start ${showDate ? '' : 'ui-register-card-grouped'}`}
+    >
       {/* Line 1, left: when, and what was traded. The date leads, uncaptioned
           -- it is the row's identity and the one column a phone-width tier row
           already shows -- and it cannot shrink, so the action label and the
@@ -351,9 +361,11 @@ export function InvestmentTransactionCardBody({
           it hangs under the tier's Symbol cell at Normal density. */}
       <div className="min-w-0">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <span className={`text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap ${voidText}`}>
-            {formatDate(tx.transactionDate)}
-          </span>
+          {showDate && (
+            <span className={`text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap ${voidText}`}>
+              {formatDate(tx.transactionDate)}
+            </span>
+          )}
           <span className={`min-w-0 break-words text-sm font-medium ${actionInfo.color}`}>
             {actionInfo.label}
           </span>
