@@ -316,6 +316,28 @@ describe('BudgetEditPage', () => {
     });
   });
 
+  it('draws a partial line as unknown, with no progress bar (audit #2365 p)', async () => {
+    mockGetSummary.mockResolvedValue({
+      ...mockSummary,
+      categoryBreakdown: [
+        {
+          ...mockSummary.categoryBreakdown[0],
+          spent: 20,
+          percentUsed: 2,
+          valuationComplete: false,
+          missingRatePairs: ['QQQ->USD'],
+        },
+      ],
+    });
+    render(<BudgetEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Groceries')).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/2% used/)).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('unknown-amount').length).toBeGreaterThanOrEqual(1);
+  });
+
   it('shows expenses heading with count', async () => {
     render(<BudgetEditPage />);
 

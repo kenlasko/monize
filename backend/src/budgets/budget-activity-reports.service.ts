@@ -5,7 +5,7 @@ import { BudgetCategory } from "./entities/budget-category.entity";
 import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
-import { BudgetsService } from "./budgets.service";
+import { BudgetsService, lineUnknownPairs } from "./budgets.service";
 import {
   SeasonalPattern,
   FlexGroupStatusResult,
@@ -226,6 +226,9 @@ export class BudgetActivityReportsService {
       {
         totalBudgeted: number;
         totalSpent: number;
+        valuationComplete: boolean;
+        budgetedComplete: boolean;
+        pairs: Set<string>;
         categories: FlexGroupStatusResult["categories"];
       }
     >();
@@ -241,6 +244,9 @@ export class BudgetActivityReportsService {
         groupMap.set(flexGroup, {
           totalBudgeted: 0,
           totalSpent: 0,
+          valuationComplete: true,
+          budgetedComplete: true,
+          pairs: new Set(),
           categories: [],
         });
       }
@@ -248,12 +254,18 @@ export class BudgetActivityReportsService {
       const group = groupMap.get(flexGroup)!;
       group.totalBudgeted += cat.budgeted;
       group.totalSpent += cat.spent;
+      if (!cat.valuationComplete) group.valuationComplete = false;
+      if (!cat.budgetedComplete) group.budgetedComplete = false;
+      for (const pair of lineUnknownPairs(cat)) group.pairs.add(pair);
       group.categories.push({
         categoryId: cat.categoryId || "",
         categoryName: cat.categoryName,
         budgeted: reportFigure(cat.budgeted, places),
         spent: reportFigure(cat.spent, places),
         percentUsed: cat.percentUsed,
+        valuationComplete: cat.valuationComplete,
+        budgetedComplete: cat.budgetedComplete,
+        missingRatePairs: lineUnknownPairs(cat),
       });
     }
 
@@ -265,19 +277,32 @@ export class BudgetActivityReportsService {
         data.totalBudgeted > 0
           ? roundToDecimals((data.totalSpent / data.totalBudgeted) * 100, 2)
           : 0;
+      // The spent total needs every member's spent; what is left and the
+      // percent also need the budget ("A subtotal is not a total").
+      const figuresKnown = data.valuationComplete && data.budgetedComplete;
 
       results.push({
         groupName,
         totalBudgeted: reportFigure(data.totalBudgeted, places),
-        totalSpent: reportFigure(data.totalSpent, places),
-        remaining: reportFigure(remaining, places),
-        percentUsed,
+        totalSpent: data.valuationComplete
+          ? reportFigure(data.totalSpent, places)
+          : null,
+        knownTotalSpent: reportFigure(data.totalSpent, places),
+        remaining: figuresKnown ? reportFigure(remaining, places) : null,
+        percentUsed: figuresKnown ? percentUsed : null,
+        valuationComplete: data.valuationComplete,
+        budgetedComplete: data.budgetedComplete,
+        missingRatePairs: [...data.pairs].sort(),
         categories: data.categories,
       });
     }
 
-    // Sort by percentUsed descending
-    results.sort((a, b) => b.percentUsed - a.percentUsed);
+    // Sort by percentUsed descending; a group with no percent goes last.
+    results.sort(
+      (a, b) =>
+        Number(b.percentUsed !== null) - Number(a.percentUsed !== null) ||
+        (b.percentUsed ?? 0) - (a.percentUsed ?? 0),
+    );
 
     return results;
   }

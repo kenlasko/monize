@@ -275,16 +275,21 @@ export const getPortfolioSummaryOutput = toolOutput({
   pricesComplete: bool,
   unpricedSymbols: z.array(str),
   valuationComplete: bool,
-  totalCashValue: num,
-  totalHoldingsValue: num,
-  totalCostBasis: num,
-  totalPortfolioValue: num,
+  // Each total is null unless every component is known; the matching
+  // `known*Subtotal` (undeclared, for the budget reason below) carries the
+  // partial sum.
+  totalCashValue: numNull,
+  totalHoldingsValue: numNull,
+  totalCostBasis: numNull,
+  totalPortfolioValue: numNull,
+  knownPortfolioValueSubtotal: num.optional(),
   // `totalGainLoss` is over the holdings that have a value (value less THEIR
   // cost), a partial figure while `valuationComplete` is false. `gainCostBasis`
   // (the cost it is over) and `unpricedCostBasis` (the cost it leaves out)
   // reach the caller through the loose object rather than the schema, for the
   // same budget reason as the fields below (A26-M38).
-  totalGainLoss: num,
+  totalGainLoss: numNull,
+  knownGainLossSubtotal: num.optional(),
   totalGainLossPercent: numNull,
   // `timeWeightedReturn` is the invested part's TWR since the first
   // transaction; `null` is withheld, never zero. It travels with
@@ -459,6 +464,11 @@ export const getBudgetStatusOutput = toolOutput({
   strategy: str.optional(),
   period: looseObject({ start: str, end: str }).optional(),
   totalBudgeted: num.optional(),
+  // `num` is nullable: totalSpent, remaining, percentUsed and the income totals
+  // are null when a row had no rate to the budget currency. knownTotalSpent,
+  // valuationComplete, budgetedComplete, missingRatePairs and
+  // incompleteCategories ride in the loose result undeclared
+  // (tools-list-budget.spec.ts).
   totalSpent: num.optional(),
   // Total Budget Funding. Its two parts, categoryIncome (Actual Income) and
   // transferFunding (transfers that fund the budget, never income), ride in
@@ -476,13 +486,17 @@ export const getBudgetStatusOutput = toolOutput({
     // upcomingBillsComplete says so rather than leaving a bare null.
     safeDailySpend: num,
     upcomingBillsComplete: bool,
+    spendingComplete: bool.optional(),
     projectedTotal: num,
     projectedVariance: num,
     daysRemaining: num,
     paceStatus: str.nullable(),
     projectionMissingRatePairs: z.array(str).optional(),
   }).optional(),
-  healthScore: looseObject({ score: num, label: str }).optional(),
+  healthScore: looseObject({
+    score: num,
+    label: strNull,
+  }).optional(),
   // Not-found branch.
   error: str.optional(),
   availableBudgets: z.array(str).optional(),

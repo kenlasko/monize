@@ -14,6 +14,7 @@ import { SecurityValueByAccount } from "../bonds/bond-valuation.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { Currency } from "../currencies/entities/currency.entity";
+import { requestContextStorage } from "../common/request-context";
 import { rateIndexOf } from "../test-helpers/report-rate-testing";
 
 jest.mock("../common/db/scoped-db", () =>
@@ -3110,6 +3111,50 @@ describe("PortfolioCalculationService daily rate index", () => {
       expect(service.resolveDailyRate(index, "USD", "CAD", "2026-06-03")).toBe(
         1.5,
       );
+    });
+
+    describe("with a request timezone", () => {
+      // 03:00Z is 2026-06-11 in UTC and still 2026-06-10 in Los Angeles.
+      beforeEach(() => {
+        jest.useFakeTimers().setSystemTime(new Date("2026-06-11T03:00:00Z"));
+        exchangeRateService.getRateHistory.mockResolvedValue([
+          rate("USD", "CAD", 1.5, "2026-06-11"),
+        ]);
+      });
+      afterEach(() => jest.useRealTimers());
+
+      it("caps a date after the user's day at that day", async () => {
+        const index = await requestContextStorage.run(
+          { timezone: "America/Los_Angeles" },
+          () =>
+            service.buildDailyRateIndex(
+              ["USD"],
+              "CAD",
+              "2026-06-01",
+              "2026-06-11",
+            ),
+        );
+        expect(
+          service.resolveDailyRate(index, "USD", "CAD", "2026-06-11"),
+        ).toBeUndefined();
+      });
+
+      it("keeps the evening bar's UTC-dated close when the index is built on the UTC day", async () => {
+        const index = await requestContextStorage.run(
+          { timezone: "America/Los_Angeles" },
+          () =>
+            service.buildDailyRateIndex(
+              ["USD"],
+              "CAD",
+              "2026-06-01",
+              "2026-06-11",
+              "2026-06-11",
+            ),
+        );
+        expect(
+          service.resolveDailyRate(index, "USD", "CAD", "2026-06-11"),
+        ).toBe(1.5);
+      });
     });
 
     /**

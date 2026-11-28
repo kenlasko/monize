@@ -235,28 +235,51 @@ export interface AccountHoldings {
   valuationComplete: boolean;
 }
 
+/**
+ * Each `total*` figure of the summary is `null` unless every component of it is
+ * known (`AGENTS.md`, "A subtotal is not a total"); the sum of what did
+ * convert and was priced is in the `known*Subtotal` beside it. An empty portfolio
+ * holds zero and is complete, so its totals are 0, never null.
+ */
 export interface PortfolioSummary {
-  totalCashValue: number;
-  totalHoldingsValue: number;
-  totalCostBasis: number;
-  totalNetInvested: number;
-  totalPortfolioValue: number;
+  /** null when a cash balance could not be converted into the reporting currency. */
+  totalCashValue: number | null;
+  knownCashValueSubtotal: number;
+  /** null when a holding is unpriced or has no rate into the reporting currency. */
+  totalHoldingsValue: number | null;
+  knownHoldingsValueSubtotal: number;
+  /** null when a holding's cost has no rate into the reporting currency. */
+  totalCostBasis: number | null;
+  knownCostBasisSubtotal: number;
+  /** null when an account's cash or flows could not be converted. */
+  totalNetInvested: number | null;
+  knownNetInvestedSubtotal: number;
+  /** null unless `totalCashValue` and `totalHoldingsValue` are both known. */
+  totalPortfolioValue: number | null;
+  knownPortfolioValueSubtotal: number;
   /**
    * `totalPortfolioValue` less `totalNetInvested`, the Investments page's
    * Total Gain: the difference of the two aggregates read once at the
    * reporting currency's places, never the difference of the two readings,
    * which can sit a unit off it (docs/specs/report-rounding-and-aggregation.md
-   * rule 4). A partial figure whenever `valuationComplete` is false.
+   * rule 4). null unless the portfolio value and the net invested are both known.
    */
-  totalGainOverNetInvested: number;
+  totalGainOverNetInvested: number | null;
+  knownGainOverNetInvestedSubtotal: number;
   /**
    * The gain over the holdings that joined `totalHoldingsValue` and whose cost
    * converted: their value less THEIR cost, never less every holding's cost
-   * (A26-M38). A partial figure whenever `valuationComplete` is false.
+   * (A26-M38). null when a holding is unpriced or unconverted: the gain of the
+   * holdings that did value is `knownGainLossSubtotal`.
    */
-  totalGainLoss: number;
-  /** Over `gainCostBasis`; 0 when that is 0. */
-  totalGainLossPercent: number;
+  totalGainLoss: number | null;
+  knownGainLossSubtotal: number;
+  /**
+   * Over `gainCostBasis`; 0 when that is 0. null whenever `totalGainLoss` is: a
+   * percentage of a partial gain is `knownGainLossPercentSubtotal`.
+   */
+  totalGainLossPercent: number | null;
+  knownGainLossPercentSubtotal: number;
   /** Cost of the holdings `totalGainLoss` is over. */
   gainCostBasis: number;
   /**
@@ -314,8 +337,24 @@ export interface PortfolioSummary {
   /** `"EUR->USD"` for each pair with no available rate; empty when complete. */
   missingRatePairs: string[];
   /**
-   * False when a held position has no current price, which also makes every
-   * `total*` field above a subtotal.
+   * The pairs behind `totalPortfolioValue` alone (cash and holdings value, not
+   * a cost or a net-invested flow): what the allocation is missing.
+   */
+  portfolioValueMissingRatePairs: string[];
+  /**
+   * The pairs behind each other total alone, so a surface names the cause of
+   * the figure it marks partial and not the summary's whole list: a CHF cash
+   * balance with no rate does not make the cost basis or an unpriced holding's
+   * value a CHF problem.
+   */
+  cashMissingRatePairs: string[];
+  holdingsValueMissingRatePairs: string[];
+  costBasisMissingRatePairs: string[];
+  netInvestedMissingRatePairs: string[];
+  /**
+   * False when a held position has no current price, which makes the totals that
+   * value it (`totalHoldingsValue`, `totalPortfolioValue`, the gain and its
+   * percent) null. Each other total reads its own aggregate and stays known.
    *
    * Separate from `fxComplete` because the two have different causes and different
    * fixes -- a missing rate is a currencies problem, a missing price is a quotes
@@ -377,9 +416,56 @@ export interface AllocationItem {
   currencyCode?: string;
 }
 
+/**
+ * The allocation's completeness, copied from the summary it is built from. A
+ * holding that cannot be valued (no price, no rate) is left out of
+ * `allocation`, so the percentages are over the known value only, and
+ * `valuationComplete: false` says so.
+ */
 export interface AssetAllocation {
   allocation: AllocationItem[];
-  totalValue: number;
+  /** null unless every holding and cash balance is valued; see `knownSubtotal`. */
+  totalValue: number | null;
+  /** The value the percentages are measured against: what could be valued. */
+  knownSubtotal: number;
+  fxComplete: boolean;
+  /** `"EUR->USD"` for each pair with no rate; empty when complete. */
+  missingRatePairs: string[];
+  pricesComplete: boolean;
+  /** Securities held in a non-zero quantity with no current price. */
+  unpricedSecurityIds: string[];
+  /** The symbols of `unpricedSecurityIds`, for a message: an id means nothing to a reader. */
+  unpricedSymbols: string[];
+  /** `fxComplete && pricesComplete`; read as `=== false`. */
+  valuationComplete: boolean;
+}
+
+function allocationOf(
+  summary: PortfolioSummary,
+  allocation: AllocationItem[],
+): AssetAllocation {
+  return {
+    allocation,
+    totalValue: summary.totalPortfolioValue,
+    knownSubtotal: summary.knownPortfolioValueSubtotal,
+    // Only the value aggregates feed an allocation: a missing dated cost rate
+    // or net-invested flow leaves every slice valued.
+    fxComplete: summary.portfolioValueMissingRatePairs.length === 0,
+    missingRatePairs: summary.portfolioValueMissingRatePairs,
+    pricesComplete: summary.pricesComplete,
+    unpricedSecurityIds: summary.unpricedSecurityIds,
+    // A held position is always among the summary's holdings; one that is not
+    // is left out rather than named by its id.
+    unpricedSymbols: summary.unpricedSecurityIds
+      .flatMap((id) => {
+        const symbol = summary.holdings.find(
+          (h) => h.securityId === id,
+        )?.symbol;
+        return symbol ? [symbol] : [];
+      })
+      .sort(),
+    valuationComplete: summary.totalPortfolioValue !== null,
+  };
 }
 
 /**
@@ -465,15 +551,37 @@ export interface LlmPortfolioSummary {
   pricesComplete: boolean;
   /** Symbols held in a non-zero quantity with no current price. */
   unpricedSymbols: string[];
-  /** `fxComplete && pricesComplete` -- gate a total on this one. */
+  /**
+   * `fxComplete && pricesComplete`: true only when no figure is withheld. Read a
+   * figure's own `total*` for null; this flag is summary-wide and a gap in one
+   * aggregate (a cost rate) makes it false while the others stay known.
+   */
   valuationComplete: boolean;
-  totalCashValue: number;
-  totalHoldingsValue: number;
-  totalCostBasis: number;
-  totalPortfolioValue: number;
-  /** Over the holdings that have a value (`gainCostBasis`); partial when `valuationComplete` is false. */
-  totalGainLoss: number;
-  totalGainLossPercent: number;
+  /**
+   * The pairs behind the gain alone: the holdings value and the cost basis. The
+   * gain is withheld for a cost rate with no unpriced holding, and says so.
+   */
+  holdingsValueMissingRatePairs: string[];
+  costBasisMissingRatePairs: string[];
+  /**
+   * Each `total*` is null unless every component of it is known; the sum of
+   * what is known is in the `known*Subtotal` beside it. Never quote a subtotal
+   * as a total.
+   */
+  totalCashValue: number | null;
+  knownCashValueSubtotal: number;
+  totalHoldingsValue: number | null;
+  knownHoldingsValueSubtotal: number;
+  totalCostBasis: number | null;
+  knownCostBasisSubtotal: number;
+  totalPortfolioValue: number | null;
+  knownPortfolioValueSubtotal: number;
+  /** Over the holdings that have a value (`gainCostBasis`); null when a holding has no value. */
+  totalGainLoss: number | null;
+  knownGainLossSubtotal: number;
+  /** null whenever `totalGainLoss` is; the percent over the known holdings is `knownGainLossPercentSubtotal`. */
+  totalGainLossPercent: number | null;
+  knownGainLossPercentSubtotal: number;
   gainCostBasis: number;
   /** Cost the gain leaves out: holdings with no value. */
   unpricedCostBasis: number;
@@ -1275,23 +1383,69 @@ export class PortfolioService {
       ]),
     ].sort();
 
+    // A total is known only when every component of it is. Cash, holdings and
+    // net invested are three different questions, so each total reads its own.
+    // The holdings value and the cost basis are separate aggregates with
+    // separate rates (a dated cost rate can be missing while today's value
+    // converts), so each total reads its own.
+    const holdingsValueComplete =
+      holdingsAggregates.holdingsValue.isComplete &&
+      holdingsResult.pricesComplete;
+    const costBasisComplete = holdingsAggregates.costBasis.isComplete;
+    const portfolioComplete = cashResult.fxComplete && holdingsValueComplete;
+    // The gain pairs each value with its own cost, so it needs both sides.
+    const gainComplete = holdingsValueComplete && costBasisComplete;
+    const sortedPairs = (pairs: readonly string[]) =>
+      [...new Set(pairs)].sort();
+    const portfolioValueMissingRatePairs = [
+      ...new Set([
+        ...cashResult.missingRatePairs,
+        ...holdingsAggregates.holdingsValue.missingPairs,
+      ]),
+    ].sort();
+    const gainOverNetInvested = FxAggregate.difference(
+      portfolioValue,
+      netInvestedAgg,
+    ).knownSubtotalAt(places);
+
     return {
       valuation: {
-        totalCashValue,
-        totalHoldingsValue: holdingsResult.totalHoldingsValue,
-        totalCostBasis: holdingsResult.totalCostBasis,
-        totalNetInvested,
-        totalPortfolioValue,
-        totalGainOverNetInvested: FxAggregate.difference(
-          portfolioValue,
-          netInvestedAgg,
-        ).knownSubtotalAt(places),
-        totalGainLoss,
-        totalGainLossPercent,
+        totalCashValue: cashResult.fxComplete ? totalCashValue : null,
+        knownCashValueSubtotal: totalCashValue,
+        totalHoldingsValue: holdingsValueComplete
+          ? holdingsResult.totalHoldingsValue
+          : null,
+        knownHoldingsValueSubtotal: holdingsResult.totalHoldingsValue,
+        totalCostBasis: costBasisComplete
+          ? holdingsResult.totalCostBasis
+          : null,
+        knownCostBasisSubtotal: holdingsResult.totalCostBasis,
+        totalNetInvested: netInvestedAgg.isComplete ? totalNetInvested : null,
+        knownNetInvestedSubtotal: totalNetInvested,
+        totalPortfolioValue: portfolioComplete ? totalPortfolioValue : null,
+        knownPortfolioValueSubtotal: totalPortfolioValue,
+        totalGainOverNetInvested:
+          portfolioComplete && netInvestedAgg.isComplete
+            ? gainOverNetInvested
+            : null,
+        knownGainOverNetInvestedSubtotal: gainOverNetInvested,
+        totalGainLoss: gainComplete ? totalGainLoss : null,
+        knownGainLossSubtotal: totalGainLoss,
+        totalGainLossPercent: gainComplete ? totalGainLossPercent : null,
+        knownGainLossPercentSubtotal: totalGainLossPercent,
         gainCostBasis: holdingsResult.gainCostBasis,
         unpricedCostBasis: holdingsResult.unpricedCostBasis,
         fxComplete: missingRatePairs.length === 0,
         missingRatePairs,
+        portfolioValueMissingRatePairs,
+        cashMissingRatePairs: sortedPairs(cashResult.missingRatePairs),
+        holdingsValueMissingRatePairs: sortedPairs(
+          holdingsAggregates.holdingsValue.missingPairs,
+        ),
+        costBasisMissingRatePairs: sortedPairs(
+          holdingsAggregates.costBasis.missingPairs,
+        ),
+        netInvestedMissingRatePairs: sortedPairs(netInvestedAgg.missingPairs),
         pricesComplete: holdingsResult.pricesComplete,
         unpricedSecurityIds: holdingsResult.unpricedSecurityIds,
         valuationComplete:
@@ -1409,6 +1563,10 @@ export class PortfolioService {
     const asShown = (v: number | null | undefined): number =>
       v === null || v === undefined ? 0 : Number(v);
 
+    // A withheld total stays withheld: null is "not known", never 0.
+    const shownOrNull = (v: number | null | undefined): number | null =>
+      v === null || v === undefined ? null : Number(v);
+
     const toLlmHolding = (h: HoldingWithMarketValue): LlmPortfolioHolding => ({
       securityId: h.securityId,
       symbol: h.symbol,
@@ -1456,12 +1614,19 @@ export class PortfolioService {
     return {
       holdingCount: holdings.length,
       currency: await this.resolveDefaultCurrency(userId),
-      totalCashValue: asShown(summary.totalCashValue),
-      totalHoldingsValue: asShown(summary.totalHoldingsValue),
-      totalCostBasis: asShown(summary.totalCostBasis),
-      totalPortfolioValue: asShown(summary.totalPortfolioValue),
-      totalGainLoss: asShown(summary.totalGainLoss),
-      totalGainLossPercent: roundPct(summary.totalGainLossPercent) ?? 0,
+      totalCashValue: shownOrNull(summary.totalCashValue),
+      knownCashValueSubtotal: asShown(summary.knownCashValueSubtotal),
+      totalHoldingsValue: shownOrNull(summary.totalHoldingsValue),
+      knownHoldingsValueSubtotal: asShown(summary.knownHoldingsValueSubtotal),
+      totalCostBasis: shownOrNull(summary.totalCostBasis),
+      knownCostBasisSubtotal: asShown(summary.knownCostBasisSubtotal),
+      totalPortfolioValue: shownOrNull(summary.totalPortfolioValue),
+      knownPortfolioValueSubtotal: asShown(summary.knownPortfolioValueSubtotal),
+      totalGainLoss: shownOrNull(summary.totalGainLoss),
+      knownGainLossSubtotal: asShown(summary.knownGainLossSubtotal),
+      totalGainLossPercent: roundPct(summary.totalGainLossPercent),
+      knownGainLossPercentSubtotal:
+        roundPct(summary.knownGainLossPercentSubtotal) ?? 0,
       gainCostBasis: asShown(summary.gainCostBasis),
       unpricedCostBasis: asShown(summary.unpricedCostBasis),
       timeWeightedReturn: roundPct(summary.timeWeightedReturn),
@@ -1474,6 +1639,8 @@ export class PortfolioService {
       fxComplete: summary.fxComplete,
       missingRatePairs: summary.missingRatePairs,
       pricesComplete: summary.pricesComplete,
+      holdingsValueMissingRatePairs: summary.holdingsValueMissingRatePairs,
+      costBasisMissingRatePairs: summary.costBasisMissingRatePairs,
       // Symbols rather than ids: an id means nothing to a model or a reader.
       unpricedSymbols: summary.unpricedSecurityIds
         .map(
@@ -1866,10 +2033,7 @@ export class PortfolioService {
     accountIds?: string[],
   ): Promise<AssetAllocation> {
     const summary = await this.getPortfolioSummary(userId, accountIds);
-    return {
-      allocation: summary.allocation,
-      totalValue: summary.totalPortfolioValue,
-    };
+    return allocationOf(summary, summary.allocation);
   }
 
   /**
@@ -1890,7 +2054,7 @@ export class PortfolioService {
       inputs.totalCashValue,
       inputs.defaultCurrency,
     );
-    return { allocation, totalValue: inputs.totalValue };
+    return allocationOf(inputs.summary, allocation);
   }
 
   /**
@@ -1912,7 +2076,7 @@ export class PortfolioService {
       inputs.defaultCurrency,
       key,
     );
-    return { allocation, totalValue: inputs.totalValue };
+    return allocationOf(inputs.summary, allocation);
   }
 
   /**
@@ -2000,7 +2164,7 @@ export class PortfolioService {
       string,
       Array<{ id: string; name: string; color: string | null }>
     >;
-    totalValue: number;
+    summary: PortfolioSummary;
   }> {
     const summary = await this.getPortfolioSummary(userId, accountIds);
     const securityItems = summary.allocation.filter(
@@ -2023,7 +2187,7 @@ export class PortfolioService {
       totalCashValue,
       defaultCurrency,
       tagsBySymbol,
-      totalValue: summary.totalPortfolioValue,
+      summary,
     };
   }
 
@@ -3148,6 +3312,8 @@ export class PortfolioService {
             fxCurrencies,
             displayCurrency,
             indexStart,
+            indexEnd,
+            // The bars are dated by their UTC day, so the index is too.
             indexEnd,
           )
         : (new Map() as DailyRateIndex);

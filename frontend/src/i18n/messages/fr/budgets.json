@@ -134,6 +134,7 @@
       "carriedIn": "Reporté entrant :",
       "carriedOut": "Reporté sortant :"
     },
+    "noPositiveFunding": "Le taux d’utilisation nécessite un budget positif.",
     "overallUsage": "Utilisation globale du budget",
     "expenseCategories": "Catégories de dépenses",
     "incomeCategories": "Catégories de revenus",
@@ -164,6 +165,10 @@
     "projectedSavings": "Épargne projetée",
     "savingsChange": "Variation de l'épargne",
     "original": "Origine : {amount}"
+  },
+  "partialSpent": {
+    "reason": "Aucun taux de change n'est disponible pour {pairs} ; les dépenses dans ces devises ne sont donc pas comptées. Ajoutez le taux sur la page Devises.",
+    "known": "Dépenses converties jusqu'ici : {amount}."
   },
   "summaryCards": {
     "ariaLabel": "Totaux du budget",

@@ -1,5 +1,6 @@
 'use client';
 
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import { BudgetSummaryCards } from './BudgetSummaryCards';
 import { BudgetHealthGauge } from './BudgetHealthGauge';
 import { BudgetVelocityWidget } from './BudgetVelocityWidget';
@@ -15,7 +16,6 @@ import { BudgetScenarioPlanner } from './BudgetScenarioPlanner';
 import { STRATEGY_LABELS, STRATEGY_DESCRIPTIONS } from './utils/budget-labels';
 import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import type { BudgetSummary, BudgetTrendPoint, BudgetVelocity } from '@/types/budget';
-import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 
 interface DailySpending {
   date: string;
@@ -25,15 +25,14 @@ interface DailySpending {
 interface BudgetDashboardProps {
   summary: BudgetSummary;
   velocity: BudgetVelocity;
-  scheduledTransactions: ScheduledTransaction[];
   dailySpending: DailySpending[];
   trendData: BudgetTrendPoint[];
-  healthScore: number;
+  /** `null` while spending is partial (a row had no exchange rate). */
+  healthScore: number | null;
   /** The bucket-status request's state; read only for a Bucket budget. */
   bucketStatus?: BudgetBucketStatusState;
   /**
-   * The budget's own currency: what `formatCurrency` labels a bare amount with,
-   * and what the upcoming-bills panel converts each occurrence into.
+   * The budget's own currency: what `formatCurrency` labels a bare amount with.
    */
   displayCurrency: string;
   formatCurrency: (amount: number, currencyCode?: string) => string;
@@ -43,7 +42,6 @@ interface BudgetDashboardProps {
 export function BudgetDashboard({
   summary,
   velocity,
-  scheduledTransactions,
   dailySpending,
   trendData,
   healthScore,
@@ -52,6 +50,7 @@ export function BudgetDashboard({
   formatCurrency,
   onCategoryClick,
 }: BudgetDashboardProps) {
+  const partialReasonOf = useBudgetPartialReason();
   const { periodStart, periodEnd } = summary;
 
   // Compute pace percent: what % of the period has elapsed
@@ -61,6 +60,16 @@ export function BudgetDashboard({
       : 0;
 
   const strategy = summary.budget.strategy;
+  // Each unknown figure names its own cause: spending (the expense pairs), the
+  // income and what derives from it (the income pairs), and the health score
+  // (every pair behind a withheld line).
+  const partialReason = partialReasonOf(summary.missingRatePairs);
+  const incomePairs = summary.incomeMissingRatePairs ?? summary.budgetedMissingRatePairs;
+  const incomeReason = partialReasonOf(incomePairs);
+  const healthReason = partialReasonOf([
+    ...new Set([...(summary.missingRatePairs ?? []), ...(summary.budgetedMissingRatePairs ?? [])]),
+  ]);
+  const totalBudgeted = summary.budgetedComplete === false ? null : summary.totalBudgeted;
 
   return (
     <div className="space-y-6">
@@ -76,11 +85,13 @@ export function BudgetDashboard({
 
       {/* Summary Cards */}
       <BudgetSummaryCards
-        totalBudgeted={summary.totalBudgeted}
+        totalBudgeted={totalBudgeted}
         totalSpent={summary.totalSpent}
         remaining={summary.remaining}
         totalIncome={summary.totalIncome}
         percentUsed={summary.percentUsed}
+        partialReason={partialReason}
+        incomeReason={incomeReason}
         daysRemaining={velocity.daysRemaining}
         displayCurrency={displayCurrency}
         formatCurrency={formatCurrency}
@@ -93,7 +104,8 @@ export function BudgetDashboard({
       {strategy === 'ZERO_BASED' && (
         <BudgetZeroBasedBar
           totalIncome={summary.totalIncome}
-          totalBudgeted={summary.totalBudgeted}
+          partialReason={incomeReason}
+          totalBudgeted={totalBudgeted}
           formatCurrency={formatCurrency}
         />
       )}
@@ -102,6 +114,8 @@ export function BudgetDashboard({
           budgetCategories={summary.budget.categories}
           categoryBreakdown={summary.categoryBreakdown}
           totalIncome={summary.totalIncome}
+          partialReason={partialReason}
+          incomeReason={incomeReason}
           formatCurrency={formatCurrency}
         />
       )}
@@ -116,7 +130,7 @@ export function BudgetDashboard({
 
       {/* Health Gauge + Velocity Widget */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <BudgetHealthGauge score={healthScore} />
+        <BudgetHealthGauge score={healthScore} partialReason={healthReason} />
         <BudgetVelocityWidget
           velocity={velocity}
           formatCurrency={formatCurrency}
@@ -141,14 +155,7 @@ export function BudgetDashboard({
 
       {/* Upcoming Bills + Heatmap */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <BudgetUpcomingBills
-          scheduledTransactions={scheduledTransactions}
-          currentSpent={summary.totalSpent}
-          totalBudgeted={summary.totalBudgeted}
-          periodEnd={periodEnd}
-          displayCurrency={displayCurrency}
-          formatCurrency={formatCurrency}
-        />
+        <BudgetUpcomingBills velocity={velocity} formatCurrency={formatCurrency} />
         <BudgetHeatmap
           dailySpending={dailySpending}
           periodStart={periodStart}
@@ -164,6 +171,7 @@ export function BudgetDashboard({
       <BudgetScenarioPlanner
         categories={summary.categoryBreakdown}
         totalIncome={summary.totalIncome}
+        partialReason={incomeReason}
         formatCurrency={formatCurrency}
       />
     </div>

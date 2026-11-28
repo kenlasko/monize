@@ -6,6 +6,7 @@ import { Select } from '@/components/ui/Select';
 import { ParsedQifMultiAccountResponse, DateFormat, DATE_FORMAT_OPTIONS } from '@/lib/import';
 import { ImportStep } from '@/app/import/import-utils';
 import { UnreadableAmountsNotice } from './UnreadableAmountsNotice';
+import { UnreadableDatesNotice } from './UnreadableDatesNotice';
 
 interface MultiAccountReviewStepProps {
   multiAccountData: ParsedQifMultiAccountResponse;
@@ -77,6 +78,21 @@ export function MultiAccountReviewStep({
           tagsCreated: tagDefs.length > 0 ? t('multiAccountReview.tagsCreated') : '',
         })}
       </p>
+
+      {/* The preview read the dates under the detected format; under another selected format the unreadable ones are known only after the import. */}
+      {dateFormat !== multiAccountData.detectedDateFormat && (
+        <div className="mb-6 rounded-lg p-4 bg-amber-50 dark:bg-amber-900/20 text-sm text-amber-800 dark:text-amber-300">
+          {t('multiAccountReview.unreadableDatesAfterImport', { format: dateFormat })}
+        </div>
+      )}
+      {dateFormat === multiAccountData.detectedDateFormat && (multiAccountData.unreadableDates?.count ?? 0) > 0 && (
+        <div className="mb-6">
+          <UnreadableDatesNotice
+            importFiles={[{ fileName: '', fileType: 'qif', parsedData: multiAccountData }]}
+            showFileNames={false}
+          />
+        </div>
+      )}
 
       {(multiAccountData.unreadableAmounts?.count ?? 0) > 0 && (
         <div className="mb-6">

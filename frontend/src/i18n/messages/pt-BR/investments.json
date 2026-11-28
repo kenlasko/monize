@@ -75,6 +75,8 @@
     "title": "Alocação de Ativos",
     "noData": "Sem dados de alocação disponíveis.",
     "knownValueOnly": "As porcentagens cobrem apenas o valor conhecido; algumas posições não puderam ser avaliadas.",
+    "knownValueOnlyMissing": "As porcentagens cobrem apenas o valor conhecido; algumas posições não puderam ser avaliadas. Não avaliado: {items}. Adicione os preços que faltam no histórico de preços de cada ativo e as taxas que faltam na página Moedas.",
+    "loadFailed": "Não foi possível carregar a alocação. Recarregue a página para tentar de novo.",
     "cash": "Numerário",
     "untagged": "Sem etiquetas",
     "noTagData": "Não há posições etiquetadas para mostrar. Adicione etiquetas aos seus ativos para ver a exposição por etiqueta.",

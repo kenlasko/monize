@@ -1605,7 +1605,12 @@ describe("TransactionTransferService", () => {
       splitsRepository.findOne.mockResolvedValue(null);
       transactionsRepository.findOne.mockResolvedValue(toTx);
 
-      await service.removeTransfer("user-1", "from-tx", mockFindOne);
+      const removed = await service.removeTransfer(
+        "user-1",
+        "from-tx",
+        mockFindOne,
+      );
+      expect([...removed].sort()).toEqual(["from-tx", "to-tx"]);
 
       // Reverse from transaction balance
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
@@ -1628,6 +1633,35 @@ describe("TransactionTransferService", () => {
         id: "from-tx",
         userId: "user-1",
       });
+    });
+
+    it("reports only the leg its DELETE removed when the mirror was already gone", async () => {
+      mockFindOne.mockResolvedValue({
+        id: "from-tx",
+        isTransfer: true,
+        linkedTransactionId: "to-tx",
+        accountId: "from-account",
+        amount: -500,
+      });
+      splitsRepository.findOne.mockResolvedValue(null);
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "to-tx",
+        accountId: "to-account",
+        amount: 500,
+      });
+      mockQueryRunner.manager.delete.mockImplementation(
+        async (_entity: unknown, where: { id: string }) => ({
+          affected: where.id === "to-tx" ? 0 : 1,
+        }),
+      );
+
+      const removed = await service.removeTransfer(
+        "user-1",
+        "from-tx",
+        mockFindOne,
+      );
+
+      expect(removed).toEqual(["from-tx"]);
     });
 
     it("reverses no balance when deleting a VOID pair (RR3-003)", async () => {
@@ -6066,7 +6100,14 @@ describe("TransactionTransferService", () => {
       it("connected: removes both legs and reverses both balances under system context", async () => {
         connect();
 
-        await service.removeTransfer("user-1", "own-leg", mockFindOne, actor);
+        const removed = await service.removeTransfer(
+          "user-1",
+          "own-leg",
+          mockFindOne,
+          actor,
+        );
+        // The other owner's leg went too, but it is not the caller's row.
+        expect(removed).toEqual(["own-leg"]);
 
         expect(crossOwnerAccess.accountAccessFor).toHaveBeenCalledWith(
           "user-1",
@@ -6131,7 +6172,14 @@ describe("TransactionTransferService", () => {
       it("frozen: removes the own leg only and reverses only the own balance", async () => {
         freeze();
 
-        await service.removeTransfer("user-1", "own-leg", mockFindOne, actor);
+        const removed = await service.removeTransfer(
+          "user-1",
+          "own-leg",
+          mockFindOne,
+          actor,
+        );
+        // The detached counterpart survives and is not reported.
+        expect(removed).toEqual(["own-leg"]);
 
         expect(mockQueryRunner.manager.delete).toHaveBeenCalledTimes(1);
         expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(

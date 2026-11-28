@@ -39,7 +39,7 @@ import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { PartialTotal } from '@/components/ui/PartialTotal';
-import { portfolioPartialTotal } from '@/lib/net-worth-completeness';
+import { summaryFigure } from '@/lib/portfolio-headline';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
 import { WidgetCard, WidgetConfigRow, WidgetMessage } from './WidgetCard';
@@ -178,7 +178,8 @@ export function PortfolioValueWidget({
     onRefresh(scope);
   }, [config.accountIds, summary, onRefresh]);
 
-  const totalPortfolioValue = summary?.totalPortfolioValue ?? null;
+  // A withheld total shows as its known subtotal, under the partial marker.
+  const valueTotal = summary ? summaryFigure(summary, 'portfolioValue') : null;
   // The headline is a subtotal whenever the server says a holding has no price
   // or a currency no rate (`valuationComplete === false`; absent is no
   // information). It stays on screen under the marker, which names the missing
@@ -324,13 +325,13 @@ export function PortfolioValueWidget({
       <div className="mb-2 flex items-center justify-end gap-2" data-testid="portfolio-figures">
         {isMobile && refreshButton}
         <div className="flex flex-col items-end gap-0.5">
-          {totalPortfolioValue !== null && (
+          {valueTotal !== null && (
             <span className="whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
               <PartialTotal
-                total={portfolioPartialTotal(totalPortfolioValue, summary)}
+                total={valueTotal}
                 displayCurrency={defaultCurrency}
               >
-                {formatCurrency(totalPortfolioValue, defaultCurrency)}
+                {formatCurrency(valueTotal.value, defaultCurrency)}
               </PartialTotal>
             </span>
           )}

@@ -539,7 +539,6 @@ describe('GroupedHoldingsList', () => {
         holdingsByAccount={accounts as never}
         isLoading={false}
         totalPortfolioValue={100000}
-        valuationComplete={false}
       />,
     );
 
@@ -707,13 +706,13 @@ describe('GroupedHoldingsList', () => {
         {...clickHandlers}
         holdingsByAccount={accounts as never}
         isLoading={false}
-        totalPortfolioValue={500}
-        valuationComplete={false}
+        totalPortfolioValue={null}
       />,
     );
 
-    // This holding is 100% of the KNOWN subtotal; presenting that as its share
-    // of the portfolio is exactly the subtotal-as-total mistake.
+    // The server withheld the total (a price or rate is missing), so the share
+    // of the KNOWN subtotal is not a share of the portfolio: `totalPortfolioValue`
+    // being null is the whole signal.
     expect(screen.queryByText('100.0%')).not.toBeInTheDocument();
   });
 

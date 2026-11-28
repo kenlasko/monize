@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { CARD_CLASS } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { MoneyFigure } from '@/components/ui/MoneyFigure';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { BudgetProgressBar } from '../BudgetProgressBar';
 import type { BudgetSummaryViewProps } from './budget-summary-view';
@@ -32,23 +33,37 @@ export function BudgetSummaryPebble({
   remaining,
   totalIncome,
   percentUsed,
+  partialReason,
+  incomeReason,
   daysRemaining,
   displayCurrency,
 }: BudgetSummaryViewProps) {
   const t = useTranslations('budgets');
   const { formatPercentTrimmed } = useNumberFormat();
-  const projectedSavings = totalIncome - totalSpent;
+  // Spent needs only its own rows; the percent, what is left and the budget
+  // need the budget's income too, so each unknown figure names its own cause.
+  const spentKnown = totalSpent !== null;
+  const percentKnown = percentUsed !== null;
+  const savingsKnown = totalSpent !== null && totalIncome !== null;
+  const projectedSavings = savingsKnown ? totalIncome - totalSpent : 0;
+  const unknownSpent = <UnknownAmount reasonText={partialReason} />;
+  const unknownIncome = <UnknownAmount reasonText={incomeReason ?? partialReason} />;
+  const unknownRemaining = totalSpent === null ? unknownSpent : unknownIncome;
   return (
     <section aria-label={t('summaryCards.ariaLabel')}>
       <dl className="ui-bud-blocks grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div className="ui-block-accent ui-bud-lead rounded-(--ui-radius-card) p-5 md:col-span-2 lg:col-span-1">
           <dt className="ui-figure-label">{t('summaryCards.remaining')}</dt>
           <dd className="ui-bud-lead-figure mt-2 text-5xl">
-            <MoneyFigure amount={Math.abs(remaining)} currencyCode={displayCurrency} display />
+            {remaining !== null ? (
+              <MoneyFigure amount={Math.abs(remaining)} currencyCode={displayCurrency} display />
+            ) : (
+              unknownRemaining
+            )}
           </dd>
           <dd className="mt-3 flex flex-wrap gap-2 text-sm font-semibold">
             <span className="ui-bud-lead-pill">
-              {remaining < 0
+              {remaining !== null && remaining < 0
                 ? t('summaryCards.overBudget')
                 : daysRemaining > 0
                   ? t('summaryCards.days', { count: String(daysRemaining) })
@@ -57,34 +72,54 @@ export function BudgetSummaryPebble({
           </dd>
         </div>
         <Block label={t('summaryCards.totalBudget')}>
-          <MoneyFigure amount={totalBudgeted} currencyCode={displayCurrency} display />
+          {totalBudgeted === null ? (
+            unknownIncome
+          ) : (
+            <MoneyFigure amount={totalBudgeted} currencyCode={displayCurrency} display />
+          )}
         </Block>
         <Block
           label={t('summaryCards.spent')}
           aside={
-            <Badge variant={percentUsed > 100 ? 'red' : 'gray'}>
-              {formatPercentTrimmed(Math.round(percentUsed))}
-            </Badge>
+            percentKnown ? (
+              <Badge variant={percentUsed > 100 ? 'red' : 'gray'}>
+                {formatPercentTrimmed(Math.round(percentUsed))}
+              </Badge>
+            ) : undefined
           }
         >
-          <span className={percentUsed > 100 ? 'text-red-600 dark:text-red-400' : undefined}>
-            <MoneyFigure amount={totalSpent} currencyCode={displayCurrency} display />
-          </span>
-          <div className="mt-3">
-            <BudgetProgressBar percentUsed={percentUsed} />
-          </div>
+          {spentKnown ? (
+            <>
+              <span className={percentKnown && percentUsed > 100 ? 'text-red-600 dark:text-red-400' : undefined}>
+                <MoneyFigure amount={totalSpent} currencyCode={displayCurrency} display />
+              </span>
+              {percentKnown && (
+                <div className="mt-3">
+                  <BudgetProgressBar percentUsed={percentUsed} />
+                </div>
+              )}
+            </>
+          ) : (
+            unknownSpent
+          )}
         </Block>
         <Block
           label={t('summaryCards.savings')}
           aside={
-            <Badge variant={projectedSavings >= 0 ? 'green' : 'red'}>
-              {projectedSavings >= 0 ? t('summaryCards.onTrack') : t('summaryCards.overBudget')}
-            </Badge>
+            savingsKnown ? (
+              <Badge variant={projectedSavings >= 0 ? 'green' : 'red'}>
+                {projectedSavings >= 0 ? t('summaryCards.onTrack') : t('summaryCards.overBudget')}
+              </Badge>
+            ) : undefined
           }
         >
-          <span className={projectedSavings < 0 ? 'text-red-600 dark:text-red-400' : undefined}>
-            <MoneyFigure amount={Math.abs(projectedSavings)} currencyCode={displayCurrency} display />
-          </span>
+          {savingsKnown ? (
+            <span className={projectedSavings < 0 ? 'text-red-600 dark:text-red-400' : undefined}>
+              <MoneyFigure amount={Math.abs(projectedSavings)} currencyCode={displayCurrency} display />
+            </span>
+          ) : (
+            totalSpent === null ? unknownSpent : unknownIncome
+          )}
         </Block>
       </dl>
     </section>

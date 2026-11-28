@@ -5,6 +5,7 @@ import {
 } from "../../categories/category-type.util";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
+import { userTodayFromPreference } from "../../common/users-by-timezone.util";
 import { AccountsService } from "../../accounts/accounts.service";
 import { CategoriesService } from "../../categories/categories.service";
 import { UserPreference } from "../../users/entities/user-preference.entity";
@@ -51,7 +52,7 @@ export class FinancialContextBuilder {
     ]);
 
     const currency = preferredCurrency(preferences);
-    const today = new Date().toISOString().substring(0, 10);
+    const today = userTodayFromPreference(userId, preferences);
 
     // LLM06-F1: Only include account names and types, not balances.
     // Balances are available through the list_accounts tool.

@@ -80,6 +80,7 @@ import { Account } from "../accounts/entities/account.entity";
 import { PayeesService } from "../payees/payees.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { TransactionSplitService } from "./transaction-split.service";
+import { ownRowIds, removedBetween } from "./remove-transaction-leg";
 import {
   applyRegisterOrder,
   creditsBeforeDebitsDirection,
@@ -107,6 +108,7 @@ import {
   PreparedTransfer,
   TransactionTransferService,
   TransferActor,
+  TransferLegSnapshot,
   TransferResult,
   WrittenTransfer,
 } from "./transaction-transfer.service";
@@ -552,6 +554,11 @@ export interface DeleteTransactionPreview {
    * it, never the split itself.
    */
   splitLine?: { payeeName: string | null; transactionDate: string };
+  /**
+   * Set when the target is one leg of a plain transfer: the delete removes the
+   * transfer's other leg too, in the other account.
+   */
+  transferPair?: true;
 }
 
 export { TransferResult };
@@ -1945,6 +1952,9 @@ export class TransactionsService {
               transactionDate: splitParent.transactionDate,
             },
           }
+        : {}),
+      ...(existing.isTransfer && existing.linkedTransactionId && !splitParent
+        ? { transferPair: true as const }
         : {}),
       accountName: existing.account?.name ?? "",
       amount: Number(existing.amount),
@@ -4466,8 +4476,14 @@ export class TransactionsService {
         accountIds: Set<string>;
         securityIds: Set<string>;
       };
+      /**
+       * Return the ids this delete removed (the row, a split parent's legs, a
+       * leg's parent). Off by default: it costs three reads inside the
+       * transaction, and only the AI and MCP selections use the answer.
+       */
+      reportRemoved?: boolean;
     },
-  ): Promise<void> {
+  ): Promise<string[]> {
     const transaction = await this.findOne(userId, id);
     const beforeSnapshot = this.snapshotTransaction(transaction);
     // Every account this deletion moves, not only the selected row's, so the
@@ -4479,6 +4495,9 @@ export class TransactionsService {
     // fan-out (RR5-002 must not undo the P4-002 locked-account guarantee).
     const affectedAccountIds = new Set<string>();
     const touchedSecurityIds = new Set<string>();
+    // What this delete removed: the own rows before and after, read inside the
+    // transaction under the locks below (returned to the caller).
+    let removedIds: string[] = [];
 
     // One transaction: split side effects, linked/parent cleanup, the delete
     // itself, and the balance adjustment commit or roll back together.
@@ -4547,6 +4566,27 @@ export class TransactionsService {
       // have moved the row, and the balance reversal below uses locked.accountId.
       affectedAccountIds.add(locked.accountId);
 
+      // Every row this delete can take with it, snapshotted under the lock: a
+      // split parent's transfer legs, or, for a leg, its parent and the
+      // parent's other legs.
+      // Only read when the caller asked for the ids (`reportRemoved`).
+      const splitOwnerId = locked.isSplit ? id : parentSplit?.transactionId;
+      const candidateIds = new Set<string>([id]);
+      if (options?.reportRemoved && splitOwnerId) {
+        candidateIds.add(splitOwnerId);
+        for (const line of await m.find(TransactionSplit, {
+          where: { transactionId: splitOwnerId },
+          select: { id: true, linkedTransactionId: true },
+        })) {
+          if (line.linkedTransactionId) {
+            candidateIds.add(line.linkedTransactionId);
+          }
+        }
+      }
+      const rowsBefore = options?.reportRemoved
+        ? await ownRowIds(m, userId, candidateIds)
+        : new Set<string>();
+
       if (locked.isSplit) {
         // Transfer-target and brokerage accounts this split's cleanup moved join
         // the set invalidated after commit (recheck RR5-002).
@@ -4570,6 +4610,12 @@ export class TransactionsService {
       }
 
       const deleted = await m.delete(Transaction, { id, userId });
+      if (options?.reportRemoved) {
+        removedIds = removedBetween(
+          rowsBefore,
+          await ownRowIds(m, userId, rowsBefore),
+        );
+      }
       if ((deleted.affected ?? 0) === 0) {
         // The row was removed by the parent cleanup above (a split counterpart
         // cascade). Reversing its amount again would double-count.
@@ -4605,13 +4651,14 @@ export class TransactionsService {
         securityIds: touchedSecurityIds,
       });
     }
-    if (options?.recordHistory === false) return;
+    if (options?.recordHistory === false) return removedIds;
     this.recordTransactionAction(
       userId,
       { ...transaction, ...beforeSnapshot } as Transaction,
       "delete",
       beforeSnapshot,
     );
+    return removedIds;
   }
 
   /**
@@ -5228,7 +5275,7 @@ export class TransactionsService {
     userId: string,
     transactionId: string,
     actor?: TransferActor,
-  ): Promise<void> {
+  ): Promise<string[]> {
     // The receiving leg of a split transfer is one line of the split, not a
     // whole transfer: remove that line and re-total the parent, leaving the
     // parent and its other lines in place (kenlasko/monize#2366).
@@ -5252,12 +5299,24 @@ export class TransactionsService {
         parentSplit.id,
       );
     }
-    return this.transferService.removeTransfer(
+    // Both legs are snapshotted on the delete's own first read, before it
+    // writes. An entry goes to the owner of each leg it removed: a frozen
+    // cross-owner delete removes the actor's leg only.
+    let before: ReadonlyMap<string, TransferLegSnapshot> | undefined;
+    const removed = await this.transferService.removeTransfer(
       userId,
       transactionId,
-      this.findOne.bind(this),
+      async (uid: string, id: string) => {
+        const leg = await this.findOne(uid, id);
+        if (!before && id === transactionId) {
+          before = await this.snapshotTransferLegsOrNone(leg);
+        }
+        return leg;
+      },
       actor,
     );
+    await this.recordTransferChange(userId, before, "deleted", "delete");
+    return removed;
   }
 
   /**
@@ -5266,13 +5325,22 @@ export class TransactionsService {
    * `DELETE /transactions/:id` route, the AI Assistant and the MCP
    * manage_transactions delete all land here, where the caller does not know
    * up front whether the target is a transfer. Like removeTransfer it records
-   * no action-history entry (INV-TRANSFER-001).
+   * a delete entry whose undo is refused (INV-TRANSFER-001).
+   *
+   * With `reportRemoved`, returns the ids this delete removed, from the
+   * delete's own transaction under its locks: the row and whatever went with
+   * it (a transfer's mirror, a split parent's transfer legs). Never another
+   * owner's row. A caller deleting a selection row by row skips a selected id
+   * already in the union of these, so the second leg of a transfer is not
+   * deleted twice (a 404 after the first delete wrote). A mirror that was not
+   * removed is not reported. Without it the result is empty.
    */
   async removeAny(
     userId: string,
     transactionId: string,
     actor?: TransferActor,
-  ): Promise<void> {
+    options?: { reportRemoved?: boolean },
+  ): Promise<string[]> {
     // Only the two columns the routing needs; a miss falls through to
     // remove(), whose findOne throws the not-found error.
     const row = await withScopedDb(this.dataSource, (m) =>
@@ -5281,10 +5349,13 @@ export class TransactionsService {
         select: ["id", "isTransfer", "linkedTransactionId"],
       }),
     );
-    if (row?.isTransfer && row.linkedTransactionId) {
-      return this.removeTransfer(userId, transactionId, actor);
-    }
-    return this.remove(userId, transactionId);
+    const removed =
+      row?.isTransfer && row.linkedTransactionId
+        ? await this.removeTransfer(userId, transactionId, actor)
+        : options?.reportRemoved
+          ? await this.remove(userId, transactionId, { reportRemoved: true })
+          : await this.remove(userId, transactionId);
+    return options?.reportRemoved ? removed : [];
   }
 
   /**
@@ -5332,11 +5403,23 @@ export class TransactionsService {
   ): Promise<TransferResult> {
     const addTagNames = tagChange?.addTagNames ?? [];
     const removeTagIds = tagChange?.removeTagIds ?? [];
-    const result = await this.transferService.updateTransfer(
+    // What the undo engine treats as the transfer: both legs' own columns.
+    // Tags are not part of it, so a tags-only save records no entry. Both legs
+    // are snapshotted on the edit's first read, before it writes, whoever owns
+    // them; an entry is recorded for the owner of each leg that changed.
+    let before: ReadonlyMap<string, TransferLegSnapshot> | undefined;
+    const findOneBefore = async (uid: string, id: string) => {
+      const leg = await this.findOne(uid, id);
+      if (!before && id === transactionId) {
+        before = await this.snapshotTransferLegsOrNone(leg);
+      }
+      return leg;
+    };
+    const result: TransferResult = await this.transferService.updateTransfer(
       userId,
       transactionId,
       updateDto,
-      this.findOne.bind(this),
+      findOneBefore,
       actor,
       addTagNames.length > 0 || removeTagIds.length > 0
         ? (m, target) =>
@@ -5349,7 +5432,7 @@ export class TransactionsService {
             )
         : undefined,
     );
-
+    let final: TransferResult = result;
     if (updateDto.tagIds !== undefined) {
       // Tags are per-user reference data: cross-owner counterpart legs keep
       // their own owner's tags, so only effective-user legs are synced.
@@ -5383,13 +5466,62 @@ export class TransactionsService {
 
       const refresh = (leg: Transaction) =>
         leg.userId === userId ? this.findOne(userId, leg.id) : leg;
-      return {
+      final = {
         fromTransaction: await refresh(result.fromTransaction),
         toTransaction: await refresh(result.toTransaction),
       };
     }
 
-    return result;
+    // After the commit and the tag sync: a failure here must not turn a saved
+    // change into a 500 nor skip the tags.
+    await this.recordTransferChange(userId, before, "changed", "update");
+    return final;
+  }
+
+  /**
+   * The legs of a transfer before a write, for its history entry. A failed
+   * read is logged and gives no snapshot, so no entry: the history must not
+   * stop the change the user asked for.
+   */
+  private async snapshotTransferLegsOrNone(
+    leg: Transaction,
+  ): Promise<ReadonlyMap<string, TransferLegSnapshot> | undefined> {
+    try {
+      return await this.transferService.snapshotTransferLegs(
+        leg.linkedTransactionId ? [leg.id, leg.linkedTransactionId] : [leg.id],
+      );
+    } catch (err) {
+      this.logger.error(
+        `Could not read the transfer legs for action history: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return undefined;
+    }
+  }
+
+  /**
+   * Records the history entry of a committed transfer change for the owner of
+   * each leg it wrote. The change is already saved, so a failure is logged and
+   * swallowed (as `record` swallows its own): it must not reach the caller as
+   * an error for a write that happened.
+   */
+  private async recordTransferChange(
+    userId: string,
+    before: ReadonlyMap<string, TransferLegSnapshot> | undefined,
+    mode: "changed" | "deleted",
+    change: "update" | "delete",
+  ): Promise<void> {
+    if (!before) return;
+    try {
+      await this.transferService.recordTransferChangeHistory(
+        userId,
+        await this.transferService.writtenLegOwners(before, mode),
+        change,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Could not record the transfer ${change} in action history: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   /**

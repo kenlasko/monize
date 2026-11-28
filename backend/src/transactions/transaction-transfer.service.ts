@@ -61,6 +61,12 @@ import {
   TransactionRulesApplierService,
 } from "../transaction-rules/transaction-rules-applier.service";
 
+/** One transfer leg's owner and its comparable columns (`snapshotTransferLegs`). */
+export interface TransferLegSnapshot {
+  readonly userId: string;
+  readonly snapshot: string;
+}
+
 export interface TransferResult {
   fromTransaction: Transaction;
   toTransaction: Transaction;
@@ -1331,8 +1337,8 @@ export class TransactionTransferService {
       fromAccount.userId === effectiveUserId &&
       toAccount.userId === effectiveUserId
     ) {
-      // Same-owner: fire-and-forget, exactly today's behavior.
-      void this.actionHistoryService.record(effectiveUserId, {
+      // Same-owner: awaited, so a fast edit is never recorded before the create.
+      await this.actionHistoryService.record(effectiveUserId, {
         entityType: "transfer",
         entityId: savedFromId,
         action: "create",
@@ -1381,6 +1387,106 @@ export class TransactionTransferService {
       } else {
         // The counterpart owner's history row carries THEIR user_id; writing
         // it from this request's identity needs the audited bypass under RLS.
+        await withSystemContext(record);
+      }
+    }
+  }
+
+  /**
+   * Each leg's owner and the columns an edit can change, as one comparable
+   * string, read under the audited system context: a counterpart owner's row
+   * is not readable from the actor's scope. Taken before a write and again
+   * after it, the two reads say which legs the write actually changed or
+   * removed (`writtenLegOwners`), whoever owns them.
+   */
+  async snapshotTransferLegs(
+    legIds: readonly string[],
+  ): Promise<ReadonlyMap<string, TransferLegSnapshot>> {
+    const rows: Record<string, unknown>[] = await withSystemContext(() =>
+      withScopedDb(this.dataSource, (m) =>
+        m.query(
+          // Every column UpdateTransferDto can write to a leg (tagIds is not a
+          // leg column): a column missing here is an edit that records nothing.
+          `SELECT id, user_id, account_id, amount, currency_code, exchange_rate,
+                  TO_CHAR(transaction_date, 'YYYY-MM-DD') AS transaction_date,
+                  status, payee_id, payee_name, category_id, description,
+                  reference_number, created_at
+             FROM transactions WHERE id = ANY($1::uuid[])`,
+          [[...legIds]],
+        ),
+      ),
+    );
+    const snapshots = new Map<string, TransferLegSnapshot>();
+    for (const row of rows) {
+      const { id, user_id: userId, amount, exchange_rate: rate, ...rest } = row;
+      snapshots.set(id as string, {
+        userId: userId as string,
+        snapshot: JSON.stringify([
+          Number(amount),
+          rate === null ? null : Number(rate),
+          ...Object.values(rest),
+        ]),
+      });
+    }
+    return snapshots;
+  }
+
+  /**
+   * The owner of every leg a write changed (`changed`) or removed (`deleted`)
+   * since `before`, each with one such leg. An owner whose leg was not written
+   * is absent: recording for them would wipe their redo stack and block their
+   * Undo for a change they did not make (a frozen cross-owner delete or edit
+   * writes the actor's leg only).
+   */
+  async writtenLegOwners(
+    before: ReadonlyMap<string, TransferLegSnapshot>,
+    mode: "changed" | "deleted",
+  ): Promise<ReadonlyMap<string, string>> {
+    const after = await this.snapshotTransferLegs([...before.keys()]);
+    const owners = new Map<string, string>();
+    for (const [legId, was] of before) {
+      const now = after.get(legId);
+      const written =
+        mode === "deleted" ? !now : !!now && now.snapshot !== was.snapshot;
+      if (written && !owners.has(was.userId)) owners.set(was.userId, legId);
+    }
+    return owners;
+  }
+
+  /**
+   * Records a transfer edit, status change or delete for every owner of its
+   * legs, as the create does, so Undo stops at it for each of them. Awaited:
+   * an entry still in flight when the user presses Undo would let it reach the
+   * transfer's creation and delete both legs. Its undo is refused
+   * (`UNDO_TRANSFER_CHANGE_NOT_SUPPORTED`); it carries no snapshot.
+   */
+  async recordTransferChangeHistory(
+    actingUserId: string,
+    legOwners: ReadonlyMap<string, string>,
+    change: "update" | "status" | "delete",
+  ): Promise<void> {
+    const text = {
+      update: "Edited a transfer",
+      status: "Changed the status of a transfer",
+      delete: "Deleted a transfer",
+    }[change];
+    const descriptionKey = {
+      update: "editedTransfer",
+      status: "changedTransferStatus",
+      delete: "deletedTransfer",
+    }[change];
+    for (const [ownerId, legId] of legOwners) {
+      const record = () =>
+        this.actionHistoryService.record(ownerId, {
+          entityType: "transfer",
+          entityId: legId,
+          action: change === "delete" ? "delete" : "update",
+          description: text,
+          descriptionKey,
+        });
+      if (ownerId === actingUserId) {
+        await record();
+      } else {
         await withSystemContext(record);
       }
     }
@@ -1889,7 +1995,7 @@ export class TransactionTransferService {
     transactionId: string,
     findOne: (userId: string, id: string) => Promise<Transaction>,
     actor?: TransferActor,
-  ): Promise<void> {
+  ): Promise<string[]> {
     const realUserId = actor?.realUserId ?? userId;
     const transaction = await findOne(userId, transactionId);
 
@@ -1918,6 +2024,8 @@ export class TransactionTransferService {
     }
 
     const affectedAccountIds = new Set<string>();
+    // The rows this call removed, from each conditional DELETE under its lock.
+    const removedIds: string[] = [];
 
     // Both legs and their balance adjustments are removed atomically.
     await withScopedDb(this.dataSource, async (m) => {
@@ -1971,13 +2079,18 @@ export class TransactionTransferService {
         // Conditional delete, reverse only what this call removed, VOID rows
         // reverse nothing, future-dated rows recompute. Shared with split
         // removal so the sequence exists once (see remove-transaction-leg.ts).
-        await removeLockedTransactionLeg(m, leg, userId, this.accountsService);
+        if (
+          await removeLockedTransactionLeg(m, leg, userId, this.accountsService)
+        ) {
+          removedIds.push(leg.id);
+        }
       }
     });
 
     for (const accId of affectedAccountIds) {
       this.triggerNetWorthRecalc(accId, userId);
     }
+    return removedIds;
   }
 
   /**
@@ -1992,7 +2105,7 @@ export class TransactionTransferService {
   private async removeCrossOwnerTransfer(
     realUserId: string,
     ownLeg: Transaction,
-  ): Promise<void> {
+  ): Promise<string[]> {
     const counterpart = ownLeg.linkedTransactionId
       ? await this.loadLegById(ownLeg.linkedTransactionId)
       : null;
@@ -2003,9 +2116,12 @@ export class TransactionTransferService {
     // Both legs were loaded before this transaction opened, so the amount each
     // reversal subtracts is re-read under the row's own lock and the reversal is
     // gated on this call being the one that removed the row (audit FV4-002).
-    const removeLeg = async (m: EntityManager, leg: Transaction) => {
+    const removeLeg = async (
+      m: EntityManager,
+      leg: Transaction,
+    ): Promise<boolean> => {
       const locked = await lockTransactionRow(m, leg.id, leg.userId);
-      if (!locked) return;
+      if (!locked) return false;
       // An investment cash leg belongs to its trade, on either side of the
       // pair: refuse under this leg's lock, before any write (both legs share
       // one transaction, so a refusal on the second rolls back the first).
@@ -2017,13 +2133,16 @@ export class TransactionTransferService {
       // path (A26-M11). Both legs run in one transaction, so a refusal on the
       // second rolls back the first.
       await assertReconciledRowsMutable(m, leg.userId, [locked]);
-      await removeLockedTransactionLeg(
+      return removeLockedTransactionLeg(
         m,
         locked,
         leg.userId,
         this.accountsService,
       );
     };
+    // Only the caller's own leg is reported: the other owner's row is not
+    // theirs to be told about, and a frozen counterpart is only detached.
+    let ownRemoved = false;
 
     if (access === "connected" && counterpart) {
       // Ascending id order, not "counterpart then mine".
@@ -2049,15 +2168,19 @@ export class TransactionTransferService {
             );
           }
           for (const leg of ordered) {
-            await removeLeg(m, leg);
+            const removed = await removeLeg(m, leg);
+            if (leg.id === ownLeg.id) ownRemoved = removed;
           }
         }),
       );
       this.triggerNetWorthRecalc(counterpart.accountId, counterpart.userId);
     } else {
-      await withScopedDb(this.dataSource, (m) => removeLeg(m, ownLeg));
+      ownRemoved = await withScopedDb(this.dataSource, (m) =>
+        removeLeg(m, ownLeg),
+      );
     }
     this.triggerNetWorthRecalc(ownLeg.accountId, ownLeg.userId);
+    return ownRemoved ? [ownLeg.id] : [];
   }
 
   async updateTransfer(

@@ -25,6 +25,7 @@ export function PortfolioHeroStandard({
   change,
   holdings,
   cash,
+  unknown,
   metric,
   chart,
 }: PortfolioHeroViewProps) {
@@ -47,31 +48,41 @@ export function PortfolioHeroStandard({
         <>
           <HeroCaption>{caption}</HeroCaption>
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-            <HeroHeadline negative={total.value < 0} collapsed={collapsed}>
-              <PartialTotal total={total} displayCurrency={currency}>
-                {formatCurrency(total.value, currency)}
-              </PartialTotal>
+            <HeroHeadline negative={total !== null && total.value < 0} collapsed={collapsed}>
+              {total === null ? (
+                unknown.total
+              ) : (
+                <PartialTotal total={total} displayCurrency={currency}>
+                  {formatCurrency(total.value, currency)}
+                </PartialTotal>
+              )}
             </HeroHeadline>
             {pill}
           </div>
           <HeroSubFigures>
             <span>
               {t.rich('hero.holdings', {
-                value: () => (
-                  <PartialTotal total={holdings} displayCurrency={currency}>
-                    {formatCurrency(holdings.value, currency)}
-                  </PartialTotal>
-                ),
+                value: () =>
+                  holdings === null ? (
+                    unknown.holdings
+                  ) : (
+                    <PartialTotal total={holdings} displayCurrency={currency}>
+                      {formatCurrency(holdings.value, currency)}
+                    </PartialTotal>
+                  ),
                 strong: heroStrong,
               })}
             </span>
             <span>
               {t.rich('hero.cash', {
-                value: () => (
-                  <PartialTotal total={cash} displayCurrency={currency}>
-                    {formatCurrency(cash.value, currency)}
-                  </PartialTotal>
-                ),
+                value: () =>
+                  cash === null ? (
+                    unknown.cash
+                  ) : (
+                    <PartialTotal total={cash} displayCurrency={currency}>
+                      {formatCurrency(cash.value, currency)}
+                    </PartialTotal>
+                  ),
                 strong: heroStrong,
               })}
             </span>

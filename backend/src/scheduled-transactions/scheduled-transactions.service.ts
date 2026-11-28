@@ -2652,16 +2652,29 @@ export class ScheduledTransactionsService {
       totalsCurrency,
       today,
     );
+    // Nothing to total reads no places: an empty bucket is zero at any of them.
+    const totalsDecimals =
+      rollupBase.length === 0
+        ? undefined
+        : moneyDecimalsForCode(
+            await withScopedDb(this.dataSource, (m) =>
+              loadCurrencyPlacesForRead(m, [totalsCurrency]),
+            ),
+            totalsCurrency,
+          );
     const billsTotal = await convertingTotal(
       [...bills, ...unclassified],
       totalsCurrency,
       rateFor,
       (a) => Math.abs(a),
+      totalsDecimals,
     );
     const depositsTotal = await convertingTotal(
       [...deposits, ...unclassified],
       totalsCurrency,
       rateFor,
+      undefined,
+      totalsDecimals,
     );
     const missingRatePairs = [
       ...new Set([...billsTotal.missingPairs, ...depositsTotal.missingPairs]),

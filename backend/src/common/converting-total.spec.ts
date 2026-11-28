@@ -126,9 +126,36 @@ describe("convertingTotal", () => {
     expect(asMagnitudes.total).toBe(1499);
   });
 
+  it("rounds the summed total once, not each converted component", async () => {
+    // Each 1 CAD is 1.25005 USD; rounded alone it is 1.2501, and three of them
+    // sum to 3.7503. The exact sum is 3.75015, which reads 3.7502.
+    const source = rates({ "CAD->USD": 1.25005 });
+    const result = await convertingTotal(
+      [1, 1, 1].map((amount) => ({ amount, currency: "CAD" })),
+      "USD",
+      memoizedRateResolver(source, "USD", "2026-03-01"),
+    );
+    expect(result.total).toBe(3.7502);
+    expect(result.knownSubtotal).toBe(3.7502);
+  });
+
+  it("reads the total at the reporting currency's own places", async () => {
+    // A coin target keeps its eight places: 3 x 0.00004115 = 0.00012345.
+    const source = rates({ "USD->BTC": 0.00004115 });
+    const result = await convertingTotal(
+      [1, 1, 1].map((amount) => ({ amount, currency: "USD" })),
+      "BTC",
+      memoizedRateResolver(source, "BTC", "2026-03-01"),
+      undefined,
+      8,
+    );
+    expect(result.total).toBe(0.00012345);
+    expect(result.knownSubtotal).toBe(0.00012345);
+  });
+
   it("accumulates at the storage scale rather than in floats", async () => {
-    // Three thirds of a cent must not drift; `FxAggregate` accumulates in
-    // ten-thousandths for this reason.
+    // Three tenths must not drift; `FxAggregate` accumulates in exact integer
+    // units below the money scale and rounds once, when the total is read.
     const result = await convertingTotal(
       Array.from({ length: 3 }, () => ({ amount: 0.1, currency: "USD" })),
       "USD",

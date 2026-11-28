@@ -30,7 +30,7 @@ import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { ReportError } from '@/components/reports/ReportError';
-import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
+import { PartialDataNotice, partialDataNoticeText } from '@/components/reports/PartialDataNotice';
 import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import { exportToCsv } from '@/lib/csv-export';
 import { gainLossColor } from '@/lib/format';
@@ -371,9 +371,11 @@ function processGroup(
       const against = row.isIncome !== section.isIncome;
       const inSection = (own: number) => (against && own !== 0 ? -own : own);
       const values: Record<string, number> = {};
-      for (const m of months) values[m] = inSection(row.valuesByMonth[m] || 0);
+      for (const month of months) {
+        if (Object.hasOwn(row.valuesByMonth, month)) values[month] = inSection(row.valuesByMonth[month]);
+      }
       const total = inSection(row.total);
-      const nonZeroCount = months.filter((m) => values[m] !== 0).length;
+      const nonZeroCount = Object.values(values).filter((value) => value !== 0).length;
       return {
         categoryId: row.categoryId,
         displayName: row.categoryName,
@@ -1112,6 +1114,14 @@ export function MonthlyCategoryBreakdownReport() {
         model.overallAvg,
       ]);
     }
+    if (data) {
+      const note = partialDataNoticeText(t, {
+        missingCurrencies: data.missingCurrencies ?? [],
+        excludedCount: data.excludedCount ?? 0,
+        displayCurrency: data.currency ?? '',
+      });
+      if (note) rows.push([], [note]);
+    }
     exportToCsv(
       isYearly ? 'yearly-category-breakdown' : 'monthly-category-breakdown',
       headers,
@@ -1124,8 +1134,12 @@ export function MonthlyCategoryBreakdownReport() {
     value: number,
     monthTotal: number,
     isIncome: boolean | null,
+    hasActivity = false,
   ): string => {
-    if (value === 0) return '—';
+    if (value === 0) {
+      if (!hasActivity) return '—';
+      return showPercentages && monthTotal > 0 ? formatPercent(0, 1) : formatCurrency(0, currency);
+    }
     const normalized = isIncome === null ? value : isIncome ? value : -value;
     const sign = normalized > 0 ? '+' : '-';
     if (showPercentages && monthTotal > 0) {
@@ -1210,13 +1224,13 @@ export function MonthlyCategoryBreakdownReport() {
             : '';
           return (
             <td key={m} className={`px-2 py-1 text-right ${cls}`}>
-              {value !== 0 ? (
+              {Object.hasOwn(row.values, m) ? (
                 <button
                   type="button"
                   onClick={() => drillDown(m, rowDrillIds(row))}
                   className="hover:underline"
                 >
-                  {formatCell(value, sectionMonthTotal(m), row.isIncome)}
+                  {formatCell(value, sectionMonthTotal(m), row.isIncome, true)}
                 </button>
               ) : (
                 <span className="text-gray-300 dark:text-gray-600">—</span>

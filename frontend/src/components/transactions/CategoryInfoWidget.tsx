@@ -20,6 +20,8 @@ import { GroupedTotal, MonthlyTotal, TransactionSummary } from '@/types/transact
 import { CategoryBudgetStatus } from '@/types/budget';
 import { transactionsApi } from '@/lib/transactions';
 import { budgetsApi } from '@/lib/budgets';
+import { figuresUnknown, unknownPairs } from '@/components/budgets/utils/line-completeness';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import { countElapsedPeriods } from '@/lib/chart-buckets';
 import { sumMoney } from '@/lib/format';
 import { getNextScheduled } from '@/lib/scheduled-utils';
@@ -97,6 +99,7 @@ export function CategoryInfoWidget({
         ? t('categoryWidget.totalTransferred')
         : t('categoryWidget.totalSpent');
   const tCommon = useTranslations('common');
+  const partialReasonOf = useBudgetPartialReason();
   const router = useRouter();
   const { formatCurrency, formatPercentTrimmed } = useNumberFormat();
   const { formatDate } = useDateFormat();
@@ -237,6 +240,8 @@ export function CategoryInfoWidget({
   // Same inheritance the list and the detail header use: show this category's
   // own icon, or the nearest ancestor's.
   const glyphIcon = category.effectiveIcon ?? category.icon;
+  // A row with no exchange rate is left out of `spent`: the percent is unknown.
+  const budgetPartial = budgetStatus !== null && figuresUnknown(budgetStatus);
   const budgetPercent = budgetStatus ? clamp(budgetStatus.percentUsed, 0, 100) : 0;
   const budgetBarColor = budgetStatus
     ? budgetStatus.percentUsed >= 100
@@ -342,12 +347,17 @@ export function CategoryInfoWidget({
               {t('categoryWidget.budgetThisMonth')}
             </p>
             <p className="text-sm text-gray-900 dark:text-gray-100">
-              {t('categoryWidget.budgetProgress', {
-                spent: formatCurrency(budgetStatus.spent, defaultCurrency),
-                budgeted: formatCurrency(budgetStatus.budgeted, defaultCurrency),
-              })}
+              {budgetPartial ? (
+                <UnknownAmount reasonText={partialReasonOf(unknownPairs(budgetStatus))} />
+              ) : (
+                t('categoryWidget.budgetProgress', {
+                  spent: formatCurrency(budgetStatus.spent, defaultCurrency),
+                  budgeted: formatCurrency(budgetStatus.budgeted, defaultCurrency),
+                })
+              )}
             </p>
           </div>
+          {!budgetPartial && (
           <div
             className="ui-meter mt-1 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"
             role="progressbar"
@@ -363,6 +373,7 @@ export function CategoryInfoWidget({
               style={{ width: `${budgetPercent}%` }}
             />
           </div>
+          )}
         </div>
       )}
 

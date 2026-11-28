@@ -7,6 +7,7 @@ import { Injectable, Inject, Logger, forwardRef } from "@nestjs/common";
 import { describeFrequencyForModel } from "../../common/custom-recurrence-describe";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
+import { userTodayYMD } from "../../common/users-by-timezone.util";
 import {
   investmentLinkedTransactionExclusion,
   reportableTransactionAmountSql,
@@ -17,7 +18,7 @@ import {
   ScheduledOccurrenceService,
   nonTransferAmount,
 } from "../../scheduled-transactions/scheduled-occurrence.service";
-import { addDaysYMD, todayYMD } from "../../common/date-utils";
+import { addDaysYMD } from "../../common/date-utils";
 import { AccountsService } from "../../accounts/accounts.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
 import { RecurringCharge } from "../../transactions/recurring-charges.util";
@@ -183,11 +184,11 @@ export class ForecastAggregatorService {
     userId: string,
     currency: string,
   ): Promise<ForecastAggregates> {
-    const now = new Date();
-    const today = now.toISOString().substring(0, 10);
-    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 12, 1)
-      .toISOString()
-      .substring(0, 10);
+    const today = await withScopedDb(this.dataSource, (manager) =>
+      userTodayYMD(manager, userId),
+    );
+    // First day of the month twelve months before the user's month.
+    const twelveMonthsAgo = `${Number(today.slice(0, 4)) - 1}-${today.slice(5, 7)}-01`;
 
     const [
       history,
@@ -198,7 +199,7 @@ export class ForecastAggregatorService {
     ] = await Promise.all([
       this.getMonthlyHistory(userId, twelveMonthsAgo, today, currency),
       this.getAccountBalances(userId, currency, today),
-      this.getActiveScheduledTransactions(userId),
+      this.getActiveScheduledTransactions(userId, today),
       this.getIncomePatterns(userId, twelveMonthsAgo, today, currency),
       this.transactionAnalytics.getRecurringCharges(
         userId,
@@ -236,6 +237,7 @@ export class ForecastAggregatorService {
     currency: string,
     startDate: string,
     endDate: string,
+    today?: string,
   ): Promise<RateIndex> {
     const foreign = new Set([...currencies].filter((c) => c !== currency));
     if (foreign.size === 0) return new Map();
@@ -246,6 +248,8 @@ export class ForecastAggregatorService {
         currency,
         startDate,
         endDate,
+        undefined,
+        today,
       ),
     );
   }
@@ -369,6 +373,7 @@ export class ForecastAggregatorService {
       currency,
       startDate,
       endDate,
+      endDate,
     );
 
     // One signed figure per (month, category), each part converted at its own
@@ -479,6 +484,7 @@ export class ForecastAggregatorService {
       currency,
       today,
       today,
+      today,
     );
     const total = new FxAggregate();
     for (const a of accountList) {
@@ -502,6 +508,7 @@ export class ForecastAggregatorService {
 
   private async getActiveScheduledTransactions(
     userId: string,
+    today: string,
   ): Promise<ScheduledTransactionSummary[]> {
     const scheduled = await withScopedDb(this.dataSource, (manager) =>
       manager.getRepository(ScheduledTransaction).find({
@@ -519,7 +526,7 @@ export class ForecastAggregatorService {
     // belongs in this summary, and asking for one occurrence costs one step past
     // it (see FORECAST_OCCURRENCE_HORIZON_DAYS).
     const occurrences = await this.occurrences.expand(userId, scheduled, {
-      through: addDaysYMD(todayYMD(), FORECAST_OCCURRENCE_HORIZON_DAYS),
+      through: addDaysYMD(today, FORECAST_OCCURRENCE_HORIZON_DAYS),
       maxOccurrences: 1,
     });
 
@@ -629,6 +636,7 @@ export class ForecastAggregatorService {
       this.marketRateCurrencies(rows, currency),
       currency,
       startDate,
+      endDate,
       endDate,
     );
     // One converted figure per month; a payee paid in two currencies counts

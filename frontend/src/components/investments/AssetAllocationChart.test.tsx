@@ -102,13 +102,15 @@ describe('AssetAllocationChart', () => {
 
   it('marks percentages as known-value-only when valuation is incomplete (RR5-005)', async () => {
     const allocation = {
-      totalValue: 10000,
+      totalValue: null,
+      knownSubtotal: 10000,
+      valuationComplete: false,
       allocation: [
         { symbol: 'VTI', name: 'Vanguard Total', type: 'security' as const, value: 10000, percentage: 100, color: '#22c55e', currencyCode: 'CAD' },
       ],
     };
 
-    await renderChart({ allocation, isLoading: false, valuationComplete: false });
+    await renderChart({ allocation, isLoading: false });
 
     // The user is told the 100% is a share of what could be valued, not the whole.
     expect(
@@ -116,15 +118,135 @@ describe('AssetAllocationChart', () => {
     ).toBeInTheDocument();
   });
 
-  it('says nothing when the valuation is complete', async () => {
+  it('labels the allocation partial from its own flags and names what is missing (audit #2365 l)', async () => {
     const allocation = {
-      totalValue: 10000,
+      totalValue: null,
+      knownSubtotal: 10000,
+      valuationComplete: false,
+      pricesComplete: false,
+      fxComplete: false,
+      unpricedSecurityIds: ['sec-vfv'],
+      unpricedSymbols: ['VFV.TO'],
+      missingRatePairs: ['EUR->CAD'],
       allocation: [
         { symbol: 'VTI', name: 'Vanguard Total', type: 'security' as const, value: 10000, percentage: 100, color: '#22c55e', currencyCode: 'CAD' },
       ],
     };
 
-    await renderChart({ allocation, isLoading: false, valuationComplete: true });
+    await renderChart({ allocation, isLoading: false });
+
+    expect(screen.getByText(/Percentages cover known value only/)).toBeInTheDocument();
+    // A locale-formatted list of the server's symbols and pairs, never an id.
+    expect(screen.getByText(/Not valued: VFV\.TO and EUR->CAD\./)).toBeInTheDocument();
+    expect(screen.queryByText(/sec-vfv/)).not.toBeInTheDocument();
+  });
+
+  it('labels the by-tag view partial from the by-tag response (audit #2365 l)', async () => {
+    (investmentsApi.getPortfolioTagSummary as any).mockResolvedValue({
+      keys: [],
+      hasTaggedHoldings: true,
+    });
+    (investmentsApi.getAllocationByTag as any).mockResolvedValue({
+      totalValue: null,
+      knownSubtotal: 10000,
+      valuationComplete: false,
+      unpricedSecurityIds: ['sec-x'],
+      unpricedSymbols: ['XYZ'],
+      missingRatePairs: [],
+      allocation: [
+        { symbol: null, name: 'Growth', type: 'tag' as const, value: 10000, percentage: 100, color: '#22c55e', currencyCode: 'CAD' },
+      ],
+    });
+    // The parent's own flag is clean; only the tag response says partial.
+    const allocation = { totalValue: 10000, allocation: [] };
+
+    await renderChart({ allocation, isLoading: false, accountIds: [] });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('By tag'));
+    });
+
+    expect(screen.getByText(/Percentages cover known value only/)).toBeInTheDocument();
+    expect(screen.getByText(/Not valued: XYZ\./)).toBeInTheDocument();
+  });
+
+  it('says the by-tag allocation failed to load instead of "no tagged holdings"', async () => {
+    (investmentsApi.getPortfolioTagSummary as any).mockResolvedValue({
+      keys: [],
+      hasTaggedHoldings: true,
+    });
+    (investmentsApi.getAllocationByTag as any).mockRejectedValue(new Error('boom'));
+    const allocation = { totalValue: 10000, allocation: [] };
+
+    await renderChart({ allocation, isLoading: false, accountIds: [] });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('By tag'));
+    });
+    await act(async () => {});
+
+    expect(screen.getByRole('alert')).toHaveTextContent('The allocation could not be loaded.');
+    expect(screen.queryByText(/No tagged holdings/)).not.toBeInTheDocument();
+    // One failed request is not retried in a loop.
+    expect(investmentsApi.getAllocationByTag).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks again after leaving a failed by-tag view and coming back', async () => {
+    (investmentsApi.getPortfolioTagSummary as any).mockResolvedValue({
+      keys: [],
+      hasTaggedHoldings: true,
+    });
+    (investmentsApi.getAllocationByTag as any).mockRejectedValueOnce(new Error('boom'));
+    const allocation = { totalValue: 10000, allocation: [] };
+
+    await renderChart({ allocation, isLoading: false, accountIds: [] });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('By tag'));
+    });
+    await act(async () => {});
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('By security'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('By tag'));
+    });
+    await act(async () => {});
+
+    expect(investmentsApi.getAllocationByTag).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('says nothing when the valuation is complete', async () => {
+    const allocation = {
+      totalValue: 10000,
+      valuationComplete: true,
+      allocation: [
+        { symbol: 'VTI', name: 'Vanguard Total', type: 'security' as const, value: 10000, percentage: 100, color: '#22c55e', currencyCode: 'CAD' },
+      ],
+    };
+
+    await renderChart({ allocation, isLoading: false });
+
+    expect(
+      screen.queryByText(/Percentages cover known value only/),
+    ).not.toBeInTheDocument();
+  });
+
+  it('is not warned by a gap in the cost basis alone: the allocation is its own signal', async () => {
+    // Only a dated cost rate is missing, so the summary-wide valuationComplete is
+    // false but the allocation (a value) is fully valued.
+    const allocation = {
+      totalValue: 10000,
+      knownSubtotal: 10000,
+      valuationComplete: true,
+      fxComplete: true,
+      missingRatePairs: [],
+      allocation: [
+        { symbol: 'VTI', name: 'Vanguard Total', type: 'security' as const, value: 10000, percentage: 100, color: '#22c55e', currencyCode: 'CAD' },
+      ],
+    };
+
+    await renderChart({ allocation, isLoading: false });
 
     expect(
       screen.queryByText(/Percentages cover known value only/),
@@ -146,7 +268,6 @@ describe('AssetAllocationChart', () => {
     await renderChart({
       allocation,
       isLoading: false,
-      valuationComplete: true,
       singleAccountCurrency: 'JPY',
       holdingsByAccount: [
         {
@@ -202,7 +323,9 @@ describe('AssetAllocationChart', () => {
       }),
     );
     const allocation = {
-      totalValue: 10000,
+      totalValue: null,
+      knownSubtotal: 10000,
+      valuationComplete: false,
       allocation: [
         { symbol: 'VTI', name: 'Vanguard Total', type: 'security' as const, value: 10000, percentage: 100, color: '#22c55e', currencyCode: 'CAD' },
       ],
@@ -211,7 +334,6 @@ describe('AssetAllocationChart', () => {
     const { rerender } = await renderChart({
       allocation,
       isLoading: false,
-      valuationComplete: false,
       accountIds: [],
     });
     await act(async () => {
@@ -229,7 +351,6 @@ describe('AssetAllocationChart', () => {
         <AssetAllocationChart
           allocation={allocation}
           isLoading={false}
-          valuationComplete={false}
           accountIds={['acct-untagged']}
         />,
       );

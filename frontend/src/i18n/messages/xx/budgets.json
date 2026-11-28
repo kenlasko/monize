@@ -134,6 +134,7 @@
       "carriedIn": "[XX-Carried in:-XX]",
       "carriedOut": "[XX-Carried out:-XX]"
     },
+    "noPositiveFunding": "[XX-Usage requires positive funding.-XX]",
     "overallUsage": "[XX-Overall Budget Usage-XX]",
     "expenseCategories": "[XX-Expense Categories-XX]",
     "incomeCategories": "[XX-Income Categories-XX]",
@@ -164,6 +165,10 @@
     "projectedSavings": "[XX-Projected Savings-XX]",
     "savingsChange": "[XX-Savings Change-XX]",
     "original": "[XX-Original: {amount}-XX]"
+  },
+  "partialSpent": {
+    "reason": "[XX-No exchange rate is available for {pairs}, so spending in those currencies is not counted. Add the rate on the Currencies page.-XX]",
+    "known": "[XX-Spending that could be converted so far: {amount}.-XX]"
   },
   "summaryCards": {
     "ariaLabel": "[XX-Budget totals-XX]",

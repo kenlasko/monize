@@ -1,3 +1,4 @@
+import { requestContextStorage } from "../common/request-context";
 import { Test, TestingModule } from "@nestjs/testing";
 import { Currency } from "../currencies/entities/currency.entity";
 import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
@@ -678,7 +679,12 @@ describe("BudgetsService", () => {
     it("drops the budget's cached actuals, so the next summary counts the new line", async () => {
       const compute = jest
         .spyOn(service as any, "computeCategoryActuals")
-        .mockResolvedValue({ lines: [], outsideTransferIncome: 0 });
+        .mockResolvedValue({
+          lines: [],
+          outsideTransferIncome: 0,
+          outsideTransferIncomeComplete: true,
+          outsideMissingPairs: [],
+        });
       budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
       await service.getSummary("user-1", "budget-1");
       await service.getSummary("user-1", "budget-1");
@@ -1039,7 +1045,12 @@ describe("BudgetsService", () => {
     it.each(edits)("after %s", async (_name, edit) => {
       const compute = jest
         .spyOn(service as any, "computeCategoryActuals")
-        .mockResolvedValue({ lines: [], outsideTransferIncome: 0 });
+        .mockResolvedValue({
+          lines: [],
+          outsideTransferIncome: 0,
+          outsideTransferIncomeComplete: true,
+          outsideMissingPairs: [],
+        });
       budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
       await service.getSummary("user-1", "budget-1");
       await service.getSummary("user-1", "budget-1");
@@ -1516,6 +1527,222 @@ describe("BudgetsService", () => {
       expect(spending.missingRatePairs).toEqual(["JPY->USD"]);
     });
 
+    it("withholds the totals and flags the line when a foreign row has no rate (audit #2365 p)", async () => {
+      const category = {
+        ...mockBudgetCategory,
+        id: "bc-1",
+        categoryId: "cat-1",
+        amount: 1000,
+        isIncome: false,
+        category: { name: "Groceries" },
+      };
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [category],
+      });
+      const rows = [
+        spendingRow("cat-1", "-20"),
+        { ...spendingRow("cat-1", "-1000"), currencyCode: "QQQ" },
+      ];
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue(rows),
+        }),
+      );
+
+      const result = await service.getSummary("user-1", "budget-1");
+      const line = result.categoryBreakdown[0];
+      expect(line.spent).toBe(20);
+      expect(line.valuationComplete).toBe(false);
+      expect(line.missingRatePairs).toEqual(["QQQ->USD"]);
+      expect(result.totalSpent).toBeNull();
+      expect(result.remaining).toBeNull();
+      expect(result.percentUsed).toBeNull();
+      expect(result.knownTotalSpent).toBe(20);
+      expect(result.valuationComplete).toBe(false);
+      expect(result.missingRatePairs).toEqual(["QQQ->USD"]);
+    });
+
+    it("withholds the income totals and keeps the known part when an income row has no rate", async () => {
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-3",
+            categoryId: "cat-3",
+            amount: 3000,
+            isIncome: true,
+            category: { name: "Salary" },
+          },
+        ],
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest
+            .fn()
+            .mockResolvedValue([
+              spendingRow("cat-3", "100"),
+              { ...spendingRow("cat-3", "500"), currencyCode: "QQQ" },
+            ]),
+        }),
+      );
+
+      const result = await service.getSummary("user-1", "budget-1");
+
+      expect(result.totalIncome).toBeNull();
+      expect(result.categoryIncome).toBeNull();
+      expect(result.knownTotalIncome).toBe(100);
+      expect(result.knownCategoryIncome).toBe(100);
+      expect(result.transferFunding).toBe(0);
+      expect(result.valuationComplete).toBe(false);
+      // Unknown income is not a reason spending is unknown.
+      expect(result.missingRatePairs).toEqual([]);
+      expect(result.incomeMissingRatePairs).toEqual(["QQQ->USD"]);
+      expect(result.totalSpent).toBe(0);
+    });
+
+    it("withholds an income-linked percentage line and the budget figures when the income has no rate", async () => {
+      // CAD budget, a 30% line, a USD paycheck and no USD->CAD rate: the line's
+      // budget is 30% of an income nobody can convert, so it is unknown.
+      (
+        transactionsRepository.manager as unknown as { query: jest.Mock }
+      ).query.mockImplementation(async (sql: string) =>
+        sql.includes("FROM budgets") ? [{ currency_code: "CAD" }] : [],
+      );
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        currencyCode: "CAD",
+        incomeLinked: true,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 30,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-3",
+            categoryId: "cat-3",
+            amount: 0,
+            isIncome: true,
+            category: { name: "Salary" },
+          },
+        ],
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([
+            { ...spendingRow("cat-1", "-100"), currencyCode: "CAD" },
+            { ...spendingRow("cat-3", "500000"), currencyCode: "JPY" },
+          ]),
+        }),
+      );
+
+      const result = await service.getSummary("user-1", "budget-1");
+      const line = result.categoryBreakdown.find((c) => !c.isIncome)!;
+
+      // Every expense is CAD: spent is known, what is left is not.
+      expect(line.budgetedComplete).toBe(false);
+      expect(line.valuationComplete).toBe(true);
+      expect(line.missingRatePairs).toEqual([]);
+      expect(line.budgetedMissingRatePairs).toEqual(["JPY->CAD"]);
+      expect(result.budgetedComplete).toBe(false);
+      expect(result.budgetedMissingRatePairs).toEqual(["JPY->CAD"]);
+      expect(result.totalSpent).toBe(100);
+      expect(result.remaining).toBeNull();
+      expect(result.percentUsed).toBeNull();
+      expect(result.totalIncome).toBeNull();
+      expect(result.actualIncome).toBeNull();
+
+      const velocity = await service.getVelocity("user-1", "budget-1");
+      expect(velocity.spendingComplete).toBe(true);
+      expect(velocity.budgetedComplete).toBe(false);
+      expect(velocity.budgetedMissingRatePairs).toEqual(["JPY->CAD"]);
+      expect(velocity.trulyAvailable).toBeNull();
+      expect(velocity.safeDailySpend).toBeNull();
+      expect(velocity.paceStatus).toBeNull();
+      expect(velocity.projectedVariance).toBeNull();
+    });
+
+    it("names only the expense pairs for unknown spending and the income pairs for unknown income", async () => {
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 1000,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-3",
+            categoryId: "cat-3",
+            amount: 0,
+            isIncome: true,
+            category: { name: "Salary" },
+          },
+        ],
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([
+            { ...spendingRow("cat-1", "-100"), currencyCode: "QQQ" },
+            { ...spendingRow("cat-3", "500"), currencyCode: "ZZZ" },
+          ]),
+        }),
+      );
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(),
+      );
+
+      const result = await service.getSummary("user-1", "budget-1");
+      const expense = result.categoryBreakdown.find((c) => !c.isIncome)!;
+      const income = result.categoryBreakdown.find((c) => c.isIncome)!;
+      expect(expense.missingRatePairs).toEqual(["QQQ->USD"]);
+      expect(income.missingRatePairs).toEqual(["ZZZ->USD"]);
+      expect(result.missingRatePairs).toEqual(["QQQ->USD"]);
+      expect(result.incomeMissingRatePairs).toEqual(["ZZZ->USD"]);
+
+      const velocity = await service.getVelocity("user-1", "budget-1");
+      expect(velocity.spendingMissingRatePairs).toEqual(["QQQ->USD"]);
+    });
+
+    it("reports a complete summary when every row converts", async () => {
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 1000,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+        ],
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest
+            .fn()
+            .mockResolvedValue([spendingRow("cat-1", "-20")]),
+        }),
+      );
+      const result = await service.getSummary("user-1", "budget-1");
+      expect(result.totalSpent).toBe(20);
+      expect(result.knownTotalSpent).toBe(20);
+      expect(result.valuationComplete).toBe(true);
+      expect(result.missingRatePairs).toEqual([]);
+      expect(result.categoryBreakdown[0].valuationComplete).toBe(true);
+    });
+
     it("counts transfers in as income: a line's and the toggle's (issue #2141)", async () => {
       budgetsRepository.findOne.mockResolvedValue({
         ...mockBudget,
@@ -1675,6 +1902,42 @@ describe("BudgetsService", () => {
       expect(result.projectedTotal).toBeGreaterThanOrEqual(0);
       expect(typeof result.safeDailySpend).toBe("number");
       expect(["under", "on_track", "over"]).toContain(result.paceStatus);
+    });
+
+    it("withholds remaining-derived figures when a row has no rate (audit #2365 p)", async () => {
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 1000,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+        ],
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest
+            .fn()
+            .mockResolvedValue([
+              spendingRow("cat-1", "-20"),
+              { ...spendingRow("cat-1", "-1000"), currencyCode: "QQQ" },
+            ]),
+        }),
+      );
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(),
+      );
+
+      const result = await service.getVelocity("user-1", "budget-1");
+
+      expect(result.trulyAvailable).toBeNull();
+      expect(result.safeDailySpend).toBeNull();
+      expect(result.spendingComplete).toBe(false);
+      expect(result.spendingMissingRatePairs).toEqual(["QQQ->USD"]);
     });
 
     it("returns zero safe daily spend when no days remaining", async () => {
@@ -1844,6 +2107,26 @@ describe("BudgetsService", () => {
       investmentExchangeRateFromCurrency: "EUR",
       investmentExchangeRateToCurrency: "CAD",
       splits: [],
+    });
+
+    it("rounds the converted bills once, not each bill", async () => {
+      stubVelocityBudget(
+        [1, 2, 3].map((n) => ({
+          ...staleInvestmentBill(),
+          id: `st-cad-${n}`,
+          name: `Bill ${n}`,
+          amount: -1,
+          currencyCode: "CAD",
+          isInvestment: false,
+          investmentAction: null,
+        })),
+      );
+      // Each 1 CAD is 1.25005 USD; rounded alone 1.2501, three of them 3.7503.
+      exchangeRateService.getRateForDate.mockResolvedValue(1.25005);
+
+      const result = await service.getVelocity("user-1", "budget-1");
+
+      expect(result.totalUpcomingBills).toBe(3.7502);
     });
 
     it("does not count a split's transfer lines as upcoming spending", async () => {
@@ -2025,6 +2308,420 @@ describe("BudgetsService", () => {
       // Both derived figures are unknown, not larger.
       expect(result.trulyAvailable).toBeNull();
       expect(result.safeDailySpend).toBeNull();
+    });
+
+    // Audit #2365 (u): a scheduled transfer is a bill only where it would count
+    // against THIS budget once posted: a line for its destination account, or an
+    // outgoing line on its category. Any other transfer (a card or loan payment
+    // included) only moves money between the user's own accounts. An occurrence
+    // out of an account the budget excludes is not tracked at all.
+    describe("scheduled transfers and excluded accounts", () => {
+      const tomorrow = () => addDaysYMD(todayYMD(), 1);
+      const schedule = (over: Record<string, unknown>) => ({
+        id: "st-t",
+        name: "Transfer",
+        amount: -70,
+        isTransfer: true,
+        accountId: "acc-1",
+        transferAccountId: "acc-2",
+        frequency: "MONTHLY",
+        nextDueDate: tomorrow(),
+        categoryId: null,
+        ...over,
+      });
+      const netflix = {
+        id: "st-1",
+        name: "Netflix",
+        amount: -15.99,
+        accountId: "acc-1",
+        frequency: "MONTHLY",
+        nextDueDate: tomorrow(),
+        categoryId: "cat-ent",
+      };
+      const upcoming = async (
+        rows: unknown[],
+        budget: Pick<Budget, "categories" | "config">,
+      ) => {
+        scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            getMany: jest.fn().mockResolvedValue(rows),
+          }),
+        );
+        const bills = await service.getUpcomingBills(
+          "user-1",
+          addDaysYMD(todayYMD(), 7),
+          budget,
+        );
+        return bills.map((b) => [b.id, b.amount, b.amountComplete]);
+      };
+      const line = (over: Partial<BudgetCategory>): BudgetCategory => ({
+        ...mockBudgetCategory,
+        ...over,
+      });
+
+      it("leaves a plain transfer no budget line takes out of the bills", async () => {
+        expect(
+          await upcoming([schedule({}), netflix], {
+            ...mockBudget,
+            categories: [line({ categoryId: "cat-1" })],
+          }),
+        ).toEqual([["st-1", 15.99, true]]);
+      });
+
+      it("counts a transfer to an account the budget has an outgoing transfer line for", async () => {
+        expect(
+          await upcoming([schedule({})], {
+            ...mockBudget,
+            categories: [
+              line({
+                categoryId: null,
+                isTransfer: true,
+                transferAccountId: "acc-2",
+              }),
+            ],
+          }),
+        ).toEqual([["st-t", 70, true]]);
+      });
+
+      it("does not count a transfer from an account the budget has an income transfer line for", async () => {
+        expect(
+          await upcoming([schedule({})], {
+            ...mockBudget,
+            categories: [
+              line({
+                categoryId: null,
+                isTransfer: true,
+                isIncome: true,
+                transferAccountId: "acc-2",
+              }),
+            ],
+          }),
+        ).toEqual([]);
+      });
+
+      // A category line reads the net of the rows holding it inside the budget,
+      // so a transfer between two budget accounts nets to zero (spec 6.1).
+      it("counts a transfer on a budgeted category only where it leaves the budget", async () => {
+        const categories = [line({ categoryId: "cat-sav" })];
+        const bills = (excludedAccountIds: string[]) =>
+          upcoming([schedule({ categoryId: "cat-sav" })], {
+            ...mockBudget,
+            config: { excludedAccountIds },
+            categories,
+          });
+
+        expect(await bills([])).toEqual([]);
+        expect(await bills(["acc-2"])).toEqual([["st-t", 70, true]]);
+      });
+
+      // Spec 6.3: a Transfer category that has a line takes the leg from the
+      // per-account lines; any other category leaves them in force.
+      it("lets a Transfer category's line take the leg from a per-account line", async () => {
+        const perAccount = line({
+          categoryId: null,
+          isTransfer: true,
+          transferAccountId: "acc-2",
+        });
+        const transferCategoryLine = line({
+          categoryId: "cat-tr",
+          category: {
+            ...mockCategory,
+            id: "cat-tr",
+            categoryType: "transfer",
+          },
+        });
+        const bills = (categories: BudgetCategory[], excluded: string[]) =>
+          upcoming([schedule({ categoryId: "cat-tr" })], {
+            ...mockBudget,
+            config: { excludedAccountIds: excluded },
+            categories,
+          });
+
+        // Inside the budget the category line nets it to zero and the
+        // per-account line no longer sees it.
+        expect(await bills([perAccount, transferCategoryLine], [])).toEqual([]);
+        // Without a line on the category, the per-account line counts it.
+        expect(await bills([perAccount], [])).toEqual([["st-t", 70, true]]);
+        // Out of the budget the category line counts it, once.
+        expect(
+          await bills([perAccount, transferCategoryLine], ["acc-2"]),
+        ).toEqual([["st-t", 70, true]]);
+      });
+
+      it("prints the whole amount due and counts only the spending part", async () => {
+        const split = {
+          ...staleInvestmentBill(),
+          id: "st-split",
+          amount: -100,
+          currencyCode: "USD",
+          isInvestment: false,
+          investmentAction: null,
+          isSplit: true,
+          accountId: "acc-1",
+          splits: [
+            { id: "s1", kind: "category", amount: -30 },
+            {
+              id: "s2",
+              kind: "category",
+              amount: -70,
+              transferAccountId: "acc-2",
+            },
+          ],
+        };
+        scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            getMany: jest.fn().mockResolvedValue([split]),
+          }),
+        );
+
+        const bills = await service.getUpcomingBills(
+          "user-1",
+          addDaysYMD(todayYMD(), 7),
+          { ...mockBudget, categories: [] },
+        );
+
+        expect(bills.map((b) => [b.id, b.amount, b.amountDue])).toEqual([
+          ["st-split", 30, 100],
+        ]);
+      });
+
+      it("lists a split made only of untracked transfer lines as no bill", async () => {
+        const onlyTransfers = {
+          ...staleInvestmentBill(),
+          id: "st-only",
+          amount: -100,
+          currencyCode: "USD",
+          isInvestment: false,
+          investmentAction: null,
+          isSplit: true,
+          accountId: "acc-1",
+          splits: [
+            {
+              id: "s1",
+              kind: "category",
+              amount: -100,
+              transferAccountId: "acc-2",
+            },
+          ],
+        };
+
+        expect(
+          await upcoming([onlyTransfers], { ...mockBudget, categories: [] }),
+        ).toEqual([]);
+      });
+
+      // Issue #1124: a schedule left at 0 is a payment still to make; it adds
+      // nothing to the totals.
+      it("lists a zero-amount reminder as a row that adds nothing", async () => {
+        scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            getMany: jest
+              .fn()
+              .mockResolvedValue([
+                { ...netflix, id: "st-zero", name: "Card Payment", amount: 0 },
+                netflix,
+              ]),
+          }),
+        );
+
+        const bills = await service.getUpcomingBills(
+          "user-1",
+          addDaysYMD(todayYMD(), 7),
+          mockBudget,
+        );
+
+        expect(
+          bills.map((b) => [b.id, b.amount, b.amountDue, b.isReminder]),
+        ).toEqual([
+          ["st-1", 15.99, 15.99, false],
+          ["st-zero", 0, 0, true],
+        ]);
+      });
+
+      it("drops an occurrence out of an account the budget excludes", async () => {
+        expect(
+          await upcoming(
+            [
+              schedule({ categoryId: "cat-sav", accountId: "acc-x" }),
+              { ...netflix, accountId: "acc-x" },
+              { ...netflix, id: "st-2", accountId: "acc-1" },
+            ],
+            {
+              ...mockBudget,
+              config: { excludedAccountIds: ["acc-x"] },
+              categories: [line({ categoryId: "cat-sav" })],
+            },
+          ),
+        ).toEqual([["st-2", 15.99, true]]);
+      });
+
+      // The cash leg of an investment schedule settles in its funding account,
+      // which is what the budget's actuals filter on, not in the brokerage.
+      it("filters an investment schedule by its settlement account", async () => {
+        const buy = {
+          ...staleInvestmentBill(),
+          accountId: "acc-brokerage",
+          investmentFundingAccountId: "acc-fund",
+        };
+        const ids = async (excludedAccountIds: string[]) =>
+          (
+            await upcoming([buy], {
+              ...mockBudget,
+              config: { excludedAccountIds },
+              categories: [],
+            })
+          ).map((b) => b[0]);
+
+        expect(await ids(["acc-fund"])).toEqual([]);
+        expect(await ids(["acc-brokerage"])).toEqual(["st-inv"]);
+      });
+
+      describe("per-occurrence overrides", () => {
+        const override = (over: Record<string, unknown>) =>
+          overridesRepository.find.mockResolvedValue([
+            {
+              id: "ovr-1",
+              scheduledTransactionId: "st-t",
+              originalDate: tomorrow(),
+              overrideDate: tomorrow(),
+              amount: null,
+              categoryId: null,
+              isSplit: null,
+              splits: null,
+              ...over,
+            },
+          ]);
+        // acc-2 is outside the budget, so a category line counts the transfer.
+        const budgeted = {
+          ...mockBudget,
+          config: { excludedAccountIds: ["acc-2"] },
+          categories: [line({ categoryId: "cat-sav" })],
+        };
+
+        it("counts a transfer an override moves onto a budgeted category", async () => {
+          override({ categoryId: "cat-sav" });
+
+          expect(await upcoming([schedule({})], budgeted)).toEqual([
+            ["st-t", 70, true],
+          ]);
+        });
+
+        it("leaves a transfer out when an override moves it off the budgeted category", async () => {
+          override({ categoryId: "cat-other" });
+
+          expect(
+            await upcoming([schedule({ categoryId: "cat-sav" })], budgeted),
+          ).toEqual([]);
+        });
+      });
+
+      // A split's transfer line is spending where the budget tracks its
+      // destination account, as the posted line would be.
+      it("counts a split's transfer line to an account the budget has a transfer line for", async () => {
+        const split = {
+          ...staleInvestmentBill(),
+          id: "st-split",
+          amount: -100,
+          currencyCode: "USD",
+          isInvestment: false,
+          investmentAction: null,
+          isSplit: true,
+          accountId: "acc-1",
+          splits: [
+            { id: "s1", kind: "category", amount: -30 },
+            {
+              id: "s2",
+              kind: "category",
+              amount: -70,
+              transferAccountId: "acc-2",
+            },
+          ],
+        };
+        const transferLine = line({
+          categoryId: null,
+          isTransfer: true,
+          transferAccountId: "acc-2",
+        });
+
+        expect(
+          await upcoming([split], { ...mockBudget, categories: [] }),
+        ).toEqual([["st-split", 30, true]]);
+        expect(
+          await upcoming([split], {
+            ...mockBudget,
+            categories: [transferLine],
+          }),
+        ).toEqual([["st-split", 100, true]]);
+      });
+
+      it("counts a split's transfer line on a budgeted category only where it leaves the budget", async () => {
+        const split = {
+          ...staleInvestmentBill(),
+          id: "st-split",
+          amount: -100,
+          currencyCode: "USD",
+          isInvestment: false,
+          investmentAction: null,
+          isSplit: true,
+          accountId: "acc-1",
+          splits: [
+            { id: "s1", kind: "category", amount: -30 },
+            {
+              id: "s2",
+              kind: "category",
+              amount: -70,
+              transferAccountId: "acc-2",
+              categoryId: "cat-sav",
+            },
+          ],
+        };
+        const spent = async (excludedAccountIds: string[]) =>
+          upcoming([split], {
+            ...mockBudget,
+            config: { excludedAccountIds },
+            categories: [line({ categoryId: "cat-sav" })],
+          });
+
+        expect(await spent([])).toEqual([["st-split", 30, true]]);
+        expect(await spent(["acc-2"])).toEqual([["st-split", 100, true]]);
+      });
+
+      it("keeps a plain transfer out of the velocity totals", async () => {
+        stubVelocityBudget([schedule({}), netflix]);
+
+        const result = await service.getVelocity("user-1", "budget-1");
+
+        expect(result.upcomingBills.map((b) => [b.id, b.amount])).toEqual([
+          ["st-1", 15.99],
+        ]);
+        expect(result.totalUpcomingBills).toBe(15.99);
+        // 600 budgeted - 200 spent - 15.99 upcoming.
+        expect(result.trulyAvailable).toBe(384.01);
+        expect(result.safeDailySpend).toBeCloseTo(
+          384.01 / result.daysRemaining,
+          6,
+        );
+      });
+
+      it("does not withhold the totals for a plain transfer whose amount is unknown", async () => {
+        stubVelocityBudget([
+          { ...staleInvestmentBill(), isTransfer: true },
+          netflix,
+        ]);
+        investmentTransactionsService.resolveSettlementCurrencyPair.mockResolvedValue(
+          { from: "USD", to: "CAD" },
+        );
+        investmentTransactionsService.resolveCashExchangeRateOrNull.mockResolvedValue(
+          null,
+        );
+
+        const result = await service.getVelocity("user-1", "budget-1");
+
+        expect(result.upcomingBills.map((b) => b.id)).toEqual(["st-1"]);
+        expect(result.upcomingBillsComplete).toBe(true);
+        expect(result.totalUpcomingBills).toBe(15.99);
+        expect(result.trulyAvailable).toBe(384.01);
+      });
     });
 
     // ---- Occurrence selection (issue #1247) ----
@@ -2502,6 +3199,54 @@ describe("BudgetsService", () => {
       });
     });
 
+    it("withholds the totals and safe daily spend when a row has no rate (audit #2365 p)", async () => {
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 1000,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+        ],
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest
+            .fn()
+            .mockResolvedValue([
+              spendingRow("cat-1", "-20"),
+              { ...spendingRow("cat-1", "-1000"), currencyCode: "QQQ" },
+            ]),
+        }),
+      );
+
+      const result = await service.getDashboardSummary("user-1");
+
+      expect(result).toMatchObject({
+        totalSpent: null,
+        knownTotalSpent: 20,
+        remaining: null,
+        percentUsed: null,
+        safeDailySpend: null,
+        valuationComplete: false,
+        missingRatePairs: ["QQQ->USD"],
+      });
+      expect(result!.topCategories).toEqual([]);
+      expect(result!.incompleteCategories).toEqual([
+        {
+          budgetCategoryId: "bc-1",
+          categoryName: "Groceries",
+          budgeted: 1000,
+          knownSpent: 20,
+          missingRatePairs: ["QQQ->USD"],
+        },
+      ]);
+    });
+
     it("returns summary with topCategories sorted by percentUsed descending", async () => {
       const budgetWithCategories = {
         ...mockBudget,
@@ -2628,6 +3373,37 @@ describe("BudgetsService", () => {
       expect(result!.safeDailySpend).toBeGreaterThanOrEqual(0);
       expect(typeof result!.daysRemaining).toBe("number");
       expect(result!.daysRemaining).toBeGreaterThanOrEqual(0);
+    });
+
+    it("counts daysRemaining in the user's day, not the server's", async () => {
+      jest.useFakeTimers({
+        now: new Date("2026-10-30T23:30:00Z"),
+        doNotFake: ["nextTick", "setImmediate", "queueMicrotask"],
+      });
+      try {
+        budgetsRepository.findOne.mockResolvedValue({
+          ...mockBudget,
+          categories: [],
+        });
+        transactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            getRawMany: jest.fn().mockResolvedValue([]),
+          }),
+        );
+        splitsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            getRawMany: jest.fn().mockResolvedValue([]),
+          }),
+        );
+        // Pacific/Kiritimati is already on 31 October: the last day, 0 left.
+        const result = await requestContextStorage.run(
+          { userId: "user-1", timezone: "Pacific/Kiritimati" },
+          () => service.getDashboardSummary("user-1"),
+        );
+        expect(result!.daysRemaining).toBe(0);
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("returns zero percentUsed when totalBudgeted is zero", async () => {
@@ -3084,6 +3860,7 @@ describe("BudgetsService", () => {
       const result = await service.getUpcomingBills(
         "user-1",
         addDaysYMD(todayYMD(), 7),
+        mockBudget,
       );
 
       expect(result).toHaveLength(2);
@@ -3121,6 +3898,7 @@ describe("BudgetsService", () => {
       const result = await service.getUpcomingBills(
         "user-1",
         addDaysYMD(todayYMD(), 7),
+        mockBudget,
       );
 
       expect(result.map((bill) => bill.name)).toEqual(["Netflix"]);
@@ -3135,6 +3913,7 @@ describe("BudgetsService", () => {
       const result = await service.getUpcomingBills(
         "user-1",
         addDaysYMD(todayYMD(), 7),
+        mockBudget,
       );
 
       expect(result).toHaveLength(0);

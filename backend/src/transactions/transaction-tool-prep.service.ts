@@ -1034,6 +1034,7 @@ export class TransactionToolPrepService {
           description: preview.description,
           isReconciled: preview.isReconciled,
           ...(preview.splitLine ? { splitLine: preview.splitLine } : {}),
+          ...(preview.transferPair ? { transferPair: true as const } : {}),
         });
       } catch (err) {
         const reason = this.skipReason(err);

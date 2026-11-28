@@ -689,10 +689,11 @@ describe("MonteCarloService", () => {
 
     it("names a missing cash pair when the summary is incomplete", async () => {
       portfolioService.getPortfolioSummary.mockResolvedValue({
-        totalPortfolioValue: 200000,
-        totalCashValue: 100000,
+        totalPortfolioValue: null,
+        totalCashValue: null,
         fxComplete: false,
         missingRatePairs: ["EUR->USD"],
+        portfolioValueMissingRatePairs: ["EUR->USD"],
         pricesComplete: true,
         unpricedSecurityIds: [],
         valuationComplete: false,
@@ -1365,9 +1366,12 @@ describe("MonteCarloService", () => {
         buildScenario({ useCurrentBalance: true }),
       );
       portfolioService.getPortfolioSummary.mockResolvedValueOnce({
-        totalPortfolioValue: 100,
+        totalPortfolioValue: null,
+        totalCashValue: null,
+        knownPortfolioValueSubtotal: 100,
         fxComplete: false,
         missingRatePairs: ["EUR->USD"],
+        portfolioValueMissingRatePairs: ["EUR->USD"],
         pricesComplete: true,
         unpricedSecurityIds: [],
         valuationComplete: false,
@@ -1387,9 +1391,12 @@ describe("MonteCarloService", () => {
         buildScenario({ useCurrentBalance: true }),
       );
       portfolioService.getPortfolioSummary.mockResolvedValueOnce({
-        totalPortfolioValue: 100,
+        totalPortfolioValue: null,
+        totalCashValue: 0,
+        knownPortfolioValueSubtotal: 100,
         fxComplete: true,
         missingRatePairs: [],
+        portfolioValueMissingRatePairs: [],
         pricesComplete: false,
         unpricedSecurityIds: ["sec-2"],
         valuationComplete: false,

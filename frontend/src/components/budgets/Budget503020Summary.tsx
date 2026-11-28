@@ -6,10 +6,16 @@ import type { BudgetCategory, CategoryBreakdown } from '@/types/budget';
 import { clamp } from '@/lib/clamp';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
 interface Budget503020SummaryProps {
   budgetCategories: BudgetCategory[];
   categoryBreakdown: CategoryBreakdown[];
-  totalIncome: number;
+  /** `null` when an income row had no exchange rate: the shares are unknown. */
+  totalIncome: number | null;
+  /** The translated cause beside an unknown SPENT figure (the expense pairs). */
+  partialReason?: string;
+  /** The cause beside an unknown income or budget (the income pairs). */
+  incomeReason?: string;
   formatCurrency: (amount: number) => string;
 }
 
@@ -23,6 +29,8 @@ export function Budget503020Summary({
   budgetCategories,
   categoryBreakdown,
   totalIncome,
+  partialReason,
+  incomeReason,
   formatCurrency,
 }: Budget503020SummaryProps) {
   const t = useTranslations('budgets');
@@ -36,9 +44,9 @@ export function Budget503020Summary({
   }
 
   // Compute spent by group from categoryBreakdown
-  const groupTotals = new Map<string, { budgeted: number; spent: number }>();
+  const groupTotals = new Map<string, { budgeted: number; spent: number; complete: boolean; budgetedComplete: boolean }>();
   for (const group of GROUPS) {
-    groupTotals.set(group.key, { budgeted: 0, spent: 0 });
+    groupTotals.set(group.key, { budgeted: 0, spent: 0, complete: true, budgetedComplete: true });
   }
 
   for (const cat of categoryBreakdown) {
@@ -48,10 +56,13 @@ export function Budget503020Summary({
       const current = groupTotals.get(group)!;
       current.budgeted += cat.budgeted;
       current.spent += cat.spent;
+      if (cat.valuationComplete === false) current.complete = false;
+      if (cat.budgetedComplete === false) current.budgetedComplete = false;
     }
   }
 
-  if (totalIncome <= 0) return null;
+  if (totalIncome !== null && totalIncome <= 0) return null;
+  const incomeKnown = totalIncome !== null;
 
   return (
     <div className={`${CARD_CLASS} p-4 sm:p-6`}>
@@ -61,14 +72,11 @@ export function Budget503020Summary({
       <div className="space-y-4">
         {GROUPS.map((group) => {
           const data = groupTotals.get(group.key)!;
-          const actualPercent =
-            totalIncome > 0
-              ? Math.round((data.spent / totalIncome) * 100)
-              : 0;
-          const budgetedPercent =
-            totalIncome > 0
-              ? Math.round((data.budgeted / totalIncome) * 100)
-              : 0;
+          // A share needs the income and every line of the group known.
+          const spentKnown = incomeKnown && data.complete;
+          const actualPercent = spentKnown ? Math.round((data.spent / totalIncome) * 100) : 0;
+          const budgetedKnown = incomeKnown && data.budgetedComplete;
+          const budgetedPercent = budgetedKnown ? Math.round((data.budgeted / totalIncome) * 100) : 0;
           const diff = actualPercent - group.target;
 
           let statusColor: string;
@@ -94,19 +102,29 @@ export function Budget503020Summary({
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-sm font-medium ${statusColor}`}>
-                    {formatPercentTrimmed(actualPercent)}
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {formatCurrency(data.spent)}
-                  </span>
+                  {spentKnown ? (
+                    <>
+                      <span className={`text-sm font-medium ${statusColor}`}>
+                        {formatPercentTrimmed(actualPercent)}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {formatCurrency(data.spent)}
+                      </span>
+                    </>
+                  ) : (
+                    <UnknownAmount reasonText={incomeKnown ? partialReason : (incomeReason ?? partialReason)} />
+                  )}
                 </div>
               </div>
               <div className="relative w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-300 ${group.color}`}
-                  style={{ width: `${barWidth}%` }}
-                />
+                {/* A 0% bar would read as a measurement: the fill is drawn only
+                    for a known share. */}
+                {spentKnown && (
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${group.color}`}
+                    style={{ width: `${barWidth}%` }}
+                  />
+                )}
                 {/* Target marker */}
                 <div
                   className="absolute top-0 h-full w-px bg-gray-500/60 dark:bg-gray-400/60"
@@ -115,7 +133,11 @@ export function Budget503020Summary({
                 />
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {t('summary503020.budgeted', { percent: formatPercentTrimmed(budgetedPercent), amount: formatCurrency(data.budgeted) })}
+                {budgetedKnown ? (
+                  t('summary503020.budgeted', { percent: formatPercentTrimmed(budgetedPercent), amount: formatCurrency(data.budgeted) })
+                ) : (
+                  <UnknownAmount reasonText={incomeReason ?? partialReason} />
+                )}
               </div>
             </div>
           );

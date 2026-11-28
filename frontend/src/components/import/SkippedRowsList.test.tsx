@@ -173,6 +173,38 @@ describe('SkippedRowsList', () => {
     expect(screen.getByText(/Transaction 9, /)).toBeInTheDocument();
   });
 
+  it('names a QIF record or OFX transaction whose date cannot be read, with the file text', () => {
+    const unreadable = row({ date: '', reason: 'unreadableDate', rowNumber: 9, rawDate: '13/45/2026', amount: -5 });
+    const { unmount } = render(<SkippedRowsList rows={[unreadable]} fileType="qif" />);
+    expect(screen.getByText(/Line 9, "13\/45\/2026".*date could not be read/)).toBeInTheDocument();
+    unmount();
+    const { unmount: unmountOfx } = render(<SkippedRowsList rows={[unreadable]} fileType="ofx" />);
+    expect(screen.getByText(/Transaction 9, "13\/45\/2026"/)).toBeInTheDocument();
+    unmountOfx();
+    render(<SkippedRowsList rows={[{ ...unreadable, rawDate: '' }]} fileType="qif" />);
+    expect(screen.getByText(/Line 9: .*\(no date\)/)).toBeInTheDocument();
+  });
+
+  it('warns that a transfer whose date cannot be read may already exist', () => {
+    render(
+      <SkippedRowsList
+        rows={[row({ date: '', reason: 'unreadableDateTransfer', rowNumber: 9, rawDate: 'x', amount: -5 })]}
+        fileType="qif"
+      />,
+    );
+    expect(screen.getByText(/Line 9, "x".*date could not be read; this transfer may already exist/)).toBeInTheDocument();
+  });
+
+  it('names the column of an unreadable investment cell', () => {
+    render(
+      <SkippedRowsList
+        rows={[row({ reason: 'unreadableAmount', rowNumber: 4, rawAmount: 'N/A', field: 'commission', amount: 0 })]}
+        fileType="csv"
+      />,
+    );
+    expect(screen.getByText(/Row 4, commission: "N\/A"/)).toBeInTheDocument();
+  });
+
   it('keeps "Row" for a CSV row', () => {
     render(
       <SkippedRowsList

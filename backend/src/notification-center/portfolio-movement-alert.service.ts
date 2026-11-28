@@ -217,8 +217,10 @@ export class PortfolioMovementAlertService {
     }
 
     const inputs: MovementInputs = {
+      // valuationComplete=false is a no-op (docs/specs/portfolio-movement-notifications.md,
+      // INV-PORTMOVE-001/002); a complete valuation always has a known total.
       mvComplete: summary.valuationComplete === true,
-      mvToday: summary.totalPortfolioValue,
+      mvToday: summary.totalPortfolioValue ?? 0,
       latePrice: { complete: late.complete, value: late.total },
       currency,
       baseline,

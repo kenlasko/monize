@@ -116,6 +116,9 @@ function isCalendarDate(value: string): boolean {
 export async function executeConversion(
   input: ConvertInput,
   rates: DatedConverter,
+  // The user's day when `date` is omitted; the MCP tool has no database handle
+  // and keeps the request-zone day.
+  today: string = todayYMD(),
 ): Promise<ConvertResult | { error: string }> {
   const { values, fromCurrency, toCurrency, date, label } = input;
 
@@ -144,7 +147,7 @@ export async function executeConversion(
     return { error: `Invalid date '${date}': expected YYYY-MM-DD.` };
   }
 
-  const asOf = date ?? todayYMD();
+  const asOf = date ?? today;
   const conversion = await rates.convertOnDate(
     amount,
     fromCurrency,

@@ -20,6 +20,7 @@
  * on how wide the chart was, and the forward margin let a date be priced by an
  * observation from its future (issue #1390).
  */
+import { todayYMD } from "../date-utils";
 import {
   FX_MAX_RATE_AGE_DAYS,
   FxRateResolution,
@@ -79,6 +80,7 @@ export async function buildRateIndex(
   startDate: string,
   endDate: string,
   conversionHorizon?: string,
+  today: string = todayYMD(),
 ): Promise<RateIndex> {
   if (currencies.size === 0) return new Map();
 
@@ -87,6 +89,9 @@ export async function buildRateIndex(
       ? conversionHorizon
       : endDate;
   const currArr = Array.from(currencies);
+  // One "today" for the SQL anchor and the resolver: the day the caller gives
+  // (an owner's day from userTodayYMD), by default the request's day; with
+  // neither it is Node's local clock (its TZ), never Postgres' CURRENT_DATE.
   const rates = await query(
     `WITH pairs AS (
          SELECT c AS from_currency, $2::TEXT AS to_currency
@@ -95,7 +100,7 @@ export async function buildRateIndex(
          SELECT $2::TEXT AS from_currency, c AS to_currency
            FROM unnest($1::TEXT[]) AS c
        ),
-       anchor AS (SELECT LEAST($3::DATE, CURRENT_DATE) AS d)
+       anchor AS (SELECT LEAST($3::DATE, $5::DATE) AS d)
        SELECT from_currency, to_currency, rate, rate_date
          FROM (
            SELECT er.from_currency, er.to_currency, er.rate, er.rate_date
@@ -120,20 +125,32 @@ export async function buildRateIndex(
              ) pre
          ) loaded
         ORDER BY rate_date`,
-    [currArr, defaultCurrency, startDate, loadTo],
+    // The user's day (todayYMD), not the database server's CURRENT_DATE (#2365).
+    [currArr, defaultCurrency, startDate, loadTo, today],
   );
 
-  return indexRateRows(rates);
+  return indexRateRows(rates, today);
 }
 
+/**
+ * The day an index was loaded against, so the resolver's future cap and age
+ * bound use the same "today" as the SQL anchor. Per index, never shared: an
+ * index lives for one computation (and so does its resolution memo).
+ */
+const indexToday = new WeakMap<RateIndex, string>();
+
 /** Group already-fetched rows into the pair index, preserving their order. */
-export function indexRateRows(rows: RateIndexRow[]): RateIndex {
+export function indexRateRows(
+  rows: RateIndexRow[],
+  today: string = todayYMD(),
+): RateIndex {
   const index: RateIndex = new Map();
+  indexToday.set(index, today);
   for (const r of rows) {
     const key = `${r.from_currency}->${r.to_currency}`;
     if (!index.has(key)) index.set(key, []);
     index.get(key)!.push({
-      date: rateDateString(r.rate_date),
+      date: rateDateString(r.rate_date, today),
       rate: Number(r.rate),
     });
   }
@@ -201,8 +218,12 @@ export function resolveIndexedRate(
   const key = `${from}->${to}@${onDate}`;
   const known = memo.get(key);
   if (known) return known;
-  const resolution = resolveFxRate(from, to, onDate, (f, t) =>
-    rateIndex.get(`${f}->${t}`),
+  const resolution = resolveFxRate(
+    from,
+    to,
+    onDate,
+    (f, t) => rateIndex.get(`${f}->${t}`),
+    { today: indexToday.get(rateIndex) ?? todayYMD() },
   );
   memo.set(key, resolution);
   return resolution;
@@ -257,8 +278,11 @@ export function convertAtDate(
  * rely on. `exchange_rates.rate_date` is `NOT NULL`, so the branch is reachable
  * only from a hand-built row.
  */
-function rateDateString(value: string | Date | null | undefined): string {
-  if (!value) return new Date().toISOString().substring(0, 10);
+function rateDateString(
+  value: string | Date | null | undefined,
+  today: string,
+): string {
+  if (!value) return today;
   if (typeof value === "string") return value.substring(0, 10);
   return value.toISOString().substring(0, 10);
 }

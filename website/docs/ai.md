@@ -144,7 +144,7 @@ The AI page displays suggested query buttons to help you get started quickly: **
 
 ### Charts and Visualizations
 
-When the assistant returns data that lends itself to visualization, an inline chart is rendered directly in the chat. For example, a spending-by-category query may display a bar or pie chart alongside the text response. A chart can be downloaded as a PNG and a table as a CSV.
+When the assistant returns data that lends itself to visualization, an inline chart is rendered directly in the chat. For example, a spending-by-category query may display a bar or pie chart alongside the text response. A chart can be downloaded as a PNG and a table as a CSV. Bar charts and time series preserve signed values, including negative net spending after refunds. Pie charts require non-negative slices.
 
 ### Entity Links
 
@@ -339,7 +339,7 @@ The approval step is a confirmation dialog that Monize asks your MCP client to s
 
 | Tool | Description | Scope |
 |------|-------------|-------|
-| `list_transactions` | Search and summarize transactions. In grouped results, `expenses` deducts refunds in expense categories and `outgoing` sums debits. A 100 USD purchase and 30 USD refund give 70 USD in expenses and 100 USD outgoing. Individual rows are opt-in. | read |
+| `list_transactions` | Search and summarize transactions. In grouped results, `expenses` deducts refunds in expense categories and `outgoing` sums debits. A 100 USD purchase and 30 USD refund give 70 USD in expenses and 100 USD outgoing. Grouping by payee keeps each linked payee separate, even when transactions share the same description. Individual rows are opt-in. | read |
 | `list_accounts` | List accounts with balances and net worth | read |
 | `list_categories` | Browse the category tree | read |
 | `list_payees` | List payees | read |

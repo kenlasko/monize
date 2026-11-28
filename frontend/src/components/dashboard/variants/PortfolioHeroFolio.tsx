@@ -22,6 +22,7 @@ export function PortfolioHeroFolio({
   change,
   holdings,
   cash,
+  unknown,
   metric,
   chart,
 }: PortfolioHeroViewProps) {
@@ -35,13 +36,17 @@ export function PortfolioHeroFolio({
       <div className="flex flex-col gap-1.5 lg:min-w-[max(var(--hero-figures-min,0px),27rem)] lg:flex-shrink-0">
         <div className="mt-4 text-xs uppercase tracking-[0.14em] text-blue-600 dark:text-blue-400">{caption}</div>
         <HeroHeadline
-          negative={total.value < 0}
+          negative={total !== null && total.value < 0}
           collapsed={collapsed}
           sizeClass="text-6xl sm:text-7xl lg:text-[84px] font-medium"
         >
-          <PartialTotal total={total} displayCurrency={currency}>
-            <MoneyFigure amount={total.value} currencyCode={currency} display />
-          </PartialTotal>
+          {total === null ? (
+            unknown.total
+          ) : (
+            <PartialTotal total={total} displayCurrency={currency}>
+              <MoneyFigure amount={total.value} currencyCode={currency} display />
+            </PartialTotal>
+          )}
         </HeroHeadline>
         {change !== null &&
           (change.kind === 'known' ? (
@@ -55,10 +60,10 @@ export function PortfolioHeroFolio({
           ))}
         <dl className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(0,1fr))] border-t border-gray-200 dark:border-gray-700">
           <StatementFigure label={t('hero.holdingsLabel')} first>
-            <StatementAmount total={holdings} currency={currency} />
+            {holdings === null ? unknown.holdings : <StatementAmount total={holdings} currency={currency} />}
           </StatementFigure>
           <StatementFigure label={t('hero.cashLabel')}>
-            <StatementAmount total={cash} currency={currency} />
+            {cash === null ? unknown.cash : <StatementAmount total={cash} currency={currency} />}
           </StatementFigure>
           <StatementFigure label={metric.label} testId="dashboard-hero-metric">
             {metric.value}

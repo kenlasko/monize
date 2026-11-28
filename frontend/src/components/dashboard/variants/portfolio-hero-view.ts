@@ -23,13 +23,18 @@ export interface PortfolioHeroViewProps {
   /** "Portfolio value (accounts)", the accounts keeping their own case. */
   caption: ReactNode;
   /** The chosen accounts' value; a subtotal while a price or a rate is missing. */
-  total: ConvertedTotal;
+  total: ConvertedTotal | null;
   /** What the app header shows once the headline scrolls away. */
   collapsed: CollapsedHeaderTitle;
   /** `null` when there is nothing to measure it against. */
   change: PortfolioHeroChange | null;
-  holdings: ConvertedTotal;
-  cash: ConvertedTotal;
+  holdings: ConvertedTotal | null;
+  cash: ConvertedTotal | null;
+  /**
+   * What stands where a figure above is `null` (withheld outright): that figure's
+   * own reason, as `UnknownAmount` draws it. The rest of the set still shows.
+   */
+  unknown: { total: ReactNode; holdings: ReactNode; cash: ReactNode };
   /**
    * The chosen figure: `name` reads inside a sentence, `label` over an amount,
    * and `value` is its figure, a placeholder or the reason it is withheld.

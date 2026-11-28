@@ -139,6 +139,15 @@ describe('IncomeExpensesBarChart', () => {
     expect(screen.queryByTestId('bar-chart')).not.toBeInTheDocument();
   });
 
+  it('says the report failed to load instead of showing zero totals', async () => {
+    mockGetIncomeVsExpenses.mockRejectedValue(new Error('500'));
+    await act(async () => {
+      render(<IncomeExpensesBarChart accounts={[]} isLoading={false} />);
+    });
+    expect(screen.getByText(/Couldn't load your income and expenses/)).toBeInTheDocument();
+    expect(screen.queryByText('Net')).not.toBeInTheDocument();
+  });
+
   it('renders chart title and timeframe label when not loading', async () => {
     await renderChart(report([]));
     await waitFor(() => expect(screen.getByTestId('bar-chart')).toBeInTheDocument());

@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { figuresUnknown, unknownPairs } from '@/components/budgets/utils/line-completeness';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -48,6 +51,7 @@ export default function BudgetEditPage() {
 
 function BudgetEditContent() {
   const t = useTranslations('budgets');
+  const partialReasonOf = useBudgetPartialReason();
   const params = useParams();
   const router = useRouter();
   const { formatCurrency } = useNumberFormat();
@@ -350,6 +354,7 @@ function BudgetEditContent() {
                       categoryIncome={summary.categoryIncome}
                       transferFunding={summary.transferFunding}
                       totalFunding={summary.totalIncome}
+                      partialReason={partialReasonOf(summary.incomeMissingRatePairs ?? summary.missingRatePairs)}
                       formatCurrency={(amount) => formatCurrency(amount, budget.currencyCode)}
                     />
                   )}
@@ -366,6 +371,9 @@ function BudgetEditContent() {
                   (b) => b.budgetCategoryId === cat.id,
                 );
                 const percentUsed = breakdownItem?.percentUsed ?? 0;
+                // A row with no exchange rate (or income-linked income that has
+                // none) leaves the percent unknown: no bar, no percent.
+                const partial = breakdownItem !== undefined && figuresUnknown(breakdownItem);
 
                 return (
                   <button
@@ -394,14 +402,18 @@ function BudgetEditContent() {
                         {formatCurrency(cat.amount, budget.currencyCode)}
                       </span>
                     </div>
-                    <BudgetProgressBar percentUsed={percentUsed} />
+                    {!partial && <BudgetProgressBar percentUsed={percentUsed} />}
                     <div className="flex items-center justify-between mt-1 text-xs text-gray-500 dark:text-gray-400">
                       <span>
                         {cat.rolloverType !== 'NONE'
                           ? t('pages.edit.rolloverType', { type: cat.rolloverType.toLowerCase() })
                           : t('pages.edit.resetsEachPeriod')}
                       </span>
-                      <span>{t('pages.edit.percentUsed', { percent: String(Math.round(percentUsed)) })}</span>
+                      {partial ? (
+                        <UnknownAmount reasonText={partialReasonOf(breakdownItem ? unknownPairs(breakdownItem) : [])} />
+                      ) : (
+                        <span>{t('pages.edit.percentUsed', { percent: String(Math.round(percentUsed)) })}</span>
+                      )}
                     </div>
                   </button>
                 );

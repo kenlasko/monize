@@ -453,6 +453,8 @@ export class DailyBalanceTotalsService {
       currencyCode,
       from,
       to,
+      undefined,
+      today,
     );
   }
 

@@ -610,14 +610,21 @@ export class AiActionsService {
     // is signature-verified and assertBulkRowCount already rejects oversize
     // input. Defense-in-depth; also clears CodeQL's loop-bound-injection flag.
     const rowCount = Math.min(descriptor.rows.length, MAX_BULK_ACTION_ROWS);
+    // Delete only: ids a delete took with it (the other leg of a transfer, a
+    // split parent's legs), so a later selected row is not deleted twice.
+    const removedIds = new Set<string>();
     for (let i = 0; i < rowCount; i++) {
       try {
         const id = await this.executeBatchRow(
           userId,
           descriptor.operation,
           descriptor.rows[i],
+          removedIds,
         );
-        ids.push(id);
+        // A delete row id listed twice counts once.
+        if (descriptor.operation !== "delete" || !ids.includes(id)) {
+          ids.push(id);
+        }
       } catch {
         skipped.push({ index: i, reason: this.bulkRowInvalidReason() });
       }
@@ -630,6 +637,7 @@ export class AiActionsService {
     userId: string,
     operation: BatchActionsDescriptor["operation"],
     row: BatchActionsDescriptor["rows"][number],
+    removedIds: Set<string>,
   ): Promise<string> {
     switch (operation) {
       case "update": {
@@ -651,7 +659,16 @@ export class AiActionsService {
       }
       case "delete": {
         const r = row as BatchDeleteTransactionRow;
-        await this.transactionsService.removeAny(userId, r.transactionId);
+        if (!removedIds.has(r.transactionId)) {
+          for (const gone of await this.transactionsService.removeAny(
+            userId,
+            r.transactionId,
+            undefined,
+            { reportRemoved: true },
+          )) {
+            removedIds.add(gone);
+          }
+        }
         return r.transactionId;
       }
       case "create_transfer": {

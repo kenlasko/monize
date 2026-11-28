@@ -371,7 +371,8 @@
     "settlement": "結算日：{ordinal}",
     "settlementTooltip": "帳單週期的最後一天。在此日或之前入帳的交易將顯示在本期對帳單上。",
     "dueShort": "到期 {ordinal}",
-    "metaWithDue": "{institution} · {due}"
+    "metaWithDue": "{institution} · {due}",
+    "loadFailed": "無法載入您的帳戶。請重新載入儀表板後再試一次。"
   },
   "upcomingBills": {
     "title": "即將到期帳單與存款",
@@ -407,7 +408,8 @@
     "dayEmpty": "這一天沒有排程任何帳單或存款。",
     "metaPayee": "· {payee}",
     "metaManual": "· 手動支付",
-    "metaWhen": "· {when}"
+    "metaWhen": "· {when}",
+    "loadFailed": "無法載入您即將到期的帳單。請重新載入儀表板後再試一次。"
   },
   "cashFlowForecast": {
     "title": "現金流量預測",
@@ -444,7 +446,8 @@
     "viewFullBudget": "查看完整預算",
     "daysLeft": "還剩 {count} 天",
     "safeToSpend": "今日可安全消費",
-    "topCategories": "主要類別"
+    "topCategories": "主要類別",
+    "loadFailed": "無法載入您的預算狀態。請重新載入儀表板後再試一次。"
   },
   "insights": {
     "title": "消費洞察",
@@ -520,13 +523,15 @@
     "topLevelOnly": "頂層類別",
     "topLevelOnlyHint": "將子類別計入其父類別",
     "viewCallouts": "標籤",
-    "viewLegend": "圖例"
+    "viewLegend": "圖例",
+    "loadFailed": "無法載入您依類別劃分的支出。請重新載入儀表板後再試一次。"
   },
   "incomeExpenses": {
     "title": "收入與支出",
     "income": "收入",
     "expenses": "支出",
-    "net": "淨額"
+    "net": "淨額",
+    "loadFailed": "無法載入您的收入與支出。請重新載入儀表板後再試一次。"
   },
   "customize": {
     "button": "自訂",
@@ -736,5 +741,6 @@
     "depthSubcategories": "子類別",
     "viewDiagram": "圖表",
     "viewTable": "表格"
-  }
+  },
+  "accountsLoadFailed": "無法載入您的帳戶，因此無法顯示此小工具。請重新載入儀表板後再試一次。"
 }

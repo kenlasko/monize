@@ -17,6 +17,7 @@ import { Transaction } from "../../transactions/entities/transaction.entity";
 import { ScheduledTransaction } from "../../scheduled-transactions/entities/scheduled-transaction.entity";
 import { AccountsService } from "../../accounts/accounts.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
+import { requestContextStorage } from "../../common/request-context";
 import { createScopedDbMocks } from "../../test-helpers/scoped-db-testing";
 
 jest.mock("../../common/db/scoped-db", () =>
@@ -97,6 +98,8 @@ describe("ForecastAggregatorService", () => {
       [ScheduledTransaction, mockScheduledTransactionRepo],
       [ScheduledTransactionOverride, mockOverridesRepo],
     ]);
+    // The user's timezone lookup behind "today": no row, so UTC.
+    scoped.manager.query.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -145,6 +148,47 @@ describe("ForecastAggregatorService", () => {
   });
 
   describe("computeAggregates()", () => {
+    it("dates the forecast by the user's day, not the server's (#2365)", async () => {
+      // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
+      jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+      try {
+        const result = await requestContextStorage.run(
+          { userId, timezone: "Pacific/Kiritimati" },
+          () => service.computeAggregates(userId, "USD"),
+        );
+        expect(result.today).toBe("2026-11-28");
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("cuts the occurrence horizon from the same user day (#2365)", async () => {
+      jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+      try {
+        const expand = jest
+          .spyOn(
+            (service as unknown as { occurrences: ScheduledOccurrenceService })
+              .occurrences,
+            "expand",
+          )
+          .mockResolvedValue([]);
+        mockScheduledTransactionRepo.find.mockResolvedValue([
+          { id: "s1", userId, isActive: true },
+        ]);
+        await requestContextStorage.run(
+          { userId, timezone: "Pacific/Kiritimati" },
+          () => service.computeAggregates(userId, "USD"),
+        );
+        expect(expand).toHaveBeenCalledWith(
+          userId,
+          expect.anything(),
+          expect.objectContaining({ through: "2036-11-25" }),
+        );
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it("returns empty aggregates when no transactions exist", async () => {
       const result = await service.computeAggregates(userId, "USD");
 
@@ -435,7 +479,10 @@ describe("ForecastAggregatorService", () => {
           { month: "2025-12", total: 200, sourceCount: 1 },
         ]);
         // A part that settled at its own rate needs no rate history.
-        expect(scoped.manager.query).not.toHaveBeenCalled();
+        const rateQueries = scoped.manager.query.mock.calls.filter(
+          ([sql]) => !String(sql).includes("user_preferences"),
+        );
+        expect(rateQueries).toEqual([]);
       });
 
       it("falls back to the market rate on the row's day for a row with no foreign entry", async () => {

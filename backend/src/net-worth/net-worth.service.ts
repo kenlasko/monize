@@ -122,6 +122,11 @@ export interface JointNetWorthScope {
  * across a line the valuation cannot see and the difference reads as
  * performance (`docs/specs/portfolio-period-result.md` section 6).
  */
+/** The first day of the history getLlmHistory searches when no start is given: twelve months back. */
+export function defaultNetWorthHistoryStart(today: string): string {
+  return `${Number(today.slice(0, 4)) - 1}-${today.slice(5, 7)}-01`;
+}
+
 export function isValuationCashAccount(account: {
   account_type: string;
   account_sub_type: string | null;
@@ -964,9 +969,7 @@ export class NetWorthService {
     const userToday = await withScopedDb(this.dataSource, (m) =>
       userTodayYMD(m, userId),
     );
-    const [todayYear, todayMonth] = userToday.split("-").map(Number);
-    const defaultStart = `${todayYear - 1}-${String(todayMonth).padStart(2, "0")}-01`;
-    const resolvedStart = startDate || defaultStart;
+    const resolvedStart = startDate || defaultNetWorthHistoryStart(userToday);
     // `fetchMissing: false`: a tool call is not a user waiting on a chart. The
     // model gets what the database holds, with the same completeness flags and
     // the same named pairs it would get for any other gap, and no HTTP request
@@ -1190,7 +1193,13 @@ export class NetWorthService {
           snapshots,
           defaultCurrency,
           places,
-          await this.buildRateIndex(currencies, defaultCurrency, start, end),
+          await this.buildRateIndex(
+            currencies,
+            defaultCurrency,
+            start,
+            end,
+            userToday,
+          ),
           provisional,
           withheld,
           currentMonth,
@@ -1649,6 +1658,7 @@ export class NetWorthService {
           start,
           end,
           places,
+          userToday,
         ),
       (months) =>
         months.map((m) => ({
@@ -1674,6 +1684,7 @@ export class NetWorthService {
     start: string,
     end: string,
     places: number,
+    userToday?: string,
   ): Promise<
     {
       month: string;
@@ -1703,6 +1714,7 @@ export class NetWorthService {
       defaultCurrency,
       start,
       end,
+      userToday,
     );
 
     const monthMap = new Map<string, FxAggregate>();
@@ -3508,6 +3520,7 @@ export class NetWorthService {
             account.currencyCode,
             months[0],
             months[months.length - 1],
+            userToday,
           )
         : new Map();
 
@@ -3801,6 +3814,7 @@ export class NetWorthService {
     defaultCurrency: string,
     startDate: string,
     endDate: string,
+    today?: string,
   ): Promise<RateIndex> {
     return buildRateIndex(
       (sql, params) => this.scopedQuery(sql, params),
@@ -3809,6 +3823,7 @@ export class NetWorthService {
       startDate,
       endDate,
       this.monthEndDate(endDate),
+      today,
     );
   }
 
