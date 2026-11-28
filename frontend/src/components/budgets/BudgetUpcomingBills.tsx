@@ -13,6 +13,8 @@ import {
   nextOccurrenceDueDate,
   nextOccurrenceEffectiveAmount,
   sumEffectiveOccurrences,
+  templateTransferLineTotal,
+  withoutTransferLines,
 } from '@/lib/scheduled-effective-amount';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { isComplete } from '@/lib/currency-total';
@@ -36,6 +38,21 @@ interface BudgetUpcomingBillsProps {
    * occurrence's currency, because that is the currency its amount is in.
    */
   formatCurrency: (amount: number, currencyCode?: string) => string;
+}
+
+// What is DUE is the whole amount (the rows); what counts against the budget
+// is SPENDING, the part that is not a transfer line, and only where that part
+// is an outflow. This panel shows each schedule's NEXT occurrence only, so
+// its `nextOverride` is the governing one and the template's lines the rest.
+function getSpending(st: ScheduledTransaction) {
+  const spending = withoutTransferLines(
+    nextOccurrenceEffectiveAmount(st),
+    templateTransferLineTotal(st, st.nextOverride),
+  );
+  // The occurrence's own spending part, not the template's sign: an inflow
+  // (a refund beside a larger transfer line) spends nothing.
+  const spent = spending.amount;
+  return spent !== null && spent > 0 ? { ...spending, amount: 0 } : spending;
 }
 
 export function BudgetUpcomingBills({
@@ -99,7 +116,7 @@ export function BudgetUpcomingBills({
     () =>
       sumEffectiveOccurrences(
         upcomingBills,
-        getEffective,
+        getSpending,
         (amount, from) => convert(amount, from, displayCurrency),
         Math.abs,
       ),

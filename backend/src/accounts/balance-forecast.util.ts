@@ -14,9 +14,15 @@ import { FIAT_MONEY_DECIMALS, roundMoney } from "../common/round.util";
  *  - `unknownEstimate` -- an estimated schedule (issue #2096) whose history
  *    estimate is unknown: no payment to estimate from, or, with a pair, a
  *    payment in a currency with no current rate.
+ *  - `unknownLoanPrincipal` -- a loan bill whose projection states the payment
+ *    but not how much of it is principal, so the credit to the loan account
+ *    (`accountName`) is unknown.
  */
 export type BalanceForecastGapReason =
-  "unresolvedSettlementRate" | "crossCurrencyTransfer" | "unknownEstimate";
+  | "unresolvedSettlementRate"
+  | "crossCurrencyTransfer"
+  | "unknownEstimate"
+  | "unknownLoanPrincipal";
 
 /** One schedule the projection could not price, and why. */
 export interface BalanceForecastGap {
@@ -26,6 +32,8 @@ export interface BalanceForecastGap {
   /** The pair behind the gap, when there is one to name. */
   fromCurrency: string | null;
   toCurrency: string | null;
+  /** The account whose credit is unknown, for `unknownLoanPrincipal`. */
+  accountName?: string | null;
 }
 
 /**
@@ -46,6 +54,11 @@ export interface ForecastOccurrenceInput {
    */
   accountId: string;
   transferAccountId: string | null;
+  /**
+   * A split's effective transfer lines: each credits its target account by the
+   * negated line amount, on top of the whole split moving `accountId`.
+   */
+  transferLines?: { transferAccountId: string; amount: number }[];
   /**
    * The date the occurrence is applied on: the date it falls on (an override's
    * date when one moved it), or the first projected day for one already due
@@ -68,6 +81,7 @@ export interface ForecastOccurrenceInput {
   gapReason?: BalanceForecastGapReason;
   gapFromCurrency?: string | null;
   gapToCurrency?: string | null;
+  gapAccountName?: string | null;
 }
 
 export interface ForecastPoint {
@@ -114,7 +128,11 @@ function touchesAccount(
   o: ForecastOccurrenceInput,
   accountId: string,
 ): boolean {
-  return o.accountId === accountId || o.transferAccountId === accountId;
+  return (
+    o.accountId === accountId ||
+    o.transferAccountId === accountId ||
+    !!o.transferLines?.some((l) => l.transferAccountId === accountId)
+  );
 }
 
 /**
@@ -126,10 +144,15 @@ function deltaFor(
   o: ForecastOccurrenceInput,
   accountId: string,
   amount: number,
+  decimals: number,
 ): number {
   let delta = 0;
   if (o.accountId === accountId) delta += amount;
   if (o.transferAccountId === accountId) delta += Math.abs(amount);
+  for (const l of o.transferLines ?? []) {
+    if (l.transferAccountId === accountId)
+      delta = roundMoney(delta - l.amount, decimals);
+  }
   return delta;
 }
 
@@ -171,6 +194,7 @@ export function accumulateForecastDeltas(
       reason: o.gapReason ?? "unresolvedSettlementRate",
       fromCurrency: o.gapFromCurrency ?? null,
       toCurrency: o.gapToCurrency ?? null,
+      ...(o.gapAccountName !== undefined && { accountName: o.gapAccountName }),
     });
   };
 
@@ -181,7 +205,7 @@ export function accumulateForecastDeltas(
       addGap(occurrence);
       continue;
     }
-    const delta = deltaFor(occurrence, accountId, occurrence.amount);
+    const delta = deltaFor(occurrence, accountId, occurrence.amount, decimals);
     if (occurrence.overdue)
       overdue.amount = roundMoney(overdue.amount + delta, decimals);
     // A zero delta contributes nothing, and emitting it would add a flat point

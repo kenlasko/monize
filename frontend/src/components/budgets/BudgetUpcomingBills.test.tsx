@@ -554,4 +554,48 @@ describe('BudgetUpcomingBills', () => {
     expect(screen.queryByText('Overridden Positive')).not.toBeInTheDocument();
     expect(screen.getByText('No bills due this period.')).toBeInTheDocument();
   });
+
+  describe('a split with a transfer line', () => {
+    const render1 = (bills: ScheduledTransaction[]) =>
+      render(
+        <BudgetUpcomingBills
+          scheduledTransactions={bills}
+          currentSpent={0}
+          totalBudgeted={1000}
+          periodEnd="2026-02-28"
+          displayCurrency="USD"
+          formatCurrency={mockFormat}
+        />,
+      );
+    const split = (lines: { transferAccountId: string | null; amount: number }[]) =>
+      createBill({
+        id: 'st-split', name: 'Loan', amount: -100, isSplit: true, nextDueDate: '2026-02-25',
+        splits: lines as never,
+      });
+
+    it('shows what is due, and counts only the spending part against the budget', () => {
+      render1([split([{ transferAccountId: null, amount: -30 }, { transferAccountId: 'acc-2', amount: -70 }])]);
+      // The row is the whole amount due; the budget loses only the 30.
+      expect(screen.getByText('$100.00')).toBeInTheDocument();
+      expect(screen.getByText('$970.00')).toBeInTheDocument();
+    });
+
+    it('counts a refund beside a larger transfer line as no spending', () => {
+      render1([split([{ transferAccountId: null, amount: 500 }, { transferAccountId: 'acc-2', amount: -600 }])]);
+      expect(screen.getByText('$1000.00')).toBeInTheDocument();
+    });
+
+    it('lists a split made only of transfer lines as a transfer, not a bill', () => {
+      render1([split([{ transferAccountId: 'acc-2', amount: -100 }])]);
+      expect(screen.getByText('No bills due this period.')).toBeInTheDocument();
+    });
+
+    it('reads an override that restates the lines', () => {
+      const bill = split([{ transferAccountId: null, amount: -30 }, { transferAccountId: 'acc-2', amount: -70 }]);
+      render1([{ ...bill, nextOverride: { overrideDate: '2026-02-25', originalDate: '2026-02-25', amount: -100, isSplit: false, splits: null } as never }]);
+      // The override stated no lines, so the whole $100 is spending.
+      expect(screen.getAllByText('$100.00').length).toBeGreaterThan(0);
+      expect(screen.getByText('$900.00')).toBeInTheDocument();
+    });
+  });
 });

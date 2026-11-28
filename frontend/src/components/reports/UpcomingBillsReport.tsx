@@ -16,7 +16,7 @@ import {
   getDay,
 } from 'date-fns';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
-import { ScheduledTransaction } from '@/types/scheduled-transaction';
+import { ScheduledTransaction, ScheduledTransactionOverride } from '@/types/scheduled-transaction';
 import { parseLocalDate } from '@/lib/utils';
 import {
   SCHEDULED_KIND_AMOUNT_CLASSES,
@@ -85,6 +85,8 @@ interface UpcomingBill {
    * falling back to the schedule's snapshot sign.
    */
   directionAmount: number | null;
+  /** The override governing THIS occurrence, so `occurrenceKind` reads its effective lines. */
+  override: ScheduledTransactionOverride | null;
   /** The amount is the schedule's history estimate (issue #2096). */
   estimated: boolean;
   isOverdue: boolean;
@@ -164,6 +166,11 @@ export function UpcomingBillsReport() {
           amount: occurrence.amount,
           currencyCode: occurrence.currencyCode,
           directionAmount: occurrence.directionAmount,
+          override:
+            [
+              ...(scheduledTransaction.futureOverrides ?? []),
+              ...(scheduledTransaction.nextOverride ? [scheduledTransaction.nextOverride] : []),
+            ].find((o) => o.originalDate.split('T')[0] === occurrence.originalDate) ?? null,
           estimated: occurrence.estimated === true,
           isOverdue: dueDate < today,
         },

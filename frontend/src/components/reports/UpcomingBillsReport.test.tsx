@@ -244,6 +244,23 @@ describe('UpcomingBillsReport', () => {
     expect(card?.textContent).not.toContain('2400');
   });
 
+  it('shows a split\'s whole amount as due, in the totals and the row', async () => {
+    // Amount due is what the occurrence posts: the loan's principal line is part
+    // of the payment ($2,000 mortgage = $1,500 principal + $500 interest).
+    mockGetAll.mockResolvedValue([
+      makeTransaction({
+        id: 'st-1', name: 'Mortgage', amount: -2000, nextDueDate: '2026-02-20',
+        isSplit: true,
+        splits: [{ transferAccountId: null, amount: -500 }, { transferAccountId: 'acc-2', amount: -1500 }],
+      }),
+    ]);
+    render(<UpcomingBillsReport />);
+    await waitFor(() => {
+      expect(screen.getByText('This Month')).toBeInTheDocument();
+    });
+    expect(screen.getByText('This Month').parentElement?.textContent).toContain('$2000');
+  });
+
   it('renders summary cards and view controls with data', async () => {
     const futureDateStr = '2026-02-19';
     mockGetAll.mockResolvedValue([makeTransaction({ nextDueDate: futureDateStr })]);

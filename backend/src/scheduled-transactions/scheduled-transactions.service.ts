@@ -63,6 +63,7 @@ import {
 import {
   ResolvedScheduledOccurrence,
   ScheduledOccurrenceService,
+  nonTransferAmount,
 } from "./scheduled-occurrence.service";
 import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
 import {
@@ -5818,6 +5819,14 @@ function classifyScheduledKind(
   const row = occurrence.schedule;
   if (row.isTransfer) return "transfer";
   if (row.isInvestment) return "investment";
+  // A split made only of transfer lines moves money between the user's own
+  // accounts: a transfer, never a bill of 0.
+  if (
+    occurrence.transferLines.length > 0 &&
+    nonTransferAmount(occurrence) === 0
+  ) {
+    return "transfer";
+  }
   if (occurrence.directionAmount === null) return "unknown";
   return occurrence.directionAmount < 0 ? "bill" : "deposit";
 }

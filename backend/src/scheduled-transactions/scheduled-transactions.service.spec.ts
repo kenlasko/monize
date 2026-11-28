@@ -1563,6 +1563,57 @@ describe("ScheduledTransactionsService", () => {
       expect(result.totalUpcomingDeposits).toBe(3000);
     });
 
+    it("publishes a split made only of transfer lines as a transfer with what it moves", async () => {
+      const rows = [
+        makeScheduled({
+          id: "s-xfer",
+          name: "Move",
+          amount: -100,
+          isSplit: true,
+          splits: [
+            {
+              id: "sp-1",
+              kind: "category",
+              amount: -100,
+              transferAccountId: "acc-2",
+            },
+          ] as never,
+        }),
+      ];
+      scheduledRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder(rows));
+
+      const result = await service.getLlmUpcomingBillsAndDeposits(userId);
+
+      expect(result.items[0]).toMatchObject({ kind: "transfer", amount: -100 });
+      expect(result.totalUpcomingBills).toBe(0);
+    });
+
+    it("publishes a split's whole amount as due, transfer lines included", async () => {
+      const rows = [
+        makeScheduled({
+          id: "s-loan",
+          name: "Mortgage",
+          amount: -2000,
+          isSplit: true,
+          splits: [
+            { id: "sp-1", kind: "category", amount: -500 },
+            {
+              id: "sp-2",
+              kind: "category",
+              amount: -1500,
+              transferAccountId: "acc-2",
+            },
+          ] as never,
+        }),
+      ];
+      scheduledRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder(rows));
+
+      const result = await service.getLlmUpcomingBillsAndDeposits(userId);
+
+      expect(result.items[0]).toMatchObject({ kind: "bill", amount: -2000 });
+      expect(result.totalUpcomingBills).toBe(2000);
+    });
+
     it("classifies an item from its occurrence, not the stored parent sign", async () => {
       // A mixed-sign split parent: an ordinary -1200 line beside an embedded
       // SELL of 10 x 100 whose stored pair is stale. The line re-prices at 1.35

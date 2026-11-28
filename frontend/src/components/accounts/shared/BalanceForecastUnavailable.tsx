@@ -60,6 +60,11 @@ export function BalanceForecastUnavailable({
           from: gap.fromCurrency ?? '',
           to: gap.toCurrency ?? '',
         });
+      case 'unknownLoanPrincipal':
+        return t('forecastUnavailable.unknownLoanPrincipal', {
+          name: gap.name,
+          account: gap.accountName ?? '',
+        });
       case 'unknownEstimate':
         return pair
           ? t('forecastUnavailable.unknownEstimatePair', pair)

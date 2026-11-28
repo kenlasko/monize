@@ -59,7 +59,9 @@
     "untitledTransaction": "Transação",
     "tooltipEstimated": "(estimado)",
     "unavailableUnknownEstimates": "Esta previsão ainda não pode ser exibida: o valor estimado de uma conta incluída é desconhecido, e um saldo projetado se baseia em cada dia anterior. Informe o valor dessa ocorrência ou desative Estimar na conta.",
-    "unknownEstimateItem": "{name}: {reason}"
+    "unknownEstimateItem": "{name}: {reason}",
+    "unavailableUnknownLoanCredits": "Esta previsão ainda não pode ser exibida: após a próxima ocorrência, a parte de um pagamento de empréstimo que vai para o empréstimo depende do saldo do empréstimo, que um saldo projetado não consegue calcular aqui. Afetados: {names}.",
+    "unavailableCrossCurrencyCredits": "Esta previsão ainda não pode ser exibida: parte de um pagamento vai para uma conta em outra moeda, e o valor que chega lá é definido quando o pagamento é lançado, então não pode ser projetado antecipadamente. Afetados: {names}."
   },
   "calendar": {
     "days": {

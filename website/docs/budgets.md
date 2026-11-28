@@ -225,6 +225,8 @@ Integrates with your scheduled transactions to show:
 - **Total upcoming** -- the sum of those bills
 - **Truly available** -- remaining budget minus upcoming bills
 
+Each bill is listed with the whole amount that is due. In **Total upcoming** and **Truly available**, a split's transfer lines (such as the principal of a loan payment, which moves money to another of your accounts) are left out, because they are not spending.
+
 This prevents a false sense of security when you have budget left but bills still to pay. When nothing is due, the card says "No bills due this period."
 
 ### Spending Heatmap

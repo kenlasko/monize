@@ -2,6 +2,7 @@ import { anniversaryInYear } from '@/lib/payroll-period';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
+import { LOAN_LIKE_ACCOUNT_TYPES } from '@/lib/minor-unit-booking';
 import { advanceSchedule, isOneTime } from '@/lib/frequency';
 import {
   estimatedOccurrenceAmount,
@@ -130,6 +131,10 @@ export interface MultiAccountForecastResult {
   missingCurrencies: string[];
   /** See `ForecastResult.unknownEstimates`. */
   unknownEstimates?: string[];
+  /** See `ForecastResult.unknownLoanCredits`. */
+  unknownLoanCredits?: string[];
+  /** See `ForecastResult.crossCurrencyCredits`. */
+  crossCurrencyCredits?: string[];
 }
 
 /**
@@ -150,6 +155,19 @@ export interface ForecastResult {
    * Absent means none.
    */
   unknownEstimates?: string[];
+  /**
+   * The ids of loan bills whose credit to the loan account is unknown after
+   * the next occurrence (the principal is priced per occurrence by the server).
+   * `points` is empty when it is not. Absent means none.
+   */
+  unknownLoanCredits?: string[];
+  /**
+   * The ids of schedules with a transfer line into an account in another
+   * currency: the amount that lands is fixed when the payment posts, so no rate
+   * the reader can add makes it known. `points` is empty when it is not. Absent
+   * means none.
+   */
+  crossCurrencyCredits?: string[];
 }
 
 export const FORECAST_PERIOD_DAYS: Record<ForecastPeriod, number> = {
@@ -201,6 +219,18 @@ interface Occurrence {
    * override can be unknown while the base schedule is not, and vice versa.
    */
   unknown: boolean;
+  /**
+   * The recurrence slot this occurrence came from (before any override moved
+   * it or an overdue carry placed it on the first day): the cursor occurrence is
+   * the one whose slot is the schedule's `nextDueDate`.
+   */
+  slotDate?: string;
+  /**
+   * The transfer lines of this occurrence's split (an override's own when it
+   * replaces them). Each credits its target account by the negated amount; the
+   * all-accounts view counts only `amount` minus these.
+   */
+  transferLines?: TransferLine[];
   /** See `ForecastTransaction.overdueOriginalDate`. */
   overdueOriginalDate?: string;
   /**
@@ -258,6 +288,22 @@ interface OverrideLookup {
   isSplit?: boolean | null;
   hasInvestmentSplits: boolean;
   investmentForecastAmount?: number | null;
+  /** The override's own transfer lines when it replaces the split; `null` otherwise. */
+  transferLines: TransferLine[] | null;
+}
+
+/** A split line that moves money into another of the user's accounts. */
+interface TransferLine {
+  accountId: string;
+  amount: number;
+}
+
+function transferLinesOf(
+  lines: { transferAccountId?: string | null; amount: number | string }[] | null | undefined,
+): TransferLine[] {
+  return (lines ?? []).flatMap(l =>
+    l.transferAccountId ? [{ accountId: l.transferAccountId, amount: Number(l.amount) }] : [],
+  );
 }
 
 interface DeductionPool {
@@ -534,9 +580,16 @@ function generateOccurrences(
     overrideDate?: string;
     amount: number | null;
     isSplit?: boolean | null;
-    splits?: { splitKind?: string; investment?: unknown }[] | null;
+    splits?: { splitKind?: string; investment?: unknown; transferAccountId?: string | null; amount: number }[] | null;
     investmentForecastAmount?: number | null;
   }): OverrideLookup => ({
+    // An override that does not restate the lines inherits the template's.
+    transferLines:
+      o.isSplit === true && o.splits?.length
+        ? transferLinesOf(o.splits)
+        : o.isSplit === false
+          ? []
+          : null,
     // `overrideDate` may be absent on a fallback nextOverride fixture; downstream
     // treats an absent date as "same date" (uses the occurrence's own date).
     overrideDate: o.overrideDate ? o.overrideDate.split('T')[0] : '',
@@ -563,6 +616,9 @@ function generateOccurrences(
   // its server-resolved effective total; a non-investment override uses its stored
   // scalar; a base occurrence uses the base amount.
   const baseIsInvestment = transaction.isInvestment === true;
+  const baseLines = transaction.isSplit ? transferLinesOf(transaction.splits) : [];
+  const linesFor = (override: OverrideLookup | undefined): TransferLine[] =>
+    override?.transferLines ?? baseLines;
   const resolveOccurrence = (
     override: OverrideLookup | undefined,
     dateKey: string,
@@ -618,7 +674,12 @@ function generateOccurrences(
     const effectiveKey = formatDateKey(effectiveDate);
     const placed = place(effectiveTime, effectiveKey, slotKey);
     if (placed && (!txEndTime || effectiveTime <= txEndTime)) {
-      occurrences.push({ ...placed, ...withDeductions(resolveOccurrence(override, effectiveKey), effectiveKey) });
+      occurrences.push({
+        ...placed,
+        ...withDeductions(resolveOccurrence(override, effectiveKey), effectiveKey),
+        slotDate: slotKey,
+        transferLines: linesFor(override),
+      });
     }
     return occurrences;
   }
@@ -655,6 +716,8 @@ function generateOccurrences(
       occurrences.push({
         ...placed,
         ...withDeductions(resolveOccurrence(override, effectiveDateKey), effectiveDateKey),
+        slotDate: currentDateKey,
+        transferLines: linesFor(override),
       });
     }
 
@@ -677,13 +740,50 @@ function generateOccurrences(
  * Check if a scheduled transaction is a transfer (affects two accounts, net zero for "all accounts" view)
  */
 function isTransfer(transaction: ScheduledTransaction): boolean {
-  // Check direct transfer field first
-  if (transaction.isTransfer && transaction.transferAccountId) {
-    return true;
+  // A split with a transfer line is NOT one: its category lines are real
+  // income/expense, and only its transfer lines are internal (`transferLines`).
+  return !!(transaction.isTransfer && transaction.transferAccountId);
+}
+
+/**
+ * Why the credit of a split's transfer line into `target` cannot be stated, or
+ * `null` when it can (the backend reports the same cases).
+ *  - `crossCurrency`: the line is in the SOURCE's currency and arrives in the
+ *    target's at a rate fixed when it posts (`crossCurrencyTransfer`).
+ *  - `loan`: the server prices a managed loan bill's principal per occurrence
+ *    and the client has none, so only the cursor occurrence carries the
+ *    template's or the override's line; every later one is unknown. A schedule
+ *    the server does not re-price (an investment, or a foreign-currency one it
+ *    declines) keeps its chart.
+ */
+function unpricedLineCredit(
+  tx: ScheduledTransaction,
+  target: Account,
+  occ: Pick<Occurrence, 'slotDate'>,
+): 'crossCurrency' | 'loan' | null {
+  if (tx.currencyCode && tx.currencyCode !== target.currencyCode) return 'crossCurrency';
+  const repricedByServer =
+    !tx.isInvestment && !(tx.originalCurrencyCode && tx.originalAmount != null);
+  // The cursor is the occurrence whose slot is `nextDueDate` (what the server's
+  // `projected()` keys on), not the first in the list: an overdue carry or a
+  // window without carry shifts the index.
+  const isCursor =
+    occ.slotDate === undefined || occ.slotDate === (tx.nextDueDate ?? '').split('T')[0];
+  if (!isCursor && repricedByServer && LOAN_LIKE_ACCOUNT_TYPES.has(target.accountType)) {
+    return 'loan';
   }
-  // Fallback: check for split-based transfers (legacy)
-  return transaction.isSplit &&
-    (transaction.splits?.some(split => split.transferAccountId != null) ?? false);
+  return null;
+}
+
+/** Whether a split schedule's template or any override sends a transfer line to `accountId`. */
+function hasLineInto(transaction: ScheduledTransaction, accountId: string): boolean {
+  const into = (lines: { transferAccountId?: string | null; amount: number | string }[] | null | undefined) =>
+    transferLinesOf(lines).some(l => l.accountId === accountId);
+  return (
+    (transaction.isSplit && into(transaction.splits)) ||
+    [...(transaction.futureOverrides ?? []), ...(transaction.nextOverride ? [transaction.nextOverride] : [])]
+      .some(o => o.isSplit === true && into(o.splits))
+  );
 }
 
 /**
@@ -905,12 +1005,14 @@ function hasUnknownForecastRate(transaction: ScheduledTransaction): boolean {
 function scheduledFlowsForAccount(
   transactions: ScheduledTransaction[],
   accountId: string,
-): Array<{ transaction: ScheduledTransaction; isInbound: boolean }> {
+): Array<{ transaction: ScheduledTransaction; isInbound: boolean; lineInbound: boolean }> {
   return transactions
     .filter(
       t =>
         t.isActive &&
-        (t.accountId === accountId || (isTransfer(t) && t.transferAccountId === accountId)),
+        (t.accountId === accountId ||
+          (isTransfer(t) && t.transferAccountId === accountId) ||
+          hasLineInto(t, accountId)),
     )
     .map(transaction => ({
       transaction,
@@ -918,6 +1020,8 @@ function scheduledFlowsForAccount(
         isTransfer(transaction) &&
         transaction.transferAccountId === accountId &&
         transaction.accountId !== accountId,
+      // A split whose only tie to this account is a transfer line into it.
+      lineInbound: transaction.accountId !== accountId && !isTransfer(transaction),
     }));
 }
 
@@ -991,6 +1095,8 @@ export function buildForecast(
   // therefore contributes nothing and sets the flag.
   const missingRateCurrencies = new Set<string>();
   const unknownEstimates = new Set<string>();
+  const unknownLoanCredits = new Set<string>();
+  const crossCurrencyCredits = new Set<string>();
   const conv = (amount: number, acctId: string): number => {
     if (!convertAmount) return amount;
     const currency = accountCurrencyMap.get(acctId);
@@ -1027,7 +1133,7 @@ export function buildForecast(
       // it would add an unconverted foreign amount to the running balance.
       transactions
         .filter(t => t.isActive && !isTransfer(t) && targetAccountIds.has(t.accountId))
-        .map(transaction => ({ transaction, isInbound: false }))
+        .map(transaction => ({ transaction, isInbound: false, lineInbound: false }))
     : scheduledFlowsForAccount(transactions, accountId);
 
   // Every active schedule, not only the relevant ones: a paycheque on another
@@ -1048,12 +1154,23 @@ export function buildForecast(
     transactionsByDate.set(ft.date, existing);
   }
 
-  for (const { transaction: tx, isInbound } of relevantFlows) {
+  for (const { transaction: tx, isInbound, lineInbound } of relevantFlows) {
     // An unposted occurrence due before today lands on today: the bill is
     // still owed (discussion #1784).
     const occurrences = occurrencesById.get(tx.id) ?? [];
     const txAccountId = isInbound ? (tx.transferAccountId ?? tx.accountId) : tx.accountId;
     for (const occ of occurrences) {
+      // Split transfer lines: the target gets the negated line amount; in the
+      // all-accounts view the lines are internal and cancel, so only the rest counts.
+      const lines = occ.transferLines ?? [];
+      // Lines and the amount they come out of are in the SOURCE's currency:
+      // net them at its precision, then convert.
+      const sourceDecimals = moneyDecimalsForCurrency(tx.currencyCode ?? accountCurrencyMap.get(tx.accountId));
+      const lineSum = (to?: string) =>
+        sumMoney(lines.filter(l => to === undefined || l.accountId === to).map(l => l.amount), sourceDecimals);
+      // An occurrence whose lines do not reach this account (an override
+      // restated them) touches it not at all, so it must not withhold its series.
+      if (lineInbound && !lines.some(l => l.accountId === accountId)) continue;
       const existing = transactionsByDate.get(occ.date) || [];
       // An investment occurrence with an unresolved current FX rate makes the
       // running balance unknown from here on (issue #1167): record the missing
@@ -1062,20 +1179,37 @@ export function buildForecast(
       // the same schedule can differ.
       // An unknown history estimate (issue #2096) withholds the series too,
       // but is reported apart: it is not a rate the reader can add.
-      if (occ.unknown && occ.estimated) {
+      // A target that only receives a stated line is not affected by the
+      // source total being unknown: only its own line can be.
+      const sourceUnknown = occ.unknown && !lineInbound;
+      if (sourceUnknown && occ.estimated) {
         unknownEstimates.add(tx.id);
-      } else if (occ.unknown) {
+      } else if (sourceUnknown) {
         missingRateCurrencies.add(
           tx.investmentSecurity?.currencyCode ??
             accountCurrencyMap.get(txAccountId) ??
             tx.currencyCode,
         );
       }
+      // A line is in the SOURCE's currency and arrives in the target's at a
+      // rate fixed when it posts, which is not known here (the backend reports
+      // the same case as `crossCurrencyTransfer`): withhold, never relabel it.
+      const targetAccount = accountsById.get(accountId as string);
+      const unpriced = lineInbound && targetAccount ? unpricedLineCredit(tx, targetAccount, occ) : null;
+      if (unpriced === 'crossCurrency') crossCurrencyCredits.add(tx.id);
+      if (unpriced === 'loan') unknownLoanCredits.add(tx.id);
+      const signed = lineInbound
+        ? -lineSum(accountId as string)
+        : accountId === 'all' && lines.length > 0
+          ? sumMoney([occ.amount, -lineSum()], sourceDecimals)
+          : isInbound
+            ? -occ.amount
+            : occ.amount;
       existing.push({
         name: tx.name,
-        amount: occ.unknown
+        amount: sourceUnknown
           ? 0
-          : conv(isInbound ? -occ.amount : occ.amount, txAccountId),
+          : conv(signed, lineInbound ? (accountId as string) : txAccountId),
         scheduledTransactionId: tx.id,
         ...(occ.overdueOriginalDate !== undefined && {
           overdueOriginalDate: occ.overdueOriginalDate,
@@ -1127,11 +1261,13 @@ export function buildForecast(
   // A running balance cannot be partially right: report the whole series as
   // unavailable when any leg of it needed a rate we do not have, or an
   // estimate nobody can work out yet.
-  if (missingRateCurrencies.size > 0 || unknownEstimates.size > 0) {
+  if (missingRateCurrencies.size > 0 || unknownEstimates.size > 0 || unknownLoanCredits.size > 0 || crossCurrencyCredits.size > 0) {
     return {
       points: [],
       missingCurrencies: [...missingRateCurrencies],
       unknownEstimates: [...unknownEstimates],
+      ...(unknownLoanCredits.size > 0 && { unknownLoanCredits: [...unknownLoanCredits] }),
+      ...(crossCurrencyCredits.size > 0 && { crossCurrencyCredits: [...crossCurrencyCredits] }),
     };
   }
   return { points: dataPoints, missingCurrencies: [], unknownEstimates: [] };
@@ -1190,6 +1326,8 @@ export function buildMultiAccountForecast(
   // withheld below rather than reported as a shorter, wrong series.
   const missingRateCurrencies = new Set<string>();
   const unknownEstimates = new Set<string>();
+  const unknownLoanCredits = new Set<string>();
+  const crossCurrencyCredits = new Set<string>();
   const conv = (amount: number, currencyCode: string): number => {
     if (!convertAmount) return amount;
     const converted = convertAmount(amount, currencyCode);
@@ -1235,23 +1373,37 @@ export function buildMultiAccountForecast(
       });
     }
 
-    for (const { transaction, isInbound } of scheduledFlowsForAccount(normalized, account.id)) {
+    for (const { transaction, isInbound, lineInbound } of scheduledFlowsForAccount(normalized, account.id)) {
       for (const occ of occurrencesById.get(transaction.id) ?? []) {
+        const lineTotal = lineInbound
+          ? sumMoney(
+              (occ.transferLines ?? []).filter(l => l.accountId === account.id).map(l => l.amount),
+              moneyDecimalsForCurrency(transaction.currencyCode ?? account.currencyCode),
+            )
+          : 0;
+        // Lines that do not reach this account (an override restated them) leave it alone.
+        if (lineInbound && !(occ.transferLines ?? []).some(l => l.accountId === account.id)) continue;
+        const unpriced = lineInbound ? unpricedLineCredit(transaction, account, occ) : null;
+        if (unpriced === 'crossCurrency') crossCurrencyCredits.add(transaction.id);
+        if (unpriced === 'loan') unknownLoanCredits.add(transaction.id);
         // Unresolved current FX for an investment occurrence withholds the whole
         // result (issue #1167), the same as a missing display-currency rate. The
         // flag is per-occurrence (F5-2).
-        if (occ.unknown && occ.estimated) {
+        // A target that only receives a stated line is not affected by the
+        // source total being unknown.
+        const sourceUnknown = occ.unknown && !lineInbound;
+        if (sourceUnknown && occ.estimated) {
           unknownEstimates.add(transaction.id);
-        } else if (occ.unknown) {
+        } else if (sourceUnknown) {
           missingRateCurrencies.add(
             transaction.investmentSecurity?.currencyCode ?? account.currencyCode,
           );
         }
         add(occ.date, {
           name: transaction.name,
-          amount: occ.unknown
+          amount: sourceUnknown
             ? 0
-            : conv(isInbound ? -occ.amount : occ.amount, account.currencyCode),
+            : conv(lineInbound ? -lineTotal : isInbound ? -occ.amount : occ.amount, account.currencyCode),
           scheduledTransactionId: transaction.id,
           accountId: account.id,
           ...(occ.overdueOriginalDate !== undefined && {
@@ -1318,12 +1470,14 @@ export function buildMultiAccountForecast(
     }
   }
 
-  if (missingRateCurrencies.size > 0 || unknownEstimates.size > 0) {
+  if (missingRateCurrencies.size > 0 || unknownEstimates.size > 0 || unknownLoanCredits.size > 0 || crossCurrencyCredits.size > 0) {
     return {
       points: [],
       series: [],
       missingCurrencies: [...missingRateCurrencies],
       unknownEstimates: [...unknownEstimates],
+      ...(unknownLoanCredits.size > 0 && { unknownLoanCredits: [...unknownLoanCredits] }),
+      ...(crossCurrencyCredits.size > 0 && { crossCurrencyCredits: [...crossCurrencyCredits] }),
     };
   }
 
@@ -1390,7 +1544,8 @@ export function getProjectedBalanceAtDate(
     if (t.accountId === account.id) return true;
     // Inbound transfer: this account is the destination
     if (isTransfer(t) && t.transferAccountId === account.id && t.accountId !== account.id) return true;
-    return false;
+    // A split with a transfer line into this account
+    return hasLineInto(t, account.id);
   });
 
   const inboundTransferIds = new Set(
@@ -1407,7 +1562,16 @@ export function getProjectedBalanceAtDate(
   for (const tx of relevant) {
     const occurrences = occurrencesById.get(tx.id) ?? [];
     const isInbound = inboundTransferIds.has(tx.id);
+    const lineInbound = tx.accountId !== account.id && !isInbound;
     for (const occ of occurrences) {
+      if (lineInbound) {
+        const lines = (occ.transferLines ?? []).filter(l => l.accountId === account.id);
+        if (lines.length === 0) continue;
+        // Arrives at a rate fixed when it posts: unknown, as in `buildForecast`.
+        if (unpricedLineCredit(tx, account, occ) !== null) return null;
+        units += toUnits(-sumMoney(lines.map(l => l.amount), decimals), decimals);
+        continue;
+      }
       // An investment occurrence whose current FX rate is unknown (issue #1167)
       // makes the balance at/after its date unknowable, exactly as it withholds
       // the whole series in `buildForecast`. Return null rather than folding a

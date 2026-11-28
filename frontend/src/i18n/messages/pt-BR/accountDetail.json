@@ -46,6 +46,7 @@
     "crossCurrencyTransfer": "{name}: uma transferência chegando de uma conta em {from} enquanto esta conta está em {to}. O valor que entra aqui é definido no momento do lançamento, então não pode ser projetado com antecedência.",
     "unknownEstimate": "{name}: o valor estimado ainda não pode ser calculado, porque não há pagamentos a partir dos quais estimá-lo. Informe o valor desta ocorrência ou registre um pagamento.",
     "unknownEstimatePair": "{name}: um pagamento usado pela estimativa está em {from} e não há taxa de câmbio de {from} para {to}, então o valor estimado é desconhecido.",
-    "howToFix": "Para corrigir uma taxa ausente: abra Moedas e atualize as taxas, ou verifique se o ativo e sua conta de liquidação estão nas moedas que você espera."
+    "howToFix": "Para corrigir uma taxa ausente: abra Moedas e atualize as taxas, ou verifique se o ativo e sua conta de liquidação estão nas moedas que você espera.",
+    "unknownLoanPrincipal": "{name}: ainda não se sabe que parte deste pagamento vai para {account}, então o saldo seguinte não pode ser projetado."
   }
 }

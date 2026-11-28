@@ -246,6 +246,8 @@ The **Cash Flow Forecast** at the top of the page projects your account balances
 
 An occurrence that fell due and was neither posted nor skipped counts on the first day of the forecast. If an exchange rate is missing for one of the currencies involved, the forecast says so rather than showing a total that leaves it out. Likewise, if an estimated bill's amount cannot be worked out yet, the forecast names the bill and why, until you enter that occurrence's amount or record a payment.
 
+A split that has a transfer line (for example a mortgage payment with interest on a category line and the principal as a transfer to the loan) moves money into the receiving account too. The forecast of that account counts the line as money arriving, and the **Total of Accounts** line moves only by the category lines. The forecast cannot state some of these credits in advance, and then says so instead of drawing a line: a line into an account in another currency (the amount that lands is set when the payment posts, so adding an exchange rate does not help), and a loan payment after its next occurrence (how much of it is principal depends on the loan's balance then). The account's own balance forecast names the loan account when the principal of a payment is not stated.
+
 This helps you:
 - Anticipate when account balances will be low
 - Plan for upcoming large expenses

@@ -114,6 +114,47 @@ export function overrideEffectiveAmount(
 }
 
 /**
+ * The signed sum of a split's transfer lines, read from the TEMPLATE (or from
+ * `override` when it restates the lines). Only for a surface with no server
+ * occurrence; one that has it reads `ScheduledOccurrence.transferLineTotal`.
+ */
+export function templateTransferLineTotal(
+  st: ScheduledTransaction,
+  override?: ScheduledTransactionOverride | null,
+): number {
+  const lines =
+    override?.isSplit === true && override.splits?.length
+      ? override.splits
+      : override?.isSplit === false || !st.isSplit
+        ? []
+        : (st.splits ?? []);
+  return sumMoney(
+    lines.filter((l) => l.transferAccountId).map((l) => Number(l.amount)),
+    moneyDecimalsForCurrency(st.currencyCode),
+  );
+}
+
+/**
+ * The occurrence as real income or spending: its amount (and the direction it
+ * decides) less the split's transfer lines, which move money between the user's
+ * own accounts. `lineTotal` is signed (negative: out of the source account).
+ * Rounded at the occurrence's own currency; an unknown amount stays unknown.
+ */
+export function withoutTransferLines<
+  T extends { amount: number | null; currencyCode: string; directionAmount?: number | null },
+>(occurrence: T, lineTotal: number): T {
+  if (lineTotal === 0) return occurrence;
+  const decimals = moneyDecimalsForCurrency(occurrence.currencyCode);
+  const less = (v: number) => sumMoney([v, -lineTotal], decimals);
+  return {
+    ...occurrence,
+    // A known direction loses the transfer part even when the amount is unknown.
+    ...(occurrence.amount !== null && { amount: less(occurrence.amount) }),
+    ...(occurrence.directionAmount != null && { directionAmount: less(occurrence.directionAmount) }),
+  };
+}
+
+/**
  * The amount the schedule's *next* occurrence would post today -- the one figure
  * a surface listing "what is coming up" should show. Honours the per-occurrence
  * override on that date when the server sent one.

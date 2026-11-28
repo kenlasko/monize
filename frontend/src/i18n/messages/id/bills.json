@@ -59,7 +59,9 @@
     "untitledTransaction": "Transaksi",
     "tooltipEstimated": "(perkiraan)",
     "unavailableUnknownEstimates": "Perkiraan arus kas ini belum dapat ditampilkan: jumlah perkiraan salah satu tagihan di dalamnya tidak diketahui, dan saldo proyeksi dibangun dari setiap hari sebelumnya. Masukkan jumlah kejadian itu, atau nonaktifkan Perkirakan pada tagihan.",
-    "unknownEstimateItem": "{name}: {reason}"
+    "unknownEstimateItem": "{name}: {reason}",
+    "unavailableUnknownLoanCredits": "Prakiraan ini belum dapat ditampilkan: setelah kemunculan berikutnya, berapa bagian pembayaran pinjaman yang masuk ke pinjaman bergantung pada saldo pinjaman, yang tidak dapat dihitung oleh saldo proyeksi di sini. Terpengaruh: {names}.",
+    "unavailableCrossCurrencyCredits": "Prakiraan ini belum dapat ditampilkan: sebagian pembayaran masuk ke akun dengan mata uang lain, dan jumlah yang diterima ditetapkan saat pembayaran dicatat, sehingga tidak dapat diproyeksikan sebelumnya. Terpengaruh: {names}."
   },
   "calendar": {
     "days": {

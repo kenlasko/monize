@@ -645,19 +645,116 @@ describe('buildForecast', () => {
 
   // --- Split-based transfer detection ---
   describe('transfer detection', () => {
-    it('excludes split-based transfers in all-account mode', () => {
-      const accounts = [makeAccount({ currentBalance: 5000 })];
-      const transactions = [makeScheduled({
-        nextDueDate: '2025-01-20',
-        amount: -500,
-        frequency: 'ONCE',
-        isTransfer: false,
-        isSplit: true,
-        splits: [{ transferAccountId: 'acc-2' } as any],
-      })];
-      const result = forecastPoints(accounts, transactions, 'month', 'all');
-      const allBalances = result.map(dp => dp.balance);
-      expect(allBalances.every(b => b === 5000)).toBe(true);
+    // A split with a transfer line: category -30, transfer -70 to acc-2 (total -100).
+    const splitWithTransfer = () => makeScheduled({
+      nextDueDate: '2025-01-20',
+      amount: -100,
+      frequency: 'ONCE',
+      isSplit: true,
+      splits: [
+        { transferAccountId: null, amount: -30 } as any,
+        { transferAccountId: 'acc-2', amount: -70 } as any,
+      ],
+    });
+
+    // Was: the whole schedule was dropped as a transfer, including its real -30.
+    it('counts only the non-transfer lines of a split in all-account mode', () => {
+      const accounts = [makeAccount({ currentBalance: 1000 }), makeAccount({ id: 'acc-2', currentBalance: 1000 })];
+      const result = forecastPoints(accounts, [splitWithTransfer()], 'month', 'all');
+      expect(result[result.length - 1].balance).toBe(1970);
+    });
+
+    it('credits the transfer line to its target account', () => {
+      const accounts = [makeAccount({ id: 'acc-2', currentBalance: 1000 })];
+      const result = forecastPoints(accounts, [splitWithTransfer()], 'month', 'acc-2');
+      expect(result.find(dp => dp.date === '2025-01-20')?.balance).toBe(1070);
+    });
+
+    it('charges the source account the whole split', () => {
+      const result = forecastPoints([makeAccount({ currentBalance: 1000 })], [splitWithTransfer()], 'month', 'acc-1');
+      expect(result.find(dp => dp.date === '2025-01-20')?.balance).toBe(900);
+    });
+
+    it('reads an override that replaces the lines', () => {
+      const t = makeScheduled({
+        ...splitWithTransfer(),
+        nextOverride: {
+          overrideDate: '2025-01-20',
+          originalDate: '2025-01-20',
+          amount: -100,
+          isSplit: true,
+          splits: [
+            { transferAccountId: null, amount: -10 },
+            { transferAccountId: 'acc-2', amount: -90 },
+          ],
+        } as any,
+      });
+      const result = forecastPoints([makeAccount({ id: 'acc-2', currentBalance: 1000 })], [t], 'month', 'acc-2');
+      expect(result.find(dp => dp.date === '2025-01-20')?.balance).toBe(1090);
+    });
+
+    it('withholds the target series when the line crosses currencies', () => {
+      const t = makeScheduled({ ...splitWithTransfer(), currencyCode: 'USD' });
+      const result = buildForecast(
+        [makeAccount({ id: 'acc-2', currentBalance: 1000, currencyCode: 'CAD' } as any)],
+        [t], 'month', 'acc-2',
+      );
+      expect(result.points).toEqual([]);
+      // Its own gap: no exchange rate the reader adds makes the arriving amount known.
+      expect(result.crossCurrencyCredits).toEqual(['st-1']);
+      expect(result.missingCurrencies).toEqual([]);
+    });
+
+    it('is not withheld by an occurrence whose lines no longer reach the account', () => {
+      // An unresolved-FX split, its next occurrence restated to pay acc-3 only.
+      const t = makeScheduled({
+        ...splitWithTransfer(),
+        splits: [
+          { transferAccountId: 'acc-2', amount: -70, investmentAction: 'BUY' } as any,
+        ],
+        investmentForecastAmount: null,
+        nextOverride: {
+          overrideDate: '2025-01-20',
+          originalDate: '2025-01-20',
+          amount: -100,
+          isSplit: true,
+          splits: [{ transferAccountId: 'acc-3', amount: -100 }],
+        } as any,
+      });
+      const result = buildForecast(
+        [makeAccount({ id: 'acc-2', currentBalance: 1000 })], [t], 'month', 'acc-2',
+      );
+      expect(result.points.length).toBeGreaterThan(0);
+      expect(result.missingCurrencies).toEqual([]);
+    });
+
+    it('credits a receiver whose source total is unknown, since its own line is stated', () => {
+      const t = makeScheduled({
+        ...splitWithTransfer(),
+        splits: [{ transferAccountId: 'acc-2', amount: -70, investmentAction: 'BUY' } as any],
+        investmentForecastAmount: null,
+      });
+      const result = buildForecast(
+        [makeAccount({ id: 'acc-2', currentBalance: 1000 })], [t], 'month', 'acc-2',
+      );
+      expect(result.missingCurrencies).toEqual([]);
+      expect(result.points.find(dp => dp.date === '2025-01-20')?.balance).toBe(1070);
+    });
+
+    it('finds the loan cursor by its slot, not by position, when the cursor is overdue', () => {
+      const loan = makeAccount({ id: 'acc-2', currentBalance: 1000, accountType: 'MORTGAGE' } as any);
+      // Overdue cursor (Jan 10): the carried occurrence is the cursor and keeps its credit.
+      const once = makeScheduled({ ...splitWithTransfer(), nextDueDate: '2025-01-10' });
+      expect(buildForecast([loan], [once], 'month', 'acc-2').points.length).toBeGreaterThan(0);
+      // Without overdue carry the cursor slot is not in the list at all, so the
+      // first listed occurrence (Jan 17) is NOT the cursor and is withheld.
+      const weekly = makeScheduled({ ...splitWithTransfer(), frequency: 'WEEKLY', nextDueDate: '2025-01-10' });
+      expect(getProjectedBalanceAtDate(loan, '2025-01-20', [weekly], [])).toBeNull();
+    });
+
+    it('credits an inbound line to the projected balance at a date', () => {
+      const account = makeAccount({ id: 'acc-2', currentBalance: 1000 });
+      expect(getProjectedBalanceAtDate(account, '2025-01-25', [splitWithTransfer()], [])).toBe(1070);
     });
 
     it('includes transfers when filtering by source account', () => {
@@ -2249,6 +2346,52 @@ describe('buildMultiAccountForecast', () => {
     const jan20 = on(result, '2025-01-20');
     expect(jan20?.balances).toEqual({ 'acc-1': 800, 'acc-2': 500 });
     expect(jan20?.balance).toBe(1300);
+  });
+
+  describe('a split with a transfer line, both accounts selected', () => {
+    const splitTx = (over: Partial<ScheduledTransaction> = {}) => makeScheduled({
+      id: 'st-split', accountId: 'acc-1', amount: -100, frequency: 'ONCE', nextDueDate: '2025-01-20',
+      isSplit: true,
+      splits: [
+        { transferAccountId: null, amount: -30 } as any,
+        { transferAccountId: 'acc-2', amount: -70 } as any,
+      ],
+      ...over,
+    });
+
+    it('credits the target the line and moves the total by the category line only', () => {
+      const result = buildMultiAccountForecast([chequing, savings], [splitTx()], 'month', ['acc-1', 'acc-2']);
+      const jan20 = on(result, '2025-01-20');
+      expect(jan20?.balances).toEqual({ 'acc-1': 900, 'acc-2': 570 });
+      expect(jan20?.balance).toBe(1470);
+    });
+
+    it('withholds when the line crosses currencies', () => {
+      const result = buildMultiAccountForecast(
+        [chequing, { ...savings, currencyCode: 'USD' } as Account],
+        [splitTx({ currencyCode: 'CAD' } as any)], 'month', ['acc-1', 'acc-2'],
+      );
+      expect(result.points).toEqual([]);
+    });
+
+    it('keeps the chart for a loan schedule the server does not re-price', () => {
+      const loan = { ...savings, accountType: 'MORTGAGE' } as Account;
+      const foreign = splitTx({
+        frequency: 'WEEKLY',
+        originalCurrencyCode: 'USD',
+        originalAmount: -80,
+      } as any);
+      const result = buildMultiAccountForecast([chequing, loan], [foreign], 'month', ['acc-1', 'acc-2']);
+      expect(result.points.length).toBeGreaterThan(0);
+    });
+
+    it('credits a loan only for its next occurrence and withholds the series after it', () => {
+      const loan = { ...savings, accountType: 'MORTGAGE' } as Account;
+      const result = buildMultiAccountForecast(
+        [chequing, loan], [splitTx({ frequency: 'WEEKLY' })], 'month', ['acc-1', 'acc-2'],
+      );
+      expect(result.points).toEqual([]);
+    });
   });
 
   it('tags each transaction with the account it moved', () => {

@@ -46,6 +46,7 @@
     "crossCurrencyTransfer": "{name}: eine Umbuchung von einem Konto in {from}, während dieses Konto in {to} geführt wird. Der hier eingehende Betrag wird erst beim Buchen festgelegt und lässt sich daher nicht im Voraus prognostizieren.",
     "unknownEstimate": "{name}: Der geschätzte Betrag lässt sich noch nicht berechnen, da es keine Zahlungen gibt, aus denen er geschätzt werden kann. Geben Sie den Betrag dieses Termins ein oder erfassen Sie eine Zahlung.",
     "unknownEstimatePair": "{name}: Eine Zahlung, aus der geschätzt wird, ist in {from}, und es gibt keinen Wechselkurs von {from} zu {to}, daher ist der geschätzte Betrag unbekannt.",
-    "howToFix": "So beheben Sie einen fehlenden Kurs: Öffnen Sie Währungen und aktualisieren Sie die Kurse, oder prüfen Sie, ob das Wertpapier und sein Abrechnungskonto die erwarteten Währungen führen."
+    "howToFix": "So beheben Sie einen fehlenden Kurs: Öffnen Sie Währungen und aktualisieren Sie die Kurse, oder prüfen Sie, ob das Wertpapier und sein Abrechnungskonto die erwarteten Währungen führen.",
+    "unknownLoanPrincipal": "{name}: Es ist noch nicht bekannt, wie viel dieser Zahlung auf {account} entfällt, daher kann der Kontostand danach nicht prognostiziert werden."
   }
 }

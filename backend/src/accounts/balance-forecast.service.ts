@@ -4,7 +4,7 @@ import {
   forwardRef,
   Inject,
 } from "@nestjs/common";
-import { DataSource } from "typeorm";
+import { DataSource, In } from "typeorm";
 import { Account } from "./entities/account.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import {
@@ -151,9 +151,32 @@ export class BalanceForecastService {
     // brokerage and its cash may settle *here* -- which the column cannot say.
     // Narrow on purpose: loading every schedule per chart would be a much wider
     // read for the same answer.
+    // A split with a transfer line INTO this account (its template's or an
+    // override's) is a fourth arm: only the line names the account.
+    const lineRows: { id: string }[] = await withScopedDb(
+      this.dataSource,
+      (m) =>
+        m.query(
+          `SELECT st.id FROM scheduled_transactions st
+          WHERE st.user_id = $1 AND st.is_active = TRUE
+            AND (EXISTS (SELECT 1 FROM scheduled_transaction_splits s
+                          WHERE s.scheduled_transaction_id = st.id
+                            AND s.transfer_account_id = $2)
+              OR EXISTS (SELECT 1 FROM scheduled_transaction_overrides o
+                          WHERE o.scheduled_transaction_id = st.id
+                            AND jsonb_typeof(o.splits) = 'array'
+                            AND EXISTS (SELECT 1 FROM jsonb_array_elements(o.splits) AS x(e)
+                                         WHERE x.e->>'transferAccountId' = $2::text)))`,
+          [userId, accountId],
+        ),
+    );
+    const lineIds = (lineRows ?? []).map((r) => r.id);
     const candidates = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(ScheduledTransaction).find({
         where: [
+          ...(lineIds.length > 0
+            ? [{ userId, isActive: true, id: In(lineIds) }]
+            : []),
           { userId, isActive: true, accountId },
           { userId, isActive: true, transferAccountId: accountId },
           { userId, isActive: true, isInvestment: true },
@@ -183,24 +206,58 @@ export class BalanceForecastService {
     for (const occurrence of occurrences) {
       const row = occurrence.schedule;
       // Charge the occurrence to the account that actually moves the cash.
-      const isTransferTarget = row.transferAccountId === accountId;
+      const isLineTarget = occurrence.transferLines.some(
+        (l) => l.transferAccountId === accountId,
+      );
+      const isTransferTarget =
+        row.transferAccountId === accountId || isLineTarget;
       if (occurrence.settlementAccountId !== accountId && !isTransferTarget) {
         continue;
       }
 
-      const gap = this.gapFor(occurrence, account, isTransferTarget);
+      // An account that only RECEIVES a line is charted from the line alone:
+      // the source occurrence's own total being unknown does not touch it.
+      const lineOnly =
+        isLineTarget &&
+        occurrence.settlementAccountId !== accountId &&
+        row.transferAccountId !== accountId;
+      // A loan bill whose principal the projection does not state: the credit
+      // to THE LOAN is unknown, so only its chart is withheld, never the
+      // template's figure; another line target (an escrow line) keeps its own.
+      const gap =
+        isLineTarget &&
+        occurrence.transferLinesUnknown &&
+        occurrence.loanAccountId === accountId
+          ? ({
+              reason: "unknownLoanPrincipal",
+              from: null,
+              to: null,
+            } as const)
+          : lineOnly
+            ? row.currencyCode !== account.currencyCode
+              ? ({
+                  reason: "crossCurrencyTransfer",
+                  from: row.currencyCode,
+                  to: account.currencyCode,
+                } as const)
+              : null
+            : this.gapFor(occurrence, account, isTransferTarget);
       const landing = forecastLanding(occurrence.dueDate, today);
       inputs.push({
         scheduledTransactionId: occurrence.scheduledTransactionId,
         name: row.name,
         accountId: occurrence.settlementAccountId,
         transferAccountId: row.transferAccountId,
+        transferLines: occurrence.transferLines,
         dueDate: landing.date,
         overdue: landing.overdue,
-        amount: gap ? null : occurrence.amount,
+        amount: gap ? null : lineOnly ? 0 : occurrence.amount,
         gapReason: gap?.reason,
         gapFromCurrency: gap?.from ?? null,
         gapToCurrency: gap?.to ?? null,
+        ...(gap?.reason === "unknownLoanPrincipal" && {
+          gapAccountName: account.name,
+        }),
       });
     }
 

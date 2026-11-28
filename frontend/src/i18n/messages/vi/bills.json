@@ -59,7 +59,9 @@
     "untitledTransaction": "Giao tác",
     "tooltipEstimated": "(ước tính)",
     "unavailableUnknownEstimates": "Chưa thể hiển thị dự báo này: số tiền ước tính của một hóa đơn trong đó chưa biết, và số dư dự kiến được xây dựng trên mọi ngày trước đó. Hãy nhập số tiền của lần đó, hoặc tắt Ước tính trên hóa đơn.",
-    "unknownEstimateItem": "{name}: {reason}"
+    "unknownEstimateItem": "{name}: {reason}",
+    "unavailableUnknownLoanCredits": "Chưa thể hiển thị dự báo này: sau lần xảy ra tiếp theo, phần của khoản trả nợ vay đi vào khoản vay phụ thuộc vào số dư khoản vay, mà số dư dự kiến không thể tính ở đây. Bị ảnh hưởng: {names}.",
+    "unavailableCrossCurrencyCredits": "Chưa thể hiển thị dự báo này: một phần khoản thanh toán đi vào tài khoản bằng loại tiền khác, và số tiền nhận được được xác định khi khoản thanh toán được ghi nhận, nên không thể dự báo trước. Bị ảnh hưởng: {names}."
   },
   "calendar": {
     "days": {

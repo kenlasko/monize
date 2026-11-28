@@ -59,7 +59,9 @@
     "untitledTransaction": "Transakcja",
     "tooltipEstimated": "(szacowane)",
     "unavailableUnknownEstimates": "Tej prognozy nie można jeszcze pokazać: szacowana kwota jednego z rachunków jest nieznana, a prognozowane saldo opiera się na każdym wcześniejszym dniu. Wprowadź kwotę tego wystąpienia albo wyłącz Szacuj w rachunku.",
-    "unknownEstimateItem": "{name}: {reason}"
+    "unknownEstimateItem": "{name}: {reason}",
+    "unavailableUnknownLoanCredits": "Tej prognozy nie można jeszcze pokazać: po następnym wystąpieniu to, jaka część raty kredytu trafia na kredyt, zależy od salda kredytu, którego prognozowane saldo nie może tu obliczyć. Dotyczy: {names}.",
+    "unavailableCrossCurrencyCredits": "Tej prognozy nie można jeszcze pokazać: część płatności trafia na konto w innej walucie, a kwota, która tam wpływa, jest ustalana w chwili zaksięgowania płatności, więc nie można jej zaprognozować z wyprzedzeniem. Dotyczy: {names}."
   },
   "calendar": {
     "days": {

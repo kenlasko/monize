@@ -1,4 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 import {
   queryCategorySpending,
   resolveCategorySpentOrNull,
@@ -271,6 +273,7 @@ describe("BudgetsService", () => {
     ({ manager: scopedManager, dataSource: scopedDataSource } =
       createScopedDbMocks([
         [Budget, budgetsRepository as never],
+        [Currency, currencyPlacesRepoMock({ BTC: 8 })],
         [BudgetCategory, budgetCategoriesRepository as never],
         [BudgetBucket, bucketsRepository as never],
         [Notification, budgetAlertsRepository as never],
@@ -1841,6 +1844,43 @@ describe("BudgetsService", () => {
       investmentExchangeRateFromCurrency: "EUR",
       investmentExchangeRateToCurrency: "CAD",
       splits: [],
+    });
+
+    it("does not count a split's transfer lines as upcoming spending", async () => {
+      const splitBill = (id: string, lines: [number, number]) => ({
+        ...staleInvestmentBill(),
+        id,
+        name: id,
+        amount: lines[0] + lines[1],
+        currencyCode: "USD",
+        isInvestment: false,
+        investmentAction: null,
+        isSplit: true,
+        splits: [
+          { id: `${id}-1`, kind: "category", amount: lines[0] },
+          {
+            id: `${id}-2`,
+            kind: "category",
+            amount: lines[1],
+            transferAccountId: "acc-2",
+          },
+        ],
+      });
+      // Both are due as the whole -100, but velocity counts SPENDING: -30
+      // beside a -70 transfer line is 30; +500 beside a -600 line is a refund,
+      // which spends nothing.
+      stubVelocityBudget([
+        splitBill("st-loan", [-30, -70]),
+        splitBill("st-refund", [500, -600]),
+      ]);
+
+      const result = await service.getVelocity("user-1", "budget-1");
+
+      expect(result.upcomingBills.map((b) => [b.name, b.amount])).toEqual([
+        ["st-loan", 30],
+        ["st-refund", 0],
+      ]);
+      expect(result.totalUpcomingBills).toBe(30);
     });
 
     it("counts an upcoming bill at its current amount, not its persisted one", async () => {

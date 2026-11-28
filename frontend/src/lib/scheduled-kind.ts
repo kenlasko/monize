@@ -45,11 +45,40 @@ export function scheduledKind(st: {
  * server could tell the two apart. The magnitude never comes from the schedule --
  * use the occurrence's `amount`, and `UnknownAmount` when it is null.
  */
+type KindLines = { transferAccountId?: string | null }[] | null;
+type KindOverride = { isSplit?: boolean | null; splits?: KindLines } | null;
+
 export function occurrenceKind(
-  occurrence: { amount: number | null; directionAmount?: number | null },
-  schedule: { amount: number | string; isTransfer?: boolean },
+  occurrence: {
+    amount: number | null;
+    directionAmount?: number | null;
+    /** The override governing THIS occurrence; when the key is absent, the schedule's `nextOverride`. */
+    override?: KindOverride;
+  },
+  schedule: {
+    amount: number | string;
+    isTransfer?: boolean;
+    isSplit?: boolean;
+    splits?: KindLines;
+    nextOverride?: KindOverride;
+  },
 ): ScheduledKind {
   if (schedule.isTransfer) return 'transfer';
+  // A split made only of transfer lines moves money between the user's own
+  // accounts: a transfer, never a reminder of 0. The lines are the occurrence's
+  // EFFECTIVE ones, as the server's `classifyScheduledKind` reads them: an
+  // override's own splits, none when it says `isSplit === false`, else the
+  // template's.
+  const override = 'override' in occurrence ? occurrence.override : schedule.nextOverride;
+  const lines =
+    override?.isSplit === true && override.splits?.length
+      ? override.splits
+      : override?.isSplit === false || !schedule.isSplit
+        ? null
+        : schedule.splits;
+  if (lines?.length && lines.every((line) => !!line.transferAccountId)) {
+    return 'transfer';
+  }
   if (occurrence.directionAmount !== undefined) {
     if (occurrence.directionAmount === null) return 'unknown';
     return scheduledKind({ amount: occurrence.directionAmount });

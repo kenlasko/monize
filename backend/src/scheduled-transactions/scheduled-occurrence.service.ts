@@ -12,6 +12,11 @@ import {
   expandOccurrenceSlots,
 } from "../common/scheduled-occurrences";
 import { SplitKind } from "../transactions/entities/split-kind.enum";
+import { FIAT_MONEY_DECIMALS, sumMoney } from "../common/round.util";
+import {
+  loadCurrencyPlacesForRead,
+  moneyDecimalsForCode,
+} from "../common/currency-places.util";
 import { withScopedDb } from "../common/db/scoped-db";
 import { addDaysYMD, todayYMD } from "../common/date-utils";
 import { ensureYMD } from "../common/recurrence";
@@ -148,6 +153,68 @@ export interface OccurrenceCandidateFilter {
 /** An occurrence plus the row it came from, for a server-side consumer. */
 export interface ResolvedScheduledOccurrence extends EffectiveScheduledOccurrence {
   schedule: ScheduledTransaction;
+  /**
+   * The transfer lines of this occurrence's EFFECTIVE splits (an override's own
+   * lines when it replaces them, else the template's): each moves its target
+   * account by the negated amount, like a plain scheduled transfer
+   * (INV-OCCURRENCE-003). Empty for a non-split or a split without such a line.
+   */
+  transferLines: { transferAccountId: string; amount: number }[];
+  /**
+   * `transferLines` could not be priced for this occurrence (a loan bill whose
+   * projection states the amount but not its principal): a consumer withholds
+   * what depends on them instead of reading the template's lines.
+   */
+  transferLinesUnknown: boolean;
+  /** The loan account whose credit `transferLinesUnknown` is about; null otherwise. */
+  loanAccountId: string | null;
+  /**
+   * The money precision of `currencyCode` (`moneyDecimalsFor`), loaded only
+   * when the occurrence has transfer lines to net; four otherwise.
+   */
+  moneyDecimals: number;
+}
+
+/**
+ * The signed sum of an occurrence's transfer lines (negative: money leaves the
+ * source account into another of the user's accounts).
+ */
+function transferLineTotal(o: ResolvedScheduledOccurrence): number {
+  return sumMoney(
+    o.transferLines.map((l) => l.amount),
+    o.moneyDecimals,
+  );
+}
+
+/**
+ * What the occurrence contributes as real income or spending: its amount less
+ * the transfer lines, which only move money between the user's own accounts.
+ * `null` when the amount is unknown.
+ */
+export function nonTransferAmount(
+  o: ResolvedScheduledOccurrence,
+): number | null {
+  if (o.amount === null || o.transferLinesUnknown) return null;
+  // Exact for a schedule without lines: no rounding of what is already stated.
+  if (o.transferLines.length === 0) return o.amount;
+  return sumMoney([o.amount, -transferLineTotal(o)], o.moneyDecimals);
+}
+
+function effectiveTransferLines(
+  row: ScheduledTransaction,
+  override: ScheduledTransactionOverride | undefined,
+): { transferAccountId: string; amount: number }[] {
+  const lines =
+    override?.isSplit === true && override.splits?.length
+      ? override.splits
+      : override?.isSplit === false || !row.isSplit
+        ? []
+        : (row.splits ?? []);
+  return lines.flatMap((l) =>
+    l.transferAccountId
+      ? [{ transferAccountId: l.transferAccountId, amount: Number(l.amount) }]
+      : [],
+  );
 }
 
 /**
@@ -232,6 +299,13 @@ export class ScheduledOccurrenceService {
           estimateStatus: null,
           autoPosts: occurrenceAutoPosts(row, slot.override),
           schedule: row,
+          transferLinesUnknown: false,
+          loanAccountId: null,
+          moneyDecimals: FIAT_MONEY_DECIMALS,
+          transferLines: effectiveTransferLines(
+            row,
+            slot.override ?? undefined,
+          ),
         });
       }
     }
@@ -247,7 +321,25 @@ export class ScheduledOccurrenceService {
       overridesBySchedule,
     );
 
-    return priced.sort((a, b) =>
+    // The precision of each occurrence's own currency, read only when a line
+    // has to be netted (a coin's eight places must not be cut to four).
+    const withLines = priced.filter((o) => o.transferLines.length > 0);
+    const places =
+      withLines.length > 0
+        ? await withScopedDb(this.dataSource, (m) =>
+            loadCurrencyPlacesForRead(
+              m,
+              withLines.map((o) => o.currencyCode),
+            ),
+          )
+        : new Map<string, number>();
+    const decimaled = priced.map((o) =>
+      o.transferLines.length > 0
+        ? { ...o, moneyDecimals: moneyDecimalsForCode(places, o.currencyCode) }
+        : o,
+    );
+
+    return decimaled.sort((a, b) =>
       a.dueDate === b.dueDate
         ? a.scheduledTransactionId.localeCompare(b.scheduledTransactionId)
         : a.dueDate.localeCompare(b.dueDate),
@@ -508,7 +600,14 @@ export class ScheduledOccurrenceService {
     return occurrences.flatMap((occurrence) => {
       if (!projected(occurrence)) return [occurrence];
       const projection = projections.get(occurrence.scheduledTransactionId);
-      const priced = withLoanAmount(occurrence, projection);
+      const own = overridesBySchedule
+        .get(occurrence.scheduledTransactionId)
+        ?.find((o) => o.id === occurrence.overrideId);
+      const priced = withLoanAmount(
+        occurrence,
+        projection,
+        own?.isSplit === true && !!own.splits?.length,
+      );
       return priced === null ? [] : [priced];
     });
   }
@@ -539,6 +638,8 @@ export class ScheduledOccurrenceService {
 function withLoanAmount(
   occurrence: ResolvedScheduledOccurrence,
   projection: LoanOccurrencesProjection | null | undefined,
+  /** An override states this occurrence's own split lines: they stand as stated. */
+  ownLines: boolean,
 ): ResolvedScheduledOccurrence | null {
   if (projection === undefined) return occurrence;
   if (projection !== null && projection.status !== "priced") return occurrence;
@@ -570,10 +671,52 @@ function withLoanAmount(
     };
   }
   const signed = amount === 0 ? 0 : sign * amount;
+  // The credit to the loan is the projected principal (with any extra), never
+  // the template's line: the last, smaller payment would credit the loan more
+  // than it pays. A row that states the amount but not its division (an
+  // override on a settled debt) leaves the credit unknown, which the forecast
+  // reports as a gap rather than crediting the template's figure.
+  const loanId = projection?.loanAccountId;
+  // Only an occurrence whose effective lines include the loan line has a credit
+  // to price; an override's own stated lines keep what they state.
+  const hasLoanLine =
+    !ownLines &&
+    !!loanId &&
+    occurrence.transferLines.some((l) => l.transferAccountId === loanId);
+  if (!hasLoanLine) {
+    return {
+      ...occurrence,
+      amount: signed,
+      directionAmount: signed,
+      complete: true,
+    };
+  }
+  const principalKnown =
+    !!row && !!loanId && row.principal !== null && row.extraPrincipal !== null;
+  const transferLines =
+    principalKnown && row && loanId
+      ? [
+          ...occurrence.transferLines.filter(
+            (l) => l.transferAccountId !== loanId,
+          ),
+          {
+            transferAccountId: loanId,
+            amount:
+              sign *
+              sumMoney(
+                [row.principal ?? 0, row.extraPrincipal ?? 0],
+                FIAT_MONEY_DECIMALS,
+              ),
+          },
+        ]
+      : occurrence.transferLines;
   return {
     ...occurrence,
     amount: signed,
     directionAmount: signed,
     complete: true,
+    transferLines,
+    transferLinesUnknown: !principalKnown,
+    loanAccountId: loanId ?? null,
   };
 }

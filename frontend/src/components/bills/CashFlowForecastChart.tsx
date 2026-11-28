@@ -116,7 +116,7 @@ export function CashFlowForecastChart({
     );
   }
 
-  if (forecast.missingCurrencies.length > 0 || forecast.unknownEstimates.length > 0) {
+  if (forecast.missingCurrencies.length > 0 || forecast.unknownEstimates.length > 0 || forecast.unknownLoanCredits.length > 0 || forecast.crossCurrencyCredits.length > 0) {
     return (
       <div className={`${CARD_CLASS} p-3 sm:p-6 mb-6`}>
         <div className="flex items-center justify-between mb-4">
