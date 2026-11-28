@@ -11,19 +11,29 @@ interface PartialDataNoticeProps {
   displayCurrency: string;
 }
 
+export function partialDataNoticeText(
+  t: ReturnType<typeof useTranslations<'reports'>>,
+  { missingCurrencies, excludedCount, displayCurrency }: PartialDataNoticeProps,
+): string | null {
+  if (missingCurrencies.length > 0) {
+    return t('partialData.notice', {
+      count: excludedCount,
+      displayCurrency,
+      currencies: missingCurrencies.join(', '),
+    });
+  }
+  return excludedCount ? t('partialData.noticeExcluded', { count: excludedCount }) : null;
+}
+
 /**
  * The note a report shows when it has no headline total to mark with
  * `PartialTotal` -- a trend, a breakdown, statistics -- but every figure on it
  * leaves out rows whose currency has no rate. Renders nothing when complete.
  */
-export function PartialDataNotice({
-  missingCurrencies,
-  excludedCount,
-  displayCurrency,
-}: PartialDataNoticeProps) {
+export function PartialDataNotice(props: PartialDataNoticeProps) {
   const t = useTranslations('reports');
-
-  if (missingCurrencies.length === 0 && excludedCount === 0) return null;
+  const note = partialDataNoticeText(t, props);
+  if (!note) return null;
 
   return (
     <p
@@ -31,13 +41,7 @@ export function PartialDataNotice({
       data-testid="partial-data-notice"
       role="note"
     >
-      {missingCurrencies.length > 0
-        ? t('partialData.notice', {
-            count: excludedCount,
-            displayCurrency,
-            currencies: missingCurrencies.join(', '),
-          })
-        : t('partialData.noticeExcluded', { count: excludedCount })}
+      {note}
     </p>
   );
 }
