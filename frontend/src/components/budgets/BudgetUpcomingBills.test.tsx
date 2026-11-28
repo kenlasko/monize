@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@/test/render';
+import { render, screen, fireEvent } from '@/test/render';
 import { BudgetUpcomingBills } from './BudgetUpcomingBills';
 import type { BudgetVelocity, UpcomingBill } from '@/types/budget';
 
@@ -209,5 +209,31 @@ describe('BudgetUpcomingBills', () => {
     expect(screen.queryByText('$80.00')).not.toBeInTheDocument();
     // The row, the total and truly available.
     expect(screen.getAllByTestId('unknown-amount')).toHaveLength(3);
+  });
+
+  // Audit #2365 p: what is left is unknown when the SPENDING or the BUDGET is,
+  // with that cause's own pairs; the panel only reads the server's flags.
+  it.each([
+    ['spending', { spendingComplete: false, spendingMissingRatePairs: ['QQQ->USD'] }, 'QQQ->USD'],
+    ['the budget', { budgetedComplete: false, budgetedMissingRatePairs: ['JPY->CAD'] }, 'JPY->CAD'],
+  ])('shows truly available as unknown with the cause when %s is unknown', (_name, flags, pair) => {
+    render(
+      <BudgetUpcomingBills
+        velocity={velocity({
+          upcomingBills: [bill()],
+          totalUpcomingBills: 80,
+          trulyAvailable: null,
+          ...flags,
+        })}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    // The bills total is a figure; only truly available is unknown.
+    expect(screen.getByText('$80.00', { selector: 'span.font-semibold' })).toBeInTheDocument();
+    expect(screen.getAllByTestId('unknown-amount')).toHaveLength(1);
+    // The cause is the tooltip's text, opened on focus.
+    fireEvent.focus(screen.getByTestId('unknown-amount').querySelector('button')!);
+    expect(document.body.textContent).toContain(pair);
   });
 });

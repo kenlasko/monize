@@ -22,6 +22,7 @@ import { budgetsApi } from '@/lib/budgets';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getErrorMessage } from '@/lib/errors';
 import { STRATEGY_LABELS } from '@/components/budgets/utils/budget-labels';
+import { figuresUnknown } from '@/components/budgets/utils/line-completeness';
 import type {
   Budget,
   BudgetSummary,
@@ -39,9 +40,12 @@ export default function BudgetDetailPage() {
   );
 }
 
-function computeHealthScore(summary: BudgetSummary): number {
+// `null` while spending is partial: a score over a converted part would read as
+// a measurement (read as `=== false`; absent is no information).
+function computeHealthScore(summary: BudgetSummary): number | null {
   let score = 100;
   const expenseCategories = summary.categoryBreakdown.filter((c) => !c.isIncome);
+  if (expenseCategories.some(figuresUnknown)) return null;
 
   for (const cat of expenseCategories) {
     if (cat.percentUsed > 100) {
@@ -54,7 +58,7 @@ function computeHealthScore(summary: BudgetSummary): number {
     }
   }
 
-  if (summary.percentUsed > 100) {
+  if (summary.percentUsed !== null && summary.percentUsed > 100) {
     score -= (summary.percentUsed - 100) * 0.8;
   }
 

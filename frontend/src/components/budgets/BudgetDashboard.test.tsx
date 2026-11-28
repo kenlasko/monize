@@ -10,13 +10,15 @@ vi.mock('./BudgetSummaryCards', () => ({
   BudgetSummaryCards: (props: any) => (
     <div data-testid="summary-cards">
       <span data-testid="total-budgeted">{props.totalBudgeted}</span>
+      <span data-testid="total-spent">{String(props.totalSpent)}</span>
+      <span data-testid="partial-reason">{props.partialReason}</span>
     </div>
   ),
 }));
 
 vi.mock('./BudgetHealthGauge', () => ({
-  BudgetHealthGauge: ({ score }: { score: number }) => (
-    <div data-testid="health-gauge">{score}</div>
+  BudgetHealthGauge: ({ score }: { score: number | null }) => (
+    <div data-testid="health-gauge">{String(score)}</div>
   ),
 }));
 
@@ -208,6 +210,33 @@ describe('BudgetDashboard', () => {
     );
 
     expect(screen.getByTestId('total-budgeted')).toHaveTextContent('5200');
+  });
+
+  it('shows the totals as partial and names the missing pair, never as a complete figure', () => {
+    render(
+      <BudgetDashboard
+        summary={{
+          ...mockSummary,
+          totalSpent: null,
+          remaining: null,
+          percentUsed: null,
+          knownTotalSpent: 20,
+          valuationComplete: false,
+          missingRatePairs: ['QQQ->USD'],
+        }}
+        velocity={mockVelocity}
+        dailySpending={[]}
+        trendData={[]}
+        healthScore={null}
+        displayCurrency="USD"
+        formatCurrency={mockFormat}
+      />,
+    );
+    // The cards stay; the unknown figures are theirs to draw as unknown.
+    expect(screen.getByTestId('total-budgeted')).toHaveTextContent('5200');
+    expect(screen.getByTestId('total-spent')).toHaveTextContent('null');
+    expect(screen.getByTestId('partial-reason')).toHaveTextContent('QQQ->USD');
+    expect(screen.getByTestId('health-gauge')).toHaveTextContent('null');
   });
 
   it('notes the estimated amounts the transfer actuals include', () => {

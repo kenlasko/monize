@@ -5,6 +5,9 @@ import { BudgetProgressBar } from './BudgetProgressBar';
 import type { CategoryBreakdown } from '@/types/budget';
 
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
+import { spentUnknown, budgetedUnknown, figuresUnknown, spentPairs, budgetedPairs, unknownPairs } from './utils/line-completeness';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
 interface BudgetCategoryRowProps {
   category: CategoryBreakdown;
   formatCurrency: (amount: number) => string;
@@ -31,9 +34,19 @@ export function BudgetCategoryRow({
 }: BudgetCategoryRowProps) {
   const t = useTranslations('budgets');
   const { formatPercentTrimmed } = useNumberFormat();
-  const isOverBudget = category.remaining < 0;
+  const partialReason = useBudgetPartialReason();
+  // A row with no exchange rate is left out of `spent`: read as `=== false`.
+  // Spent follows its own flag; the budget, what is left and the percent
+  // follow the budget's (an income-linked line over income with no rate).
+  const spentIsUnknown = spentUnknown(category);
+  const budgetIsUnknown = budgetedUnknown(category);
+  const partial = figuresUnknown(category);
+  const unknownSpent = <UnknownAmount reasonText={partialReason(spentPairs(category))} />;
+  const unknownBudget = <UnknownAmount reasonText={partialReason(budgetedPairs(category))} />;
+  const unknown = <UnknownAmount reasonText={partialReason(unknownPairs(category))} />;
+  const isOverBudget = !partial && category.remaining < 0;
   const hasPositiveBudget = category.budgeted > 0;
-  const paceStatus = hasPositiveBudget && pacePercent !== undefined
+  const paceStatus = !partial && hasPositiveBudget && pacePercent !== undefined
     ? getPaceStatus(category.percentUsed, pacePercent)
     : undefined;
   const paceLabelMap = {
@@ -66,18 +79,18 @@ export function BudgetCategoryRow({
               ? 'text-red-600 dark:text-red-400'
               : 'text-gray-900 dark:text-gray-100'
           }`}>
-            {formatCurrency(category.spent)}
+            {spentIsUnknown ? unknownSpent : formatCurrency(category.spent)}
           </span>
           <span className="text-sm text-gray-400 dark:text-gray-500">/</span>
           <span className="text-sm text-gray-600 dark:text-gray-300">
-            {formatCurrency(category.budgeted)}
+            {budgetIsUnknown ? unknownBudget : formatCurrency(category.budgeted)}
             {category.percentage != null && (
               <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">
                 ({formatPercentTrimmed(category.percentage)})
               </span>
             )}
           </span>
-          {hasPositiveBudget && (
+          {hasPositiveBudget && !partial && (
             <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
               isOverBudget
                 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
@@ -90,7 +103,7 @@ export function BudgetCategoryRow({
           )}
         </div>
       </div>
-      {hasPositiveBudget && (
+      {hasPositiveBudget && !partial && (
         <BudgetProgressBar
           percentUsed={category.percentUsed}
           pacePercent={pacePercent}
@@ -110,9 +123,11 @@ export function BudgetCategoryRow({
             </span>
           )}
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            {category.remaining >= 0
-              ? t('categoryRow.remaining', { amount: formatCurrency(category.remaining) })
-              : t('categoryRow.over', { amount: formatCurrency(Math.abs(category.remaining)) })}
+            {partial
+              ? unknown
+              : category.remaining >= 0
+                ? t('categoryRow.remaining', { amount: formatCurrency(category.remaining) })
+                : t('categoryRow.over', { amount: formatCurrency(Math.abs(category.remaining)) })}
           </span>
         </div>
       </div>

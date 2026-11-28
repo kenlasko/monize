@@ -58,6 +58,49 @@ describe('BudgetStatusWidget', () => {
     expect(Array.from(bars, (bar) => bar.style.width)).toEqual([width, width]);
   });
 
+  it('shows an unknown total, the missing pair and the known part, never a complete percent', async () => {
+    mockGetDashboardSummary.mockResolvedValue({
+      ...mockSummary,
+      totalSpent: null,
+      remaining: null,
+      percentUsed: null,
+      safeDailySpend: null,
+      knownTotalSpent: 20,
+      valuationComplete: false,
+      missingRatePairs: ['QQQ->USD'],
+      topCategories: [],
+      incompleteCategories: [
+        { categoryName: 'Groceries', budgeted: 1000, knownSpent: 20, missingRatePairs: ['QQQ->USD'] },
+      ],
+    });
+    render(<BudgetStatusWidget isLoading={false} />);
+    const note = await screen.findByTestId('budget-partial-note');
+    expect(note).toHaveTextContent('QQQ->USD');
+    expect(note).toHaveTextContent('$20.00');
+    expect(screen.queryByText('2%')).not.toBeInTheDocument();
+    expect(screen.getByTestId('budget-incomplete-categories')).toHaveTextContent('Groceries');
+    expect(screen.getAllByTestId('unknown-amount').length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('shows an unknown budget and percent but the known spent when the budget derives from income with no rate', async () => {
+    mockGetDashboardSummary.mockResolvedValue({
+      ...mockSummary,
+      totalSpent: 1800,
+      knownTotalSpent: 1800,
+      remaining: null,
+      percentUsed: null,
+      safeDailySpend: null,
+      budgetedComplete: false,
+      budgetedMissingRatePairs: ['JPY->CAD'],
+    });
+    render(<BudgetStatusWidget isLoading={false} />);
+    const note = await screen.findByTestId('budget-partial-note');
+    expect(note).toHaveTextContent('JPY->CAD');
+    expect(screen.getByText(/\$1800\.00/)).toBeInTheDocument();
+    expect(screen.queryByText('$3000.00')).not.toBeInTheDocument();
+    expect(screen.queryByText('60%')).not.toBeInTheDocument();
+  });
+
   it('clears the failure when the next load succeeds', async () => {
     mockGetDashboardSummary.mockRejectedValueOnce(new Error('500'));
     const { rerender } = render(<BudgetStatusWidget isLoading={false} />);

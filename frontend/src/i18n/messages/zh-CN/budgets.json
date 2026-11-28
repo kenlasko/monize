@@ -166,6 +166,10 @@
     "savingsChange": "储蓄变化",
     "original": "原始：{amount}"
   },
+  "partialSpent": {
+    "reason": "{pairs} 没有汇率，因此这些货币的支出未计入。请在“货币”页面添加汇率。",
+    "known": "目前已换算的支出：{amount}。"
+  },
   "summaryCards": {
     "ariaLabel": "预算合计",
     "totalBudget": "总预算",

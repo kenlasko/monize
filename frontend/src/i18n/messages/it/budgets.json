@@ -166,6 +166,10 @@
     "savingsChange": "Variazione risparmio",
     "original": "Originale: {amount}"
   },
+  "partialSpent": {
+    "reason": "Non c'è alcun tasso di cambio per {pairs}, quindi le spese in quelle valute non sono conteggiate. Aggiungi il tasso nella pagina Valute.",
+    "known": "Spesa convertita finora: {amount}."
+  },
   "summaryCards": {
     "ariaLabel": "Totali del budget",
     "totalBudget": "Budget totale",

@@ -3011,7 +3011,11 @@ export class ToolExecutorService {
     }
 
     const summaryParts = [
-      `Budget "${data.budgetName}": ${data.percentUsed.toFixed(1)}% used ($${data.totalSpent.toFixed(2)} of $${data.totalBudgeted.toFixed(2)})`,
+      data.totalSpent === null
+        ? `Budget "${data.budgetName}": total spent unknown (no exchange rate for ${data.missingRatePairs.join(", ")}); $${data.knownTotalSpent.toFixed(2)} of $${data.totalBudgeted.toFixed(2)} converted so far`
+        : data.percentUsed === null
+          ? `Budget "${data.budgetName}": $${data.totalSpent.toFixed(2)} spent, but the budget derives from income with no exchange rate for ${data.budgetedMissingRatePairs.join(", ")}; percent used and remaining unknown`
+          : `Budget "${data.budgetName}": ${data.percentUsed.toFixed(1)}% used ($${data.totalSpent.toFixed(2)} of $${data.totalBudgeted.toFixed(2)})`,
     ];
 
     if (data.velocity) {
@@ -3020,7 +3024,23 @@ export class ToolExecutorService {
       // not defaulted -- the summary is the line a model quotes (issue #1247).
       summaryParts.push(
         data.velocity.safeDailySpend === null
-          ? `Safe daily spend: unknown (an upcoming bill's current amount could not be determined), ${data.velocity.daysRemaining} days remaining`
+          ? `Safe daily spend: unknown (${[
+              ...(data.velocity.spendingComplete === false
+                ? [
+                    `spending in a currency with no exchange rate (${data.velocity.spendingMissingRatePairs.join(", ")}) is not converted`,
+                  ]
+                : []),
+              ...(data.velocity.budgetedComplete === false
+                ? [
+                    `the budget derives from income with no exchange rate for ${data.velocity.budgetedMissingRatePairs.join(", ")}`,
+                  ]
+                : []),
+              ...(data.velocity.upcomingBillsComplete
+                ? []
+                : [
+                    "an upcoming bill's current amount could not be determined",
+                  ]),
+            ].join(" and ")}), ${data.velocity.daysRemaining} days remaining`
           : `Safe daily spend: $${data.velocity.safeDailySpend.toFixed(2)}, ${data.velocity.daysRemaining} days remaining`,
       );
     }
@@ -3031,9 +3051,19 @@ export class ToolExecutorService {
       );
     }
 
+    // A partial line can neither be over nor under budget: say it is unknown
+    // rather than letting "0 over budget" read as a clean bill.
+    if (data.incompleteCategories.length > 0) {
+      summaryParts.push(
+        `${data.incompleteCategories.length} categories with unknown figures: ${data.incompleteCategories.map((c) => `${c.category} (no exchange rate for ${c.missingRatePairs.join(", ")})`).join(", ")}`,
+      );
+    }
+
     if (data.healthScore) {
       summaryParts.push(
-        `Health score: ${data.healthScore.score}/100 (${data.healthScore.label})`,
+        data.healthScore.score === null
+          ? `Health score: unknown (no exchange rate for ${(data.healthScore.missingRatePairs ?? []).join(", ")})`
+          : `Health score: ${data.healthScore.score}/100 (${data.healthScore.label})`,
       );
     }
 

@@ -166,6 +166,10 @@
     "savingsChange": "Tasarruf Değişimi",
     "original": "Orijinal: {amount}"
   },
+  "partialSpent": {
+    "reason": "{pairs} için döviz kuru yok, bu yüzden bu para birimlerindeki harcamalar sayılmaz. Kuru Para Birimleri sayfasından ekleyin.",
+    "known": "Şu ana kadar çevrilen harcama: {amount}."
+  },
   "summaryCards": {
     "ariaLabel": "Bütçe toplamları",
     "totalBudget": "Toplam Bütçe",

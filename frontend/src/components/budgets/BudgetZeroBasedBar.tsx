@@ -2,19 +2,38 @@
 
 import { useTranslations } from 'next-intl';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
 
 interface BudgetZeroBasedBarProps {
-  totalIncome: number;
-  totalBudgeted: number;
+  /** `null` when an income row had no exchange rate: nothing can be assigned against it. */
+  totalIncome: number | null;
+  /** The translated cause shown beside an unknown figure. */
+  partialReason?: string;
+  /** `null` when the budget derives from income with no exchange rate. */
+  totalBudgeted: number | null;
   formatCurrency: (amount: number) => string;
 }
 
 export function BudgetZeroBasedBar({
   totalIncome,
+  partialReason,
   totalBudgeted,
   formatCurrency,
 }: BudgetZeroBasedBarProps) {
   const t = useTranslations('budgets');
+  // Both figures are income-derived: either one unknown leaves nothing to assign.
+  if (totalIncome === null || totalBudgeted === null) {
+    return (
+      <div className={`${CARD_CLASS} p-4 sm:p-6`}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {t('zeroBasedBar.title')}
+          </h3>
+          <UnknownAmount reasonText={partialReason} />
+        </div>
+      </div>
+    );
+  }
   const unassigned = totalIncome - totalBudgeted;
   const assignedPercent =
     totalIncome > 0

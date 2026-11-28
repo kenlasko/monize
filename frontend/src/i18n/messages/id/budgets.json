@@ -166,6 +166,10 @@
     "savingsChange": "Perubahan Tabungan",
     "original": "Asli: {amount}"
   },
+  "partialSpent": {
+    "reason": "Tidak ada kurs untuk {pairs}, jadi pengeluaran dalam mata uang tersebut tidak dihitung. Tambahkan kurs di halaman Mata Uang.",
+    "known": "Pengeluaran yang sudah dikonversi sejauh ini: {amount}."
+  },
   "summaryCards": {
     "ariaLabel": "Total anggaran",
     "totalBudget": "Total Anggaran",

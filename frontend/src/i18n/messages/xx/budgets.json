@@ -166,6 +166,10 @@
     "savingsChange": "[XX-Savings Change-XX]",
     "original": "[XX-Original: {amount}-XX]"
   },
+  "partialSpent": {
+    "reason": "[XX-No exchange rate is available for {pairs}, so spending in those currencies is not counted. Add the rate on the Currencies page.-XX]",
+    "known": "[XX-Spending that could be converted so far: {amount}.-XX]"
+  },
   "summaryCards": {
     "ariaLabel": "[XX-Budget totals-XX]",
     "totalBudget": "[XX-Total Budget-XX]",

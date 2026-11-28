@@ -166,6 +166,10 @@
     "savingsChange": "Variation de l'épargne",
     "original": "Origine : {amount}"
   },
+  "partialSpent": {
+    "reason": "Aucun taux de change n'est disponible pour {pairs} ; les dépenses dans ces devises ne sont donc pas comptées. Ajoutez le taux sur la page Devises.",
+    "known": "Dépenses converties jusqu'ici : {amount}."
+  },
   "summaryCards": {
     "ariaLabel": "Totaux du budget",
     "totalBudget": "Budget total",

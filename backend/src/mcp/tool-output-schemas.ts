@@ -464,6 +464,11 @@ export const getBudgetStatusOutput = toolOutput({
   strategy: str.optional(),
   period: looseObject({ start: str, end: str }).optional(),
   totalBudgeted: num.optional(),
+  // `num` is nullable: totalSpent, remaining, percentUsed and the income totals
+  // are null when a row had no rate to the budget currency. knownTotalSpent,
+  // valuationComplete, budgetedComplete, missingRatePairs and
+  // incompleteCategories ride in the loose result undeclared
+  // (tools-list-budget.spec.ts).
   totalSpent: num.optional(),
   // Total Budget Funding. Its two parts, categoryIncome (Actual Income) and
   // transferFunding (transfers that fund the budget, never income), ride in
@@ -481,13 +486,17 @@ export const getBudgetStatusOutput = toolOutput({
     // upcomingBillsComplete says so rather than leaving a bare null.
     safeDailySpend: num,
     upcomingBillsComplete: bool,
+    spendingComplete: bool.optional(),
     projectedTotal: num,
     projectedVariance: num,
     daysRemaining: num,
     paceStatus: str.nullable(),
     projectionMissingRatePairs: z.array(str).optional(),
   }).optional(),
-  healthScore: looseObject({ score: num, label: str }).optional(),
+  healthScore: looseObject({
+    score: num,
+    label: strNull,
+  }).optional(),
   // Not-found branch.
   error: str.optional(),
   availableBudgets: z.array(str).optional(),

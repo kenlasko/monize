@@ -7,6 +7,7 @@ import {
   upcomingBillKind,
 } from '@/lib/scheduled-kind';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import { CARD_CLASS } from '@/components/ui/Card';
 import type { BudgetVelocity } from '@/types/budget';
 
@@ -25,6 +26,10 @@ interface BudgetUpcomingBillsProps {
     | 'totalUpcomingBills'
     | 'upcomingBillsMissingRates'
     | 'trulyAvailable'
+    | 'spendingComplete'
+    | 'spendingMissingRatePairs'
+    | 'budgetedComplete'
+    | 'budgetedMissingRatePairs'
   >;
   /**
    * `currencyCode` omitted means "the budget's own currency". A row shows the
@@ -38,6 +43,7 @@ export function BudgetUpcomingBills({
   formatCurrency,
 }: BudgetUpcomingBillsProps) {
   const t = useTranslations('budgets');
+  const partialReason = useBudgetPartialReason();
   const { upcomingBills, totalUpcomingBills, trulyAvailable } = velocity;
   // A named currency pair is a display rate to refresh; an unnamed shortfall is
   // the occurrence's own settlement rate. Different screens fix them.
@@ -45,6 +51,15 @@ export function BudgetUpcomingBills({
     (velocity.upcomingBillsMissingRates?.length ?? 0) > 0
       ? 'displayFx'
       : 'scheduledFx';
+  // What is left is also unknown when the SPENDING (a row with no exchange rate)
+  // or the BUDGET (derived from income with none) is: the server says so, and
+  // each cause names its own pairs. Nothing is derived here.
+  const withheldReason = [
+    velocity.spendingComplete === false ? partialReason(velocity.spendingMissingRatePairs) : '',
+    velocity.budgetedComplete === false ? partialReason(velocity.budgetedMissingRatePairs) : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className={`${CARD_CLASS} p-4 sm:p-6`}>
@@ -110,7 +125,14 @@ export function BudgetUpcomingBills({
           <span className="text-gray-600 dark:text-gray-400">{t('upcomingBills.trulyAvailable')}</span>
           {/* Derived from the total above, so it is unknown for the same reason. */}
           {trulyAvailable === null ? (
-            <UnknownAmount reason={unknownReason} />
+            // The scheduled-FX reason stays where the bills total is the
+            // unknown part; the spending and budget reasons are added.
+            <UnknownAmount
+              reason={unknownReason}
+              reasonText={
+                withheldReason && totalUpcomingBills !== null ? withheldReason : undefined
+              }
+            />
           ) : (
             <span className={`font-semibold ${gainLossColor(trulyAvailable)}`}>
               {formatCurrency(Math.abs(trulyAvailable))}

@@ -340,8 +340,12 @@ describe("ToolExecutorService", () => {
         totalIncome: 5000,
         remaining: 1800,
         percentUsed: 40,
+        knownTotalSpent: 1200,
+        valuationComplete: true,
+        missingRatePairs: [],
         overBudgetCategories: [],
         nearLimitCategories: [],
+        incompleteCategories: [],
         categoryCount: 5,
       }),
     };
@@ -1940,6 +1944,73 @@ describe("ToolExecutorService", () => {
         undefined,
       );
       expect(result.sources[0].type).toBe("budget");
+    });
+
+    it("get_budget_status says the total is unknown when a rate is missing", async () => {
+      budgetReports.getLlmBudgetStatus.mockResolvedValueOnce({
+        budgetName: "Home",
+        period: { start: "2026-02-01", end: "2026-02-28" },
+        totalBudgeted: 1000,
+        totalSpent: null,
+        knownTotalSpent: 20,
+        percentUsed: null,
+        remaining: null,
+        valuationComplete: false,
+        missingRatePairs: ["QQQ->USD"],
+        overBudgetCategories: [],
+        incompleteCategories: [
+          {
+            category: "Groceries",
+            budgeted: 1000,
+            knownSpent: 20,
+            missingRatePairs: ["QQQ->USD"],
+          },
+        ],
+        healthScore: {
+          score: null,
+          label: null,
+          missingRatePairs: ["QQQ->USD"],
+        },
+      } as never);
+
+      const result = await service.execute(userId, "get_budget_status", {});
+
+      expect(result.summary).toContain("total spent unknown");
+      expect(result.summary).toContain("QQQ->USD");
+      expect(result.summary).not.toContain("% used");
+      expect(result.summary).toContain("1 categories with unknown figures");
+      expect(result.summary).toContain("Health score: unknown");
+    });
+
+    it("get_budget_status names both causes of an unknown safe daily spend", async () => {
+      budgetReports.getLlmBudgetStatus.mockResolvedValueOnce({
+        budgetName: "Home",
+        period: { start: "2026-02-01", end: "2026-02-28" },
+        totalBudgeted: 1000,
+        totalSpent: 20,
+        knownTotalSpent: 20,
+        percentUsed: 2,
+        remaining: 980,
+        valuationComplete: true,
+        missingRatePairs: [],
+        overBudgetCategories: [],
+        incompleteCategories: [],
+        velocity: {
+          safeDailySpend: null,
+          upcomingBillsComplete: false,
+          spendingComplete: false,
+          spendingMissingRatePairs: ["QQQ->USD"],
+          daysRemaining: 10,
+        },
+      } as never);
+
+      const result = await service.execute(userId, "get_budget_status", {});
+
+      expect(result.summary).toContain("QQQ->USD");
+      expect(result.summary).toContain(
+        "an upcoming bill's current amount could not be determined",
+      );
+      expect(result.summary).toContain(" and ");
     });
 
     it("list_upcoming_bills delegates to scheduledTransactions.getLlmUpcomingBillsAndDeposits", async () => {

@@ -121,6 +121,8 @@ Four cards at the top provide an at-a-glance overview:
 
 Purchases add to **Spent** and refunds in the same expense category reduce it. For a budget of 100, a purchase of 100 and a refund of 150 show **Spent −50** and **Remaining 150**. An ordinary income line likewise shows negative income if reversals exceed receipts. Open periods use these signed figures, and closing a period records them. Previously closed periods keep their saved figures.
 
+If a transaction is in a currency with no exchange rate to the budget currency, Monize cannot work out the figures that depend on it. **Spent**, **Remaining**, **Savings**, the percentage, the health score, the safe daily spend and the category lines that include it show an unknown marker instead of a number. Point at the marker to see the missing currency pair. The dashboard widget lists those categories apart and does not rank them. On an income-linked budget the same applies when the income has no rate: **Total Budget** and the percentage lines are unknown, because they are a share of that income. Add the rate on the Currencies page to see the figures again.
+
 ### Health Score
 
 A circular gauge from 0 to 100 summarizing how well you are sticking to your budget.

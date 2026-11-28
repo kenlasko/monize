@@ -32,6 +32,9 @@ import { chartColors } from '@/lib/chart-colors';
 import { useTranslations } from 'next-intl';
 import { CHART_GRID_PROPS_HORIZONTAL_BARS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
+import { spentUnknown, budgetedUnknown, figuresUnknown } from '@/components/budgets/utils/line-completeness';
 
 const logger = createLogger('FlexGroupAnalysisReport');
 
@@ -200,6 +203,11 @@ const MONEY_CELL = 'p-0 text-right text-xs whitespace-nowrap sm:table-cell sm:te
 
 export function FlexGroupAnalysisReport() {
   const t = useTranslations('reports');
+  const tc = useTranslations('common');
+  const partialReason = useBudgetPartialReason();
+  // A figure the server withheld (a row with no exchange rate, or a budget
+  // derived from income with none) is a marker, never a number or 0%.
+  const marker = tc('unknownAmount.marker');
   const { formatCurrencyCompact: formatCurrency, formatPercentTrimmed } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -223,6 +231,10 @@ export function FlexGroupAnalysisReport() {
     return flexGroups.map((group) => {
       const sortedCategories = [...group.categories];
       sortedCategories.sort((a, b) => {
+        // A line with an unknown figure has nothing to rank by on that column.
+        const unknownOn =
+          sortField === 'budgeted' ? budgetedUnknown : sortField === 'spent' ? spentUnknown : figuresUnknown;
+        if (sortField !== 'category' && unknownOn(a) !== unknownOn(b)) return unknownOn(a) ? 1 : -1;
         let comparison = 0;
         switch (sortField) {
           case 'category':
@@ -277,25 +289,25 @@ export function FlexGroupAnalysisReport() {
     budgeted: {
       field: 'budgeted',
       label: t('flexGroupAnalysis.colBudget'),
-      value: (cat) => formatCurrency(cat.budgeted),
+      value: (cat) => (budgetedUnknown(cat) ? marker : formatCurrency(cat.budgeted)),
       align: 'right',
     },
     spent: {
       field: 'spent',
       label: t('flexGroupAnalysis.colSpent'),
-      value: (cat) => formatCurrency(cat.spent),
+      value: (cat) => (spentUnknown(cat) ? marker : formatCurrency(cat.spent)),
       align: 'right',
     },
     remaining: {
       field: 'remaining',
       label: t('flexGroupAnalysis.colRemaining'),
-      value: (cat) => formatCurrency(categoryRemaining(cat)),
+      value: (cat) => (figuresUnknown(cat) ? marker : formatCurrency(categoryRemaining(cat))),
       align: 'right',
     },
     percentUsed: {
       field: 'percentUsed',
       label: t('flexGroupAnalysis.colPercentUsed'),
-      value: (cat) => formatPercentTrimmed(cat.percentUsed),
+      value: (cat) => (figuresUnknown(cat) ? marker : formatPercentTrimmed(cat.percentUsed)),
       align: 'right',
       last: true,
     },
@@ -407,8 +419,9 @@ export function FlexGroupAnalysisReport() {
       {sortedFlexGroups.map((group) => {
         const chartData = group.categories.map((cat) => ({
           name: cat.categoryName,
-          spent: cat.spent,
-          budgeted: cat.budgeted,
+          // An unknown spent figure draws no bar rather than a short one.
+          spent: spentUnknown(cat) ? null : cat.spent,
+          budgeted: budgetedUnknown(cat) ? null : cat.budgeted,
         }));
 
         return (
@@ -419,11 +432,20 @@ export function FlexGroupAnalysisReport() {
               </h2>
               <div className="flex items-center gap-3 text-sm">
                 <span className="text-gray-500 dark:text-gray-400">
-                  {formatCurrency(group.totalSpent)} / {formatCurrency(group.totalBudgeted)}
+                  {group.totalSpent === null ? (
+                    <UnknownAmount reasonText={partialReason(group.missingRatePairs)} />
+                  ) : (
+                    formatCurrency(group.totalSpent)
+                  )}{' '}
+                  / {formatCurrency(group.totalBudgeted)}
                 </span>
-                <span className={`font-medium ${percentUsedColor(group.percentUsed)}`}>
-                  {formatPercentTrimmed(group.percentUsed)}
-                </span>
+                {group.percentUsed === null ? (
+                  <UnknownAmount reasonText={partialReason(group.missingRatePairs)} />
+                ) : (
+                  <span className={`font-medium ${percentUsedColor(group.percentUsed)}`}>
+                    {formatPercentTrimmed(group.percentUsed)}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -464,6 +486,7 @@ export function FlexGroupAnalysisReport() {
                     fill={chartColors.primary}
                     radius={[0, 4, 4, 0]}
                   />
+                  {group.budgetedComplete !== false && (
                   <ReferenceLine
                     x={group.totalBudgeted}
                     stroke={chartColors.expense}
@@ -471,6 +494,7 @@ export function FlexGroupAnalysisReport() {
                     strokeDasharray="5 5"
                     label={{ value: t('flexGroupAnalysis.limitLabel', { amount: formatCurrency(group.totalBudgeted) }), position: 'top', fill: chartColors.expense, fontSize: 11 }}
                   />
+                  )}
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -586,14 +610,14 @@ export function FlexGroupAnalysisReport() {
                       </td>
                       {/* What is left takes the right of line 1 beside the
                           category: it is the figure the row is read for. */}
-                      <td role="cell" className={`col-start-2 row-start-1 font-medium ${gainLossColor(categoryRemaining(cat))} ${cellPadding(columns.remaining)} ${MONEY_CELL}`}>
+                      <td role="cell" className={`col-start-2 row-start-1 font-medium ${figuresUnknown(cat) ? "" : gainLossColor(categoryRemaining(cat))} ${cellPadding(columns.remaining)} ${MONEY_CELL}`}>
                         <CellLabel className={CAPTION_CLASS}>{columns.remaining.label}</CellLabel>
                         {columns.remaining.value(cat)}
                       </td>
                       {/* Percent used sits under the spend it is a share of.
                           It is also the last column, so it drops its right
                           padding. */}
-                      <td role="cell" className={`col-start-2 row-start-3 font-medium ${percentUsedColor(cat.percentUsed)} ${cellPadding(columns.percentUsed)} ${MONEY_CELL}`}>
+                      <td role="cell" className={`col-start-2 row-start-3 font-medium ${figuresUnknown(cat) ? "" : percentUsedColor(cat.percentUsed)} ${cellPadding(columns.percentUsed)} ${MONEY_CELL}`}>
                         <CellLabel className={CAPTION_CLASS}>{columns.percentUsed.label}</CellLabel>
                         {columns.percentUsed.value(cat)}
                       </td>

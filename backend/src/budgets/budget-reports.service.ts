@@ -4,7 +4,11 @@ import { BudgetHealthReportsService } from "./budget-health-reports.service";
 import { BudgetActivityReportsService } from "./budget-activity-reports.service";
 import { BudgetBucketReportsService } from "./budget-bucket-reports.service";
 import type { BudgetBucketStatusResult } from "./budget-bucket-reports.service";
-import { BudgetsService } from "./budgets.service";
+import {
+  BudgetsService,
+  lineFiguresKnown,
+  lineUnknownPairs,
+} from "./budgets.service";
 import { BudgetStrategy } from "./entities/budget.entity";
 import {
   getCurrentMonthPeriodDates,
@@ -57,8 +61,15 @@ export interface CategoryTrendSeries {
 }
 
 export interface HealthScoreResult {
-  score: number;
-  label: string;
+  /**
+   * `null` while a row had no rate to the budget currency (`valuationComplete`
+   * is `false`): a score over partial spending would read as a measurement.
+   */
+  score: number | null;
+  label: string | null;
+  valuationComplete: boolean;
+  /** `"JPY->CAD"` for each pair with no rate behind an unknown score. */
+  missingRatePairs: string[];
   breakdown: {
     baseScore: number;
     overBudgetDeductions: number;
@@ -92,15 +103,27 @@ export interface SeasonalPattern {
 export interface FlexGroupStatusResult {
   groupName: string;
   totalBudgeted: number;
-  totalSpent: number;
-  remaining: number;
-  percentUsed: number;
+  /** `null` when a member line had a row with no rate; `knownTotalSpent` is then the converted part. */
+  totalSpent: number | null;
+  knownTotalSpent: number;
+  /** `null` while `totalSpent` is unknown or the budget derives from income with no rate. */
+  remaining: number | null;
+  percentUsed: number | null;
+  /** The group's spent total is known (every member line's `valuationComplete`). */
+  valuationComplete: boolean;
+  /** `false`: a member line's budget derives from income with no rate. */
+  budgetedComplete: boolean;
+  /** `"JPY->CAD"` for each pair behind the withheld figures, spent and budgeted. */
+  missingRatePairs: string[];
   categories: Array<{
     categoryId: string;
     categoryName: string;
     budgeted: number;
     spent: number;
     percentUsed: number;
+    valuationComplete: boolean;
+    budgetedComplete: boolean;
+    missingRatePairs: string[];
   }>;
 }
 
@@ -132,21 +155,40 @@ export interface LlmBudgetStatusResult {
   strategy: string;
   period: { start: string; end: string };
   totalBudgeted: number;
-  totalSpent: number;
+  /**
+   * `null` when a row had no rate to the budget currency (`valuationComplete`
+   * is `false`); `knownTotalSpent` is then the converted part, and
+   * `remaining` and `percentUsed` are `null` too.
+   */
+  totalSpent: number | null;
+  knownTotalSpent: number;
+  valuationComplete: boolean;
+  /**
+   * `false` when an income-linked budget's income had a row with no rate:
+   * `totalBudgeted` derives from its converted part, `remaining` and
+   * `percentUsed` are `null`, and its percentage lines are in
+   * `incompleteCategories`. `totalSpent` is not withheld by this.
+   */
+  budgetedComplete: boolean;
+  /** The income's pairs behind an unknown budget. */
+  budgetedMissingRatePairs: string[];
+  /** `"JPY->CAD"` for each expense pair behind an unknown `totalSpent`. */
+  missingRatePairs: string[];
   /** Total Budget Funding: `categoryIncome` plus `transferFunding`. */
-  totalIncome: number;
+  totalIncome: number | null;
   /**
    * Actual Income: the income lines on an Income or Expense category
-   * (docs/specs/transfer-categories.md section 6.2).
+   * (docs/specs/transfer-categories.md section 6.2). `null` (like
+   * `totalIncome` and `transferFunding`) while an income row had no rate.
    */
-  categoryIncome: number;
+  categoryIncome: number | null;
   /**
    * Transfer Funding: transfer income lines, income lines on a Transfer
    * category and the transfers in from outside the budget. Not income.
    */
-  transferFunding: number;
-  remaining: number;
-  percentUsed: number;
+  transferFunding: number | null;
+  remaining: number | null;
+  percentUsed: number | null;
   overBudgetCategories: Array<{
     category: string;
     budgeted: number;
@@ -160,6 +202,17 @@ export interface LlmBudgetStatusResult {
     remaining: number;
     percentUsed: number;
   }>;
+  /**
+   * Lines with a row that had no rate: left out of the two lists above, whose
+   * thresholds a partial figure cannot answer. `knownSpent` is the converted
+   * part.
+   */
+  incompleteCategories: Array<{
+    category: string;
+    budgeted: number;
+    knownSpent: number;
+    missingRatePairs: string[];
+  }>;
   categoryCount: number;
   velocity?: {
     dailyBurnRate: number | null;
@@ -171,6 +224,12 @@ export interface LlmBudgetStatusResult {
      */
     safeDailySpend: number | null;
     upcomingBillsComplete: boolean;
+    /** `false`: spending had a row with no rate, so `safeDailySpend` is `null`. */
+    spendingComplete: boolean;
+    spendingMissingRatePairs: string[];
+    /** `false`: the budget derives from income with no rate; the pace figures are `null`. */
+    budgetedComplete: boolean;
+    budgetedMissingRatePairs: string[];
     projectedTotal: number | null;
     projectedVariance: number | null;
     daysRemaining: number;
@@ -178,8 +237,10 @@ export interface LlmBudgetStatusResult {
     paceStatus: "under" | "on_track" | "over" | null;
   };
   healthScore?: {
-    score: number;
-    label: string;
+    /** `null` while spending is partial; `missingRatePairs` says why. */
+    score: number | null;
+    label: string | null;
+    missingRatePairs?: string[];
   };
   /**
    * Present only for a BUCKET budget with at least one bucket; the current
@@ -367,8 +428,17 @@ export class BudgetReportsService {
       }
     }
 
+    const incompleteCategories = summary.categoryBreakdown
+      .filter((c) => !c.isIncome && !lineFiguresKnown(c))
+      .map((c) => ({
+        category: c.categoryName,
+        budgeted: c.budgeted,
+        knownSpent: c.spent,
+        missingRatePairs: lineUnknownPairs(c),
+      }));
+
     const overBudgetCategories = summary.categoryBreakdown
-      .filter((c) => !c.isIncome && c.remaining < 0)
+      .filter((c) => !c.isIncome && lineFiguresKnown(c) && c.remaining < 0)
       .map((c) => ({
         category: c.categoryName,
         budgeted: c.budgeted,
@@ -380,6 +450,7 @@ export class BudgetReportsService {
       .filter(
         (c) =>
           !c.isIncome &&
+          lineFiguresKnown(c) &&
           c.remaining >= 0 &&
           c.percentUsed >= 80 &&
           c.percentUsed <= 100,
@@ -398,6 +469,11 @@ export class BudgetReportsService {
       period: { start: periodStart, end: periodEnd },
       totalBudgeted: summary.totalBudgeted,
       totalSpent: summary.totalSpent,
+      knownTotalSpent: summary.knownTotalSpent,
+      valuationComplete: summary.valuationComplete,
+      budgetedComplete: summary.budgetedComplete,
+      budgetedMissingRatePairs: summary.budgetedMissingRatePairs,
+      missingRatePairs: summary.missingRatePairs,
       totalIncome: summary.totalIncome,
       categoryIncome: summary.categoryIncome,
       transferFunding: summary.transferFunding,
@@ -405,6 +481,7 @@ export class BudgetReportsService {
       percentUsed: summary.percentUsed,
       overBudgetCategories,
       nearLimitCategories,
+      incompleteCategories,
       categoryCount: summary.categoryBreakdown.filter((c) => !c.isIncome)
         .length,
     };
@@ -414,6 +491,10 @@ export class BudgetReportsService {
         dailyBurnRate: velocity.dailyBurnRate,
         safeDailySpend: velocity.safeDailySpend,
         upcomingBillsComplete: velocity.upcomingBillsComplete,
+        spendingComplete: velocity.spendingComplete,
+        spendingMissingRatePairs: velocity.spendingMissingRatePairs,
+        budgetedComplete: velocity.budgetedComplete,
+        budgetedMissingRatePairs: velocity.budgetedMissingRatePairs,
         projectedTotal: velocity.projectedTotal,
         projectedVariance: velocity.projectedVariance,
         daysRemaining: velocity.daysRemaining,
@@ -426,6 +507,9 @@ export class BudgetReportsService {
       result.healthScore = {
         score: healthScore.score,
         label: healthScore.label,
+        ...(healthScore.valuationComplete
+          ? {}
+          : { missingRatePairs: healthScore.missingRatePairs }),
       };
     }
 
