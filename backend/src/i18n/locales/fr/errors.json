@@ -94,6 +94,7 @@
     "undoSplitLegsChanged": "Cette modification a changé des lignes de ventilation qui déplacent de l'argent vers d'autres comptes, elle ne peut donc pas être annulée automatiquement. Modifiez la transaction pour la rétablir.",
     "undoDeletedSplitHasTransferLine": "Cette ventilation contient une ligne qui déplace de l'argent sur un autre compte (un virement ou une ligne d'investissement), et l'annulation ne peut pas rétablir le côté de l'autre compte. Saisissez à nouveau la ventilation.",
     "undoTransferLegDeleted": "Cette ligne était un côté d'un virement ou d'une ventilation. L'annulation ne peut pas la rétablir seule. Vérifiez l'autre compte : modifiez le côté qui subsiste, ou saisissez à nouveau la transaction s'il ne reste rien.",
+    "undoTransferChangeNotSupported": "Cette modification d'un virement (une modification, un changement de statut ou une suppression) ne peut pas être annulée automatiquement. Modifiez le virement pour revenir en arrière, ou saisissez-le à nouveau s'il a été supprimé.",
     "undoBulkDeletedSplit": "Cette suppression incluait une transaction ventilée, et l'annulation d'une suppression groupée ne peut pas rétablir les lignes de ventilation. Saisissez à nouveau la ventilation.",
     "undoVoidWithLegs": "Ce changement a annulé ou rétabli des écritures dans d'autres comptes, il ne peut donc pas être annulé automatiquement. Rétablissez plutôt le statut précédent.",
     "loanEditNotUndoable": "Cette modification du prêt ne peut pas être annulée automatiquement. Modifiez le prêt pour la rétablir.",

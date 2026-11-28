@@ -115,6 +115,23 @@ function assertTransactionCreateRedoable(action: ActionHistory): void {
 }
 
 /**
+ * Refuses, before anything is written, the undo of a transfer edit, status
+ * change or delete. Those are recorded so that Undo stops at them instead of
+ * reaching the transfer's creation and deleting both legs, but the entry holds
+ * no snapshot of the two legs, their statuses, balances and FX, so it cannot
+ * be reversed. The user edits the transfer back.
+ */
+function throwTransferChangeNotUndoable(): never {
+  throw new ConflictException({
+    message: tr(
+      "errors.actionHistory.undoTransferChangeNotSupported",
+      "This change to a transfer (an edit, a status change or a delete) cannot be undone automatically. Edit the transfer to change it back, or enter it again if it was deleted.",
+    ),
+    errorCode: "UNDO_TRANSFER_CHANGE_NOT_SUPPORTED",
+  });
+}
+
+/**
  * Account columns an undo or redo never writes back from a snapshot.
  *
  * `current_balance` is derived from the ledger: restoring the edit-time figure
@@ -650,11 +667,18 @@ const MAX_HISTORY_AGE_DAYS = 30;
 /**
  * History writes that were started without anybody waiting for them.
  *
- * Every one of the ~20 `actionHistoryService.record(...)` call sites invokes it
+ * Most of the ~20 `actionHistoryService.record(...)` call sites invoke it
  * without `await` -- deliberately, because a missing undo entry must never fail
  * the operation the user actually asked for. The write that lands afterwards is
  * still a write, and it arrives with no relationship to the request that caused
  * it.
+ *
+ * The transfer entries (the create and the edit, status change and delete
+ * recorded by `TransactionTransferService`) are awaited. They order the
+ * history: Undo takes the newest entry, so an Undo pressed right after an edit
+ * must find the edit's entry, not the create's, or it would delete the
+ * transfer. An await orders the entries; it does not make a failed write fail
+ * the request, since `recordNow` catches its own errors.
  *
  * Harmless in a running server. Not harmless against a database being torn
  * down: an integration suite that truncates `users ... CASCADE` while one of
@@ -666,8 +690,10 @@ const MAX_HISTORY_AGE_DAYS = 30;
  * Module scope rather than instance state, for the same reason
  * `pendingPriceWrites` is (`securities/security-price.service.ts`): the thing
  * that needs to wait is a test helper holding a `DataSource`, not a consumer of
- * this service. Nothing in `src/` waits on this; production keeps exactly the
- * fire-and-forget behaviour it had.
+ * this service. Nothing in `src/` waits on this set. The callers that await
+ * their own write (the transfer entries and the bulk update's entry) do so to
+ * order the history, not to drain the set; every other caller keeps the
+ * fire-and-forget behaviour.
  */
 const pendingHistoryWrites = new Set<Promise<unknown>>();
 
@@ -724,9 +750,11 @@ export class ActionHistoryService {
   }
 
   /**
-   * Record an undo entry. Callers do not await this -- see `pendingHistoryWrites`
-   * above -- so the promise is registered before it is handed back, which is the
-   * only way a teardown can tell the write is still running.
+   * Record an undo entry. Most callers do not await this -- see
+   * `pendingHistoryWrites` above -- so the promise is registered before it is
+   * handed back, which is the only way a teardown can tell the write is still
+   * running. The transfer create and change entries and the bulk update's entry
+   * are awaited, so Undo, which takes the newest entry, cannot run before them.
    */
   record(
     userId: string,
@@ -1647,6 +1675,9 @@ export class ActionHistoryService {
       case "delete":
         await this.undoTransferDelete(action, manager);
         break;
+      case "update":
+        throwTransferChangeNotUndoable();
+        break;
       default:
         throw new ConflictException(
           tr(
@@ -1747,10 +1778,10 @@ export class ActionHistoryService {
     action: ActionHistory,
     manager: EntityManager,
   ): Promise<void> {
-    if (!action.beforeData) return;
-
-    const { fromTransaction, toTransaction } = action.beforeData;
-    if (!fromTransaction || !toTransaction) return;
+    // A delete recorded without the two legs (every transfer delete today):
+    // nothing to restore, so refuse rather than report success.
+    const { fromTransaction, toTransaction } = action.beforeData ?? {};
+    if (!fromTransaction || !toTransaction) throwTransferChangeNotUndoable();
     await this.assertSnapshotAmountsFit(manager, [
       fromTransaction,
       toTransaction,

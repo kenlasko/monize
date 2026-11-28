@@ -371,7 +371,8 @@
     "settlement": "Liquidação: {ordinal}",
     "settlementTooltip": "O último dia do ciclo de faturação. As transações lançadas até este dia (inclusive) aparecem na fatura atual.",
     "dueShort": "vence {ordinal}",
-    "metaWithDue": "{institution} · {due}"
+    "metaWithDue": "{institution} · {due}",
+    "loadFailed": "Não foi possível carregar as suas contas. Recarregue o painel para tentar novamente."
   },
   "upcomingBills": {
     "title": "Faturas e Depósitos Próximos",
@@ -407,7 +408,8 @@
     "dayEmpty": "Não há faturas ou depósitos agendados para este dia.",
     "metaPayee": "· {payee}",
     "metaManual": "· pago manualmente",
-    "metaWhen": "· {when}"
+    "metaWhen": "· {when}",
+    "loadFailed": "Não foi possível carregar as suas próximas contas a pagar. Recarregue o painel para tentar novamente."
   },
   "cashFlowForecast": {
     "title": "Previsão de fluxo de caixa",
@@ -444,7 +446,8 @@
     "viewFullBudget": "Ver orçamento completo",
     "daysLeft": "{count} dias restantes",
     "safeToSpend": "Disponível para gastar hoje",
-    "topCategories": "Principais Categorias"
+    "topCategories": "Principais Categorias",
+    "loadFailed": "Não foi possível carregar o estado do seu orçamento. Recarregue o painel para tentar novamente."
   },
   "insights": {
     "title": "Análise de Despesas",
@@ -520,13 +523,15 @@
     "topLevelOnly": "Categorias de topo",
     "topLevelOnlyHint": "Contar as subcategorias na categoria principal",
     "viewCallouts": "Etiquetas",
-    "viewLegend": "Legenda"
+    "viewLegend": "Legenda",
+    "loadFailed": "Não foi possível carregar as suas despesas por categoria. Recarregue o painel para tentar novamente."
   },
   "incomeExpenses": {
     "title": "Receitas vs Despesas",
     "income": "Receitas",
     "expenses": "Despesas",
-    "net": "Líquido"
+    "net": "Líquido",
+    "loadFailed": "Não foi possível carregar as suas receitas e despesas. Recarregue o painel para tentar novamente."
   },
   "customize": {
     "button": "Personalizar",
@@ -736,5 +741,6 @@
     "depthSubcategories": "Subcategorias",
     "viewDiagram": "Diagrama",
     "viewTable": "Tabela"
-  }
+  },
+  "accountsLoadFailed": "Não foi possível carregar as suas contas, por isso este widget não pode ser mostrado. Recarregue o painel para tentar novamente."
 }

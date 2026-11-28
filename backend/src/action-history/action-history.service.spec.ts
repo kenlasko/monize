@@ -2408,7 +2408,7 @@ describe("ActionHistoryService", () => {
       );
     });
 
-    it("should throw ConflictException for unsupported transfer action", async () => {
+    it("refuses the undo of a recorded transfer edit or status change with its own code", async () => {
       const transferAction = {
         ...mockAction,
         entityType: "transfer",
@@ -2419,6 +2419,10 @@ describe("ActionHistoryService", () => {
       mockRepository.findOne.mockResolvedValue(transferAction);
 
       await expect(service.undo(userId)).rejects.toThrow(ConflictException);
+      await expect(service.undo(userId)).rejects.toMatchObject({
+        response: { errorCode: "UNDO_TRANSFER_CHANGE_NOT_SUPPORTED" },
+      });
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
     });
 
     it("should return early if afterData is null for transfer create", async () => {
@@ -2438,7 +2442,7 @@ describe("ActionHistoryService", () => {
       expect(mockQueryRunner.manager.findOne).not.toHaveBeenCalled();
     });
 
-    it("should return early if beforeData is null for transfer delete", async () => {
+    it("should refuse, not report success, if beforeData is null for transfer delete", async () => {
       const transferAction = {
         ...mockAction,
         entityType: "transfer",
@@ -2450,12 +2454,12 @@ describe("ActionHistoryService", () => {
       mockRepository.findOne.mockResolvedValue(transferAction);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
 
-      const result = await service.undo(userId);
-
-      expect(result.description).toContain("Undone");
+      await expect(service.undo(userId)).rejects.toMatchObject({
+        response: { errorCode: "UNDO_TRANSFER_CHANGE_NOT_SUPPORTED" },
+      });
     });
 
-    it("should return early if fromTransaction or toTransaction is missing", async () => {
+    it("should refuse, not report success, if fromTransaction or toTransaction is missing", async () => {
       const transferAction = {
         ...mockAction,
         entityType: "transfer",
@@ -2467,9 +2471,9 @@ describe("ActionHistoryService", () => {
       mockRepository.findOne.mockResolvedValue(transferAction);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
 
-      const result = await service.undo(userId);
-
-      expect(result.description).toContain("Undone");
+      await expect(service.undo(userId)).rejects.toMatchObject({
+        response: { errorCode: "UNDO_TRANSFER_CHANGE_NOT_SUPPORTED" },
+      });
     });
   });
 
