@@ -725,7 +725,10 @@ export class TransactionBulkUpdateService {
     if (updated > 0) {
       const keep = (row: Record<string, unknown>) =>
         !skippedIds.has(row.id as string);
-      void this.actionHistoryService.record(userId, {
+      // Awaited: Undo takes the newest entry, so a quick Undo must find this
+      // one and not reach an older entry (a transfer's create). `record`
+      // swallows its own failures.
+      await this.actionHistoryService.record(userId, {
         entityType: "bulk_transaction",
         entityId: null,
         action: "bulk_update",

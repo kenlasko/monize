@@ -299,6 +299,7 @@
     "unreadableDatesGoBack": "[XX-If the file writes its dates in another order, go back to the column mapping step and choose the date format it uses.-XX]",
     "unreadableAmountsNotice": "[XX-{count, plural, one {# row has an amount} other {# rows have amounts}} that cannot be read and will not be imported:-XX]",
     "unreadableAmountRow": "[XX-Row {line}: \"{rawAmount}\"-XX]",
+    "unreadableAmountRowField": "[XX-Row {line}, {field, select, quantity {quantity} price {price} commission {commission} other {amount}}: \"{rawAmount}\"-XX]",
     "unreadableAmountsMore": "[XX-...and {count} more-XX]",
     "unreadableAmountsGoBack": "[XX-Check that the amount columns are mapped correctly, or correct these rows in the file and import it again.-XX]",
     "unreadableAmountLine": "[XX-Line {line}: \"{rawAmount}\"-XX]",

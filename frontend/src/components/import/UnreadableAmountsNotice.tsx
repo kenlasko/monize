@@ -49,7 +49,9 @@ export function UnreadableAmountsNotice({ importFiles, showFileNames }: Unreadab
             <ul className="ml-4 list-disc">
               {shown.map((row) => (
                 <li key={row.rowNumber}>
-                  {t(rowKey(file.fileType), { line: row.rowNumber, rawAmount: row.rawAmount })}
+                  {row.field && file.fileType === 'csv'
+                    ? t('review.unreadableAmountRowField', { line: row.rowNumber, rawAmount: row.rawAmount, field: row.field })
+                    : t(rowKey(file.fileType), { line: row.rowNumber, rawAmount: row.rawAmount })}
                 </li>
               ))}
               {more > 0 && <li>{t('review.unreadableAmountsMore', { count: more })}</li>}

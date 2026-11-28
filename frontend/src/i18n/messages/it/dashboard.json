@@ -371,7 +371,8 @@
     "settlement": "Liquidazione: {ordinal}",
     "settlementTooltip": "L'ultimo giorno del ciclo di fatturazione. Le transazioni registrate entro questo giorno compaiono nell'estratto conto corrente.",
     "dueShort": "scadenza {ordinal}",
-    "metaWithDue": "{institution} · {due}"
+    "metaWithDue": "{institution} · {due}",
+    "loadFailed": "Impossibile caricare i tuoi conti. Ricarica la dashboard per riprovare."
   },
   "upcomingBills": {
     "title": "Fatture e versamenti in arrivo",
@@ -407,7 +408,8 @@
     "dayEmpty": "Nessuna fattura o versamento è previsto per questo giorno.",
     "metaPayee": "· {payee}",
     "metaManual": "· pagato a mano",
-    "metaWhen": "· {when}"
+    "metaWhen": "· {when}",
+    "loadFailed": "Impossibile caricare le tue prossime scadenze. Ricarica la dashboard per riprovare."
   },
   "cashFlowForecast": {
     "title": "Previsione flusso di cassa",
@@ -444,7 +446,8 @@
     "viewFullBudget": "Visualizza budget completo",
     "daysLeft": "{count} giorni rimanenti",
     "safeToSpend": "Disponibile oggi",
-    "topCategories": "Categorie principali"
+    "topCategories": "Categorie principali",
+    "loadFailed": "Impossibile caricare lo stato del tuo budget. Ricarica la dashboard per riprovare."
   },
   "insights": {
     "title": "Analisi delle spese",
@@ -520,13 +523,15 @@
     "topLevelOnly": "Categorie di primo livello",
     "topLevelOnlyHint": "Conteggia le sottocategorie nella categoria principale",
     "viewCallouts": "Etichette",
-    "viewLegend": "Legenda"
+    "viewLegend": "Legenda",
+    "loadFailed": "Impossibile caricare le tue spese per categoria. Ricarica la dashboard per riprovare."
   },
   "incomeExpenses": {
     "title": "Entrate vs Uscite",
     "income": "Entrate",
     "expenses": "Uscite",
-    "net": "Netto"
+    "net": "Netto",
+    "loadFailed": "Impossibile caricare le tue entrate e uscite. Ricarica la dashboard per riprovare."
   },
   "customize": {
     "button": "Personalizza",
@@ -736,5 +741,6 @@
     "depthSubcategories": "Sottocategorie",
     "viewDiagram": "Diagramma",
     "viewTable": "Tabella"
-  }
+  },
+  "accountsLoadFailed": "Impossibile caricare i tuoi conti, quindi questo widget non può essere mostrato. Ricarica la dashboard per riprovare."
 }

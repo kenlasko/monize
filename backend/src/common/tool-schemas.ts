@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { formatDateYMDLocal } from "./date-utils";
+import { addDaysYMD } from "./date-utils";
 
 /**
  * Shared Zod primitives for tool inputs exposed to LLMs, used by both
@@ -131,15 +131,19 @@ export const DEFAULT_TOP_N = 10;
  * days (inclusive of today). Used when the model omits a date range.
  */
 export function getDefaultDateRange(
+  today: string,
   lookbackDays: number = DEFAULT_LOOKBACK_DAYS,
 ): { startDate: string; endDate: string } {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - lookbackDays);
-  return {
-    startDate: formatDateYMDLocal(start),
-    endDate: formatDateYMDLocal(end),
-  };
+  return { startDate: addDaysYMD(today, -lookbackDays), endDate: today };
+}
+
+/** First day of the month `monthsBack` before the month of `today` (YYYY-MM-DD). */
+function firstOfMonthBefore(today: string, monthsBack: number): string {
+  const index = Number(today.slice(0, 4)) * 12 + Number(today.slice(5, 7)) - 1;
+  const target = index - monthsBack;
+  const y = Math.floor(target / 12);
+  const m = (target % 12) + 1;
+  return `${y}-${String(m).padStart(2, "0")}-01`;
 }
 
 export interface ComparePeriods {
@@ -155,17 +159,14 @@ export interface ComparePeriods {
  * period in compare_periods -- treated as all-or-nothing because
  * mixing user-supplied dates with computed ones would be surprising.
  */
-export function getDefaultComparePeriods(): ComparePeriods {
-  const now = new Date();
-  const currentStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  // Day 0 of the current month = last day of the previous month
-  const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+export function getDefaultComparePeriods(today: string): ComparePeriods {
+  const currentStart = firstOfMonthBefore(today, 0);
   return {
-    period1Start: formatDateYMDLocal(prevStart),
-    period1End: formatDateYMDLocal(prevEnd),
-    period2Start: formatDateYMDLocal(currentStart),
-    period2End: formatDateYMDLocal(now),
+    period1Start: firstOfMonthBefore(today, 1),
+    // The day before the current month starts = last day of the previous month
+    period1End: addDaysYMD(currentStart, -1),
+    period2Start: currentStart,
+    period2End: today,
   };
 }
 
@@ -178,12 +179,15 @@ export function getDefaultComparePeriods(): ComparePeriods {
  * Used by both the AI tool executor and the MCP tool adapter so the
  * surfaces stay in lockstep.
  */
-export function resolveComparePeriods(input: {
-  period1Start?: string | null;
-  period1End?: string | null;
-  period2Start?: string | null;
-  period2End?: string | null;
-}): ComparePeriods {
+export function resolveComparePeriods(
+  input: {
+    period1Start?: string | null;
+    period1End?: string | null;
+    period2Start?: string | null;
+    period2End?: string | null;
+  },
+  today: string,
+): ComparePeriods {
   const hasAllPeriods = Boolean(
     input.period1Start &&
     input.period1End &&
@@ -198,7 +202,7 @@ export function resolveComparePeriods(input: {
       period2End: input.period2End as string,
     };
   }
-  return getDefaultComparePeriods();
+  return getDefaultComparePeriods(today);
 }
 
 /**
@@ -206,8 +210,6 @@ export function resolveComparePeriods(input: {
  * Used as the default for the generate_report month_comparison type so
  * reports run against a month that has already closed.
  */
-export function getDefaultPreviousMonth(): string {
-  const now = new Date();
-  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
+export function getDefaultPreviousMonth(today: string): string {
+  return firstOfMonthBefore(today, 1).slice(0, 7);
 }

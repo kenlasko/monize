@@ -104,7 +104,7 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
    * of which rows count, and a rollup re-derived here a second definition of
    * which category a spend belongs to.
    */
-  const { data: response, isLoading: dataLoading } = useReportData(
+  const { data: response, isLoading: dataLoading, error } = useReportData(
     () =>
       builtInReportsApi.getSpendingByCategory({
         startDate: start || undefined,
@@ -275,6 +275,8 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
         <div className="h-64 flex items-center justify-center">
           <div className="animate-pulse skeleton-shimmer w-48 h-48 rounded-full bg-gray-200 dark:bg-gray-700" />
         </div>
+      ) : error ? (
+        <WidgetMessage>{t('expensesPieChart.loadFailed')}</WidgetMessage>
       ) : chartData.length === 0 ? (
         <WidgetMessage>{t('expensesPieChart.empty')}</WidgetMessage>
       ) : !breakdown.showPie ? (

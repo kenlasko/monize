@@ -371,7 +371,8 @@
     "settlement": "Thanh toán: {ordinal}",
     "settlementTooltip": "Ngày cuối cùng của chu kỳ thanh toán. Các giao dịch được ghi vào hoặc trước ngày này xuất hiện trong sao kê hiện tại.",
     "dueShort": "đến hạn {ordinal}",
-    "metaWithDue": "{institution} · {due}"
+    "metaWithDue": "{institution} · {due}",
+    "loadFailed": "Không thể tải các tài khoản của bạn. Hãy tải lại bảng điều khiển để thử lại."
   },
   "upcomingBills": {
     "title": "Hóa đơn & Tiền gửi sắp tới",
@@ -407,7 +408,8 @@
     "dayEmpty": "Không có hóa đơn hay khoản tiền gửi nào được lên lịch cho ngày này.",
     "metaPayee": "· {payee}",
     "metaManual": "· thanh toán thủ công",
-    "metaWhen": "· {when}"
+    "metaWhen": "· {when}",
+    "loadFailed": "Không thể tải các hóa đơn sắp đến hạn của bạn. Hãy tải lại bảng điều khiển để thử lại."
   },
   "cashFlowForecast": {
     "title": "Dự báo dòng tiền",
@@ -444,7 +446,8 @@
     "viewFullBudget": "Xem ngân sách đầy đủ",
     "daysLeft": "Còn {count} ngày",
     "safeToSpend": "An toàn để chi tiêu hôm nay",
-    "topCategories": "Danh mục hàng đầu"
+    "topCategories": "Danh mục hàng đầu",
+    "loadFailed": "Không thể tải tình trạng ngân sách của bạn. Hãy tải lại bảng điều khiển để thử lại."
   },
   "insights": {
     "title": "Thông tin chi tiêu",
@@ -520,13 +523,15 @@
     "topLevelOnly": "Danh mục cấp cao nhất",
     "topLevelOnlyHint": "Tính danh mục con vào danh mục cha",
     "viewCallouts": "Nhãn",
-    "viewLegend": "Chú giải"
+    "viewLegend": "Chú giải",
+    "loadFailed": "Không thể tải chi tiêu theo danh mục của bạn. Hãy tải lại bảng điều khiển để thử lại."
   },
   "incomeExpenses": {
     "title": "Thu nhập và Chi tiêu",
     "income": "Thu nhập",
     "expenses": "Chi tiêu",
-    "net": "Ròng"
+    "net": "Ròng",
+    "loadFailed": "Không thể tải thu nhập và chi tiêu của bạn. Hãy tải lại bảng điều khiển để thử lại."
   },
   "customize": {
     "button": "Tùy chỉnh",
@@ -736,5 +741,6 @@
     "depthSubcategories": "Danh mục con",
     "viewDiagram": "Biểu đồ",
     "viewTable": "Bảng"
-  }
+  },
+  "accountsLoadFailed": "Không thể tải các tài khoản của bạn nên không thể hiển thị tiện ích này. Hãy tải lại bảng điều khiển để thử lại."
 }

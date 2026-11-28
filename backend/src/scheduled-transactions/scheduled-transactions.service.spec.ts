@@ -1729,6 +1729,28 @@ describe("ScheduledTransactionsService", () => {
         }),
       ];
 
+      it("reads the total at a coin reporting currency's eight places", async () => {
+        preferencesRepo.findOne.mockResolvedValue({ defaultCurrency: "BTC" });
+        mockExchangeRateService.getRateForDate.mockResolvedValue(0.00004115);
+        scheduledRepo.createQueryBuilder.mockReturnValue(
+          mockQueryBuilder(
+            [1, 2, 3].map((n) =>
+              makeScheduled({
+                id: `s-usd-${n}`,
+                name: `Bill ${n}`,
+                amount: -1,
+                currencyCode: "USD",
+              }),
+            ),
+          ),
+        );
+
+        const result = await service.getLlmUpcomingBillsAndDeposits(userId);
+
+        expect(result.totalsCurrency).toBe("BTC");
+        expect(result.totalUpcomingBills).toBe(0.00012345);
+      });
+
       it("converts each component into the reporting currency", async () => {
         mockExchangeRateService.getRateForDate.mockResolvedValue(0.74);
         scheduledRepo.createQueryBuilder.mockReturnValue(
