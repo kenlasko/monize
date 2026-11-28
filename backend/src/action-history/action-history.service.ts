@@ -31,6 +31,10 @@ import {
   movedRowsOf,
   redoMovedRows,
 } from "../categories/category-moved-rows";
+import {
+  restoreAccountIdInWidgetConfig,
+  stripAccountIdsFromWidgetConfig,
+} from "../users/widget-config-merge";
 import { withPairedScheduleRecurrence } from "./undo-custom-recurrence";
 import {
   RULE_RUN_ENTITY_TYPE,
@@ -2601,6 +2605,33 @@ export class ActionHistoryService {
     // INV-CRYPTO-001: a replayed type and currency agree, checked before the
     // write in this transaction (a create's undo deletes and needs none).
     await assertUndoCurrencyKind(action, manager, "account");
+    if (action.action === "create" && action.entityId) {
+      // Also a delete's redo: the account goes again, so its id leaves the
+      // widget settings again. One way: the redo of an undone create restores
+      // the account but does not put it back into any widget's selection.
+      await stripAccountIdsFromWidgetConfig(manager, action.userId, [
+        action.entityId,
+      ]);
+    }
+    if (action.action === "delete") {
+      // Not a column: the widget settings a delete took the id out of.
+      const { widgetConfigRefs, ...snapshot } = action.beforeData ?? {};
+      await this.undoSimpleEntity(
+        { ...action, beforeData: snapshot },
+        manager,
+        Account,
+        "accounts",
+      );
+      if (action.entityId && Array.isArray(widgetConfigRefs)) {
+        await restoreAccountIdInWidgetConfig(
+          manager,
+          action.userId,
+          action.entityId,
+          widgetConfigRefs,
+        );
+      }
+      return;
+    }
     if (action.action !== "update") {
       await this.undoSimpleEntity(action, manager, Account, "accounts");
       return;

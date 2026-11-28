@@ -3826,6 +3826,8 @@ describe("ActionHistoryService", () => {
       mockRepository.findOne.mockResolvedValue(action);
       mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      // The widget-config reference lookup: none.
+      mockQueryRunner.manager.query.mockResolvedValue([]);
 
       const result = await service.undo(userId);
 
@@ -3864,6 +3866,43 @@ describe("ActionHistoryService", () => {
       expect(insert[0]).not.toContain("is_canadian_mortgage");
       expect(insert[0]).not.toContain("is_variable_rate");
       expect(insert[1]).toContain("CANADIAN_FIXED");
+    });
+
+    it("restores the widget ids a deleted account was taken out of, and does not insert them as a column", async () => {
+      const action = {
+        ...mockAction,
+        entityType: "account",
+        action: "delete",
+        entityId: "acc-1",
+        beforeData: {
+          id: "acc-1",
+          name: "Home",
+          widgetConfigRefs: [
+            { widgetId: "w", key: "accountIds", index: 0, after: ["b"] },
+          ],
+        },
+        afterData: null,
+      };
+      mockRepository.findOne.mockResolvedValue(action);
+      mockQueryRunner.query.mockResolvedValue([]);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+
+      await service.undo(userId);
+
+      const insert = mockQueryRunner.query.mock.calls.find(([sql]: [string]) =>
+        sql.includes('INSERT INTO "accounts"'),
+      );
+      expect(insert[0]).not.toContain("widget_config_refs");
+      const restore = mockQueryRunner.query.mock.calls.find(([sql]: [string]) =>
+        sql.includes("jsonb_set"),
+      );
+      expect(restore[1]).toEqual([
+        userId,
+        "w",
+        "accountIds",
+        JSON.stringify(["b"]),
+        JSON.stringify(["acc-1", "b"]),
+      ]);
     });
 
     it("restores an account update recorded before the contract without a null type", async () => {

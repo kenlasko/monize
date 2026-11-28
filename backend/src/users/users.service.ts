@@ -68,7 +68,12 @@ import {
   isUniqueViolation,
   normalizeEmail,
 } from "./email-change.util";
-import { mergeWidgetConfig } from "./widget-config-merge";
+import { JointAccountsService } from "../delegation/joint-accounts.service";
+import {
+  dropInvisibleAccountIds,
+  mergeWidgetConfig,
+  stripAccountIdsFromWidgetConfig,
+} from "./widget-config-merge";
 
 @Injectable()
 export class UsersService {
@@ -370,9 +375,22 @@ export class UsersService {
           // widget's settings save then cannot drop the sizes the dashboard's
           // edit mode stored in other slices, nor the reverse. Within a slice
           // the value replaces, so leaving a key out still clears it.
+          // An account id that is not the user's (own or joint) is dropped
+          // first: each client save path re-sends the arrays it last read.
+          const sent = await dropInvisibleAccountIds(
+            manager,
+            userId,
+            dto.dashboardWidgetConfig,
+            async () =>
+              (
+                await this.moduleRef
+                  .get(JointAccountsService, { strict: false })
+                  .jointGrantsFor(userId)
+              ).keys(),
+          );
           patch.dashboardWidgetConfig = mergeWidgetConfig(
             before?.dashboardWidgetConfig,
-            dto.dashboardWidgetConfig,
+            sent,
           );
         }
         if (dto.viewDefaults !== undefined) {
@@ -1071,6 +1089,15 @@ export class UsersService {
       await manager.query(
         "DELETE FROM monte_carlo_scenarios WHERE user_id = $1 AND cardinality(account_ids) > 0",
         [userId],
+      );
+      const accountRows: { id: string }[] = await manager.query(
+        "SELECT id FROM accounts WHERE user_id = $1",
+        [userId],
+      );
+      await stripAccountIdsFromWidgetConfig(
+        manager,
+        userId,
+        accountRows.map((r) => r.id),
       );
       result = await manager.query("DELETE FROM accounts WHERE user_id = $1", [
         userId,

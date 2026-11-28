@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import toast from 'react-hot-toast';
-import { useWidgetConfig } from './useWidgetConfig';
+import { createElement, type ReactNode } from 'react';
+import { KnownAccountIdsContext, useWidgetConfig } from './useWidgetConfig';
 
 const { storeState } = vi.hoisted(() => ({
   storeState: {
@@ -91,6 +92,33 @@ describe('useWidgetConfig', () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
     // Reverted to the pre-edit map.
     expect(storeState.preferences.dashboardWidgetConfig).toEqual(before);
+  });
+
+  describe('account ids that no longer exist', () => {
+    const wrapper = (ids: string[] | null) =>
+      function Wrapper({ children }: { children: ReactNode }) {
+        return createElement(KnownAccountIdsContext.Provider, { value: ids ? new Set(ids) : null }, children);
+      };
+
+    it('drops an unknown id when reading, and keeps every id while accounts load', () => {
+      storeState.preferences = { dashboardWidgetConfig: { w1: { range: '1y', accountIds: ['a', 'gone'] } } };
+      const loaded = renderHook(() => useWidgetConfig('w1', DEFAULTS), { wrapper: wrapper(['a']) });
+      expect(loaded.result.current.config.accountIds).toEqual(['a']);
+      const loading = renderHook(() => useWidgetConfig('w1', DEFAULTS), { wrapper: wrapper(null) });
+      expect(loading.result.current.config.accountIds).toEqual(['a', 'gone']);
+    });
+
+    it('does not send an unknown id on the next save', async () => {
+      storeState.preferences = { dashboardWidgetConfig: { w1: { range: '1y', accountIds: ['a', 'gone'] } } };
+      updatePreferencesApi.mockResolvedValue({ dashboardWidgetConfig: {} });
+      const { result } = renderHook(() => useWidgetConfig('w1', DEFAULTS), { wrapper: wrapper(['a']) });
+      await act(async () => {
+        await result.current.updateConfig({ range: '3m' });
+      });
+      expect(updatePreferencesApi).toHaveBeenCalledWith({
+        dashboardWidgetConfig: { w1: { range: '3m', accountIds: ['a'] } },
+      });
+    });
   });
 
   describe('an answer landing after another write to the map', () => {
