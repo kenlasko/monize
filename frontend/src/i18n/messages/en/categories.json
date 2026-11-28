@@ -93,7 +93,7 @@
   "deleteDialog": {
     "title": "Delete \"{name}\"",
     "checkingUsage": "Checking usage...",
-    "usedBy": "This category is used by {count, plural, one {# item} other {# items}} (transactions and/or scheduled bills & deposits).",
+    "usedBy": "This category is used by {count, plural, one {# record} other {# records}}: transactions, scheduled bills & deposits, budgets, rules, reports and more.",
     "reassignLabel": "Reassign to:",
     "leaveUncategorized": "Leave uncategorized",
     "safeToDelete": "This category is not used. It can be safely deleted.",

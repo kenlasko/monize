@@ -33,7 +33,7 @@ When viewing reports, you can see totals at the parent level (all "Food & Dining
 
 Navigate to **Tools > Categories** to access the category management page.
 
-![The Categories page: totals for all, income, expense and top-level categories above the category tree, each row with its icon, type, transaction count and actions](images/categories-page.png)
+![The Categories page: totals for all, income, expense and top-level categories above the category tree, each row with its icon, type, count of uses and actions](images/categories-page.png)
 
 Four cards at the top count your **Total Categories**, **Income Categories**, **Expense Categories** and **Top-Level** categories. Below them, **Search categories** finds a category by name (a matching subcategory brings its parent along, and a matching parent brings all of its subcategories), and the **All**, **Expenses**, **Income** and **Transfer** buttons narrow the list by type.
 
@@ -68,10 +68,10 @@ Click **Edit** on a category's row, or **Edit** on its detail page, to change an
 
 #### Deleting a Category
 
-Click **Delete** on a category's row or detail page. Monize first checks how many transactions and scheduled bills and deposits use the category:
+Click **Delete** on a category's row or detail page. Monize first checks how many records use the category (transactions, scheduled bills and deposits, budgets, rules, reports and more):
 
 - If none do, the dialog says the category can be safely deleted.
-- If some do, choose where they go under **Reassign to:** another category, or **Leave uncategorized**. They are moved and the category is deleted in one step.
+- If transactions or scheduled bills and deposits use it, choose where they go under **Reassign to:** another category, or **Leave uncategorized**. They are moved and the category is deleted in one step. The picker is shown only when there is something to move.
 - If something else still uses the category, the delete is refused and nothing is moved. The dialog lists what uses it, with a link to each kind: budgets, rules, reports, payroll deductions, loan accounts and shared-expense postings. Change or remove those, then delete the category again.
 
 ![The delete dialog for a category in use, offering to reassign its transactions to another category](images/categories-delete-dialog.png)
@@ -139,7 +139,7 @@ Payees represent the people, businesses, or entities you transact with. Every tr
 
 Navigate to **Tools > Payees** to access the payee management page.
 
-![The Payees page: counts of all, active and inactive payees and those without a default category, above the list with each payee's logo, default category, transaction count and last use](images/payees-page.png)
+![The Payees page: counts of all, active and inactive payees and those without a default category, above the list with each payee's logo, default category, count of uses and last use](images/payees-page.png)
 
 Four cards at the top count your **Total Payees**, the **Active** and **Inactive** ones, and those **Without Category**. Below them:
 

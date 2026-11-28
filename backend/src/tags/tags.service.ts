@@ -39,24 +39,34 @@ export interface TagDeleteImpact {
   customReports: number;
 }
 
-/** Counts every row that carries the tag, void and future-dated ones included. */
+/**
+ * Counts every row that carries the tag, void and future-dated ones included.
+ * Every count is scoped to `userId` in SQL, not left to RLS: the link tables
+ * go through the user's tag row, the rest through their own `user_id`.
+ */
 export async function countTagReferences(
   m: EntityManager,
+  userId: string,
   tagId: string,
 ): Promise<TagDeleteImpact> {
   const [row] = await m.query(
     `SELECT
-       (SELECT COUNT(*) FROM transaction_tags WHERE tag_id = $1) AS transactions,
-       (SELECT COUNT(*) FROM transaction_split_tags WHERE tag_id = $1) AS splits,
+       (SELECT COUNT(*) FROM transaction_tags x JOIN tags g ON g.id = x.tag_id
+         WHERE g.user_id = $3 AND x.tag_id = $1) AS transactions,
+       (SELECT COUNT(*) FROM transaction_split_tags x JOIN tags g ON g.id = x.tag_id
+         WHERE g.user_id = $3 AND x.tag_id = $1) AS splits,
        (SELECT COUNT(*) FROM scheduled_transactions
-         WHERE tag_ids @> to_jsonb($1::text)) AS scheduled,
-       (SELECT COUNT(*) FROM scheduled_transaction_split_tags WHERE tag_id = $1) AS scheduled_splits,
-       (SELECT COUNT(*) FROM security_tags WHERE tag_id = $1) AS securities,
+         WHERE user_id = $3 AND tag_ids @> to_jsonb($1::text)) AS scheduled,
+       (SELECT COUNT(*) FROM scheduled_transaction_split_tags x JOIN tags g ON g.id = x.tag_id
+         WHERE g.user_id = $3 AND x.tag_id = $1) AS scheduled_splits,
+       (SELECT COUNT(*) FROM security_tags x JOIN tags g ON g.id = x.tag_id
+         WHERE g.user_id = $3 AND x.tag_id = $1) AS securities,
        (SELECT COUNT(*) FROM transaction_rules
-         WHERE condition::text LIKE $2 OR actions::text LIKE $2) AS rules,
-       (SELECT COUNT(*) FROM custom_reports WHERE filters::text LIKE $2) AS reports`,
-    // A UUID is lowercase in JSON and has no LIKE wildcard; RLS scopes the rows.
-    [tagId, `%${tagId.toLowerCase()}%`],
+         WHERE user_id = $3 AND (condition::text LIKE $2 OR actions::text LIKE $2)) AS rules,
+       (SELECT COUNT(*) FROM custom_reports
+         WHERE user_id = $3 AND filters::text LIKE $2) AS reports`,
+    // A UUID is lowercase in JSON and has no LIKE wildcard.
+    [tagId, `%${tagId.toLowerCase()}%`, userId],
   );
   return {
     transactions: Number(row.transactions),
@@ -299,7 +309,9 @@ export class TagsService {
    */
   async getDeleteImpact(userId: string, id: string): Promise<TagDeleteImpact> {
     await this.findOne(userId, id);
-    return withScopedDb(this.dataSource, (m) => countTagReferences(m, id));
+    return withScopedDb(this.dataSource, (m) =>
+      countTagReferences(m, userId, id),
+    );
   }
 
   async getAllTransactionCounts(

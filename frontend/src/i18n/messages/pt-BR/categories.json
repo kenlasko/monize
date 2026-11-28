@@ -93,7 +93,7 @@
   "deleteDialog": {
     "title": "Excluir \"{name}\"",
     "checkingUsage": "Verificando uso...",
-    "usedBy": "Esta categoria é utilizada por {count, plural, one {# item} other {# itens}} (transações e/ou faturas e depósitos agendados).",
+    "usedBy": "Esta categoria é usada por {count, plural, one {# registro} other {# registros}}: transações, contas e depósitos agendados, orçamentos, regras, relatórios e mais.",
     "reassignLabel": "Reatribuir a:",
     "leaveUncategorized": "Deixar sem categoria",
     "safeToDelete": "Esta categoria não está em uso. Pode ser excluída com segurança.",

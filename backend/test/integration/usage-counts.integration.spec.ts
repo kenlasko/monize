@@ -221,4 +221,57 @@ describe("usage counts agree with the delete guard (integration)", () => {
     ).find((c) => c.id === category.id);
     expect(plain).not.toHaveProperty("usageCount");
   });
+
+  it("does not count another user's rule, report or schedule", async () => {
+    const other = (await createTestUserDirect(db)).id;
+    const [tag] = await db.query(
+      `INSERT INTO tags (user_id, name) VALUES ($1, 'Mine') RETURNING id`,
+      [userId],
+    );
+    // The other user's rows name this user's tag id (RLS is off by default).
+    await db.query(
+      `INSERT INTO transaction_rules (user_id, name, position, condition, actions)
+       VALUES ($1, 'x', 1, '{}'::jsonb, $2::jsonb)`,
+      [other, JSON.stringify([{ tagId: tag.id }])],
+    );
+    await db.query(
+      `INSERT INTO custom_reports (user_id, name, filters) VALUES ($1, 'x', $2::jsonb)`,
+      [other, JSON.stringify({ tags: [tag.id] })],
+    );
+
+    const impact = await withUserContext(userId, () =>
+      tags.getDeleteImpact(userId, tag.id),
+    );
+    expect(impact).toMatchObject({ rules: 0, customReports: 0 });
+    const counts = await withUserContext(userId, () =>
+      tags.getAllTransactionCounts(userId),
+    );
+    expect(counts[tag.id]).toBeUndefined();
+  });
+
+  it("splits a category's usage into what a reassign can move", async () => {
+    const budgetOnly = await createTestCategory(db, userId);
+    const [budget] = await db.query(
+      `INSERT INTO budgets (user_id, name, period_start, currency_code)
+       VALUES ($1, 'B', '2026-01-01', 'USD') RETURNING id`,
+      [userId],
+    );
+    await db.query(
+      `INSERT INTO budget_categories (budget_id, category_id, amount) VALUES ($1, $2, 100)`,
+      [budget.id, budgetOnly.id],
+    );
+    const scheduled = await createTestCategory(db, userId);
+    await seedSchedule({ categoryId: scheduled.id });
+
+    expect(
+      await withUserContext(userId, () =>
+        categories.getUsage(userId, budgetOnly.id),
+      ),
+    ).toEqual({ count: 1, movableCount: 0 });
+    expect(
+      await withUserContext(userId, () =>
+        categories.getUsage(userId, scheduled.id),
+      ),
+    ).toEqual({ count: 1, movableCount: 1 });
+  });
 });

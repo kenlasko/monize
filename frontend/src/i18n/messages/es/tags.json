@@ -26,6 +26,8 @@
       "title": "Eliminar etiqueta",
       "withUsesMessage": "¿Seguro que quieres eliminar \"{name}\"? La etiqueta se quitará de: {places}. Nada más cambia en ellos. Esta acción no se puede deshacer.",
       "simpleMessage": "¿Seguro que quieres eliminar \"{name}\"? No se usa en ningún sitio. Esta acción no se puede deshacer.",
+      "namedMessage": "¿Seguro que quiere eliminar \"{name}\"? Aún la nombran {places}. No se modifican y apuntarán a una etiqueta eliminada. Esta acción no se puede deshacer.",
+      "alsoNamed": "Además, aún la nombran {places}. No se modifican y apuntarán a una etiqueta eliminada.",
       "unknownMessage": "No se pudo comprobar dónde se usa \"{name}\". Si la eliminas, se quitará de cada transacción, línea de división, transacción programada y valor que la use. Esta acción no se puede deshacer.",
       "kinds": {
         "transactions": "{count, plural, one {# transacción} other {# transacciones}}",

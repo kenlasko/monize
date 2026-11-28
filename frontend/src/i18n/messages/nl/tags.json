@@ -26,6 +26,8 @@
       "title": "Label verwijderen",
       "withUsesMessage": "Weet u zeker dat u \"{name}\" wilt verwijderen? De tag wordt verwijderd van: {places}. Verder verandert er niets aan deze items. Deze actie kan niet ongedaan worden gemaakt.",
       "simpleMessage": "Weet u zeker dat u \"{name}\" wilt verwijderen? De tag wordt nergens gebruikt. Deze actie kan niet ongedaan worden gemaakt.",
+      "namedMessage": "Weet u zeker dat u \"{name}\" wilt verwijderen? Het wordt nog genoemd door {places}. Die worden niet gewijzigd en verwijzen dan naar een verwijderd label. Deze actie kan niet ongedaan worden gemaakt.",
+      "alsoNamed": "Het wordt ook nog genoemd door {places}. Die worden niet gewijzigd en verwijzen dan naar een verwijderd label.",
       "unknownMessage": "Er kon niet worden gecontroleerd waar \"{name}\" wordt gebruikt. Als u de tag verwijdert, wordt hij verwijderd van elke transactie, splitsregel, geplande transactie en elk effect dat hem gebruikt. Deze actie kan niet ongedaan worden gemaakt.",
       "kinds": {
         "transactions": "{count, plural, one {# transactie} other {# transacties}}",

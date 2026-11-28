@@ -26,6 +26,8 @@
       "title": "刪除標籤",
       "withUsesMessage": "確定要刪除「{name}」嗎？此標籤將從以下位置移除：{places}。這些項目的其他內容不會改變。此操作無法復原。",
       "simpleMessage": "確定要刪除「{name}」嗎？此標籤未在任何地方使用。此操作無法復原。",
+      "namedMessage": "確定要刪除「{name}」嗎？它仍被 {places} 引用。這些內容不會被修改，並將指向已刪除的標籤。此操作無法復原。",
+      "alsoNamed": "它還被 {places} 引用。這些內容不會被修改，並將指向已刪除的標籤。",
       "unknownMessage": "無法檢查「{name}」的使用位置。刪除後，它將從所有使用它的交易、拆分行、排程交易和證券中移除。此操作無法復原。",
       "kinds": {
         "transactions": "{count, plural, other {# 筆交易}}",

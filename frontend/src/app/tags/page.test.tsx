@@ -524,16 +524,19 @@ describe('TagsPage', () => {
     expect(text).toContain('2 scheduled transactions');
     expect(text).toContain('3 scheduled split lines');
     expect(text).toContain('1 security');
-    expect(text).toContain('2 rules');
-    expect(text).toContain('1 saved report');
+    // Rules and reports are not cleaned by the delete: their own sentence.
+    expect(text).toMatch(/removed from: .*1 security\. Nothing else/);
+    expect(text).toMatch(/also still named by 2 rules, 1 saved report\. They are not changed and will point at a deleted tag/);
+    expect(text).not.toMatch(/removed from:[^.]*rules/);
   });
 
   it('does not call a tag used only in a rule unused', async () => {
     mockGetDeleteImpact.mockResolvedValue({ ...none, rules: 1 });
     await openDelete();
     const text = screen.getByTestId('dialog-message').textContent;
-    expect(text).toContain('1 rule');
-    expect(text).not.toMatch(/not used anywhere/);
+    expect(text).toContain('It is still named by 1 rule');
+    expect(text).toContain('will point at a deleted tag');
+    expect(text).not.toMatch(/not used anywhere|removed from/);
   });
 
   it('lists only the kinds that are in use', async () => {

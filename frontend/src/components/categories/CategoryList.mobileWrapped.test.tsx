@@ -21,7 +21,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/lib/categories', () => ({
   categoriesApi: {
-    getTransactionCount: vi.fn().mockResolvedValue(0),
+    getUsage: vi.fn().mockResolvedValue({ count: 0, movableCount: 0 }),
     reassignTransactions: vi.fn().mockResolvedValue(undefined),
     delete: vi.fn().mockResolvedValue(undefined),
   },

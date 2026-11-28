@@ -381,7 +381,10 @@ export function CategoryList({
       toast.success(t('toasts.deleted'));
       if (onDelete) {
         onDelete(deleteCategory.id);
-      } else {
+      }
+      // A reassign changed the target's count too, which dropping the row
+      // does not show.
+      if (!onDelete || reassignToCategoryId !== undefined) {
         onRefresh();
       }
     } catch (error) {

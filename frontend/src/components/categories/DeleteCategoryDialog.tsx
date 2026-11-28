@@ -6,6 +6,7 @@ import { Category } from '@/types/category';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { categoriesApi } from '@/lib/categories';
+import type { CategoryUsage } from '@/lib/categories';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 
 interface DeleteCategoryDialogProps {
@@ -26,7 +27,7 @@ export function DeleteCategoryDialog({
 }: DeleteCategoryDialogProps) {
   const t = useTranslations('categories');
   const tc = useTranslations('common');
-  const [transactionCount, setTransactionCount] = useState<number | null>(null);
+  const [usage, setUsage] = useState<CategoryUsage | null>(null);
   // The lookup failed: usage is unknown, which is not the same as unused.
   const [usageFailed, setUsageFailed] = useState(false);
   const [reassignTo, setReassignTo] = useState<string>('');
@@ -37,19 +38,19 @@ export function DeleteCategoryDialog({
   if (categoryId !== prevCategoryId) {
     setPrevCategoryId(categoryId);
     if (categoryId) {
-      setTransactionCount(null);
+      setUsage(null);
       setUsageFailed(false);
       setReassignTo('');
     }
   }
 
-  const isLoading = isOpen && categoryId !== null && transactionCount === null && !usageFailed;
+  const isLoading = isOpen && categoryId !== null && usage === null && !usageFailed;
 
   useEffect(() => {
     if (isOpen && category) {
       categoriesApi
-        .getTransactionCount(category.id)
-        .then(setTransactionCount)
+        .getUsage(category.id)
+        .then(setUsage)
         .catch(() => setUsageFailed(true));
     }
   }, [isOpen, category]);
@@ -78,7 +79,9 @@ export function DeleteCategoryDialog({
 
   // Nothing to move: a plain delete, which an acting delegate may also run.
   const handleConfirm = () => {
-    onConfirm(transactionCount ? reassignTo || null : undefined);
+    // Only rows a reassign moves are offered a target; anything else that
+    // uses the category stays, so a plain delete lets the server list it.
+    onConfirm(usage?.movableCount ? reassignTo || null : undefined);
   };
 
   // Don't render if no category (Modal handles isOpen check)
@@ -103,12 +106,13 @@ export function DeleteCategoryDialog({
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {t('deleteDialog.usageUnknown')}
         </p>
-      ) : transactionCount && transactionCount > 0 ? (
+      ) : usage && usage.count > 0 ? (
         <div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {t('deleteDialog.usedBy', { count: transactionCount })}
+            {t('deleteDialog.usedBy', { count: usage.count })}
           </p>
 
+          {usage.movableCount > 0 && (
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t('deleteDialog.reassignLabel')}
@@ -134,6 +138,7 @@ export function DeleteCategoryDialog({
               })}
             </select>
           </div>
+          )}
         </div>
       ) : (
         <p className="text-sm text-gray-500 dark:text-gray-400">

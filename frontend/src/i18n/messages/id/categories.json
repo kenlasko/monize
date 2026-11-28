@@ -93,7 +93,7 @@
   "deleteDialog": {
     "title": "Hapus \"{name}\"",
     "checkingUsage": "Memeriksa penggunaan...",
-    "usedBy": "Kategori ini digunakan oleh {count, plural, one {# item} other {# item}} (transaksi dan/atau tagihan & setoran terjadwal).",
+    "usedBy": "Kategori ini digunakan oleh {count, plural, other {# catatan}}: transaksi, tagihan & setoran terjadwal, anggaran, aturan, laporan, dan lainnya.",
     "reassignLabel": "Tetapkan ulang ke:",
     "leaveUncategorized": "Biarkan tanpa kategori",
     "safeToDelete": "Kategori ini tidak digunakan. Kategori ini dapat dihapus dengan aman.",

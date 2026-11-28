@@ -1893,7 +1893,7 @@ describe("CategoriesService", () => {
     });
   });
 
-  describe("getTransactionCount", () => {
+  describe("getUsage", () => {
     it("sums every kind the delete guard counts, subcategories aside", async () => {
       categoriesRepository.findOne.mockResolvedValue(mockCategory);
       // Each guard query answers by its SQL: transactions, a budget, children.
@@ -1910,9 +1910,10 @@ describe("CategoriesService", () => {
         return Promise.resolve([]);
       });
 
-      const result = await service.getTransactionCount("user-1", "CAT-1");
+      const result = await service.getUsage("user-1", "CAT-1");
 
-      expect(result).toBe(7);
+      // Transactions (5) move on a reassign; the budget line (2) does not.
+      expect(result).toEqual({ count: 7, movableCount: 5 });
       expect(txManager.query).toHaveBeenCalledWith(
         expect.stringContaining("FROM budget_categories"),
         ["user-1", "cat-1"],
@@ -1927,15 +1928,19 @@ describe("CategoriesService", () => {
         ),
       );
 
-      expect(await service.getTransactionCount("user-1", "cat-1")).toBe(1);
+      // Nothing a reassign could move: the dialog must not offer a target.
+      expect(await service.getUsage("user-1", "cat-1")).toEqual({
+        count: 1,
+        movableCount: 0,
+      });
     });
 
     it("throws NotFoundException for nonexistent category", async () => {
       categoriesRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.getTransactionCount("user-1", "nope"),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getUsage("user-1", "nope")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -2343,11 +2348,11 @@ describe("CategoriesService", () => {
   });
 
   describe("cross-user data isolation", () => {
-    it("getTransactionCount split count query joins through transaction to filter by userId", async () => {
+    it("getUsage split count query joins through transaction to filter by userId", async () => {
       categoriesRepository.findOne.mockResolvedValue(mockCategory);
       txManager.query.mockResolvedValue([{ count: 0 }]);
 
-      await service.getTransactionCount("user-1", "cat-1");
+      await service.getUsage("user-1", "cat-1");
 
       expect(txManager.query).toHaveBeenCalledWith(
         expect.stringMatching(

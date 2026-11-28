@@ -328,16 +328,19 @@ export class CategoriesController {
 
   @Get(":id/transaction-count")
   @AllowDelegate()
-  @ApiOperation({ summary: "Get the count of transactions using a category" })
+  @ApiOperation({
+    summary:
+      "Get how many records use a category (every reference a delete refuses for) and how many of them a reassign moves",
+  })
   @ApiParam({ name: "id", description: "Category UUID" })
   @ApiResponse({
     status: 200,
-    description: "Transaction count retrieved successfully",
+    description: "Usage retrieved successfully: { count, movableCount }",
   })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({ status: 404, description: "Category not found" })
-  getTransactionCount(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
-    return this.categoriesService.getTransactionCount(req.user.id, id);
+  getUsage(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.categoriesService.getUsage(req.user.id, id);
   }
 
   @Post(":id/reassign")

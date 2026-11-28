@@ -93,7 +93,7 @@
   "deleteDialog": {
     "title": "Supprimer « {name} »",
     "checkingUsage": "Vérification de l'utilisation...",
-    "usedBy": "Cette catégorie est utilisée par {count, plural, one {# élément} other {# éléments}} (transactions et/ou factures et dépôts récurrents).",
+    "usedBy": "Cette catégorie est utilisée par {count, plural, one {# élément} other {# éléments}} : transactions, opérations planifiées, budgets, règles, rapports et plus.",
     "reassignLabel": "Réaffecter à :",
     "leaveUncategorized": "Laisser sans catégorie",
     "safeToDelete": "Cette catégorie n'est pas utilisée. Elle peut être supprimée sans risque.",

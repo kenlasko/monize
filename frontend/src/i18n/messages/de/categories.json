@@ -93,7 +93,7 @@
   "deleteDialog": {
     "title": "\"{name}\" löschen",
     "checkingUsage": "Verwendung wird geprüft...",
-    "usedBy": "Diese Kategorie wird von {count, plural, one {# Eintrag} other {# Einträgen}} verwendet (Buchungen und/oder terminierte Rechnungen & Einzahlungen).",
+    "usedBy": "Diese Kategorie wird von {count, plural, one {# Eintrag} other {# Einträgen}} verwendet: Buchungen, geplanten Zahlungen und Einnahmen, Budgets, Regeln, Berichten und mehr.",
     "reassignLabel": "Neu zuweisen an:",
     "leaveUncategorized": "Ohne Kategorie lassen",
     "safeToDelete": "Diese Kategorie wird nicht verwendet. Sie kann sicher gelöscht werden.",

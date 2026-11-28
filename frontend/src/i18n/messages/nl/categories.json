@@ -93,7 +93,7 @@
   "deleteDialog": {
     "title": "\"{name}\" verwijderen",
     "checkingUsage": "Gebruik controleren...",
-    "usedBy": "Deze categorie wordt gebruikt door {count, plural, one {# item} other {# items}} (transacties en/of geplande rekeningen & stortingen).",
+    "usedBy": "Deze categorie wordt gebruikt door {count, plural, one {# record} other {# records}}: transacties, geplande rekeningen en stortingen, budgetten, regels, rapporten en meer.",
     "reassignLabel": "Opnieuw toewijzen aan:",
     "leaveUncategorized": "Zonder categorie laten",
     "safeToDelete": "Deze categorie is niet in gebruik en kan veilig worden verwijderd.",

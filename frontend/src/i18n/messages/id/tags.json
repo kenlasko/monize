@@ -26,6 +26,8 @@
       "title": "Hapus Tag",
       "withUsesMessage": "Yakin ingin menghapus \"{name}\"? Tag akan dihapus dari: {places}. Tidak ada hal lain yang berubah pada item tersebut. Tindakan ini tidak dapat dibatalkan.",
       "simpleMessage": "Yakin ingin menghapus \"{name}\"? Tag ini tidak digunakan di mana pun. Tindakan ini tidak dapat dibatalkan.",
+      "namedMessage": "Yakin ingin menghapus \"{name}\"? Tag ini masih disebut oleh {places}. Itu tidak diubah dan akan menunjuk ke tag yang sudah dihapus. Tindakan ini tidak dapat dibatalkan.",
+      "alsoNamed": "Tag ini juga masih disebut oleh {places}. Itu tidak diubah dan akan menunjuk ke tag yang sudah dihapus.",
       "unknownMessage": "Tidak dapat memeriksa di mana \"{name}\" digunakan. Jika dihapus, tag akan dihapus dari setiap transaksi, baris pemisahan, transaksi terjadwal, dan sekuritas yang menggunakannya. Tindakan ini tidak dapat dibatalkan.",
       "kinds": {
         "transactions": "{count, plural, other {# transaksi}}",

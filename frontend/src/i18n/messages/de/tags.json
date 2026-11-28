@@ -26,6 +26,8 @@
       "title": "Etikett löschen",
       "withUsesMessage": "Möchten Sie \"{name}\" wirklich löschen? Das Etikett wird entfernt von: {places}. Sonst ändert sich an diesen Einträgen nichts. Diese Aktion kann nicht rückgängig gemacht werden.",
       "simpleMessage": "Möchten Sie \"{name}\" wirklich löschen? Es wird nirgends verwendet. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "namedMessage": "Möchten Sie \"{name}\" wirklich löschen? Es wird noch von {places} genannt. Diese werden nicht geändert und verweisen dann auf ein gelöschtes Etikett. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "alsoNamed": "Es wird außerdem noch von {places} genannt. Diese werden nicht geändert und verweisen dann auf ein gelöschtes Etikett.",
       "unknownMessage": "Es konnte nicht geprüft werden, wo \"{name}\" verwendet wird. Beim Löschen wird es von jeder Buchung, Aufteilungszeile, geplanten Buchung und jedem Wertpapier entfernt, die es verwenden. Diese Aktion kann nicht rückgängig gemacht werden.",
       "kinds": {
         "transactions": "{count, plural, one {# Buchung} other {# Buchungen}}",

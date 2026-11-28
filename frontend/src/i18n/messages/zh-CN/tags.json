@@ -26,6 +26,8 @@
       "title": "删除标签",
       "withUsesMessage": "确定要删除“{name}”吗？该标签将从以下位置移除：{places}。这些项目的其他内容不会改变。此操作无法撤销。",
       "simpleMessage": "确定要删除“{name}”吗？该标签未在任何地方使用。此操作无法撤销。",
+      "namedMessage": "确定要删除“{name}”吗？它仍被 {places} 引用。这些内容不会被修改，并将指向已删除的标签。此操作无法撤销。",
+      "alsoNamed": "它还被 {places} 引用。这些内容不会被修改，并将指向已删除的标签。",
       "unknownMessage": "无法检查“{name}”的使用位置。删除后，它将从所有使用它的交易、拆分行、计划交易和证券中移除。此操作无法撤销。",
       "kinds": {
         "transactions": "{count, plural, other {# 笔交易}}",

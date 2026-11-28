@@ -26,6 +26,8 @@
       "title": "Xóa thẻ",
       "withUsesMessage": "Bạn có chắc muốn xóa \"{name}\"? Thẻ sẽ bị gỡ khỏi: {places}. Không có gì khác trên các mục đó thay đổi. Không thể hoàn tác thao tác này.",
       "simpleMessage": "Bạn có chắc muốn xóa \"{name}\"? Thẻ này không được dùng ở đâu. Không thể hoàn tác thao tác này.",
+      "namedMessage": "Bạn có chắc muốn xóa \"{name}\"? Thẻ này vẫn được nhắc đến trong {places}. Chúng không bị thay đổi và sẽ trỏ đến một thẻ đã xóa. Không thể hoàn tác thao tác này.",
+      "alsoNamed": "Thẻ này cũng vẫn được nhắc đến trong {places}. Chúng không bị thay đổi và sẽ trỏ đến một thẻ đã xóa.",
       "unknownMessage": "Không thể kiểm tra nơi \"{name}\" được dùng. Nếu xóa, thẻ sẽ bị gỡ khỏi mọi giao dịch, dòng chia, giao dịch định kỳ và chứng khoán đang dùng nó. Không thể hoàn tác thao tác này.",
       "kinds": {
         "transactions": "{count, plural, other {# giao dịch}}",

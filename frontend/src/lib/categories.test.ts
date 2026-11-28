@@ -63,11 +63,11 @@ describe('categoriesApi', () => {
     expect(apiClient.delete).toHaveBeenCalledWith('/categories/cat-1');
   });
 
-  it('getTransactionCount fetches count', async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: 42 });
-    const result = await categoriesApi.getTransactionCount('cat-1');
+  it('getUsage fetches the count and what a reassign moves', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { count: 42, movableCount: 40 } });
+    const result = await categoriesApi.getUsage('cat-1');
     expect(apiClient.get).toHaveBeenCalledWith('/categories/cat-1/transaction-count');
-    expect(result).toBe(42);
+    expect(result).toEqual({ count: 42, movableCount: 40 });
   });
 
   it('reassignTransactions posts reassignment', async () => {

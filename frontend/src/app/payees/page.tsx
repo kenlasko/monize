@@ -157,7 +157,8 @@ function PayeesContent() {
     try {
       const reactivated = await payeesApi.reactivatePayee(payeeId);
       toast.success(t('page.toasts.reactivated', { name: reactivated.name }));
-      setPayees(prev => prev.map(p => p.id === reactivated.id ? reactivated : p));
+      // The response carries no list-only counts; keep the ones the row had.
+      setPayees(prev => prev.map(p => p.id === reactivated.id ? { ...p, ...reactivated } : p));
     } catch (error) {
       toast.error(getErrorMessage(error, t('page.toasts.reactivateFailed')));
       logger.error(error);

@@ -5,7 +5,7 @@ import { categoriesApi } from '@/lib/categories';
 
 vi.mock('@/lib/categories', () => ({
   categoriesApi: {
-    getTransactionCount: vi.fn().mockResolvedValue(0),
+    getUsage: vi.fn().mockResolvedValue({ count: 0, movableCount: 0 }),
   },
 }));
 
@@ -39,7 +39,7 @@ describe('DeleteCategoryDialog', () => {
   });
 
   it('offers Cancel while the usage check is still running', () => {
-    vi.mocked(categoriesApi.getTransactionCount).mockReturnValueOnce(new Promise(() => {}));
+    vi.mocked(categoriesApi.getUsage).mockReturnValueOnce(new Promise(() => {}));
     render(
       <DeleteCategoryDialog isOpen={true} category={categories[0]} categories={categories} onConfirm={onConfirm} onCancel={onCancel} />
     );
@@ -50,7 +50,7 @@ describe('DeleteCategoryDialog', () => {
   });
 
   it('says usage is unknown, never "not used", when the lookup fails', async () => {
-    vi.mocked(categoriesApi.getTransactionCount).mockRejectedValueOnce(new Error('boom'));
+    vi.mocked(categoriesApi.getUsage).mockRejectedValueOnce(new Error('boom'));
     render(
       <DeleteCategoryDialog isOpen={true} category={categories[0]} categories={categories} onConfirm={onConfirm} onCancel={onCancel} />
     );
@@ -59,6 +59,29 @@ describe('DeleteCategoryDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     // A plain delete: no reassignment is sent for a count that is unknown.
     expect(onConfirm).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it('offers no reassign target when only kinds a reassign cannot move remain', async () => {
+    // A budget-only category: moving rows would change nothing.
+    vi.mocked(categoriesApi.getUsage).mockResolvedValueOnce({ count: 2, movableCount: 0 });
+    render(
+      <DeleteCategoryDialog isOpen={true} category={categories[0]} categories={categories} onConfirm={onConfirm} onCancel={onCancel} />
+    );
+    await screen.findByText(/This category is used by 2 records/);
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    // A plain delete, so the server's 409 lists what still uses it.
+    expect(onConfirm).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it('offers the reassign target when a reassign moves something', async () => {
+    vi.mocked(categoriesApi.getUsage).mockResolvedValueOnce({ count: 3, movableCount: 1 });
+    render(
+      <DeleteCategoryDialog isOpen={true} category={categories[0]} categories={categories} onConfirm={onConfirm} onCancel={onCancel} />
+    );
+    expect(await screen.findByRole('combobox')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(onConfirm).toHaveBeenLastCalledWith(null);
   });
 
   it('shows safe delete message when no transactions', async () => {

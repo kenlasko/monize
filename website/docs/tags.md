@@ -34,7 +34,7 @@ Tags can be put on transactions, on the lines of a split transaction, on schedul
 
 Navigate to **Tools > Tags** to access the tag management page.
 
-![The Tags page: counts of tags with a colour and an icon above the list, each tag with its colour, icon and number of transactions](images/tags-page.png)
+![The Tags page: counts of tags with a colour and an icon above the list, each tag with its colour, icon and count of uses](images/tags-page.png)
 
 Three cards at the top count your **Total Tags**, the **Tags with Colour** and the **Tags with Icon**. **Search tags...** narrows the list by name. The list shows each tag's **Name** with its colour, its **Icon** and the **Count** of places that use it (transactions, split lines, scheduled transactions, securities, rules and saved reports); click a column header to sort by it. Click a tag's name to see its transactions on the Transactions page; click anywhere else on the row to edit it. **Edit** and **Delete** are at the end of each row (on a phone, press and hold the row, or right-click it).
 
@@ -59,7 +59,7 @@ Click **Edit** on a tag's row (or the row itself) to modify its name, colour, or
 
 ### Deleting a Tag
 
-Click **Delete** on a tag's row and confirm. When the tag is in use, the confirmation says on how many transactions; the tag is removed from them, and the transactions themselves are not otherwise affected.
+Click **Delete** on a tag's row and confirm. When the tag is in use, the confirmation says on how many transactions; the tag is removed from them, and the transactions themselves are not otherwise affected. Rules and saved reports that still name the tag are listed in a separate sentence: the delete does not change them, and they will point at a deleted tag.
 
 ---
 

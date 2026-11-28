@@ -26,6 +26,8 @@
       "title": "Etiketi Sil",
       "withUsesMessage": "\"{name}\" etiketini silmek istediğinizden emin misiniz? Etiket şuralardan kaldırılacak: {places}. Bunlarda başka hiçbir şey değişmez. Bu işlem geri alınamaz.",
       "simpleMessage": "\"{name}\" etiketini silmek istediğinizden emin misiniz? Hiçbir yerde kullanılmıyor. Bu işlem geri alınamaz.",
+      "namedMessage": "\"{name}\" etiketini silmek istediğinizden emin misiniz? Etiket hâlâ şurada geçiyor: {places}. Bunlar değiştirilmez ve silinmiş etikete işaret eder. Bu işlem geri alınamaz.",
+      "alsoNamed": "Etiket ayrıca hâlâ şurada geçiyor: {places}. Bunlar değiştirilmez ve silinmiş etikete işaret eder.",
       "unknownMessage": "\"{name}\" etiketinin nerede kullanıldığı kontrol edilemedi. Silerseniz, onu kullanan her işlemden, bölme satırından, planlı işlemden ve menkul kıymetten kaldırılır. Bu işlem geri alınamaz.",
       "kinds": {
         "transactions": "{count, plural, other {# işlem}}",

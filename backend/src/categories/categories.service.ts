@@ -881,18 +881,29 @@ export class CategoriesService {
    * (`findCategoryReferences`: transactions, schedules and their changed
    * occurrences, budgets, rules and the rest), so the delete dialog and the
    * 409 agree. Its subcategories are refused on their own and not counted.
+   * `movableCount` is the part a reassign moves (`reassignCategoryRows`:
+   * transactions, splits, schedules and their lines and overrides); the other
+   * kinds stay and make the delete refuse, so no reassign target helps them.
    */
-  async getTransactionCount(
+  async getUsage(
     userId: string,
     categoryId: string,
-  ): Promise<number> {
+  ): Promise<{ count: number; movableCount: number }> {
     await this.findOne(userId, categoryId);
 
-    return withScopedDb(this.dataSource, async (m) =>
-      (await findCategoryReferences(m, userId, categoryId))
-        .filter((r) => r.kind !== "subcategories")
-        .reduce((n, r) => n + r.count, 0),
-    );
+    return withScopedDb(this.dataSource, async (m) => {
+      const used = (await findCategoryReferences(m, userId, categoryId)).filter(
+        (r) => r.kind !== "subcategories",
+      );
+      const total = (kinds?: string[]) =>
+        used
+          .filter((r) => !kinds || kinds.includes(r.kind))
+          .reduce((n, r) => n + r.count, 0);
+      return {
+        count: total(),
+        movableCount: total(["transactions", "scheduledTransactions"]),
+      };
+    });
   }
 
   async reassignTransactions(

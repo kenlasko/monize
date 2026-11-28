@@ -19,14 +19,14 @@ vi.mock('next/navigation', () => ({
 }));
 
 const mockCategoriesApi = {
-  getTransactionCount: vi.fn().mockResolvedValue(0),
+  getUsage: vi.fn().mockResolvedValue({ count: 0, movableCount: 0 }),
   reassignTransactions: vi.fn().mockResolvedValue(undefined),
   delete: vi.fn().mockResolvedValue(undefined),
 };
 
 vi.mock('@/lib/categories', () => ({
   categoriesApi: {
-    getTransactionCount: (...args: any[]) => mockCategoriesApi.getTransactionCount(...args),
+    getUsage: (...args: any[]) => mockCategoriesApi.getUsage(...args),
     reassignTransactions: (...args: any[]) => mockCategoriesApi.reassignTransactions(...args),
     delete: (...args: any[]) => mockCategoriesApi.delete(...args),
   },
@@ -342,7 +342,7 @@ describe('CategoryList', () => {
 
   // Delete flow
   it('opens delete dialog when delete button is clicked', async () => {
-    mockCategoriesApi.getTransactionCount.mockResolvedValueOnce(0);
+    mockCategoriesApi.getUsage.mockResolvedValueOnce({ count: 0, movableCount: 0 });
     const categories = [
       makeCategory({ id: 'c1', name: 'Food', isSystem: false }),
     ];
@@ -375,7 +375,7 @@ describe('CategoryList', () => {
   });
 
   it('deletes category and calls onRefresh on confirm when onDelete not provided', async () => {
-    mockCategoriesApi.getTransactionCount.mockResolvedValueOnce(0);
+    mockCategoriesApi.getUsage.mockResolvedValueOnce({ count: 0, movableCount: 0 });
     const categories = [
       makeCategory({ id: 'c1', name: 'Food', isSystem: false }),
     ];
@@ -403,7 +403,7 @@ describe('CategoryList', () => {
   });
 
   it('reassigns and deletes in one DELETE request when the category has transactions', async () => {
-    mockCategoriesApi.getTransactionCount.mockResolvedValueOnce(4);
+    mockCategoriesApi.getUsage.mockResolvedValueOnce({ count: 4, movableCount: 4 });
     const categories = [
       makeCategory({ id: 'c1', name: 'Food', isSystem: false }),
     ];
@@ -422,8 +422,28 @@ describe('CategoryList', () => {
     expect(mockCategoriesApi.reassignTransactions).not.toHaveBeenCalled();
   });
 
+  it('refreshes the list after a delete that reassigned rows, so the target count updates', async () => {
+    mockCategoriesApi.getUsage.mockResolvedValueOnce({ count: 4, movableCount: 4 });
+    const onDeleteFn = vi.fn();
+    render(
+      <CategoryList
+        categories={[makeCategory({ id: 'c1', name: 'Food', isSystem: false })]}
+        onEdit={onEdit}
+        onRefresh={onRefresh}
+        onDelete={onDeleteFn}
+      />,
+    );
+    fireEvent.click(screen.getByText('Delete'));
+    await waitFor(() => expect(screen.getByText('Delete "Food"')).toBeInTheDocument());
+    const deleteButtons = screen.getAllByText('Delete');
+    fireEvent.click(deleteButtons[deleteButtons.length - 1]);
+
+    await waitFor(() => expect(onDeleteFn).toHaveBeenCalledWith('c1'));
+    expect(onRefresh).toHaveBeenCalled();
+  });
+
   it('shows what still uses the category, linked, when the delete is refused with 409', async () => {
-    mockCategoriesApi.getTransactionCount.mockResolvedValueOnce(0);
+    mockCategoriesApi.getUsage.mockResolvedValueOnce({ count: 0, movableCount: 0 });
     mockCategoriesApi.delete.mockRejectedValueOnce({
       response: {
         status: 409,
@@ -446,7 +466,7 @@ describe('CategoryList', () => {
   });
 
   it('calls onDelete instead of onRefresh when onDelete is provided', async () => {
-    mockCategoriesApi.getTransactionCount.mockResolvedValueOnce(0);
+    mockCategoriesApi.getUsage.mockResolvedValueOnce({ count: 0, movableCount: 0 });
     const onDeleteFn = vi.fn();
     const categories = [
       makeCategory({ id: 'c1', name: 'Food', isSystem: false }),

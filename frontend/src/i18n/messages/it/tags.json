@@ -26,6 +26,8 @@
       "title": "Elimina etichetta",
       "withUsesMessage": "Vuoi davvero eliminare \"{name}\"? Il tag verrà rimosso da: {places}. Nient'altro cambia su di essi. Questa azione non può essere annullata.",
       "simpleMessage": "Vuoi davvero eliminare \"{name}\"? Non è usato da nessuna parte. Questa azione non può essere annullata.",
+      "namedMessage": "Eliminare davvero \"{name}\"? È ancora citata da {places}. Non vengono modificati e punteranno a un'etichetta eliminata. Questa azione non può essere annullata.",
+      "alsoNamed": "È ancora citata anche da {places}. Non vengono modificati e punteranno a un'etichetta eliminata.",
       "unknownMessage": "Impossibile verificare dove viene usato \"{name}\". Se lo elimini, verrà rimosso da ogni transazione, riga di suddivisione, transazione pianificata e titolo che lo usa. Questa azione non può essere annullata.",
       "kinds": {
         "transactions": "{count, plural, one {# transazione} other {# transazioni}}",
