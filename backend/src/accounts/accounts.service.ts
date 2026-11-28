@@ -2213,18 +2213,21 @@ export class AccountsService {
       userId,
     );
     // A summary read is not a licence to wait on a provider fetch: a missing
-    // rate is a null total naming its pair (`fetchMissing: false`).
+    // rate is a null total naming its pair (`fetchMissing: false`). The
+    // resolver always has a date, so the dateless slot is answered for today
+    // through the same door rather than with a newest-rate read.
+    const asOf = todayYMD();
+    const rateForDate = (from: string, to: string, date: string) =>
+      this.exchangeRateService.getRateForDate(from, to, date, {
+        fetchMissing: false,
+      });
     const rateFor = memoizedRateResolver(
       {
-        getRateForDate: (from, to, date) =>
-          this.exchangeRateService.getRateForDate(from, to, date, {
-            fetchMissing: false,
-          }),
-        getLatestRate: (from, to) =>
-          this.exchangeRateService.getLatestRate(from, to),
+        getRateForDate: rateForDate,
+        getLatestRate: (from, to) => rateForDate(from, to, asOf),
       },
       defaultCurrency,
-      todayYMD(),
+      asOf,
     );
     const balanceTotal = new FxAggregate();
     // An account whose balance did not convert is outside the subtotal and
