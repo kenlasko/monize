@@ -77,20 +77,10 @@ describe("Undo of a budget creation (integration)", () => {
   const count = async (table: string): Promise<number> =>
     Number((await db.query(`SELECT count(*)::int AS n FROM ${table}`))[0].n);
 
-  it("refuses while the budget has a closed period or a line, and writes nothing", async () => {
-    const budget = await createBudget();
-    await asUser(() =>
-      budgets.addCategory(userId, budget.id, {
-        categoryId,
-        amount: 500,
-      } as any),
-    );
-    await db.query(
-      `INSERT INTO budget_periods (budget_id, period_start, period_end, status)
-       VALUES ($1, '2026-01-01', '2026-01-31', 'CLOSED')`,
-      [budget.id],
-    );
-
+  async function expectRefusedAndIntact(rows: {
+    lines: number;
+    periods: number;
+  }) {
     const refusal = await asUser(() => history.undo(userId)).catch((e) => e);
 
     expect(refusal).toBeInstanceOf(ConflictException);
@@ -98,8 +88,39 @@ describe("Undo of a budget creation (integration)", () => {
       errorCode: "UNDO_BUDGET_HAS_HISTORY",
     });
     expect(await count("budgets")).toBe(1);
-    expect(await count("budget_categories")).toBe(1);
-    expect(await count("budget_periods")).toBe(1);
+    expect(await count("budget_categories")).toBe(rows.lines);
+    expect(await count("budget_periods")).toBe(rows.periods);
+  }
+
+  const addLine = (budgetId: string) =>
+    asUser(() =>
+      budgets.addCategory(userId, budgetId, { categoryId, amount: 500 } as any),
+    );
+
+  const addPeriod = (budgetId: string, status: string) =>
+    db.query(
+      `INSERT INTO budget_periods (budget_id, period_start, period_end, status)
+       VALUES ($1, '2026-01-01', '2026-01-31', $2)`,
+      [budgetId, status],
+    );
+
+  it("refuses after a period was closed, and writes nothing", async () => {
+    const budget = await createBudget();
+    await addPeriod(budget.id, "CLOSED");
+    await expectRefusedAndIntact({ lines: 0, periods: 1 });
+  });
+
+  it("refuses after a line was added later, and writes nothing", async () => {
+    const budget = await createBudget();
+    await addLine(budget.id);
+    await expectRefusedAndIntact({ lines: 1, periods: 0 });
+  });
+
+  it("refuses with both a line and a closed period, and writes nothing", async () => {
+    const budget = await createBudget();
+    await addLine(budget.id);
+    await addPeriod(budget.id, "CLOSED");
+    await expectRefusedAndIntact({ lines: 1, periods: 1 });
   });
 
   it("undoes a budget that has nothing hanging on it, and the redo restores it", async () => {
