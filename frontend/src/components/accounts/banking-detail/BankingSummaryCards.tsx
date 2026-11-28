@@ -26,8 +26,9 @@ interface BankingSummaryCardsProps {
    * explains that part of it.
    */
   overdue?: BalanceForecastOverdue | null;
-  moneyIn: number;
-  moneyOut: number;
+  /** `null` is unknown (a failed read, a withheld total), not zero. */
+  moneyIn: number | null;
+  moneyOut: number | null;
   interestEarnedYtd: number;
   averageBalance: number;
   onMoneyInClick?: () => void;
@@ -53,6 +54,10 @@ export function BankingSummaryCards({
   const { formatCurrency, formatPercentTrimmed } = useNumberFormat();
   const currency = account.currencyCode;
   const currentBalance = Number(account.currentBalance) || 0;
+
+  // One account is one currency, so no rate is missing here: a null figure is
+  // one that could not be loaded, whatever the cause (never an FX reason).
+  const unavailable = <UnknownAmount reasonText={t('summary.loadFailed')} />;
 
   const cards: SummaryCardItem[] = [
     {
@@ -83,14 +88,14 @@ export function BankingSummaryCards({
     },
     {
       label: t('summary.moneyIn'),
-      value: formatCurrency(Math.abs(moneyIn), currency),
+      value: moneyIn === null ? unavailable : formatCurrency(Math.abs(moneyIn), currency),
       valueClass: 'text-green-600 dark:text-green-400',
       note: t('summary.thisMonth'),
       onClick: onMoneyInClick,
     },
     {
       label: t('summary.moneyOut'),
-      value: formatCurrency(Math.abs(moneyOut), currency),
+      value: moneyOut === null ? unavailable : formatCurrency(Math.abs(moneyOut), currency),
       valueClass: 'text-red-600 dark:text-red-400',
       note: t('summary.thisMonth'),
       onClick: onMoneyOutClick,

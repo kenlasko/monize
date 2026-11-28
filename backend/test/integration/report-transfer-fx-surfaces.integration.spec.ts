@@ -401,7 +401,10 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
         transferCount: 2,
       }),
     ]);
-    expect(result.totalOutbound).toBe(200);
+    // The total is in the reporting currency at the amounts moved: each
+    // 100 USD arrived as 90 EUR (INV-FX-002), as the breakdown above reads.
+    expect(result.totalOutbound).toBe(180);
+    expect(result.totalsCurrency).toBe("EUR");
   });
 
   it("reads tagged transfer flows at 90 EUR each in Income vs Expenses", async () => {

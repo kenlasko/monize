@@ -10,7 +10,8 @@
     "interestEarnedYtd": "Ontvangen rente",
     "ytd": "Jaar tot nu",
     "averageBalance": "Gemiddeld saldo",
-    "averageNote": "Voortschrijdend 12 maanden"
+    "averageNote": "Voortschrijdend 12 maanden",
+    "loadFailed": "Dit bedrag kon niet worden geladen. Laad de pagina opnieuw om het nogmaals te proberen."
   },
   "chart": {
     "title": "Saldogeschiedenis",

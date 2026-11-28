@@ -10,7 +10,8 @@
     "interestEarnedYtd": "[XX-Interest Earned-XX]",
     "ytd": "[XX-Year to date-XX]",
     "averageBalance": "[XX-Average Balance-XX]",
-    "averageNote": "[XX-Trailing 12 months-XX]"
+    "averageNote": "[XX-Trailing 12 months-XX]",
+    "loadFailed": "[XX-This figure could not be loaded. Reload the page to try again.-XX]"
   },
   "chart": {
     "title": "[XX-Balance History-XX]",

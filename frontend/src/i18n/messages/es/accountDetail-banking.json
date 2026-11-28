@@ -10,7 +10,8 @@
     "interestEarnedYtd": "Intereses ganados",
     "ytd": "En lo que va del año",
     "averageBalance": "Saldo promedio",
-    "averageNote": "Últimos 12 meses"
+    "averageNote": "Últimos 12 meses",
+    "loadFailed": "No se pudo cargar esta cifra. Recargue la página para intentarlo de nuevo."
   },
   "chart": {
     "title": "Historial de saldo",

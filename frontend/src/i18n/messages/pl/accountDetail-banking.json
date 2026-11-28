@@ -10,7 +10,8 @@
     "interestEarnedYtd": "Uzyskane odsetki",
     "ytd": "Od początku roku",
     "averageBalance": "Średnie saldo",
-    "averageNote": "Ostatnie 12 miesięcy"
+    "averageNote": "Ostatnie 12 miesięcy",
+    "loadFailed": "Nie udało się wczytać tej wartości. Odśwież stronę, aby spróbować ponownie."
   },
   "chart": {
     "title": "Historia salda",

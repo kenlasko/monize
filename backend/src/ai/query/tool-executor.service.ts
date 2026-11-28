@@ -627,8 +627,13 @@ export class ToolExecutorService {
       summaryParts.push(`Grouped by ${data.groupedBy}.`);
     }
     if (data.transfers) {
+      const t = data.transfers;
+      const tcur = t.totalsCurrency;
+      const tfig = await this.figureIn(tcur);
       summaryParts.push(
-        `Transfers: inbound ${data.transfers.totalInbound.toFixed(2)}, outbound ${data.transfers.totalOutbound.toFixed(2)}${includesEstimates(data.transfers.provisionalCount)}.`,
+        t.totalInbound === null || t.totalOutbound === null
+          ? `Transfers: totals withheld, no exchange rate for ${t.missingRatePairs.join(", ")}; add it under Currencies. Converted so far: inbound ${tfig(t.knownInboundSubtotal)} ${tcur}, outbound ${tfig(t.knownOutboundSubtotal)} ${tcur}${includesEstimates(t.provisionalCount)}.`
+          : `Transfers: inbound ${tfig(t.totalInbound)} ${tcur}, outbound ${tfig(t.totalOutbound)} ${tcur}${includesEstimates(t.provisionalCount)}.`,
       );
     }
     if (includeTransactions) {

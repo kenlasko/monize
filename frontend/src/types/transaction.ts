@@ -220,11 +220,12 @@ export interface SummaryInReportingCurrency {
 }
 
 export interface TransactionSummary {
-  totalIncome: number;
-  totalExpenses: number;
-  netCashFlow: number;
+  /** `null` when the period holds more than one currency: read `converted`. */
+  totalIncome: number | null;
+  totalExpenses: number | null;
+  netCashFlow: number | null;
   transactionCount: number;
-  /** Provisional transfer amounts (an imported estimate) inside the native totals. */
+  /** Provisional transfer amounts (an imported estimate), counted over the `byCurrency` buckets: they hold it even when the top-level totals are null. */
   provisionalCount?: number;
   firstTransactionDate?: string | null;
   lastTransactionDate?: string | null;

@@ -260,7 +260,7 @@ An account's **detail page** is tailored to its type, rather than a plain transa
 
 Crypto wallets open this page too, with every figure in the coin (see [Cryptocurrency Wallets](#cryptocurrency-wallets)).
 
-- Summary cards: **Current Balance**, **Projected Balance** in 90 days, **Money In** and **Money Out** this month, and the **Average Balance** over the trailing 12 months; with an interest rate set, also the **Interest Rate** and the **Interest Earned** this year
+- Summary cards: **Current Balance**, **Projected Balance** in 90 days, **Money In** and **Money Out** this month, and the **Average Balance** over the trailing 12 months; with an interest rate set, also the **Interest Rate** and the **Interest Earned** this year. If Money In or Money Out could not be loaded, the card shows a dash with a tooltip that says so, never a zero.
 - **Balance History** chart, with a **90-day balance forecast** projected from your scheduled bills and deposits
 - A **Cash Flow** chart of the net flow over the last 12 months
 - **Top Categories** and **Top Payees** this month

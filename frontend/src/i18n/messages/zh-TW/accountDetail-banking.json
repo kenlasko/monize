@@ -10,7 +10,8 @@
     "interestEarnedYtd": "已賺取利息",
     "ytd": "年初至今",
     "averageBalance": "平均結餘",
-    "averageNote": "過去 12 個月"
+    "averageNote": "過去 12 個月",
+    "loadFailed": "無法載入此數值。請重新載入頁面後再試一次。"
   },
   "chart": {
     "title": "結餘歷史",

@@ -4492,6 +4492,95 @@ describe("AccountsService", () => {
       expect(result.totalAccounts).toBe(4);
     });
 
+    it("converts totalBalance into the default currency, or withholds it with the known subtotal and why (#2365 R3)", async () => {
+      // Default currency USD; EUR has a rate, GBP has none.
+      exchangeRateService.getRateForDate.mockImplementation(
+        async (from: string) => (from === "EUR" ? 2 : null),
+      );
+      const usd = {
+        ...mockAccount,
+        id: "a1",
+        currencyCode: "USD",
+        currentBalance: 910,
+        provisionalCount: 1,
+      };
+      const eur = {
+        ...mockAccount,
+        id: "a2",
+        currencyCode: "EUR",
+        currentBalance: 520,
+        provisionalCount: 2,
+      };
+      const gbp = {
+        ...mockAccount,
+        id: "a3",
+        currencyCode: "GBP",
+        currentBalance: 270,
+        provisionalCount: 4,
+      };
+
+      // findAll is stubbed: it recomputes each count from the ledger.
+      const findAll = jest.spyOn(service, "findAll");
+      findAll.mockResolvedValue([usd, eur] as never);
+      const complete = await service.getSummary("user-1");
+      expect(complete).toMatchObject({
+        totalBalance: 1950,
+        knownTotalBalanceSubtotal: 1950,
+        totalBalanceCurrency: "USD",
+        totalBalanceFxComplete: true,
+        totalBalanceMissingRatePairs: [],
+        totalBalanceProvisionalCount: 3,
+      });
+
+      findAll.mockResolvedValue([usd, eur, gbp] as never);
+      // A summary read never waits on a provider fetch.
+      expect(exchangeRateService.getRateForDate).toHaveBeenCalledWith(
+        "EUR",
+        "USD",
+        expect.any(String),
+        { fetchMissing: false },
+      );
+      const partial = await service.getSummary("user-1");
+      expect(partial).toMatchObject({
+        totalBalance: null,
+        knownTotalBalanceSubtotal: 1950,
+        totalBalanceCurrency: "USD",
+        totalBalanceFxComplete: false,
+        totalBalanceMissingRatePairs: ["GBP->USD"],
+        // Deliberate (docs/specs/provisional-amounts.md section 8): the
+        // GBP account is outside the subtotal, so its 4 legs are outside the
+        // count.
+        totalBalanceProvisionalCount: 3,
+      });
+    });
+
+    it("reads totalBalance at the default currency's places (BTC 8, JPY 0)", async () => {
+      exchangeRateService.getRateForDate.mockResolvedValue(0.00001234567);
+      const eur = {
+        ...mockAccount,
+        id: "a1",
+        currencyCode: "EUR",
+        currentBalance: 1,
+      };
+
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "BTC",
+      });
+      stubAccounts([eur]);
+      const btc = await service.getSummary("user-1");
+      expect(btc.totalBalanceCurrency).toBe("BTC");
+      expect(btc.totalBalance).toBe(0.00001235);
+      expect(btc.knownTotalBalanceSubtotal).toBe(0.00001235);
+
+      exchangeRateService.getRateForDate.mockResolvedValue(157.4);
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "JPY",
+      });
+      stubAccounts([eur]);
+      const jpy = await service.getSummary("user-1");
+      expect(jpy.totalBalance).toBe(157);
+    });
+
     it("derives assets, liabilities and net worth from the latest monthly snapshot", async () => {
       stubAccounts([{ ...mockAccount, id: "a1", currentBalance: 5000 }]);
       // getLatestNetWorth is the canonical source shared with the dashboard

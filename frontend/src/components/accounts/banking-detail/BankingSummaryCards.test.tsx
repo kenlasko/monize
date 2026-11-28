@@ -87,4 +87,12 @@ describe('BankingSummaryCards', () => {
     );
     expect(screen.queryByText(/overdue/)).not.toBeInTheDocument();
   });
+
+  it('shows an unavailable money in and out as a marker saying it could not be loaded, never as zero or a rate problem', () => {
+    render(<BankingSummaryCards account={makeAccount()} {...base} moneyIn={null} moneyOut={null} />);
+    expect(screen.queryByText('$0.00')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('unknown-amount')).toHaveLength(2);
+    expect(screen.getAllByLabelText(/could not be loaded/i)).toHaveLength(2);
+    expect(screen.queryByLabelText(/no exchange rate is available/i)).not.toBeInTheDocument();
+  });
 });

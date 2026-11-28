@@ -95,15 +95,23 @@ export function summarizeInDisplayCurrency(
   // Native only when the figures are already in the display currency: a period
   // whose one bucket is a foreign currency (a year spent only in EUR on a page
   // displayed in USD) still reads the server's conversion.
-  const nativeFits =
-    !strategy.converted ||
-    buckets.length === 0 ||
-    (buckets.length === 1 && buckets[0][0] === strategy.displayCurrency);
-  if (nativeFits) {
+  // Never with more than one bucket, nor when the server withheld a top-level
+  // total (null): a sum of unlike currencies is not a figure, and a withheld
+  // one is unknown, not zero.
+  const { totalIncome, totalExpenses, netCashFlow } = summary;
+  if (
+    totalIncome !== null &&
+    totalExpenses !== null &&
+    netCashFlow !== null &&
+    buckets.length <= 1 &&
+    (!strategy.converted ||
+      buckets.length === 0 ||
+      buckets[0][0] === strategy.displayCurrency)
+  ) {
     return {
-      income: summary.totalIncome,
-      expenses: summary.totalExpenses,
-      net: summary.netCashFlow,
+      income: totalIncome,
+      expenses: totalExpenses,
+      net: netCashFlow,
       missingCurrencies: [],
       includedTransactionCount: summary.transactionCount,
       excludedTransactionCount: 0,

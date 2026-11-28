@@ -36,6 +36,8 @@ import {
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { memoizedRateResolver } from "../common/converting-total";
+import { FxAggregate } from "../common/fx-aggregate";
+import { reportPlacesOf } from "../common/report-figure";
 import {
   DetectMortgageTypeDto,
   MortgageTypeHistoryDetectionResponseDto,
@@ -57,7 +59,6 @@ import {
   MONEY_SCALE,
   moneyDecimalsFor,
   roundMoney,
-  sumMoney,
 } from "../common/round.util";
 import { assertAmountPrecision } from "../common/amount-precision.util";
 import {
@@ -2175,8 +2176,17 @@ export class AccountsService {
   async getSummary(userId: string): Promise<
     {
       totalAccounts: number;
-      totalBalance: number;
-      /** The provisional legs inside `totalBalance`: the sum over its accounts. */
+      /** Book balances converted into the default currency; `null` unless every one converted. */
+      totalBalance: number | null;
+      /** What converted, in the default currency; beside a `null` `totalBalance`. */
+      knownTotalBalanceSubtotal: number;
+      /** The currency `totalBalance` is in: the default currency. */
+      totalBalanceCurrency: string;
+      /** False when `totalBalance` is `null`; the response's `fxComplete` is the net-worth snapshot's. */
+      totalBalanceFxComplete: boolean;
+      /** `"CAD->USD"` for each pair `totalBalance` lacks; the snapshot's are `missingRatePairs`. */
+      totalBalanceMissingRatePairs: string[];
+      /** The provisional legs inside `knownTotalBalanceSubtotal`: the sum over the accounts that converted. */
       totalBalanceProvisionalCount: number;
     } & NetWorthTotals
   > {
@@ -2189,7 +2199,8 @@ export class AccountsService {
     const accounts = allAccounts.filter((account) => !account.isClosed);
     const balanceAccounts = allAccounts.filter(accountCarriesBalance);
 
-    // totalBalance is the raw book-balance sum across accounts. Assets,
+    // totalBalance is the book-balance sum across accounts, converted into the
+    // default currency (null when a rate is missing). Assets,
     // liabilities and net worth are derived from the same canonical source as
     // the dashboard Net Worth widget and the `get_account_balances` tool
     // (the latest monthly net-worth snapshot) so every surface reports an
@@ -2197,13 +2208,51 @@ export class AccountsService {
     // here ignored brokerage market value and futureTransactionsSum, producing
     // a different number than the rest of the app.
     //
-    // The sum crosses currencies, so it is summed at the column scale: every
-    // balance is already at its own currency's precision, so a fiat-only sum
-    // is the four-place figure it always was and a coin's places survive.
-    const totalBalance = sumMoney(
-      balanceAccounts.map((account) => Number(account.currentBalance)),
-      MONEY_SCALE,
+    const defaultCurrency = await resolveUserDefaultCurrency(
+      this.dataSource,
+      userId,
     );
+    // A summary read is not a licence to wait on a provider fetch: a missing
+    // rate is a null total naming its pair (`fetchMissing: false`). The
+    // resolver always has a date, so the dateless slot is answered for today
+    // through the same door rather than with a newest-rate read.
+    const asOf = todayYMD();
+    const rateForDate = (from: string, to: string, date: string) =>
+      this.exchangeRateService.getRateForDate(from, to, date, {
+        fetchMissing: false,
+      });
+    const rateFor = memoizedRateResolver(
+      {
+        getRateForDate: rateForDate,
+        getLatestRate: (from, to) => rateForDate(from, to, asOf),
+      },
+      defaultCurrency,
+      asOf,
+    );
+    const balanceTotal = new FxAggregate();
+    // An account whose balance did not convert is outside the subtotal and
+    // outside its provisional count (docs/specs/provisional-amounts.md s.8).
+    let convertedProvisional = 0;
+    for (const account of balanceAccounts) {
+      const amount = Number(account.currentBalance);
+      if (account.currencyCode === defaultCurrency) {
+        balanceTotal.addConverted(amount);
+      } else if (amount !== 0) {
+        // Zero is zero at any rate; only a real balance needs one.
+        const rate = await rateFor(account.currencyCode);
+        balanceTotal.add(
+          rate === null ? null : amount * rate,
+          account.currencyCode,
+          defaultCurrency,
+        );
+        if (rate === null) continue;
+      }
+      // Each balance's count is over the rows inside its `currentBalance`
+      // (`findAll`), so the total's is their sum.
+      convertedProvisional += account.provisionalCount ?? 0;
+    }
+    // Read at the default currency's own places, as the reports read theirs.
+    const places = await reportPlacesOf(this.dataSource, defaultCurrency);
 
     const marketValues =
       await this.portfolioService.getAccountMarketValues(userId);
@@ -2215,13 +2264,12 @@ export class AccountsService {
 
     return {
       totalAccounts: accounts.length,
-      totalBalance,
-      // Each balance's count is over the rows inside its `currentBalance`
-      // (`findAll`), so the total's is their sum.
-      totalBalanceProvisionalCount: balanceAccounts.reduce(
-        (sum, account) => sum + (account.provisionalCount ?? 0),
-        0,
-      ),
+      totalBalance: balanceTotal.totalAt(places),
+      knownTotalBalanceSubtotal: balanceTotal.knownSubtotalAt(places),
+      totalBalanceCurrency: defaultCurrency,
+      totalBalanceFxComplete: balanceTotal.isComplete,
+      totalBalanceMissingRatePairs: balanceTotal.missingPairs,
+      totalBalanceProvisionalCount: convertedProvisional,
       ...totals,
     };
   }

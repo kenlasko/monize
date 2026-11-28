@@ -10,7 +10,8 @@
     "interestEarnedYtd": "Juros Recebidos",
     "ytd": "Ano até hoje",
     "averageBalance": "Saldo Médio",
-    "averageNote": "Últimos 12 meses"
+    "averageNote": "Últimos 12 meses",
+    "loadFailed": "Não foi possível carregar este valor. Recarregue a página para tentar novamente."
   },
   "chart": {
     "title": "Histórico de Saldo",

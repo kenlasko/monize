@@ -349,7 +349,16 @@ export interface UpdateAccountData extends Partial<CreateAccountData> {}
  */
 export interface AccountSummary {
   totalAccounts: number;
-  totalBalance: number;
+  /** Book balances converted into the default currency; `null` when one could not be converted. */
+  totalBalance: number | null;
+  /** The part of `totalBalance` that converted. */
+  knownTotalBalanceSubtotal?: number;
+  /** The currency `totalBalance` is in. */
+  totalBalanceCurrency?: string;
+  /** False when `totalBalance` is `null`; `fxComplete` below is the net-worth snapshot's. Read as `=== false`. */
+  totalBalanceFxComplete?: boolean;
+  /** `"ZZZ->USD"` for each pair `totalBalance` lacks. */
+  totalBalanceMissingRatePairs?: string[];
   totalAssets: number | null;
   totalLiabilities: number | null;
   netWorth: number | null;

@@ -81,8 +81,8 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
   const [forecast, setForecast] = useState<BalanceForecastState>(
     EMPTY_BALANCE_FORECAST_STATE,
   );
-  const [moneyIn, setMoneyIn] = useState(0);
-  const [moneyOut, setMoneyOut] = useState(0);
+  const [moneyIn, setMoneyIn] = useState<number | null>(0);
+  const [moneyOut, setMoneyOut] = useState<number | null>(0);
   const [monthly, setMonthly] = useState<MonthlyTotal[]>([]);
   const [topCategories, setTopCategories] = useState<GroupedTotal[]>([]);
   const [topPayees, setTopPayees] = useState<GroupedTotal[]>([]);
@@ -152,8 +152,9 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
       // (issue #1247, and its re-audit: the rule was being applied twice from
       // two different fields).
       setForecast(readBalanceForecast(forecastResponse));
-      setMoneyIn(summary?.totalIncome ?? 0);
-      setMoneyOut(summary?.totalExpenses ?? 0);
+      // A failed read or a withheld (null) total is unknown, never 0.
+      setMoneyIn(summary?.totalIncome ?? null);
+      setMoneyOut(summary?.totalExpenses ?? null);
       setMonthly(monthlyTotals);
       setTopCategories(categories);
       setTopPayees(payees);

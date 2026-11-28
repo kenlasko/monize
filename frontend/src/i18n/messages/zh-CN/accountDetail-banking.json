@@ -10,7 +10,8 @@
     "interestEarnedYtd": "已获利息",
     "ytd": "年初至今",
     "averageBalance": "平均余额",
-    "averageNote": "过去 12 个月"
+    "averageNote": "过去 12 个月",
+    "loadFailed": "无法加载此数值。请重新加载页面后重试。"
   },
   "chart": {
     "title": "余额历史",

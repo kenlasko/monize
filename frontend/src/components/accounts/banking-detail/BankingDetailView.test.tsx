@@ -120,6 +120,25 @@ describe('BankingDetailView', () => {
     expect(screen.getByText('1.5%')).toBeInTheDocument();
   });
 
+  it('shows a failed summary request as a marker saying it could not be loaded', async () => {
+    mockGetSummary.mockRejectedValue(new Error('network'));
+    await renderView();
+    await waitFor(() => expect(screen.getAllByLabelText(/could not be loaded/i)).toHaveLength(2));
+    expect(screen.queryByLabelText(/no exchange rate is available/i)).not.toBeInTheDocument();
+  });
+
+  it('shows a null total from the server the same way, never as zero', async () => {
+    mockGetSummary.mockResolvedValue({
+      totalIncome: null,
+      totalExpenses: null,
+      netCashFlow: null,
+      transactionCount: 8,
+    });
+    await renderView();
+    await waitFor(() => expect(screen.getAllByLabelText(/could not be loaded/i)).toHaveLength(2));
+    expect(screen.queryByLabelText(/no exchange rate is available/i)).not.toBeInTheDocument();
+  });
+
   it('projects the balance from the forecast and caps history at today', async () => {
     await renderView();
     await waitFor(() => expect(mockGetBalanceForecast).toHaveBeenCalledWith('chq-1'));

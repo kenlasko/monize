@@ -10,7 +10,8 @@
     "interestEarnedYtd": "受取利息",
     "ytd": "年初来",
     "averageBalance": "平均残高",
-    "averageNote": "直近12か月"
+    "averageNote": "直近12か月",
+    "loadFailed": "この数値を読み込めませんでした。ページを再読み込みして、もう一度お試しください。"
   },
   "chart": {
     "title": "残高の推移",

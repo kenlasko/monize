@@ -10,7 +10,8 @@
     "interestEarnedYtd": "Interessi maturati",
     "ytd": "Da inizio anno",
     "averageBalance": "Saldo medio",
-    "averageNote": "Ultimi 12 mesi"
+    "averageNote": "Ultimi 12 mesi",
+    "loadFailed": "Impossibile caricare questo valore. Ricarica la pagina per riprovare."
   },
   "chart": {
     "title": "Storico saldo",

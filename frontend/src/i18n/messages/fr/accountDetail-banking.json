@@ -10,7 +10,8 @@
     "interestEarnedYtd": "Intérêts gagnés",
     "ytd": "Depuis le début de l'année",
     "averageBalance": "Solde moyen",
-    "averageNote": "12 derniers mois"
+    "averageNote": "12 derniers mois",
+    "loadFailed": "Ce chiffre n'a pas pu être chargé. Rechargez la page pour réessayer."
   },
   "chart": {
     "title": "Historique du solde",
