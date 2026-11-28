@@ -299,6 +299,7 @@
     "unreadableDatesGoBack": "Jeśli plik zapisuje daty w innej kolejności, wróć do kroku mapowania kolumn i wybierz format daty, którego używa.",
     "unreadableAmountsNotice": "{count, plural, one {# wiersz ma kwotę, której nie można odczytać, i nie zostanie zaimportowany} few {# wiersze mają kwoty, których nie można odczytać, i nie zostaną zaimportowane} many {# wierszy ma kwoty, których nie można odczytać, i nie zostanie zaimportowanych} other {# wiersza ma kwoty, których nie można odczytać, i nie zostanie zaimportowanych}}:",
     "unreadableAmountRow": "Wiersz {line}: \"{rawAmount}\"",
+    "unreadableAmountRowField": "Wiersz {line}, {field, select, quantity {ilość} price {cena} commission {prowizja} other {kwota}}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...i jeszcze {count}",
     "unreadableAmountsGoBack": "Sprawdź, czy kolumny kwot są poprawnie przypisane, albo popraw te wiersze w pliku i zaimportuj go ponownie.",
     "unreadableAmountLine": "Wiersz {line}: \"{rawAmount}\"",
