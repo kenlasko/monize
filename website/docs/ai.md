@@ -128,7 +128,7 @@ The assistant has access to the following financial tools:
 | **List Transactions** | Search and summarize transactions with filters |
 | **List Accounts** | Account balances and net worth, with foreign accounts converted to your default currency |
 | **List Categories**, **List Payees** and **List Tags** | Your category tree, payees and [tags](tags.md) (with how often each tag is used) |
-| **Compare Periods** | Side-by-side comparison of two time periods |
+| **Compare Periods** | Compares two time periods. Category and payee groupings include the same spending; refunds can leave zero or negative spending for a payee. |
 | **Generate Report** | A built-in report: spending by category or payee, income vs. expenses, trends, anomalies, month comparison, net-worth history |
 | **Budget Status** | Current budget vs actual spending |
 | **Upcoming Bills** | Scheduled bills and deposits |
