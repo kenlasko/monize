@@ -225,7 +225,7 @@ export interface TransactionSummary {
   totalExpenses: number | null;
   netCashFlow: number | null;
   transactionCount: number;
-  /** Provisional transfer amounts (an imported estimate) inside the native totals. */
+  /** Provisional transfer amounts (an imported estimate), counted over the `byCurrency` buckets: they hold it even when the top-level totals are null. */
   provisionalCount?: number;
   firstTransactionDate?: string | null;
   lastTransactionDate?: string | null;

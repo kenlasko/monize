@@ -10,7 +10,8 @@
     "interestEarnedYtd": "Verdiente Zinsen",
     "ytd": "Seit Jahresbeginn",
     "averageBalance": "Durchschnittlicher Saldo",
-    "averageNote": "Letzte 12 Monate"
+    "averageNote": "Letzte 12 Monate",
+    "loadFailed": "Dieser Wert konnte nicht geladen werden. Laden Sie die Seite neu und versuchen Sie es erneut."
   },
   "chart": {
     "title": "Saldoverlauf",

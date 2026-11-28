@@ -88,10 +88,26 @@ describe('BankingSummaryCards', () => {
     expect(screen.queryByText(/overdue/)).not.toBeInTheDocument();
   });
 
-  it('shows an unknown money in and out as unknown, never as zero', () => {
+  it('shows a withheld money in and out as unknown with the exchange-rate reason, never as zero', () => {
     render(<BankingSummaryCards account={makeAccount()} {...base} moneyIn={null} moneyOut={null} />);
     expect(screen.queryByText('$0.00')).not.toBeInTheDocument();
-    expect(screen.queryByText('$2000.00')).not.toBeInTheDocument();
-    expect(screen.queryByText('$1400.00')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('unknown-amount')).toHaveLength(2);
+    expect(screen.getAllByLabelText(/no exchange rate is available/i)).toHaveLength(2);
+    expect(screen.queryByLabelText(/could not be loaded/i)).not.toBeInTheDocument();
+  });
+
+  it('says a failed read failed, not that a rate is missing', () => {
+    render(
+      <BankingSummaryCards
+        account={makeAccount()}
+        {...base}
+        moneyIn={null}
+        moneyOut={null}
+        moneyFailed
+      />,
+    );
+    expect(screen.getAllByTestId('unknown-amount')).toHaveLength(2);
+    expect(screen.getAllByLabelText(/could not be loaded/i)).toHaveLength(2);
+    expect(screen.queryByLabelText(/no exchange rate is available/i)).not.toBeInTheDocument();
   });
 });

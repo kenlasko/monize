@@ -693,7 +693,7 @@ export class TransactionAnalyticsService {
     totalExpenses: number | null;
     netCashFlow: number | null;
     transactionCount: number;
-    /** The provisional transfer amounts inside the totals above. */
+    /** The provisional transfer amounts, counted over the `byCurrency` buckets: they hold it even when the top-level totals are null. */
     provisionalCount: number;
     firstTransactionDate: string | null;
     lastTransactionDate: string | null;

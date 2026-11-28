@@ -10,7 +10,8 @@
     "interestEarnedYtd": "Kazanılan Faiz",
     "ytd": "Yıl başından bugüne",
     "averageBalance": "Ortalama Bakiye",
-    "averageNote": "Son 12 ay"
+    "averageNote": "Son 12 ay",
+    "loadFailed": "Bu tutar yüklenemedi. Yeniden denemek için sayfayı yenileyin."
   },
   "chart": {
     "title": "Bakiye Geçmişi",

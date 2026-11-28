@@ -10,7 +10,8 @@
     "interestEarnedYtd": "Lãi đã nhận",
     "ytd": "Từ đầu năm đến nay",
     "averageBalance": "Số dư trung bình",
-    "averageNote": "12 tháng gần nhất"
+    "averageNote": "12 tháng gần nhất",
+    "loadFailed": "Không thể tải số liệu này. Hãy tải lại trang để thử lại."
   },
   "chart": {
     "title": "Lịch sử số dư",

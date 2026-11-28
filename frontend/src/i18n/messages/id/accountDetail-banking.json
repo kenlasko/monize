@@ -10,7 +10,8 @@
     "interestEarnedYtd": "Bunga Diperoleh",
     "ytd": "Sejak awal tahun",
     "averageBalance": "Saldo Rata-rata",
-    "averageNote": "12 bulan terakhir"
+    "averageNote": "12 bulan terakhir",
+    "loadFailed": "Angka ini tidak dapat dimuat. Muat ulang halaman untuk mencoba lagi."
   },
   "chart": {
     "title": "Riwayat Saldo",

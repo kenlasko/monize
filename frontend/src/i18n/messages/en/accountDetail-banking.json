@@ -10,7 +10,8 @@
     "interestEarnedYtd": "Interest Earned",
     "ytd": "Year to date",
     "averageBalance": "Average Balance",
-    "averageNote": "Trailing 12 months"
+    "averageNote": "Trailing 12 months",
+    "loadFailed": "This figure could not be loaded. Reload the page to try again."
   },
   "chart": {
     "title": "Balance History",

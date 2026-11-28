@@ -10,7 +10,8 @@
     "interestEarnedYtd": "발생 이자",
     "ytd": "연초 이후",
     "averageBalance": "평균 잔액",
-    "averageNote": "최근 12개월"
+    "averageNote": "최근 12개월",
+    "loadFailed": "이 수치를 불러오지 못했습니다. 페이지를 새로고침하여 다시 시도하세요."
   },
   "chart": {
     "title": "잔액 이력",
