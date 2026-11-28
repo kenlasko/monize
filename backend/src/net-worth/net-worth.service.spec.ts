@@ -66,8 +66,12 @@ describe("NetWorthService", () => {
   // `reportQuery` and writes used `queryRunner.query`.
   let reportQuery: jest.Mock;
   let provisionalLegs: ProvisionalLegFixture[];
-  /** The database's `CURRENT_DATE`, as the provisional count read sees it. */
-  let databaseToday: string;
+  /** The user's stored timezone, as `getEffectiveTimezoneOfUser` reads it. */
+  let userTimezone: string;
+  /** Per-user override of `userTimezone`, keyed by user id. */
+  let userTimezoneOf: Record<string, string>;
+  /** Users whose timezone lookup fails. */
+  let failingTimezoneUsers: Set<string>;
   let snapshotQuery: jest.Mock;
 
   /**
@@ -218,18 +222,28 @@ describe("NetWorthService", () => {
     ]);
     dataSource = mocks.dataSource;
     provisionalLegs = [];
-    databaseToday = "9999-12-31";
+    userTimezone = "UTC";
+    userTimezoneOf = {};
+    failingTimezoneUsers = new Set();
     // The provisional count read has its own fixture, so a chain of
     // `reportQuery` answers is not shifted by it.
     mocks.manager.query.mockImplementation((sql: string, params?: unknown[]) =>
       isProvisionalCountQuery(sql)
-        ? Promise.resolve(
-            provisionalCountRows(provisionalLegs, params ?? [], databaseToday),
-          )
-        : /monthly_account_balances/.test(sql) &&
-            /^\s*(DELETE|INSERT)/i.test(sql)
-          ? snapshotQuery(sql, params)
-          : reportQuery(sql, params),
+        ? Promise.resolve(provisionalCountRows(provisionalLegs, params ?? []))
+        : /FROM user_preferences/.test(sql) &&
+            failingTimezoneUsers.has(String(params?.[0]))
+          ? Promise.reject(new Error("lookup failed"))
+          : /FROM user_preferences/.test(sql)
+            ? Promise.resolve([
+                {
+                  timezone: userTimezoneOf[String(params?.[0])] ?? userTimezone,
+                  last_client_timezone: null,
+                },
+              ])
+            : /monthly_account_balances/.test(sql) &&
+                /^\s*(DELETE|INSERT)/i.test(sql)
+              ? snapshotQuery(sql, params)
+              : reportQuery(sql, params),
     );
 
     service = new NetWorthService(dataSource as never);
@@ -568,6 +582,28 @@ describe("NetWorthService", () => {
         );
         // Verify insert for each month
         expect(snapshotQuery).toHaveBeenCalledTimes(3); // 1 delete + 2 inserts
+      });
+
+      it("bounds the snapshot at the user's today, not the database's (#2365)", async () => {
+        // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
+        jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+        try {
+          userTimezone = "Pacific/Kiritimati";
+          accountRepository.findOne.mockResolvedValue({
+            ...mockRegularAccount,
+          });
+          reportQuery
+            .mockResolvedValueOnce([{ earliest: "2026-11-01" }])
+            .mockResolvedValueOnce([{ month: "2026-11-01", balance: 750 }]);
+
+          await service.recalculateAccount("user-1", "account-1");
+
+          const [sql, params] = reportQuery.mock.calls[1];
+          expect(sql).not.toContain("CURRENT_DATE");
+          expect(params[3]).toBe("2026-11-28");
+        } finally {
+          jest.useRealTimers();
+        }
       });
 
       it("uses createdAt as start date when no earliest transaction exists", async () => {
@@ -1387,23 +1423,31 @@ describe("NetWorthService", () => {
         "2024-12-31",
         undefined,
         { fetchMissing: false },
+        expect.any(String),
       );
       spy.mockRestore();
     });
 
-    it("falls back to a 12-month default range when none is provided", async () => {
-      const spy = jest
-        .spyOn(service, "getMonthlyNetWorth")
-        .mockResolvedValue([]);
+    it("defaults to the 12 months before the user's today, ending at it (#2365)", async () => {
+      // 12:00 UTC on 2026-11-27 is 2026-11-28 in Kiritimati.
+      jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+      try {
+        userTimezone = "Pacific/Kiritimati";
+        const spy = jest
+          .spyOn(service, "getMonthlyNetWorth")
+          .mockResolvedValue([]);
 
-      await service.getLlmHistory("user-1");
+        await service.getLlmHistory("user-1");
 
-      const [, start, end] = spy.mock.calls[0];
-      // Default range is roughly the last year through today.
-      expect(start).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(end).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(start! < end!).toBe(true);
-      spy.mockRestore();
+        const [, start, end, , , today] = spy.mock.calls[0];
+        expect(start).toBe("2025-11-01");
+        // No end: the aggregate defaults it to the user's day it is handed.
+        expect(end).toBeUndefined();
+        expect(today).toBe("2026-11-28");
+        spy.mockRestore();
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 
@@ -1483,6 +1527,27 @@ describe("NetWorthService", () => {
       expect(snapshotWriteBlocks()).toBe(0);
     });
 
+    it("reads the current month in the user's timezone, not the server's (#2365)", async () => {
+      // 03:00 UTC on 2024-07-01 is still June in Los Angeles.
+      jest.useFakeTimers({ now: new Date("2024-07-01T03:00:00Z") });
+      try {
+        userTimezone = "America/Los_Angeles";
+        mabRepository.count.mockResolvedValue(10);
+        accountRepository.find.mockResolvedValue([{ id: "account-1" }]);
+        mabRepository.find.mockResolvedValue([{ accountId: "account-1" }]);
+
+        await service.ensurePopulated("user-1");
+
+        expect(mabRepository.find).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { userId: "user-1", month: "2024-06-01" },
+          }),
+        );
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it("refreshes only accounts missing a current-month snapshot", async () => {
       mabRepository.count.mockResolvedValue(10);
       accountRepository.find.mockResolvedValue([
@@ -1560,7 +1625,14 @@ describe("NetWorthService", () => {
       mabRepository.count.mockResolvedValue(5);
       prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
       // The joint account's current month is already populated -> no refresh.
-      mabRepository.find.mockResolvedValue([{ accountId: "joint-1" }]);
+      jest.useFakeTimers({ now: new Date("2024-06-15T12:00:00Z") });
+      mabRepository.find.mockResolvedValue([
+        { accountId: "joint-1", month: "2024-06-01" },
+      ]);
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
     });
 
     it("passes the joint ids into the snapshot predicate", async () => {
@@ -1577,6 +1649,7 @@ describe("NetWorthService", () => {
         "2024-01-01",
         "2024-06-30",
         ["joint-1"],
+        "2024-06-15",
       ]);
       expect(queryArgs[0]).toContain("mab.account_id = ANY($4::UUID[])");
       // The owner-side exclusion flag stays confined to the own-rows arm.
@@ -1619,6 +1692,159 @@ describe("NetWorthService", () => {
       expect(result[0].netWorth).toBe(8000);
     });
 
+    it("ends a joint account's snapshots at the OWNER's month, not the server's (#2365)", async () => {
+      // 03:00 UTC on 2024-07-01 is still 2024-06-30 in Los Angeles: the
+      // owner's recalculation ended at June, so a June row is current and
+      // the server clock's July must not make it look stale.
+      jest.setSystemTime(new Date("2024-07-01T03:00:00Z"));
+      userTimezoneOf[OWNER] = "America/Los_Angeles";
+      const recalc = jest
+        .spyOn(service, "recalculateAccount")
+        .mockResolvedValue(undefined as never);
+      reportQuery.mockResolvedValueOnce([]);
+
+      await service.getMonthlyNetWorth(
+        "user-1",
+        undefined,
+        undefined,
+        jointScope,
+      );
+
+      expect(recalc).not.toHaveBeenCalled();
+    });
+
+    it("bounds a joint account's provisional count at its owner's day (#2365)", async () => {
+      jest.setSystemTime(new Date("2024-06-15T12:00:00Z"));
+      userTimezoneOf[OWNER] = "Pacific/Kiritimati";
+      reportQuery.mockResolvedValueOnce([
+        {
+          month: "2024-06-01",
+          balance: 5000,
+          market_value: null,
+          account_id: "own-1",
+          account_type: AccountType.CHEQUING,
+          account_sub_type: null,
+          currency_code: "USD",
+        },
+        {
+          month: "2024-06-01",
+          balance: 3000,
+          market_value: null,
+          account_id: "joint-1",
+          account_type: AccountType.CHEQUING,
+          account_sub_type: null,
+          currency_code: "USD",
+        },
+      ]);
+
+      await service.getMonthlyNetWorth(
+        "user-1",
+        "2024-06-01",
+        undefined,
+        jointScope,
+      );
+
+      const bounds = (dataSource.manager.query as jest.Mock).mock.calls
+        .filter(([sql]: [string]) => isProvisionalCountQuery(sql))
+        .map(([, params]: [string, unknown[]]) => [params[0], params[2]]);
+      expect(bounds).toEqual(
+        expect.arrayContaining([
+          [["own-1"], "2024-06-15"],
+          [["joint-1"], "2024-06-16"],
+        ]),
+      );
+    });
+
+    it("stops every read at the reader's month, though a joint owner is ahead (#2365)", async () => {
+      // The reader's day is 2024-06-15; an owner ahead holds a July snapshot.
+      reportQuery.mockResolvedValueOnce([]);
+      await service.getMonthlyNetWorth(
+        "user-1",
+        "2024-01-01",
+        "2024-07-31",
+        jointScope,
+      );
+      const [sql, params] = reportQuery.mock.calls[0];
+      expect(sql).toContain("DATE_TRUNC('month', LEAST($3::DATE, $5::DATE))");
+      expect(params[4]).toBe("2024-06-15");
+    });
+
+    const jointRow = (month: string, account_id: string, balance: number) => ({
+      month,
+      balance,
+      market_value: null,
+      account_id,
+      account_type: AccountType.CHEQUING,
+      account_sub_type: null,
+      currency_code: "USD",
+    });
+
+    it("carries a joint account's latest snapshot into the reader's month when its owner is a month behind (#2365)", async () => {
+      // 03:00 UTC on 2024-07-01: July for the reader (UTC), still June 30 for
+      // an owner in Los Angeles, whose snapshots rightly end in June.
+      jest.setSystemTime(new Date("2024-07-01T03:00:00Z"));
+      userTimezoneOf[OWNER] = "America/Los_Angeles";
+      reportQuery
+        .mockResolvedValueOnce([jointRow("2024-07-01", "own-1", 5000)])
+        .mockResolvedValueOnce([jointRow("2024-06-01", "joint-1", 3000)]);
+
+      const result = await service.getMonthlyNetWorth(
+        "user-1",
+        "2024-07-01",
+        "2024-07-31",
+        jointScope,
+      );
+
+      const [carrySql, carryParams] = reportQuery.mock.calls[1];
+      expect(carrySql).toContain("DISTINCT ON (mab.account_id)");
+      expect(carryParams).toEqual([["joint-1"], "2024-07-01"]);
+      expect(result.map((m) => [m.month, m.netWorth, m.fxComplete])).toEqual([
+        ["2024-07-01", 8000, true],
+      ]);
+    });
+
+    it("withholds a joint account whose owner is not behind and has no current row, and says the month is incomplete (#2365)", async () => {
+      // The owner's day is the reader's, so its June row should exist; it does
+      // not (a failed recompute), and May's balance is not June's.
+      reportQuery
+        .mockResolvedValueOnce([jointRow("2024-06-01", "own-1", 5000)])
+        .mockResolvedValueOnce([jointRow("2024-05-01", "joint-1", 3000)]);
+
+      const result = await service.getMonthlyNetWorth(
+        "user-1",
+        "2024-06-01",
+        "2024-06-30",
+        jointScope,
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].netWorth).toBe(5000);
+      expect(result[0].fxComplete).toBe(false);
+      expect(result[0].assetsFxComplete).toBe(false);
+      expect(result[0].liabilitiesFxComplete).toBe(true);
+      expect(result[0].missingRatePairs).toEqual([]);
+    });
+
+    it("counts an owner's day in the reader's when the owner's lookup fails, and warns (#2365)", async () => {
+      failingTimezoneUsers.add(OWNER);
+      const warn = jest
+        .spyOn((service as any).logger, "warn")
+        .mockImplementation(() => undefined);
+      reportQuery.mockResolvedValueOnce([]);
+
+      await expect(
+        service.getMonthlyNetWorth(
+          "user-1",
+          "2024-06-01",
+          "2024-06-30",
+          jointScope,
+        ),
+      ).resolves.toEqual([]);
+
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining(OWNER));
+      warn.mockRestore();
+    });
+
     it("refreshes a stale joint month under the OWNER's identity", async () => {
       // No populated current-month row for the joint account.
       mabRepository.find.mockResolvedValue([]);
@@ -1654,7 +1880,7 @@ describe("NetWorthService", () => {
 
       const [sql, params] = reportQuery.mock.calls[0];
       expect(sql).toContain("account_id = ANY($2::UUID[])");
-      expect(params).toEqual(["user-1", ["joint-1"]]);
+      expect(params).toEqual(["user-1", ["joint-1"], expect.any(String)]);
     });
   });
 
@@ -1880,7 +2106,13 @@ describe("NetWorthService", () => {
       // The trailing empty array is the joint-account widening (N1): empty
       // for every caller without a joint scope, keeping this query's result
       // byte-identical to the pre-joint behavior.
-      expect(queryArgs[1]).toEqual(["user-1", "2024-01-01", "2024-06-30", []]);
+      expect(queryArgs[1]).toEqual([
+        "user-1",
+        "2024-01-01",
+        "2024-06-30",
+        [],
+        expect.any(String),
+      ]);
     });
 
     it("uses default date range when none specified", async () => {
@@ -2582,9 +2814,13 @@ describe("NetWorthService", () => {
     beforeEach(() => {
       mabRepository.count.mockResolvedValue(5);
       prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
-      // The database's today is 2024-03-15, so March's snapshot balance
-      // stands at today, not at its end.
-      databaseToday = "2024-03-15";
+      // The user's today is 2024-03-15, so March's snapshot balance stands at
+      // today, not at its end.
+      jest.useFakeTimers({ now: new Date("2024-03-15T12:00:00Z") });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
     });
 
     it("counts each month as of its end, and the running month as of today", async () => {
@@ -2617,12 +2853,12 @@ describe("NetWorthService", () => {
       const countCall = (dataSource.manager.query as jest.Mock).mock.calls.find(
         ([sql]: [string]) => isProvisionalCountQuery(sql),
       );
-      // Each month at its end, bounded at the database's today: the bound the
+      // Each month at its end, bounded at the user's today: the bound the
       // snapshot's own sum uses, not the request's clock.
       expect(countCall[1]).toEqual([
         ["chq"],
         ["2024-01-31", "2024-02-29", "2024-03-31"],
-        true,
+        "2024-03-15",
       ]);
     });
 
@@ -2776,6 +3012,7 @@ describe("NetWorthService", () => {
         "2024-03-01",
         "2024-03-01",
         [],
+        expect.any(String),
       ]);
     });
 

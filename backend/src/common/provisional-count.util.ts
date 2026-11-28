@@ -39,6 +39,19 @@ export class ProvisionalCounts {
     return new ProvisionalCounts(byDate);
   }
 
+  /** The counts of several reads over disjoint accounts, as one. */
+  static merged(parts: ReadonlyArray<ProvisionalCounts>): ProvisionalCounts {
+    const byDate = new Map<string, Map<string, number>>();
+    for (const part of parts) {
+      for (const [asOf, accounts] of part.byDate) {
+        const into = byDate.get(asOf) ?? new Map<string, number>();
+        for (const [accountId, count] of accounts) into.set(accountId, count);
+        byDate.set(asOf, into);
+      }
+    }
+    return new ProvisionalCounts(byDate);
+  }
+
   /** The provisional legs inside `accountId`'s balance as of `asOf`. */
   of(accountId: string, asOf: string): number {
     return this.byDate.get(asOf)?.get(accountId) ?? 0;
@@ -49,15 +62,14 @@ export class ProvisionalCounts {
  * Read the counts for `accountIds` at each of `asOfDates` (`YYYY-MM-DD`) in
  * one statement, inside the caller's scoped transaction.
  *
- * `notAfterDatabaseToday` bounds every date at the database's `CURRENT_DATE`
- * as well, for a balance the database itself bounds there (the monthly net
- * worth snapshot); the result is still keyed by the dates asked for.
+ * `notAfter` (YYYY-MM-DD) bounds every date at that day as well, for a balance
+ * bounded at the user's today (the monthly net worth snapshot); the result is still keyed by the dates asked for.
  */
 export async function loadProvisionalCounts(
   m: EntityManager,
   accountIds: ReadonlyArray<string>,
   asOfDates: ReadonlyArray<string>,
-  options: { notAfterDatabaseToday?: boolean } = {},
+  options: { notAfter?: string | null } = {},
 ): Promise<ProvisionalCounts> {
   if (accountIds.length === 0 || asOfDates.length === 0) {
     return ProvisionalCounts.NONE;
@@ -66,7 +78,7 @@ export async function loadProvisionalCounts(
     await m.query(PROVISIONAL_COUNTS_AS_OF_DATES_SQL, [
       [...new Set(accountIds)],
       [...new Set(asOfDates)],
-      options.notAfterDatabaseToday === true,
+      options.notAfter ?? null,
     ]);
   return ProvisionalCounts.fromRows(rows);
 }

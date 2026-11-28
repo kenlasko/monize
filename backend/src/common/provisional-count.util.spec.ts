@@ -30,24 +30,24 @@ describe("provisional counts", () => {
     expect(query).toHaveBeenCalledWith(PROVISIONAL_COUNTS_AS_OF_DATES_SQL, [
       ["a", "b"],
       ["2026-03-01", "2026-03-31"],
-      false,
+      null,
     ]);
     expect(counts.of("a", "2026-03-01")).toBe(2);
     expect(counts.of("a", "2026-03-31")).toBe(3);
     expect(counts.of("b", "2026-03-31")).toBe(1);
   });
 
-  it("asks the database to bound the dates at its own today when told to", async () => {
+  it("bounds the dates at the given day when told to", async () => {
     const { manager, query } = managerAnswering([]);
 
     await loadProvisionalCounts(manager, ["a"], ["2026-03-31"], {
-      notAfterDatabaseToday: true,
+      notAfter: "2026-03-15",
     });
 
     expect(query).toHaveBeenCalledWith(PROVISIONAL_COUNTS_AS_OF_DATES_SQL, [
       ["a"],
       ["2026-03-31"],
-      true,
+      "2026-03-15",
     ]);
   });
 

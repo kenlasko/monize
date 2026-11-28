@@ -147,10 +147,11 @@ describe("as-of ledger balance SQL", () => {
     expect(PROVISIONAL_COUNTS_AS_OF_DATES_SQL).toContain(
       "t.account_id = ANY($1::uuid[])",
     );
-    // The snapshot's bound, on request: the database's own today.
+    // The snapshot's bound, on request: the user's today, never CURRENT_DATE.
     expect(PROVISIONAL_COUNTS_AS_OF_DATES_SQL).toContain(
-      "($3::boolean IS NOT TRUE OR t.transaction_date <= CURRENT_DATE)",
+      "($3::date IS NULL OR t.transaction_date <= $3::date)",
     );
+    expect(PROVISIONAL_COUNTS_AS_OF_DATES_SQL).not.toContain("CURRENT_DATE");
   });
 
   it("scans a family that actually exists", () => {

@@ -9,9 +9,12 @@ import {
 } from "@nestjs/common";
 import { tr } from "../i18n/translate";
 import { Cron } from "@nestjs/schedule";
-import { todayInTimezone, formatDateYMDLocal } from "../common/date-utils";
+import { todayInTimezone } from "../common/date-utils";
 import { sumMoney } from "../common/round.util";
-import { getUsersByEffectiveTimezone } from "../common/users-by-timezone.util";
+import {
+  getUsersByEffectiveTimezone,
+  userTodayYMD,
+} from "../common/users-by-timezone.util";
 import { withSystemContext, withUserContext } from "../common/db/with-context";
 import { EntityManager, In, LessThanOrEqual, DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -469,14 +472,6 @@ export class HoldingsService {
   }
 
   /**
-   * Server-local "today" as YYYY-MM-DD. Used as the default holdings cutoff;
-   * callers that need a timezone-correct cutoff pass it explicitly.
-   */
-  private serverToday(): string {
-    return formatDateYMDLocal(new Date());
-  }
-
-  /**
    * Compare one user's stored holdings against a replay of their ledger, and
    * return only the positions that disagree.
    *
@@ -519,7 +514,9 @@ export class HoldingsService {
       where: {
         userId,
         accountId: In(eligibleIds),
-        transactionDate: LessThanOrEqual(asOfDate ?? this.serverToday()),
+        transactionDate: LessThanOrEqual(
+          asOfDate ?? (await userTodayYMD(manager, userId)),
+        ),
         // Rows as effects: a VOID transaction moved no shares.
         status: NON_VOID_INVESTMENT_STATUS,
       },
@@ -805,7 +802,7 @@ export class HoldingsService {
     if (inScope.length === 0) return;
 
     const securityIds = Array.from(new Set(inScope.map((s) => s.securityId)));
-    const cutoff = asOfDate ?? this.serverToday();
+    const cutoff = asOfDate ?? (await userTodayYMD(manager, userId));
 
     // `In() x In()` is a cross product, so the exact pairs are filtered back
     // out below -- a row from a scope nobody asked about must not fold into
@@ -918,7 +915,7 @@ export class HoldingsService {
       .map((a) => a.id);
     if (eligibleIds.length === 0) return;
 
-    const cutoff = asOfDate ?? this.serverToday();
+    const cutoff = asOfDate ?? (await userTodayYMD(manager, userId));
     const transactions = await manager.find(InvestmentTransaction, {
       where: {
         userId,
@@ -976,8 +973,6 @@ export class HoldingsService {
     holdingsUpdated: number;
     holdingsDeleted: number;
   }> {
-    const cutoff = asOfDate ?? this.serverToday();
-
     // Account discovery, the ledger read, the delete and the recreate all in ONE
     // transaction, with the account lock taken first.
     //
@@ -991,6 +986,7 @@ export class HoldingsService {
     let holdingsCreated = 0;
 
     await withScopedDb(this.dataSource, async (m) => {
+      const cutoff = asOfDate ?? (await userTodayYMD(m, userId));
       // M14: Get all investment accounts (brokerage + standalone) for the user
       const investmentAccounts = await m.getRepository(Account).find({
         where: {

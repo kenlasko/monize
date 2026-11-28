@@ -1311,6 +1311,26 @@ describe("HoldingsService", () => {
       });
     });
 
+    it("cuts the ledger off at the user's today, not the server's (#2365)", async () => {
+      // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
+      jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+      try {
+        mockQueryRunner.manager.query.mockResolvedValue([
+          { timezone: "Pacific/Kiritimati", last_client_timezone: null },
+        ]);
+        accountsRepository.find.mockResolvedValue([mockAccount]);
+
+        await service.rebuildFromTransactions(
+          "11111111-1111-1111-1111-111111111111",
+        );
+
+        const ledgerRead = investmentTransactionsRepository.find.mock.calls[0];
+        expect(ledgerRead[0].where.transactionDate._value).toBe("2026-11-28");
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it("deletes existing holdings and rebuilds from buy transactions", async () => {
       accountsRepository.find.mockResolvedValue([mockAccount]);
       const existingHoldings = [{ id: "old-hold-1" }, { id: "old-hold-2" }];

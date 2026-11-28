@@ -334,9 +334,11 @@ describe("PortfolioService", () => {
     // back to the two mocks the assertions already use -- price history vs.
     // everything else -- so each test's fixtures stay independent.
     manager.query.mockImplementation((sql: string, params?: unknown[]) =>
-      /security_prices/.test(sql)
-        ? securityPriceRepository.query(sql, params)
-        : accountsRepository.query(sql, params),
+      /FROM user_preferences/.test(sql) && /last_client_timezone/.test(sql)
+        ? Promise.resolve([{ timezone: "UTC", last_client_timezone: null }])
+        : /security_prices/.test(sql)
+          ? securityPriceRepository.query(sql, params)
+          : accountsRepository.query(sql, params),
     );
 
     bondValuation = { valueByAccount: jest.fn() };

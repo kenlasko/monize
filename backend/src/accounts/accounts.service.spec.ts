@@ -2566,7 +2566,7 @@ describe("AccountsService", () => {
       const [, params] = (mockQueryRunner.query.mock.calls as unknown[][]).find(
         ([q]) => isProvisionalCountQuery(String(q)),
       )!;
-      expect(params).toEqual([[mockAccount.id, "account-2"], [today], false]);
+      expect(params).toEqual([[mockAccount.id, "account-2"], [today], null]);
     });
 
     it("returns empty array when no accounts", async () => {
