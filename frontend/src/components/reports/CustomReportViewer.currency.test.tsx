@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen, within } from '@/test/render';
+import { act, cleanup, fireEvent, render, screen, within } from '@/test/render';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { exportToPdf } from '@/lib/pdf-export';
 import { CustomReportViewer } from './CustomReportViewer';
@@ -29,7 +29,8 @@ vi.mock('@/lib/custom-reports', () => ({
 
 const initialPreferences = usePreferencesStore.getState().preferences;
 afterEach(() => {
-  act(() => { usePreferencesStore.setState({ preferences: initialPreferences }); });
+  cleanup();
+  usePreferencesStore.setState({ preferences: initialPreferences });
 });
 
 it('keeps USD and its cents on screen and in the PDF when the cached preference is JPY', async () => {
