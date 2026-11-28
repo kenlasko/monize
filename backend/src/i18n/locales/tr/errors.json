@@ -79,6 +79,7 @@
     "sourceNotFound": "Kaynak hesap bulunamadı",
     "loanSourceCurrencyMismatch": "Ödeme hesabı {{ source }} cinsinden, kredi ise {{ loan }} cinsinden. {{ loan }} cinsinden bir hesap seçin.",
     "invalidSourceAccount": "Ödeme için kredinin kendisi dışında açık bir hesap seçin",
+    "historicalNameAmbiguous": "“{{ name }}” için bir hesap kimliği seçin. Açık hesaplar: {{ openIds }}. Kapalı hesaplar: {{ closedIds }}.",
     "ambiguousBrokerage": "\"{{ query }}\" birden fazla aracı kurum hesabıyla eşleşiyor: {{ list }}. Tam hesap adını kullanın.",
     "unknownInvestmentAccount": "Bilinmeyen hesap: {{ name }}. Kullanıcının hesap listesinden tam bir ad kullanın.",
     "notACreditCard": "Ekstre dönemleri yalnızca kredi kartı hesapları için kullanılabilir",

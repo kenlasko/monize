@@ -79,6 +79,7 @@
     "sourceNotFound": "ソース口座が見つかりません",
     "loanSourceCurrencyMismatch": "支払い口座の通貨は {{ source }}、ローンの通貨は {{ loan }} です。{{ loan }} の口座を選択してください。",
     "invalidSourceAccount": "支払元として、ローン自体以外の有効な口座を選択してください",
+    "historicalNameAmbiguous": "「{{ name }}」の口座IDを選択してください。利用中の口座: {{ openIds }}。解約済みの口座: {{ closedIds }}。",
     "ambiguousBrokerage": "「{{ query }}」は複数の証券口座に一致します: {{ list }}。正確な口座名を使用してください。",
     "unknownInvestmentAccount": "不明な口座: {{ name }}。ユーザーの口座リストから正確な名前を使用してください。",
     "notACreditCard": "請求サイクルはクレジットカードの勘定科目でのみ利用できます",

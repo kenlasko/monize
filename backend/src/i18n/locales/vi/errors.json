@@ -79,6 +79,7 @@
     "sourceNotFound": "Không tìm thấy tài khoản nguồn",
     "loanSourceCurrencyMismatch": "Tài khoản thanh toán dùng {{ source }} còn khoản vay dùng {{ loan }}. Hãy chọn tài khoản bằng {{ loan }}.",
     "invalidSourceAccount": "Chọn một tài khoản đang mở, khác với chính khoản vay, để thanh toán",
+    "historicalNameAmbiguous": "Chọn ID tài khoản cho “{{ name }}”. Tài khoản đang mở: {{ openIds }}. Tài khoản đã đóng: {{ closedIds }}.",
     "ambiguousBrokerage": "\"{{ query }}\" khớp với nhiều tài khoản môi giới: {{ list }}. Hãy dùng tên tài khoản chính xác.",
     "unknownInvestmentAccount": "Tài khoản không xác định: {{ name }}. Hãy dùng tên chính xác từ danh sách tài khoản của người dùng.",
     "notACreditCard": "Chu kỳ sao kê chỉ khả dụng cho tài khoản thẻ tín dụng",

@@ -79,6 +79,7 @@
     "sourceNotFound": "स्रोत खाता नहीं मिला",
     "loanSourceCurrencyMismatch": "भुगतान खाता {{ source }} में है और ऋण {{ loan }} में है। {{ loan }} में खाता चुनें।",
     "invalidSourceAccount": "भुगतान के लिए ऋण के अलावा कोई खुला खाता चुनें",
+    "historicalNameAmbiguous": "“{{ name }}” के लिए खाता आईडी चुनें। खुले खाते: {{ openIds }}। बंद खाते: {{ closedIds }}।",
     "ambiguousBrokerage": "\"{{ query }}\" कई ब्रोकरेज खातों से मेल खाता है: {{ list }}. सटीक खाता नाम का उपयोग करें।",
     "unknownInvestmentAccount": "अज्ञात खाता: {{ name }}. उपयोगकर्ता की खाता सूची से सटीक नाम का उपयोग करें।",
     "notACreditCard": "स्टेटमेंट चक्र केवल क्रेडिट कार्ड खातों के लिए उपलब्ध हैं",

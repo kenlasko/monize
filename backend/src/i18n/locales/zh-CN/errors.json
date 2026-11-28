@@ -79,6 +79,7 @@
     "sourceNotFound": "未找到来源账户",
     "loanSourceCurrencyMismatch": "付款账户的币种是 {{ source }}，贷款的币种是 {{ loan }}。请选择 {{ loan }} 账户。",
     "invalidSourceAccount": "请选择一个未关闭且不是该贷款本身的账户用于付款",
+    "historicalNameAmbiguous": "请选择“{{ name }}”的账户 ID。已开立的账户：{{ openIds }}。已关闭的账户：{{ closedIds }}。",
     "ambiguousBrokerage": "\"{{ query }}\" 匹配多个经纪账户：{{ list }}。请使用准确的账户名称。",
     "unknownInvestmentAccount": "未知账户：{{ name }}。请使用用户账户列表中的准确名称。",
     "notACreditCard": "账单周期仅适用于信用卡账户",

@@ -79,6 +79,7 @@
     "sourceNotFound": "找不到來源科目",
     "loanSourceCurrencyMismatch": "付款科目的幣別是 {{ source }}，貸款的幣別是 {{ loan }}。請選擇 {{ loan }} 科目。",
     "invalidSourceAccount": "請選擇一個未關閉且不是該貸款本身的帳戶用於付款",
+    "historicalNameAmbiguous": "請選擇「{{ name }}」的帳戶 ID。使用中的帳戶：{{ openIds }}。已關閉的帳戶：{{ closedIds }}。",
     "ambiguousBrokerage": "「{{ query }}」符合多個券商帳戶：{{ list }}。請使用準確的帳戶名稱。",
     "unknownInvestmentAccount": "未知帳戶：{{ name }}。請使用使用者帳戶清單中的準確名稱。",
     "notACreditCard": "對帳單週期僅適用於信用卡科目",

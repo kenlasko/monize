@@ -79,6 +79,7 @@
     "sourceNotFound": "Akun sumber tidak ditemukan",
     "loanSourceCurrencyMismatch": "Akun pembayaran menggunakan {{ source }} dan pinjaman menggunakan {{ loan }}. Pilih akun dalam {{ loan }}.",
     "invalidSourceAccount": "Pilih akun terbuka, selain pinjaman itu sendiri, untuk membayar",
+    "historicalNameAmbiguous": "Pilih ID rekening untuk “{{ name }}”. Rekening terbuka: {{ openIds }}. Rekening yang sudah ditutup: {{ closedIds }}.",
     "ambiguousBrokerage": "\"{{ query }}\" cocok dengan beberapa akun pialang: {{ list }}. Gunakan nama akun yang tepat.",
     "unknownInvestmentAccount": "Akun tidak dikenal: {{ name }}. Gunakan nama yang tepat dari daftar akun pengguna.",
     "notACreditCard": "Siklus laporan hanya tersedia untuk akun kartu kredit",

@@ -79,6 +79,7 @@
     "sourceNotFound": "Quellkonto nicht gefunden",
     "loanSourceCurrencyMismatch": "Das Zahlungskonto ist in {{ source }}, das Darlehen in {{ loan }}. Wählen Sie ein Konto in {{ loan }}.",
     "invalidSourceAccount": "Wählen Sie ein offenes Konto, das nicht der Kredit selbst ist, für die Zahlung",
+    "historicalNameAmbiguous": "Wählen Sie eine Konto-ID für „{{ name }}“. Offen: {{ openIds }}. Geschlossen: {{ closedIds }}.",
     "ambiguousBrokerage": "\"{{ query }}\" entspricht mehreren Brokerage-Konten: {{ list }}. Verwenden Sie den genauen Kontonamen.",
     "unknownInvestmentAccount": "Unbekanntes Konto: {{ name }}. Verwenden Sie einen genauen Namen aus der Kontoliste des Benutzers.",
     "notACreditCard": "Abrechnungszeiträume sind nur für Kreditkartenkonten verfügbar",
