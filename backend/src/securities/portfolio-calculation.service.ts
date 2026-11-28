@@ -137,6 +137,9 @@ export interface ReplayedLot {
 
 export type DailyRateIndex = Map<string, Array<{ date: string; rate: number }>>;
 
+/** The day a daily index was built against; `resolveDailyRate` reads it. */
+const dailyIndexToday = new WeakMap<DailyRateIndex, string>();
+
 /**
  * Per-request spot-rate cache keyed `"FROM->TO"`. `null` is a cached *absence*:
  * the pair was looked up and has no usable rate, so later conversions in the
@@ -591,12 +594,14 @@ export class PortfolioCalculationService {
     defaultCurrency: string,
     startDate: string,
     endDate: string,
+    today: string = todayYMD(),
   ): Promise<DailyRateIndex> {
     const needed = new Set<string>();
     for (const c of currencies) {
       if (c && c !== defaultCurrency) needed.add(c);
     }
     const index: DailyRateIndex = new Map();
+    dailyIndexToday.set(index, today);
     if (needed.size === 0) return index;
 
     // Load one age bound before the window opens, anchored at today when the
@@ -604,7 +609,7 @@ export class PortfolioCalculationService {
     // Those are exactly the observations any date in [startDate, endDate] can
     // be priced by, so widening or narrowing the chart cannot change a bar's
     // rate -- which loading only the window itself did (issue #1390).
-    const anchor = startDate < todayYMD() ? startDate : todayYMD();
+    const anchor = startDate < today ? startDate : today;
     const floor = new Date(`${anchor}T00:00:00.000Z`);
     floor.setUTCDate(floor.getUTCDate() - FX_MAX_RATE_AGE_DAYS);
     const rows = await this.exchangeRateService.getRateHistory(
@@ -664,8 +669,12 @@ export class PortfolioCalculationService {
     to: string,
     dateStr: string,
   ): number | undefined {
-    const resolved = resolveFxRate(from, to, dateStr, (f, t) =>
-      index.get(`${f}->${t}`),
+    const resolved = resolveFxRate(
+      from,
+      to,
+      dateStr,
+      (f, t) => index.get(`${f}->${t}`),
+      { today: dailyIndexToday.get(index) ?? todayYMD() },
     );
     return resolved.rate === null ? undefined : resolved.rate;
   }
@@ -869,6 +878,7 @@ export class PortfolioCalculationService {
     const result = new Map<string, number | null>();
     if (accountIds.length === 0) return result;
     return withScopedDb(this.dataSource, async (m) => {
+      const today = await userTodayYMD(m, userId);
       // The amount is in the security's currency (the account's for a row with
       // no security) and its own rate takes it into the settlement account's:
       // the funding account, else the linked cash account, else the account --
@@ -916,7 +926,7 @@ export class PortfolioCalculationService {
           CASH_INCOME_ACTIONS,
           // Only a brokerage settles in its linked cash account.
           AccountSubType.INVESTMENT_BROKERAGE,
-          await userTodayYMD(m, userId),
+          today,
         ],
       );
       for (const accountId of accountIds) result.set(accountId, 0);
@@ -935,6 +945,8 @@ export class PortfolioCalculationService {
         reportingCurrency,
         days[0],
         days[days.length - 1],
+        undefined,
+        today,
       );
       const rateOn = (from: string, to: string, date: string) =>
         resolveIndexedRate(index, from, to, date).rate;

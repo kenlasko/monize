@@ -2184,6 +2184,38 @@ describe("NetWorthService", () => {
       expect(result[0].assets).toBe(750);
     });
 
+    it("loads the rates against the reader's day the caller passes", async () => {
+      mabRepository.count.mockResolvedValue(5);
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+      reportQuery
+        .mockResolvedValueOnce([
+          {
+            month: "2024-01-01",
+            balance: 1000,
+            market_value: null,
+            account_id: "cad-account",
+            account_type: AccountType.CHEQUING,
+            account_sub_type: null,
+            currency_code: "CAD",
+          },
+        ])
+        .mockResolvedValueOnce([]);
+
+      await service.getMonthlyNetWorthWithAggregates(
+        "user-1",
+        "2024-01-01",
+        "2024-01-31",
+        undefined,
+        undefined,
+        "2024-01-20",
+      );
+
+      const rateCall = reportQuery.mock.calls.find(([sql]) =>
+        /exchange_rates/.test(sql),
+      )!;
+      expect(rateCall[1]).toContain("2024-01-20");
+    });
+
     it("gives each month's change as the difference of the two months' aggregates, read once (issue #2410)", async () => {
       // 100.006 and 100.014 both read 100.01, so the difference of the two
       // readings is 0.00; the change itself, 0.008, reads 0.01.

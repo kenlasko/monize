@@ -237,6 +237,7 @@ export class ForecastAggregatorService {
     currency: string,
     startDate: string,
     endDate: string,
+    today?: string,
   ): Promise<RateIndex> {
     const foreign = new Set([...currencies].filter((c) => c !== currency));
     if (foreign.size === 0) return new Map();
@@ -247,6 +248,8 @@ export class ForecastAggregatorService {
         currency,
         startDate,
         endDate,
+        undefined,
+        today,
       ),
     );
   }
@@ -370,6 +373,7 @@ export class ForecastAggregatorService {
       currency,
       startDate,
       endDate,
+      endDate,
     );
 
     // One signed figure per (month, category), each part converted at its own
@@ -478,6 +482,7 @@ export class ForecastAggregatorService {
     const rateIndex = await this.loadRateIndex(
       accountList.map((a) => a.currencyCode),
       currency,
+      today,
       today,
       today,
     );
@@ -631,6 +636,7 @@ export class ForecastAggregatorService {
       this.marketRateCurrencies(rows, currency),
       currency,
       startDate,
+      endDate,
       endDate,
     );
     // One converted figure per month; a payee paid in two currencies counts
