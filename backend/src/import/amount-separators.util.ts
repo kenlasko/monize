@@ -4,7 +4,9 @@
  * amount that fails it is unreadable, never the number its first digits make.
  */
 export function isPlainAmount(value: string): boolean {
-  return /^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(value);
+  // The decimal part is one optional group so the digit runs cannot split
+  // ambiguously (`\d+\.?\d*` backtracks polynomially on a long run of digits).
+  return /^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value);
 }
 
 /**
