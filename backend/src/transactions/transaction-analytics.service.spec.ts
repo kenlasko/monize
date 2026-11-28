@@ -731,7 +731,7 @@ describe("TransactionAnalyticsService", () => {
       });
     });
 
-    it("keeps the top-level totals for one currency and nulls them for several (#2365 R3)", async () => {
+    it("keeps the top-level totals for a single currency (#2365 R3)", async () => {
       mockQueryBuilder.getRawMany.mockResolvedValue([
         {
           currencyCode: "USD",
@@ -744,6 +744,34 @@ describe("TransactionAnalyticsService", () => {
       expect(one.totalIncome).toBe(1000);
       expect(one.totalExpenses).toBe(500);
       expect(one.netCashFlow).toBe(500);
+    });
+
+    it("rounds a net at its currency's places, never a bare float delta", async () => {
+      // 0.3 - 0.1 is 0.19999999999999998 in doubles.
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          currencyCode: "USD",
+          totalIncome: "0.3",
+          totalExpenses: "0.1",
+          transactionCount: "2",
+        },
+      ]);
+      const usd = await service.getSummary(userId);
+      expect(usd.netCashFlow).toBe(0.2);
+      expect(usd.byCurrency.USD.netCashFlow).toBe(0.2);
+
+      // A coin keeps its eight places.
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          currencyCode: "BTC",
+          totalIncome: "0.00000003",
+          totalExpenses: "0.00000001",
+          transactionCount: "2",
+        },
+      ]);
+      const btc = await service.getSummary(userId);
+      expect(btc.netCashFlow).toBe(0.00000002);
+      expect(btc.byCurrency.BTC.netCashFlow).toBe(0.00000002);
     });
 
     it("handles null values in raw query results", async () => {
@@ -1736,8 +1764,8 @@ describe("TransactionAnalyticsService", () => {
       );
     });
 
-    it("counts each account's provisional legs and their total", async () => {
-      mockQueryBuilder.getRawMany.mockResolvedValue([
+    it("counts each account's provisional legs, and in the total only those that converted", async () => {
+      const rows = (eurDay: string | null) => [
         {
           accountId: "acc-usd",
           accountName: "US Chequing",
@@ -1755,8 +1783,14 @@ describe("TransactionAnalyticsService", () => {
           outbound: "0",
           count: "1",
           provisionalCount: "1",
+          fx_day: eurDay,
         },
-      ]);
+      ];
+      mockQueryBuilder.getRawMany.mockResolvedValue(rows("2026-01-15"));
+      // The line-row read answers first, then the rate history.
+      managerMock.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValue([storedRate("EUR", "USD", 1.25, "2026-01-10")]);
 
       const result = await service.getTransfersByAccount(
         userId,
@@ -1771,6 +1805,21 @@ describe("TransactionAnalyticsService", () => {
       // Accounts come back sorted by name: Euro Savings, then US Chequing.
       expect(result.accounts.map((a) => a.provisionalCount)).toEqual([1, 0]);
       expect(result.provisionalCount).toBe(1);
+
+      // Deliberate change (docs/specs/provisional-amounts.md section 8): with
+      // no EUR->USD rate the EUR row is outside the subtotal and its count.
+      managerMock.query.mockReset();
+      managerMock.query.mockResolvedValue([]);
+      const unconverted = await service.getTransfersByAccount(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+      expect(unconverted.accounts.map((a) => a.provisionalCount)).toEqual([
+        1, 0,
+      ]);
+      expect(unconverted.provisionalCount).toBe(0);
+      expect(unconverted.fxComplete).toBe(false);
     });
 
     it("aggregates inbound, outbound, net, and count per account", async () => {
@@ -1847,16 +1896,14 @@ describe("TransactionAnalyticsService", () => {
       expect(result.missingRatePairs).toEqual(["BTC->USD"]);
     });
 
-    it("converts the rollup into the default currency, or withholds it with the known subtotal and the gap", async () => {
+    it("converts the rollup per row into the default currency, or withholds it with the known subtotal and the gap", async () => {
       // USD reporting (no preference row); EUR has a rate, GBP has none.
-      managerMock.query.mockResolvedValue([
-        storedRate("EUR", "USD", 1.25, "2026-01-30"),
-      ]);
       const raw = (
         accountId: string,
         currencyCode: string,
         inbound: string,
         outbound: string,
+        extra: Record<string, unknown> = {},
       ) => ({
         accountId,
         accountName: accountId,
@@ -1864,8 +1911,15 @@ describe("TransactionAnalyticsService", () => {
         inbound,
         outbound,
         count: "1",
+        ...(currencyCode === "USD" ? {} : { fx_day: "2026-01-15" }),
+        ...extra,
       });
+      const answer = () =>
+        managerMock.query
+          .mockResolvedValueOnce([]) // the split-line read
+          .mockResolvedValue([storedRate("EUR", "USD", 1.25, "2026-01-10")]);
 
+      answer();
       mockQueryBuilder.getRawMany.mockResolvedValue([
         raw("a-usd", "USD", "100", "0"),
         raw("a-eur", "EUR", "80", "40"),
@@ -1889,6 +1943,25 @@ describe("TransactionAnalyticsService", () => {
         complete.accounts.find((a) => a.accountId === "a-eur"),
       ).toMatchObject({ currency: "EUR", inbound: 80, outbound: 40 });
 
+      // A row carrying its own rate converts at it, not at the market rate
+      // (INV-FX-002): 100 EUR settled at 2 EUR per USD is 50 USD.
+      managerMock.query.mockReset();
+      answer();
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        raw("a-eur", "EUR", "100", "0", {
+          fx_original_currency: "USD",
+          fx_exchange_rate: "2.00000000",
+        }),
+      ]);
+      const own = await service.getTransfersByAccount(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+      expect(own.totalInbound).toBe(50);
+
+      managerMock.query.mockReset();
+      answer();
       mockQueryBuilder.getRawMany.mockResolvedValue([
         raw("a-usd", "USD", "100", "0"),
         raw("a-eur", "EUR", "80", "40"),
@@ -1908,6 +1981,51 @@ describe("TransactionAnalyticsService", () => {
         fxComplete: false,
         missingRatePairs: ["GBP->USD"],
       });
+    });
+
+    it("reads the rollup totals at the default currency's places (BTC 8, JPY 0)", async () => {
+      const row = {
+        accountId: "a-eur",
+        accountName: "a-eur",
+        currencyCode: "EUR",
+        inbound: "1",
+        outbound: "0",
+        count: "1",
+        fx_day: "2026-01-15",
+      };
+      mockQueryBuilder.getRawMany.mockResolvedValue([row]);
+
+      // 1 EUR at 0.00001234567 BTC per EUR keeps eight places in BTC.
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "BTC",
+      });
+      managerMock.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValue([
+          storedRate("EUR", "BTC", 0.00001234567, "2026-01-10"),
+        ]);
+      const btc = await service.getTransfersByAccount(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+      expect(btc.totalsCurrency).toBe("BTC");
+      expect(btc.totalInbound).toBe(0.00001235);
+
+      // 1 EUR at 157.4 JPY per EUR is whole yen.
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "JPY",
+      });
+      managerMock.query.mockReset();
+      managerMock.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValue([storedRate("EUR", "JPY", 157.4, "2026-01-10")]);
+      const jpy = await service.getTransfersByAccount(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+      expect(jpy.totalInbound).toBe(157);
     });
 
     it("selects the account id for deep-links and maps a missing id to null", async () => {
@@ -1985,11 +2103,14 @@ describe("TransactionAnalyticsService", () => {
         ["acc-1", "acc-2"],
       );
 
+      // Deliberate change: the reporting currency is bound last, for the
+      // line rows' rate-basis columns.
       expect(managerMock.query.mock.calls[0][1]).toEqual([
         userId,
         "2026-01-01",
         "2026-01-31",
         ["acc-1", "acc-2"],
+        "USD",
       ]);
       expect(managerMock.query.mock.calls[0][0]).toContain("ANY($4::uuid[])");
       expect(result.accounts).toEqual([

@@ -37,6 +37,7 @@ import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { memoizedRateResolver } from "../common/converting-total";
 import { FxAggregate } from "../common/fx-aggregate";
+import { reportPlacesOf } from "../common/report-figure";
 import {
   DetectMortgageTypeDto,
   MortgageTypeHistoryDetectionResponseDto,
@@ -2179,7 +2180,13 @@ export class AccountsService {
       totalBalance: number | null;
       /** What converted, in the default currency; beside a `null` `totalBalance`. */
       knownTotalBalanceSubtotal: number;
-      /** The provisional legs inside `totalBalance`: the sum over its accounts. */
+      /** The currency `totalBalance` is in: the default currency. */
+      totalBalanceCurrency: string;
+      /** False when `totalBalance` is `null`; the response's `fxComplete` is the net-worth snapshot's. */
+      totalBalanceFxComplete: boolean;
+      /** `"CAD->USD"` for each pair `totalBalance` lacks; the snapshot's are `missingRatePairs`. */
+      totalBalanceMissingRatePairs: string[];
+      /** The provisional legs inside `knownTotalBalanceSubtotal`: the sum over the accounts that converted. */
       totalBalanceProvisionalCount: number;
     } & NetWorthTotals
   > {
@@ -2211,6 +2218,9 @@ export class AccountsService {
       todayYMD(),
     );
     const balanceTotal = new FxAggregate();
+    // An account whose balance did not convert is outside the subtotal and
+    // outside its provisional count (docs/specs/provisional-amounts.md s.8).
+    let convertedProvisional = 0;
     for (const account of balanceAccounts) {
       const amount = Number(account.currentBalance);
       if (account.currencyCode === defaultCurrency) {
@@ -2223,8 +2233,14 @@ export class AccountsService {
           account.currencyCode,
           defaultCurrency,
         );
+        if (rate === null) continue;
       }
+      // Each balance's count is over the rows inside its `currentBalance`
+      // (`findAll`), so the total's is their sum.
+      convertedProvisional += account.provisionalCount ?? 0;
     }
+    // Read at the default currency's own places, as the reports read theirs.
+    const places = await reportPlacesOf(this.dataSource, defaultCurrency);
 
     const marketValues =
       await this.portfolioService.getAccountMarketValues(userId);
@@ -2236,14 +2252,12 @@ export class AccountsService {
 
     return {
       totalAccounts: accounts.length,
-      totalBalance: balanceTotal.total,
-      knownTotalBalanceSubtotal: balanceTotal.knownSubtotal,
-      // Each balance's count is over the rows inside its `currentBalance`
-      // (`findAll`), so the total's is their sum.
-      totalBalanceProvisionalCount: balanceAccounts.reduce(
-        (sum, account) => sum + (account.provisionalCount ?? 0),
-        0,
-      ),
+      totalBalance: balanceTotal.totalAt(places),
+      knownTotalBalanceSubtotal: balanceTotal.knownSubtotalAt(places),
+      totalBalanceCurrency: defaultCurrency,
+      totalBalanceFxComplete: balanceTotal.isComplete,
+      totalBalanceMissingRatePairs: balanceTotal.missingPairs,
+      totalBalanceProvisionalCount: convertedProvisional,
       ...totals,
     };
   }

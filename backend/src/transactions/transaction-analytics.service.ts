@@ -60,7 +60,6 @@ import { loadReportPlaces, reportPlacesOf } from "../common/report-figure";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import {
   buildRateIndex,
-  convertAtDate,
   RateIndex,
 } from "../common/time-series/rate-index.util";
 import { includesSpendingCategory } from "../built-in-reports/spending-reports.service";
@@ -87,6 +86,10 @@ import {
   readTopGroupParts,
   splitByRateBasis,
 } from "../built-in-reports/rate-basis-parts";
+import {
+  ownTransferLegs,
+  transferRateSql,
+} from "../built-in-reports/transfer-rate-sql";
 
 /**
  * The ordinary-cash amount of one transaction, for the recurring-charge
@@ -175,9 +178,11 @@ export interface TransferAccountSummary {
 export interface TransfersByAccountResult {
   accounts: TransferAccountSummary[];
   /**
-   * The accounts' amounts converted into `totalsCurrency` at the period-end
-   * rate; `null` unless every one converted (`fxComplete`), the part that did
-   * is in the `known*Subtotal` field. `accounts` stay in their own currency.
+   * The accounts' amounts converted into `totalsCurrency`, each row at its own
+   * rate or the rate on its own day (INV-FX-002), read at that currency's
+   * places; `null` unless every one converted (`fxComplete`), the part that
+   * did is in the `known*Subtotal` field. `accounts` stay in their own
+   * currency.
    */
   totalInbound: number | null;
   totalOutbound: number | null;
@@ -188,7 +193,7 @@ export interface TransfersByAccountResult {
   /** `"CAD->USD"` for each pair with no rate; empty when `fxComplete`. */
   missingRatePairs: string[];
   transferCount: number;
-  /** The provisional legs inside the two totals. */
+  /** The provisional legs inside the two known subtotals (converted rows only). */
   provisionalCount: number;
 }
 
@@ -371,6 +376,10 @@ export class TransactionAnalyticsService {
     accountIds?: string[],
   ): Promise<TransfersByAccountResult> {
     return withScopedDb(this.dataSource, async (m) => {
+      const reporting = await resolveUserDefaultCurrency(
+        this.dataSource,
+        userId,
+      );
       const qb = m
         .getRepository(Transaction)
         .createQueryBuilder("t")
@@ -407,6 +416,19 @@ export class TransactionAnalyticsService {
         qb.andWhere("t.accountId IN (:...accountIds)", { accountIds });
       }
 
+      // A foreign part is split by its day and the rate it settled at, so the
+      // totals convert per row as the headline totals do (INV-FX-002).
+      splitByRateBasis(
+        qb,
+        {
+          currency: "t.currencyCode",
+          date: "t.transactionDate",
+          originalCurrency: "t.originalCurrencyCode",
+          exchangeRate: "t.exchangeRate",
+          transferLegs: { transactionAlias: "t" },
+        },
+        reporting,
+      );
       const wholeRows = await qb.getRawMany();
 
       // A split's transfer line is a transfer of its parent's account, at the
@@ -418,12 +440,23 @@ export class TransactionAnalyticsService {
         lineScope = ` AND t.account_id = ANY($4::uuid[])`;
         lineParams.push(accountIds);
       }
+      const reportingParam = `$${lineParams.push(reporting)}::text`;
+      const foreignSql = `t.currency_code <> ${reportingParam}`;
+      const legs = ownTransferLegs(userId, "$1", "ts");
       const lineRows: typeof wholeRows = await m.query(
         `SELECT a.name AS "accountName", a.id AS "accountId",
                 t.currency_code AS "currencyCode",
                 SUM(CASE WHEN ts.amount > 0 THEN ts.amount ELSE 0 END) AS inbound,
                 SUM(CASE WHEN ts.amount < 0 THEN ABS(ts.amount) ELSE 0 END) AS outbound,
-                COUNT(*) AS count
+                COUNT(*) AS count,
+                CASE WHEN ${foreignSql} THEN TO_CHAR(t.transaction_date, 'YYYY-MM-DD') END AS fx_day,
+                CASE WHEN ${foreignSql} THEN t.original_currency_code END AS fx_original_currency,
+                CASE WHEN ${foreignSql} THEN t.exchange_rate END AS fx_exchange_rate${
+                  legs
+                    ? `,
+                ${transferRateSql(reportingParam, "t", legs)} AS fx_transfer_rate`
+                    : ""
+                }
            FROM transactions t
            JOIN transaction_splits ts ON ts.transaction_id = t.id
            JOIN accounts a ON a.id = t.account_id
@@ -433,7 +466,8 @@ export class TransactionAnalyticsService {
             AND t.transaction_date <= $3
             AND (t.status IS NULL OR t.status != 'VOID')
             ${lineScope}
-          GROUP BY a.id, a.name, t.currency_code`,
+          GROUP BY a.id, a.name, t.currency_code, fx_day, fx_original_currency,
+                   fx_exchange_rate${legs ? ", fx_transfer_rate" : ""}`,
         lineParams,
       );
 
@@ -449,10 +483,15 @@ export class TransactionAnalyticsService {
           continue;
         }
         const decimals = moneyDecimalsForCode(places, r.currencyCode);
-        for (const f of ["inbound", "outbound", "count"] as const) {
+        for (const f of [
+          "inbound",
+          "outbound",
+          "count",
+          "provisionalCount",
+        ] as const) {
           prev[f] = sumMoney(
             [Number(prev[f]) || 0, Number(r[f]) || 0],
-            f === "count" ? 0 : decimals,
+            f === "inbound" || f === "outbound" ? decimals : 0,
           );
         }
       }
@@ -475,53 +514,58 @@ export class TransactionAnalyticsService {
         };
       });
 
-      // The per-account figures are period sums with no day to date a rate
-      // by, so each converts at the period-end rate.
-      const reporting = await resolveUserDefaultCurrency(
-        this.dataSource,
-        userId,
-      );
-      const rates = await buildRateIndex(
-        (sql, params) => m.query(sql, params),
-        new Set(accounts.map((a) => a.currency).filter((c) => c !== reporting)),
+      // Each part (an account's rows of one day and rate) converts at the rate
+      // it settled at, else the market rate on its own day, as the headline
+      // totals do; a part with no rate is named and left out of the known
+      // subtotal, with its provisional legs.
+      const parts = [...wholeRows, ...lineRows].map((r) => ({
+        ...r,
+        txDate: r.fx_day ?? null,
+      }));
+      const rates = await this.loadRateIndex(
+        m,
+        parts,
         reporting,
         startDate,
         endDate,
       );
+      const reportPlaces = await loadReportPlaces(m, reporting);
       const inbound = new FxAggregate();
       const outbound = new FxAggregate();
-      for (const a of accounts) {
-        for (const [agg, amount] of [
-          [inbound, a.inbound],
-          [outbound, a.outbound],
-        ] as const) {
-          if (a.currency === reporting) agg.addConverted(amount);
-          else
-            agg.add(
-              convertAtDate(
-                amount,
-                a.currency,
-                reporting,
-                endDate,
-                rates,
-                this.logger,
-              ),
-              a.currency,
-              reporting,
-            );
+      let convertedProvisional = 0;
+      for (const part of parts) {
+        const inboundIn = addDatedAmount(
+          inbound,
+          Number(part.inbound) || 0,
+          part,
+          reporting,
+          rates,
+          this.logger,
+        );
+        const outboundIn = addDatedAmount(
+          outbound,
+          Number(part.outbound) || 0,
+          part,
+          reporting,
+          rates,
+          this.logger,
+        );
+        if (inboundIn && outboundIn) {
+          convertedProvisional += Number(part.provisionalCount) || 0;
         }
       }
+      const fxComplete = inbound.isComplete && outbound.isComplete;
       return {
         accounts,
-        totalInbound: inbound.total,
-        totalOutbound: outbound.total,
-        knownInboundSubtotal: inbound.knownSubtotal,
-        knownOutboundSubtotal: outbound.knownSubtotal,
+        totalInbound: inbound.totalAt(reportPlaces),
+        totalOutbound: outbound.totalAt(reportPlaces),
+        knownInboundSubtotal: inbound.knownSubtotalAt(reportPlaces),
+        knownOutboundSubtotal: outbound.knownSubtotalAt(reportPlaces),
         totalsCurrency: reporting,
-        fxComplete: inbound.isComplete && outbound.isComplete,
+        fxComplete,
         missingRatePairs: FxAggregate.sum([inbound, outbound]).missingPairs,
         transferCount: accounts.reduce((s, a) => s + a.transferCount, 0),
-        provisionalCount: accounts.reduce((s, a) => s + a.provisionalCount, 0),
+        provisionalCount: convertedProvisional,
       };
     });
   }
@@ -743,6 +787,12 @@ export class TransactionAnalyticsService {
           transactionCount: number;
         }
       > = {};
+      // A net is a difference of two amounts at the currency's places, rounded
+      // there, never a bare float delta.
+      const places = await loadCurrencyPlacesForRead(
+        m,
+        rows.map((row) => row.currencyCode).filter(Boolean),
+      );
 
       for (const bucket of foldRateParts(
         rows,
@@ -762,7 +812,10 @@ export class TransactionAnalyticsService {
           byCurrency[bucket.first.currencyCode] = {
             totalIncome: income,
             totalExpenses: expenses,
-            netCashFlow: income - expenses,
+            netCashFlow: roundMoney(
+              income - expenses,
+              moneyDecimalsForCode(places, bucket.first.currencyCode),
+            ),
             transactionCount: bucket.count,
           };
         }
@@ -800,11 +853,15 @@ export class TransactionAnalyticsService {
 
       // Native sums mean something only inside one currency; across several the
       // answer is the `converted` block, never a raw sum of unlike units.
-      const oneCurrency = Object.keys(byCurrency).length <= 1;
+      const codes = Object.keys(byCurrency);
+      const oneCurrency = codes.length <= 1;
+      const decimals = moneyDecimalsForCode(places, codes[0] ?? "");
       return {
-        totalIncome: oneCurrency ? totalIncome : null,
-        totalExpenses: oneCurrency ? totalExpenses : null,
-        netCashFlow: oneCurrency ? totalIncome - totalExpenses : null,
+        totalIncome: oneCurrency ? roundMoney(totalIncome, decimals) : null,
+        totalExpenses: oneCurrency ? roundMoney(totalExpenses, decimals) : null,
+        netCashFlow: oneCurrency
+          ? roundMoney(totalIncome - totalExpenses, decimals)
+          : null,
         transactionCount,
         provisionalCount: [...provisional.values()].reduce(
           (sum, count) => sum + count,

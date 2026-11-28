@@ -353,6 +353,12 @@ export interface AccountSummary {
   totalBalance: number | null;
   /** The part of `totalBalance` that converted. */
   knownTotalBalanceSubtotal?: number;
+  /** The currency `totalBalance` is in. */
+  totalBalanceCurrency?: string;
+  /** False when `totalBalance` is `null`; `fxComplete` below is the net-worth snapshot's. Read as `=== false`. */
+  totalBalanceFxComplete?: boolean;
+  /** `"ZZZ->USD"` for each pair `totalBalance` lacks. */
+  totalBalanceMissingRatePairs?: string[];
   totalAssets: number | null;
   totalLiabilities: number | null;
   netWorth: number | null;

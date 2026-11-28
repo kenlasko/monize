@@ -26,8 +26,9 @@ interface BankingSummaryCardsProps {
    * explains that part of it.
    */
   overdue?: BalanceForecastOverdue | null;
-  moneyIn: number;
-  moneyOut: number;
+  /** `null` is unknown (a failed read, a withheld total), not zero. */
+  moneyIn: number | null;
+  moneyOut: number | null;
   interestEarnedYtd: number;
   averageBalance: number;
   onMoneyInClick?: () => void;
@@ -83,14 +84,14 @@ export function BankingSummaryCards({
     },
     {
       label: t('summary.moneyIn'),
-      value: formatCurrency(Math.abs(moneyIn), currency),
+      value: moneyIn === null ? <UnknownAmount reason="displayFx" /> : formatCurrency(Math.abs(moneyIn), currency),
       valueClass: 'text-green-600 dark:text-green-400',
       note: t('summary.thisMonth'),
       onClick: onMoneyInClick,
     },
     {
       label: t('summary.moneyOut'),
-      value: formatCurrency(Math.abs(moneyOut), currency),
+      value: moneyOut === null ? <UnknownAmount reason="displayFx" /> : formatCurrency(Math.abs(moneyOut), currency),
       valueClass: 'text-red-600 dark:text-red-400',
       note: t('summary.thisMonth'),
       onClick: onMoneyOutClick,

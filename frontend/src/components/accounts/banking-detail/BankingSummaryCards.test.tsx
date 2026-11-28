@@ -87,4 +87,11 @@ describe('BankingSummaryCards', () => {
     );
     expect(screen.queryByText(/overdue/)).not.toBeInTheDocument();
   });
+
+  it('shows an unknown money in and out as unknown, never as zero', () => {
+    render(<BankingSummaryCards account={makeAccount()} {...base} moneyIn={null} moneyOut={null} />);
+    expect(screen.queryByText('$0.00')).not.toBeInTheDocument();
+    expect(screen.queryByText('$2000.00')).not.toBeInTheDocument();
+    expect(screen.queryByText('$1400.00')).not.toBeInTheDocument();
+  });
 });
