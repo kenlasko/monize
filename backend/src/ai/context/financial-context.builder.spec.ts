@@ -5,6 +5,7 @@ import { AccountsService } from "../../accounts/accounts.service";
 import { CategoriesService } from "../../categories/categories.service";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import { QUERY_SYSTEM_PROMPT } from "./prompt-templates";
+import { requestContextStorage } from "../../common/request-context";
 import { createScopedDbMocks } from "../../test-helpers/scoped-db-testing";
 
 jest.mock("../../common/db/scoped-db", () =>
@@ -83,6 +84,10 @@ describe("FinancialContextBuilder", () => {
       findOne: jest.fn().mockResolvedValue({ defaultCurrency: "USD" }),
     };
 
+    const scoped = createScopedDbMocks([[UserPreference, mockPrefRepo]]);
+    // The user's timezone lookup behind "today": no row, so UTC.
+    scoped.manager.query.mockResolvedValue([]);
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FinancialContextBuilder,
@@ -90,8 +95,7 @@ describe("FinancialContextBuilder", () => {
         { provide: CategoriesService, useValue: mockCategoriesService },
         {
           provide: DataSource,
-          useValue: createScopedDbMocks([[UserPreference, mockPrefRepo]])
-            .dataSource,
+          useValue: scoped.dataSource,
         },
       ],
     }).compile();
@@ -100,6 +104,20 @@ describe("FinancialContextBuilder", () => {
   });
 
   describe("buildQueryContext()", () => {
+    it("states today in the user's day, not the server's (#2365)", async () => {
+      // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
+      jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+      try {
+        const result = await requestContextStorage.run(
+          { userId, timezone: "Pacific/Kiritimati" },
+          () => builder.buildQueryContext(userId),
+        );
+        expect(result).toContain("TODAY'S DATE: 2026-11-28");
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it("builds full context with accounts (no balances), categories, and preferences", async () => {
       const result = await builder.buildQueryContext(userId);
 

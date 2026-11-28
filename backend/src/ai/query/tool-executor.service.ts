@@ -1,3 +1,4 @@
+import { todayYMD } from "../../common/date-utils";
 import { sharedLedgerRefusal } from "../../common/db/shared-ledger-refusal";
 import {
   SharedReviewService,
@@ -3298,15 +3299,10 @@ export class ToolExecutorService {
       );
 
       const start =
-        startDate ??
-        (history.length > 0
-          ? history[0].month
-          : new Date().toISOString().substring(0, 10));
+        startDate ?? (history.length > 0 ? history[0].month : todayYMD());
       const end =
         endDate ??
-        (history.length > 0
-          ? history[history.length - 1].month
-          : new Date().toISOString().substring(0, 10));
+        (history.length > 0 ? history[history.length - 1].month : todayYMD());
 
       return {
         // Bare array, matching the MCP generate_report net_worth_history payload

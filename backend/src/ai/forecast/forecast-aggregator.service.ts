@@ -7,6 +7,7 @@ import { Injectable, Inject, Logger, forwardRef } from "@nestjs/common";
 import { describeFrequencyForModel } from "../../common/custom-recurrence-describe";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
+import { userTodayYMD } from "../../common/users-by-timezone.util";
 import {
   investmentLinkedTransactionExclusion,
   reportableTransactionAmountSql,
@@ -183,11 +184,11 @@ export class ForecastAggregatorService {
     userId: string,
     currency: string,
   ): Promise<ForecastAggregates> {
-    const now = new Date();
-    const today = now.toISOString().substring(0, 10);
-    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 12, 1)
-      .toISOString()
-      .substring(0, 10);
+    const today = await withScopedDb(this.dataSource, (manager) =>
+      userTodayYMD(manager, userId),
+    );
+    // First day of the month twelve months before the user's month.
+    const twelveMonthsAgo = `${Number(today.slice(0, 4)) - 1}-${today.slice(5, 7)}-01`;
 
     const [
       history,
