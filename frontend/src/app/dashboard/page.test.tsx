@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within, fireEvent } from '@/test/render';
 import { act } from '@testing-library/react';
+import { useContext } from 'react';
+import { KnownAccountIdsContext } from '@/hooks/useWidgetConfig';
 import toast from 'react-hot-toast';
 import DashboardPage from './page';
 import { notifyAutoPriceRefresh } from '@/lib/autoPriceRefreshSignal';
@@ -174,16 +176,20 @@ vi.mock('@/components/dashboard/DashboardHero', () => ({
 }));
 
 vi.mock('@/components/dashboard/FavouriteAccounts', () => ({
-  FavouriteAccounts: ({ isLoading, institutions, accounts, brokerageMarketValues }: any) => (
+  FavouriteAccounts: ({ isLoading, institutions, accounts, brokerageMarketValues }: any) => {
+    const known = useContext(KnownAccountIdsContext);
+    return (
     <div
       data-testid="favourite-accounts"
+      data-known-ids={known ? [...known].join(',') : 'null'}
       data-institutions={institutions?.length}
       data-account-ids={(accounts ?? []).map((a: any) => a.id).join(',')}
       data-market-values={JSON.stringify([...(brokerageMarketValues ?? new Map()).entries()])}
     >
       {isLoading ? 'loading' : 'loaded'}
     </div>
-  ),
+    );
+  },
 }));
 
 vi.mock('@/components/dashboard/UpcomingBills', () => ({
@@ -392,6 +398,28 @@ describe('DashboardPage', () => {
       expect(screen.getByTestId('favourite-accounts')).toHaveAttribute('data-account-ids', 'open-1');
     });
     expect(mockGetAccounts).toHaveBeenCalledWith(true);
+  });
+
+  it('offers widgets the loaded account ids, and none while another view loads', async () => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'open-1', name: 'Checking', accountType: 'CHECKING', isClosed: false },
+      { id: 'closed-1', name: 'Old Card', accountType: 'CREDIT_CARD', isClosed: true },
+    ]);
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(<DashboardPage />);
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('favourite-accounts')).toHaveAttribute('data-known-ids', 'open-1,closed-1');
+    });
+    // The delegate view's accounts have not answered: the owner's ids are not its filter.
+    mockGetAccounts.mockReturnValue(new Promise(() => {}));
+    authState.current.actingAsUserId = 'owner-1';
+    authState.current.delegateSections = { bills: false };
+    await act(async () => {
+      view.rerender(<DashboardPage />);
+    });
+    expect(screen.getByTestId('favourite-accounts')).toHaveAttribute('data-known-ids', 'null');
   });
 
   it('detects investment accounts and sets hasInvestments', async () => {

@@ -258,6 +258,8 @@ function DashboardContent() {
   const [loadingKey, setLoadingKey] = useState(requestKey);
   if (loadingKey !== requestKey) {
     setLoadingKey(requestKey);
+    // Another view's accounts are not this view's filter.
+    setAccountsLoaded(false);
     if (authHydrated) setIsLoading(true);
   }
 

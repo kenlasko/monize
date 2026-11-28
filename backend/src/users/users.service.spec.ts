@@ -2406,8 +2406,8 @@ describe("UsersService", () => {
       const calls = mockQueryRunner.query.mock.calls as [string, unknown[]][];
       const strip = calls.findIndex(
         ([q]) =>
-          q.includes("SET dashboard_widget_config") ||
-          q.includes("jsonb_each(p.dashboard_widget_config)"),
+          q.includes("FROM user_preferences p") &&
+          q.includes("p.dashboard_widget_config"),
       );
       const wipe = calls.findIndex(([q]) => q.includes("DELETE FROM accounts"));
       expect(strip).toBeGreaterThanOrEqual(0);

@@ -1,6 +1,7 @@
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { AccountsModule } from "@/accounts/accounts.module";
+import { UsersService } from "@/users/users.service";
 import { AccountsService } from "@/accounts/accounts.service";
 import {
   ActionHistoryService,
@@ -26,6 +27,7 @@ describe("Account delete strips the id from dashboard widget config (integration
   let db: DataSource;
   let accounts: AccountsService;
   let history: ActionHistoryService;
+  let users: UsersService;
   let userId: string;
   let a: string;
   let b: string;
@@ -35,6 +37,7 @@ describe("Account delete strips the id from dashboard widget config (integration
     db = module.get(DataSource);
     accounts = module.get(AccountsService);
     history = module.get(ActionHistoryService, { strict: false });
+    users = module.get(UsersService, { strict: false });
   });
 
   afterAll(async () => {
@@ -133,8 +136,83 @@ describe("Account delete strips the id from dashboard widget config (integration
       [userId],
     );
     expect(after).toEqual({
-      spending: { accountIds: [b, a] },
+      spending: { accountIds: [a, b] },
       hero: { portfolioAccountIds: [a] },
+    });
+  });
+
+  it("undo leaves a selection the user changed since the delete", async () => {
+    await db.query(
+      `INSERT INTO user_preferences (user_id, dashboard_widget_config)
+       VALUES ($1, $2::jsonb)`,
+      [userId, JSON.stringify({ spending: { accountIds: [a, b] } })],
+    );
+    await withUserContext(userId, () => accounts.delete(userId, a));
+    await db.query(
+      `UPDATE user_preferences SET dashboard_widget_config = $2::jsonb WHERE user_id = $1`,
+      [userId, JSON.stringify({ spending: { accountIds: [] } })],
+    );
+
+    await settlePendingHistoryWrites();
+    await withUserContext(userId, () => history.undo(userId));
+
+    const [{ dashboard_widget_config: after }] = await db.query(
+      `SELECT dashboard_widget_config FROM user_preferences WHERE user_id = $1`,
+      [userId],
+    );
+    expect(after).toEqual({ spending: { accountIds: [] } });
+  });
+
+  it("keeps JSON null elements and survives a config that is not an object", async () => {
+    await db.query(
+      `INSERT INTO user_preferences (user_id, dashboard_widget_config)
+       VALUES ($1, $2::jsonb)`,
+      [userId, `{"spending":{"accountIds":[null,"${a}","${b}"]},"odd":5}`],
+    );
+    await withUserContext(userId, () => accounts.delete(userId, a));
+    const [{ dashboard_widget_config: after }] = await db.query(
+      `SELECT dashboard_widget_config FROM user_preferences WHERE user_id = $1`,
+      [userId],
+    );
+    expect(after).toEqual({ spending: { accountIds: [null, b] }, odd: 5 });
+
+    await db.query(
+      `UPDATE user_preferences SET dashboard_widget_config = '[1]'::jsonb WHERE user_id = $1`,
+      [userId],
+    );
+    await withUserContext(userId, () => accounts.delete(userId, b));
+    const [{ dashboard_widget_config: odd }] = await db.query(
+      `SELECT dashboard_widget_config FROM user_preferences WHERE user_id = $1`,
+      [userId],
+    );
+    expect(odd).toEqual([1]);
+  });
+
+  it("a layout or hero save carrying a deleted id does not store it", async () => {
+    await db.query(
+      `INSERT INTO user_preferences (user_id, dashboard_widget_config)
+       VALUES ($1, $2::jsonb)`,
+      [userId, JSON.stringify({ hero: { portfolioAccountIds: [a, b] } })],
+    );
+    await withUserContext(userId, () => accounts.delete(userId, a));
+
+    // A client that last read the map before the delete sends the id back.
+    await withUserContext(userId, () =>
+      users.updatePreferences(userId, {
+        dashboardWidgetConfig: {
+          hero: { portfolioAccountIds: [a, b], showReturn: true },
+          layout: { accountIds: [a], gridWidth: "full" },
+        },
+      }),
+    );
+
+    const [{ dashboard_widget_config: after }] = await db.query(
+      `SELECT dashboard_widget_config FROM user_preferences WHERE user_id = $1`,
+      [userId],
+    );
+    expect(after).toEqual({
+      hero: { portfolioAccountIds: [b], showReturn: true },
+      layout: { accountIds: [], gridWidth: "full" },
     });
   });
 });

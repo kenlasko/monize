@@ -2484,7 +2484,8 @@ export class ActionHistoryService {
     await assertUndoCurrencyKind(action, manager, "account");
     if (action.action === "create" && action.entityId) {
       // Also a delete's redo: the account goes again, so its id leaves the
-      // widget settings again.
+      // widget settings again. One way: the redo of an undone create restores
+      // the account but does not put it back into any widget's selection.
       await stripAccountIdsFromWidgetConfig(manager, action.userId, [
         action.entityId,
       ]);
