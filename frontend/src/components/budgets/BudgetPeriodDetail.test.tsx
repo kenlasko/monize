@@ -400,6 +400,19 @@ describe('BudgetPeriodDetail', () => {
     }
   });
 
+  it('treats cancelling fractional allocations as zero total funding', () => {
+    const periodCategories = [0.10, 0.20, -0.30].map((effectiveBudget, index) => ({
+      ...mockPeriodCategory,
+      id: `line-${index}`,
+      effectiveBudget,
+      actualAmount: index === 0 ? 1 : 0,
+    }));
+    render(<BudgetPeriodDetail period={{ ...mockPeriod, periodCategories }} formatCurrency={mockFormat} />);
+
+    expect(screen.getByText('Total Spent').parentElement).toHaveTextContent('Usage requires positive funding.');
+    expect(screen.getAllByTestId('progress-bar')).toHaveLength(2);
+  });
+
   it('sorts a known refund rate before a category without positive funding', () => {
     const unfunded = { ...mockPeriodCategory, effectiveBudget: -18, actualAmount: -55 };
     const refund = {

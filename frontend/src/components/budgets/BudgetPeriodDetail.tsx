@@ -2,7 +2,7 @@
 
 import { isIncomeCategory as isIncomeCategoryType } from '@/lib/category-type';
 import { useTranslations } from 'next-intl';
-import { gainLossColor, roundMoney, sumMoney } from '@/lib/format';
+import { gainLossColor, MONEY_SCALE, roundMoney, sumMoney } from '@/lib/format';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { BudgetProgressBar } from './BudgetProgressBar';
@@ -58,13 +58,13 @@ export function BudgetPeriodDetail({
   const expenseCategories = categories.filter((pc) => !isIncomeCategory(pc));
   const incomeCategories = categories.filter((pc) => isIncomeCategory(pc));
 
-  const totalBudgeted = expenseCategories.reduce(
-    (sum, pc) => sum + Number(pc.effectiveBudget),
-    0,
+  const totalBudgeted = sumMoney(
+    expenseCategories.map((pc) => Number(pc.effectiveBudget)),
+    MONEY_SCALE,
   );
-  const totalSpent = expenseCategories.reduce(
-    (sum, pc) => sum + Number(pc.actualAmount),
-    0,
+  const totalSpent = sumMoney(
+    expenseCategories.map((pc) => Number(pc.actualAmount)),
+    MONEY_SCALE,
   );
   const lineIncome = sumMoney(
     incomeCategories.map((pc) => Number(pc.actualAmount)),
