@@ -222,6 +222,35 @@ describe("InsightsAggregatorService", () => {
       );
     });
 
+    it("loads the rates against the user's own day", async () => {
+      jest.useFakeTimers().setSystemTime(new Date("2026-06-10T11:00:00Z"));
+      try {
+        withRows([
+          row({
+            month: "2026-06",
+            net: "50",
+            currencyCode: "EUR",
+            fx_day: "2026-06-05",
+          }),
+        ]);
+        // The stored zone puts the user on the 11th while UTC is on the 10th.
+        managerQuery.mockImplementation(async (sql: string) =>
+          /user_preferences/.test(sql)
+            ? [{ timezone: "Pacific/Kiritimati" }]
+            : [],
+        );
+
+        await service.computeAggregates(userId, "USD");
+
+        const rateCall = managerQuery.mock.calls.find(([sql]) =>
+          /exchange_rates/.test(sql),
+        )!;
+        expect(rateCall[1]).toContain("2026-06-11");
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it("converts each currency into the reporting currency and names a missing pair", async () => {
       withRows([
         row({ month: "2026-01", net: "100" }),

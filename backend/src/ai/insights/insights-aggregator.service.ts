@@ -267,6 +267,9 @@ export class InsightsAggregatorService {
               currency,
               startDate,
               endDate,
+              undefined,
+              // endDate is the user's day (computeAggregates).
+              endDate,
             ),
           );
 

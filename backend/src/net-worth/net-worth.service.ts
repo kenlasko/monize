@@ -1190,7 +1190,13 @@ export class NetWorthService {
           snapshots,
           defaultCurrency,
           places,
-          await this.buildRateIndex(currencies, defaultCurrency, start, end),
+          await this.buildRateIndex(
+            currencies,
+            defaultCurrency,
+            start,
+            end,
+            userToday,
+          ),
           provisional,
           withheld,
           currentMonth,
@@ -1649,6 +1655,7 @@ export class NetWorthService {
           start,
           end,
           places,
+          userToday,
         ),
       (months) =>
         months.map((m) => ({
@@ -1674,6 +1681,7 @@ export class NetWorthService {
     start: string,
     end: string,
     places: number,
+    userToday?: string,
   ): Promise<
     {
       month: string;
@@ -1703,6 +1711,7 @@ export class NetWorthService {
       defaultCurrency,
       start,
       end,
+      userToday,
     );
 
     const monthMap = new Map<string, FxAggregate>();
@@ -3508,6 +3517,7 @@ export class NetWorthService {
             account.currencyCode,
             months[0],
             months[months.length - 1],
+            userToday,
           )
         : new Map();
 
@@ -3801,6 +3811,7 @@ export class NetWorthService {
     defaultCurrency: string,
     startDate: string,
     endDate: string,
+    today?: string,
   ): Promise<RateIndex> {
     return buildRateIndex(
       (sql, params) => this.scopedQuery(sql, params),
@@ -3809,6 +3820,7 @@ export class NetWorthService {
       startDate,
       endDate,
       this.monthEndDate(endDate),
+      today,
     );
   }
 

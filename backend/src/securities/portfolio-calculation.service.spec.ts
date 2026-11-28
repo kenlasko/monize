@@ -3113,11 +3113,6 @@ describe("PortfolioCalculationService daily rate index", () => {
       );
     });
 
-    /**
-     * Was: "falls back to the earliest known rate when the date precedes all
-     * history". Issue #1390: a bar is never valued at a rate struck after it,
-     * and a rate older than the age bound is not that bar's rate either.
-     */
     describe("with a request timezone", () => {
       // 03:00Z is 2026-06-11 in UTC and still 2026-06-10 in Los Angeles.
       beforeEach(() => {
@@ -3162,6 +3157,11 @@ describe("PortfolioCalculationService daily rate index", () => {
       });
     });
 
+    /**
+     * Was: "falls back to the earliest known rate when the date precedes all
+     * history". Issue #1390: a bar is never valued at a rate struck after it,
+     * and a rate older than the age bound is not that bar's rate either.
+     */
     it("is undefined for a date the whole loaded history postdates", async () => {
       exchangeRateService.getRateHistory.mockResolvedValue([
         rate("USD", "CAD", 1.4, "2026-06-01"),

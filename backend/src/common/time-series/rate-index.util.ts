@@ -150,7 +150,7 @@ export function indexRateRows(
     const key = `${r.from_currency}->${r.to_currency}`;
     if (!index.has(key)) index.set(key, []);
     index.get(key)!.push({
-      date: rateDateString(r.rate_date),
+      date: rateDateString(r.rate_date, today),
       rate: Number(r.rate),
     });
   }
@@ -278,8 +278,11 @@ export function convertAtDate(
  * rely on. `exchange_rates.rate_date` is `NOT NULL`, so the branch is reachable
  * only from a hand-built row.
  */
-function rateDateString(value: string | Date | null | undefined): string {
-  if (!value) return new Date().toISOString().substring(0, 10);
+function rateDateString(
+  value: string | Date | null | undefined,
+  today: string,
+): string {
+  if (!value) return today;
   if (typeof value === "string") return value.substring(0, 10);
   return value.toISOString().substring(0, 10);
 }
