@@ -469,7 +469,7 @@ describe("AccountBalancesReportService", () => {
       const countCall = query.mock.calls.find(([sql]: [string]) =>
         isProvisionalCountQuery(sql),
       );
-      expect(countCall[1]).toEqual([["acc-1"], ["2026-03-01"], false]);
+      expect(countCall[1]).toEqual([["acc-1"], ["2026-03-01"], null]);
     });
 
     it("counts nothing before the account existed, as its balance is zero", async () => {

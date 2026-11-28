@@ -327,7 +327,7 @@ describe("DailyBalanceTotalsService", () => {
       expect(countCall?.params).toEqual([
         ["chequing", "savings"],
         ["2026-06-13", "2026-06-14"],
-        false,
+        null,
       ]);
     });
 

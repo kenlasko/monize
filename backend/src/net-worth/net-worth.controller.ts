@@ -159,9 +159,12 @@ export class NetWorthController {
   @ApiResponse({ status: 401, description: "Unauthorized" })
   async getMonthlyNetWorth(
     @Request() req,
-    @Query("startDate") startDate?: string,
-    @Query("endDate") endDate?: string,
+    @Query("startDate") rawStartDate?: string,
+    @Query("endDate") rawEndDate?: string,
   ) {
+    // A repeated key arrives as an array; refuse it before the text checks.
+    const startDate = assertStringParam(rawStartDate, "startDate");
+    const endDate = assertStringParam(rawEndDate, "endDate");
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (startDate && !dateRegex.test(startDate))
       throw new BadRequestException(

@@ -25,6 +25,9 @@ jest.mock("../common/db/scoped-db", () =>
  * `rawQuery` backs the raw statements the service issues through
  * `manager.query`.
  */
+/** The stored timezone the mocked preference lookup answers with. */
+let userTimezone = "UTC";
+
 function buildService(
   repos: Array<[unknown, Record<string, jest.Mock>]>,
   exchangeRateService: unknown,
@@ -44,7 +47,13 @@ function buildService(
       ];
   const { manager, dataSource } = createScopedDbMocks(withPreference as never);
   manager.query.mockImplementation((sql: string, params?: unknown[]) =>
-    rawQuery ? rawQuery(sql, params) : Promise.resolve([]),
+    /FROM user_preferences/.test(sql) && /last_client_timezone/.test(sql)
+      ? Promise.resolve([
+          { timezone: userTimezone, last_client_timezone: null },
+        ])
+      : rawQuery
+        ? rawQuery(sql, params)
+        : Promise.resolve([]),
   );
   return new PortfolioCalculationService(
     dataSource as never,
@@ -5513,6 +5522,57 @@ describe("PortfolioCalculationService.computeInvestmentFlows", () => {
     );
     expect(params[3]).not.toContain(InvestmentAction.RETURN_OF_CAPITAL);
     expect(flows.get("acct-1")).toEqual({ buys: 1000, sells: 250, income: 40 });
+  });
+});
+
+describe("PortfolioCalculationService bounds flows at the user's day (#2365)", () => {
+  // 12:00 UTC on 2026-11-27 is 2026-11-28 for a Pacific/Kiritimati user.
+  const kiritimati = (rows: unknown[]) => jest.fn().mockResolvedValue(rows);
+
+  beforeEach(() => {
+    userTimezone = "Pacific/Kiritimati";
+    jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+  });
+  afterEach(() => {
+    userTimezone = "UTC";
+    jest.useRealTimers();
+  });
+
+  const boundOf = (rawQuery: jest.Mock, pattern: RegExp) =>
+    rawQuery.mock.calls.find(
+      ([sql]: [string]) =>
+        /investment_transactions/.test(sql) && pattern.test(sql),
+    );
+
+  it("computeInvestmentFlows passes the user's today, not CURRENT_DATE", async () => {
+    const rawQuery = kiritimati([]);
+    const service = buildService([], {}, rawQuery);
+    await service.computeInvestmentFlows("user-1", ["acct-1"]);
+    const [sql, params] = boundOf(rawQuery, /SUM\(CASE/);
+    expect(sql).not.toContain("CURRENT_DATE");
+    expect(params[4]).toBe("2026-11-28");
+  });
+
+  it("computeNetInvestmentFlowsInReporting passes the user's today", async () => {
+    const rawQuery = kiritimati([]);
+    const service = buildService([], {}, rawQuery);
+    await service.computeNetInvestmentFlowsInReporting(
+      "user-1",
+      ["acct-1"],
+      "CAD",
+    );
+    const [sql, params] = boundOf(rawQuery, /it\.transaction_date/);
+    expect(sql).not.toContain("CURRENT_DATE");
+    expect(params[5]).toBe("2026-11-28");
+  });
+
+  it("calculateCAGR passes the user's today", async () => {
+    const rawQuery = kiritimati([{ earliest: null }]);
+    const service = buildService([], {}, rawQuery);
+    await service.calculateCAGR("user-1", ["acct-1"], 100, 120);
+    const [sql, params] = boundOf(rawQuery, /MIN\(transaction_date\)/);
+    expect(sql).not.toContain("CURRENT_DATE");
+    expect(params[2]).toBe("2026-11-28");
   });
 });
 

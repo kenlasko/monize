@@ -1,6 +1,14 @@
+import { Logger } from "@nestjs/common";
 import { DataSource, EntityManager } from "typeorm";
 import { withScopedDb } from "./db/scoped-db";
-import { isValidIanaTimezone } from "./date-utils";
+import {
+  isValidIanaTimezone,
+  todayInTimezone,
+  todayInTimezoneOrUtc,
+} from "./date-utils";
+import { getRequestContext } from "./request-context";
+
+const logger = new Logger("UsersByTimezone");
 
 /**
  * Group all users by their effective IANA timezone so cron jobs that operate
@@ -62,6 +70,14 @@ async function queryTimezoneColumns(
       WHERE user_id = $1`,
     [userId],
   );
+  if (rows.length === 0) {
+    // No visible row: the user has none, or the caller's identity cannot see
+    // it (a user_preferences row is visible to its own user only). Either way
+    // the zone falls back, which the log should show.
+    logger.debug(
+      `No user_preferences row visible for user ${userId}; falling back`,
+    );
+  }
   return [rows[0]?.timezone, rows[0]?.last_client_timezone];
 }
 
@@ -104,4 +120,36 @@ function resolveEffectiveTimezone(
   lastClientTimezone: string | null | undefined,
 ): string {
   return resolveStoredTimezone(timezone, lastClientTimezone) ?? "UTC";
+}
+
+/**
+ * The user's own "today" (YYYY-MM-DD) in their effective timezone, for a bound
+ * that must not use the server's or database's day. Works in a cron as well as
+ * a request, because it reads the stored preference rather than the request.
+ * The row is visible only to its own user's identity: a caller acting for a
+ * different user than the ambient one reads it inside `withUserContext(userId)`.
+ *
+ * For the ambient user inside a request that seeded a valid timezone it is
+ * the day `todayYMD()` reads, so a balance cut at the request's day and a snapshot or a
+ * holdings replay cut here are one day even when the stored preference and the
+ * client header disagree (right after travel).
+ */
+export async function userTodayYMD(
+  m: EntityManager,
+  userId: string,
+  now: Date = new Date(),
+): Promise<string> {
+  const ctx = getRequestContext();
+  // The request's timezone is the authenticated user's: for a delegate acting
+  // as `userId` (`realUserId` differs) it is the delegate's header, not the
+  // owner's day. An invalid zone falls through to the stored resolution.
+  if (
+    ctx?.timezone &&
+    ctx.userId === userId &&
+    (!ctx.realUserId || ctx.realUserId === userId)
+  ) {
+    const day = todayInTimezone(ctx.timezone, now);
+    if (day) return day;
+  }
+  return todayInTimezoneOrUtc(await getEffectiveTimezoneOfUser(m, userId), now);
 }

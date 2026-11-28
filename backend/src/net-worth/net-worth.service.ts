@@ -53,7 +53,8 @@ import {
   UNFILTERED_INVESTMENT_SCOPE_SQL,
   resolveInvestmentScopeAccountIds,
 } from "../securities/investment-scope.util";
-import { addDaysYMD, formatDateYMDLocal, todayYMD } from "../common/date-utils";
+import { addDaysYMD, todayYMD } from "../common/date-utils";
+import { userTodayYMD } from "../common/users-by-timezone.util";
 import {
   ProvisionalCounts,
   loadProvisionalCounts,
@@ -475,6 +476,45 @@ export class NetWorthService {
   }
 
   /**
+   * The day of the reader and of each joint account's owner. One owner's failed
+   * lookup must not fail the whole read: it is logged and counted in the
+   * reader's day, as a failed recompute is skipped with a warning.
+   */
+  private async ownerDays(
+    jointScope: JointNetWorthScope | undefined,
+    userId: string,
+    userToday: string,
+  ): Promise<ReadonlyMap<string, string>> {
+    const days = new Map<string, string>([[userId, userToday]]);
+    for (const ownerId of new Set(
+      (jointScope?.accounts ?? []).map((a) => a.ownerUserId),
+    )) {
+      if (days.has(ownerId)) continue;
+      try {
+        days.set(ownerId, await this.userToday(ownerId));
+      } catch (err) {
+        this.logger.warn(
+          `Failed to read the day of owner ${ownerId}; counting it in the reader's day: ${err.message}`,
+        );
+        days.set(ownerId, userToday);
+      }
+    }
+    return days;
+  }
+
+  /**
+   * `userId`'s own day, read under THEIR identity: a `user_preferences` row is
+   * visible to its own user only, so a grantee reading a joint account's owner
+   * would otherwise see no row and count the owner's day in UTC. Call it
+   * outside a transaction, as `withUserContext` does not join across identities.
+   */
+  private userToday(userId: string): Promise<string> {
+    return withUserContext(userId, () =>
+      withScopedDb(this.dataSource, (m) => userTodayYMD(m, userId)),
+    );
+  }
+
+  /**
    * Debounced trigger for recalculating a single account's net worth snapshots.
    *
    * The timer lives in this process's memory, so it is a latency optimization and
@@ -739,7 +779,7 @@ export class NetWorthService {
     );
   }
 
-  async ensurePopulated(userId: string): Promise<void> {
+  async ensurePopulated(userId: string, userToday?: string): Promise<void> {
     const count = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(MonthlyAccountBalance).count({ where: { userId } }),
     );
@@ -748,7 +788,7 @@ export class NetWorthService {
       return;
     }
 
-    await this.refreshStaleAccountsForCurrentMonth(userId);
+    await this.refreshStaleAccountsForCurrentMonth(userId, userToday);
   }
 
   /**
@@ -761,11 +801,14 @@ export class NetWorthService {
    */
   private async refreshStaleAccountsForCurrentMonth(
     userId: string,
+    userToday?: string,
   ): Promise<void> {
-    const now = new Date();
-    const currentMonthStr = `${now.getFullYear()}-${String(
-      now.getMonth() + 1,
-    ).padStart(2, "0")}-01`;
+    // The month the snapshots end at: the user's, as `recalculateAccount` ends
+    // them, never the server clock's.
+    const currentMonthStr = `${(
+      userToday ??
+      (await withScopedDb(this.dataSource, (m) => userTodayYMD(m, userId)))
+    ).slice(0, 7)}-01`;
 
     const accounts = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(Account).find({
@@ -809,23 +852,31 @@ export class NetWorthService {
    */
   private async refreshStaleJointMonths(
     scope: JointNetWorthScope,
+    ownerDay: ReadonlyMap<string, string>,
   ): Promise<void> {
-    const now = new Date();
-    const currentMonthStr = `${now.getFullYear()}-${String(
-      now.getMonth() + 1,
-    ).padStart(2, "0")}-01`;
-
     const ids = scope.accounts.map((a) => a.accountId);
+    // Each account's snapshots end at ITS OWNER's month, as the owner's
+    // recalculation ends them.
+    const monthOf = new Map<string, string>(
+      [...ownerDay].map(([ownerId, day]) => [ownerId, `${day.slice(0, 7)}-01`]),
+    );
     // Readable in the grantee's session (migration-134 arm at enforcement).
     const populated = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(MonthlyAccountBalance).find({
-        where: { accountId: In(ids), month: currentMonthStr },
-        select: ["accountId"],
+        where: {
+          accountId: In(ids),
+          month: In([...new Set(monthOf.values())]),
+        },
+        select: ["accountId", "month"],
       }),
     );
-    const populatedIds = new Set(populated.map((p) => p.accountId));
+    const populatedKeys = new Set(
+      populated.map((p) => `${p.accountId}:${this.toDateString(p.month)}`),
+    );
 
-    const stale = scope.accounts.filter((a) => !populatedIds.has(a.accountId));
+    const stale = scope.accounts.filter(
+      (a) => !populatedKeys.has(`${a.accountId}:${monthOf.get(a.ownerUserId)}`),
+    );
     await Promise.all(
       stale.map(({ accountId, ownerUserId }) =>
         withUserContext(ownerUserId, () =>
@@ -910,12 +961,12 @@ export class NetWorthService {
       provisionalCount: number;
     }[]
   > {
-    const today = new Date();
-    const defaultStart = new Date(today.getFullYear() - 1, today.getMonth(), 1)
-      .toISOString()
-      .substring(0, 10);
+    const userToday = await withScopedDb(this.dataSource, (m) =>
+      userTodayYMD(m, userId),
+    );
+    const [todayYear, todayMonth] = userToday.split("-").map(Number);
+    const defaultStart = `${todayYear - 1}-${String(todayMonth).padStart(2, "0")}-01`;
     const resolvedStart = startDate || defaultStart;
-    const resolvedEnd = endDate || today.toISOString().substring(0, 10);
     // `fetchMissing: false`: a tool call is not a user waiting on a chart. The
     // model gets what the database holds, with the same completeness flags and
     // the same named pairs it would get for any other gap, and no HTTP request
@@ -923,11 +974,12 @@ export class NetWorthService {
     const months = await this.getMonthlyNetWorth(
       userId,
       resolvedStart,
-      resolvedEnd,
+      endDate || undefined,
       undefined,
       {
         fetchMissing: false,
       },
+      userToday,
     );
     // The per-account-type split is drawing data for the chart, and the
     // per-side completeness flags are for the dashboard's own readers; the
@@ -952,6 +1004,8 @@ export class NetWorthService {
     endDate?: string,
     jointScope?: JointNetWorthScope,
     options?: SeriesFetchOptions,
+    /** The reader's day, when the caller already resolved it. */
+    userToday?: string,
   ): Promise<
     {
       month: string;
@@ -1013,9 +1067,10 @@ export class NetWorthService {
     const months = await this.getMonthlyNetWorthWithAggregates(
       userId,
       startDate || "1990-01-01",
-      endDate || new Date().toISOString().slice(0, 10),
+      endDate,
       jointScope,
       options,
+      userToday,
     );
     return months.map(
       ({ netWorthAggregate: _netWorthAggregate, ...month }) => month,
@@ -1039,13 +1094,19 @@ export class NetWorthService {
     endDate?: string,
     jointScope?: JointNetWorthScope,
     options?: SeriesFetchOptions,
+    /** The reader's day, when the caller already resolved it. */
+    userTodayArg?: string,
   ): Promise<MonthlyNetWorthWithAggregate[]> {
-    await this.ensurePopulated(userId);
+    const userToday =
+      userTodayArg ??
+      (await withScopedDb(this.dataSource, (m) => userTodayYMD(m, userId)));
+    await this.ensurePopulated(userId, userToday);
     const jointIds = jointScope?.accounts.map((a) => a.accountId) ?? [];
+    const ownerDay = await this.ownerDays(jointScope, userId, userToday);
     if (jointScope && jointIds.length > 0) {
-      await this.refreshStaleJointMonths(jointScope);
+      await this.refreshStaleJointMonths(jointScope, ownerDay);
     }
-    const end = endDate || new Date().toISOString().slice(0, 10);
+    const end = endDate || userToday;
     const start =
       startDate ?? (await this.firstSnapshotMonth(userId, jointIds));
     if (start === null) return [];
@@ -1062,7 +1123,7 @@ export class NetWorthService {
     // rows are governed solely by the pre-filtered scope (see
     // JointNetWorthScope). One predicate for the series and (via
     // getLatestNetWorth) the latest month, so the two can never disagree.
-    const snapshots = await this.scopedQuery<MonthlySnapshotRow>(
+    const fetched = await this.scopedQuery<MonthlySnapshotRow>(
       `SELECT mab.month, mab.balance, mab.market_value,
               a.id as account_id, a.account_type, a.account_sub_type, a.currency_code,
               TO_CHAR(a.date_acquired, 'YYYY-MM-DD') AS date_acquired
@@ -1071,10 +1132,21 @@ export class NetWorthService {
        WHERE ((mab.user_id = $1 AND a.exclude_from_net_worth = false)
               OR mab.account_id = ANY($4::UUID[]))
          AND mab.month >= DATE_TRUNC('month', $2::DATE)
-         AND mab.month <= DATE_TRUNC('month', $3::DATE)
+         AND mab.month <= DATE_TRUNC('month', LEAST($3::DATE, $5::DATE))
        ORDER BY mab.month`,
-      [userId, start, end, jointIds],
+      [userId, start, end, jointIds, userToday],
     );
+
+    // Every read for one reader stops at the READER's month (a joint owner
+    // ahead of the reader has a month the reader has not reached).
+    const currentMonth = `${userToday.slice(0, 7)}-01`;
+    const { carried, withheld } = await this.currentMonthJointRows(
+      fetched,
+      jointScope,
+      ownerDay,
+      { start, end, userToday, currentMonth },
+    );
+    const snapshots = [...fetched, ...carried];
 
     if (snapshots.length === 0) return [];
 
@@ -1086,17 +1158,31 @@ export class NetWorthService {
       }
     }
 
-    // Each month as of its end, bounded at the database's today as the
-    // snapshot balance is (`recalculateRegularAccount`), so the running month
-    // counts exactly the legs its balance sums.
-    const provisional = await withScopedDb(this.dataSource, (m) =>
-      loadProvisionalCounts(
-        m,
-        snapshots.map((s) => s.account_id),
-        snapshots.map((s) => this.monthEndDate(this.toDateString(s.month))),
-        { notAfterDatabaseToday: true },
-      ),
+    // Each month as of its end, bounded at the user's today as the snapshot
+    // balance is (`recalculateRegularAccount`), so the running month counts
+    // exactly the legs its balance sums.
+    // A joint account's snapshot is the owner's, bounded at the owner's day, so
+    // its count is bounded there too; the rest are the reader's own.
+    const ownerOf = new Map(
+      (jointScope?.accounts ?? []).map((a) => [a.accountId, a.ownerUserId]),
     );
+    const provisionalParts: ProvisionalCounts[] = [];
+    for (const [ownerId, notAfter] of ownerDay) {
+      const rows = snapshots.filter(
+        (s) => (ownerOf.get(s.account_id) ?? userId) === ownerId,
+      );
+      provisionalParts.push(
+        await withScopedDb(this.dataSource, (m) =>
+          loadProvisionalCounts(
+            m,
+            rows.map((s) => s.account_id),
+            rows.map((s) => this.monthEndDate(this.toDateString(s.month))),
+            { notAfter },
+          ),
+        ),
+      );
+    }
+    const provisional = ProvisionalCounts.merged(provisionalParts);
 
     return this.computeWithRateFill(
       async () =>
@@ -1106,6 +1192,8 @@ export class NetWorthService {
           places,
           await this.buildRateIndex(currencies, defaultCurrency, start, end),
           provisional,
+          withheld,
+          currentMonth,
         ),
       // A monthly point's `month` is its month-first date, which is the month
       // the fill fetches; the conversion happens at that month's end.
@@ -1116,6 +1204,71 @@ export class NetWorthService {
         })),
       options,
     );
+  }
+
+  /**
+   * The reader's current month for the joint accounts that have no row in it.
+   * An account whose OWNER is a month behind the reader carries its latest
+   * earlier snapshot forward (the owner's month has not turned yet). Any other
+   * account with no current row (the owner's recompute failed or has not run)
+   * is withheld rather than shown as last month's balance: it is returned as an
+   * unknown component, which the month reports as incomplete.
+   */
+  private async currentMonthJointRows(
+    fetched: ReadonlyArray<MonthlySnapshotRow>,
+    jointScope: JointNetWorthScope | undefined,
+    ownerDay: ReadonlyMap<string, string>,
+    range: {
+      start: string;
+      end: string;
+      userToday: string;
+      currentMonth: string;
+    },
+  ): Promise<{
+    carried: MonthlySnapshotRow[];
+    withheld: MonthlySnapshotRow[];
+  }> {
+    const { start, end, userToday, currentMonth } = range;
+    const jointIds = jointScope?.accounts.map((a) => a.accountId) ?? [];
+    const month = currentMonth.slice(0, 7);
+    if (
+      jointIds.length === 0 ||
+      this.toDateString(start).slice(0, 7) > month ||
+      month > (end < userToday ? end : userToday).slice(0, 7)
+    ) {
+      return { carried: [], withheld: [] };
+    }
+    const present = new Set(
+      fetched
+        .filter((s) => this.toDateString(s.month) === currentMonth)
+        .map((s) => s.account_id),
+    );
+    const missing = jointIds.filter((id) => !present.has(id));
+    if (missing.length === 0) return { carried: [], withheld: [] };
+    const earlier = await this.scopedQuery<MonthlySnapshotRow>(
+      `SELECT DISTINCT ON (mab.account_id)
+              mab.month, mab.balance, mab.market_value,
+              a.id as account_id, a.account_type, a.account_sub_type, a.currency_code,
+              TO_CHAR(a.date_acquired, 'YYYY-MM-DD') AS date_acquired
+         FROM monthly_account_balances mab
+         JOIN accounts a ON a.id = mab.account_id
+        WHERE mab.account_id = ANY($1::UUID[])
+          AND mab.month < $2::DATE
+        ORDER BY mab.account_id, mab.month DESC`,
+      [missing, currentMonth],
+    );
+    const ownerOf = new Map(
+      (jointScope?.accounts ?? []).map((a) => [a.accountId, a.ownerUserId]),
+    );
+    const behind = (accountId: string): boolean =>
+      (ownerDay.get(ownerOf.get(accountId) ?? "") ?? userToday).slice(0, 7) <
+      month;
+    return {
+      carried: earlier
+        .filter((row) => behind(row.account_id))
+        .map((row) => ({ ...row, month: currentMonth })),
+      withheld: earlier.filter((row) => !behind(row.account_id)),
+    };
   }
 
   /**
@@ -1142,6 +1295,9 @@ export class NetWorthService {
     places: number,
     rateIndex: RateIndex,
     provisional: ProvisionalCounts,
+    /** Joint accounts whose current-month figure is unknown, not carried. */
+    withheld: ReadonlyArray<MonthlySnapshotRow> = [],
+    currentMonth?: string,
   ): MonthlyNetWorthWithAggregate[] {
     // Aggregate by month. Assets and liabilities each accumulate through an
     // FxAggregate so a month containing a component with no available rate
@@ -1158,9 +1314,7 @@ export class NetWorthService {
       }
     >();
 
-    for (const s of snapshots) {
-      const monthKey = this.toDateString(s.month);
-
+    const entryFor = (monthKey: string) => {
       if (!monthMap.has(monthKey)) {
         monthMap.set(monthKey, {
           assets: new FxAggregate(),
@@ -1170,6 +1324,13 @@ export class NetWorthService {
           liabilitiesProvisionalCount: 0,
         });
       }
+      return monthMap.get(monthKey)!;
+    };
+
+    for (const s of snapshots) {
+      const monthKey = this.toDateString(s.month);
+
+      entryFor(monthKey);
       const entry = monthMap.get(monthKey)!;
 
       // For brokerage accounts: use market_value (holdings only; cash is in linked account)
@@ -1239,6 +1400,18 @@ export class NetWorthService {
       }
     }
 
+    // An unknown component, not a zero and not last month's balance: the month
+    // reads as incomplete (`fxComplete`), as the investment series' unknowns do.
+    if (currentMonth) {
+      for (const s of withheld) {
+        const entry = entryFor(currentMonth);
+        (LIABILITY_TYPES.includes(s.account_type as AccountType)
+          ? entry.liabilities
+          : entry.assets
+        ).addUnknown();
+      }
+    }
+
     let previousNetWorth: FxAggregate | null = null;
     let firstNetWorth: FxAggregate | null = null;
     return Array.from(monthMap.entries())
@@ -1290,10 +1463,10 @@ export class NetWorthService {
           // the frontend and copy work it needs -- but a consumer can now tell
           // a complete total from a partial one, which it could not when a
           // missing rate silently became 1:1.
-          fxComplete: missingRatePairs.length === 0,
+          fxComplete: data.assets.isComplete && data.liabilities.isComplete,
           missingRatePairs,
-          assetsFxComplete: data.assets.missingPairs.length === 0,
-          liabilitiesFxComplete: data.liabilities.missingPairs.length === 0,
+          assetsFxComplete: data.assets.isComplete,
+          liabilitiesFxComplete: data.liabilities.isComplete,
           byAccountType: Object.fromEntries(
             [...data.byAccountType].map(([type, total]) => [
               type,
@@ -1343,13 +1516,19 @@ export class NetWorthService {
     assetsProvisionalCount: number;
     liabilitiesProvisionalCount: number;
   } | null> {
-    await this.ensurePopulated(userId);
+    const userToday = await withScopedDb(this.dataSource, (m) =>
+      userTodayYMD(m, userId),
+    );
+    await this.ensurePopulated(userId, userToday);
 
     const jointIds = jointScope?.accounts.map((a) => a.accountId) ?? [];
+    // Never past the reader's month: a joint owner ahead of the reader has a
+    // month the reader has not reached, and it is not the latest net worth.
     const latestRows: { month: string | Date }[] = await this.scopedQuery(
       `SELECT MAX(month) AS month FROM monthly_account_balances
-        WHERE user_id = $1 OR account_id = ANY($2::UUID[])`,
-      [userId, jointIds],
+        WHERE (user_id = $1 OR account_id = ANY($2::UUID[]))
+          AND month <= DATE_TRUNC('month', $3::DATE)`,
+      [userId, jointIds, userToday],
     );
     const latestMonth = latestRows[0]?.month;
     if (!latestMonth) return null;
@@ -1360,6 +1539,8 @@ export class NetWorthService {
       monthStr,
       monthStr,
       jointScope,
+      undefined,
+      userToday,
     );
     const latest = months[months.length - 1];
     if (!latest) return null;
@@ -1384,6 +1565,8 @@ export class NetWorthService {
     accountIds?: string[],
     displayCurrency?: string,
     options?: SeriesFetchOptions,
+    /** The reader's day, when the caller already resolved it. */
+    userTodayArg?: string,
   ): Promise<
     {
       month: string;
@@ -1394,7 +1577,10 @@ export class NetWorthService {
       missingRatePairs: string[];
     }[]
   > {
-    await this.ensurePopulated(userId);
+    const userToday =
+      userTodayArg ??
+      (await withScopedDb(this.dataSource, (m) => userTodayYMD(m, userId)));
+    await this.ensurePopulated(userId, userToday);
 
     const pref = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(UserPreference).findOne({ where: { userId } }),
@@ -1402,7 +1588,7 @@ export class NetWorthService {
     const defaultCurrency = displayCurrency || preferredCurrency(pref);
 
     const start = startDate || "1990-01-01";
-    const end = endDate || new Date().toISOString().slice(0, 10);
+    const end = endDate || userToday;
 
     let accountFilter: string;
     const params: unknown[] = [userId, start, end];
@@ -3121,6 +3307,9 @@ export class NetWorthService {
     account: Account,
   ): Promise<void> {
     const openingBalance = Number(account.openingBalance) || 0;
+    const userToday = await withScopedDb(this.dataSource, (m) =>
+      userTodayYMD(m, userId),
+    );
 
     const [{ earliest }] = await this.scopedQuery<EarliestRow>(
       `SELECT MIN(transaction_date) as earliest
@@ -3145,7 +3334,7 @@ export class NetWorthService {
         FROM transactions
         WHERE account_id = $1
           AND ${ledgerMovementPredicate("")}
-          AND transaction_date <= CURRENT_DATE
+          AND transaction_date <= $4::DATE
         GROUP BY 1
       )
       SELECT m.month::DATE as month,
@@ -3155,12 +3344,12 @@ export class NetWorthService {
              )) as balance
       FROM generate_series(
         DATE_TRUNC('month', $3::DATE)::TIMESTAMP,
-        DATE_TRUNC('month', CURRENT_DATE)::TIMESTAMP,
+        DATE_TRUNC('month', $4::DATE)::TIMESTAMP,
         '1 month'::INTERVAL
       ) m(month)
       LEFT JOIN monthly_tx_sums mts ON mts.month = m.month::DATE
       ORDER BY m.month`,
-      [account.id, openingBalance, startDate],
+      [account.id, openingBalance, startDate, userToday],
     );
 
     // Determine dateAcquired month for ASSET zeroing
@@ -3199,6 +3388,9 @@ export class NetWorthService {
     account: Account,
   ): Promise<void> {
     const openingBalance = Number(account.openingBalance) || 0;
+    const userToday = await withScopedDb(this.dataSource, (m) =>
+      userTodayYMD(m, userId),
+    );
 
     // Find earliest date from both regular and investment transactions
     const [{ earliest }] = await this.scopedQuery<EarliestRow>(
@@ -3233,7 +3425,7 @@ export class NetWorthService {
         FROM transactions
         WHERE account_id = $1
           AND ${ledgerMovementPredicate("")}
-          AND transaction_date <= CURRENT_DATE
+          AND transaction_date <= $4::DATE
         GROUP BY 1
       )
       SELECT m.month::DATE as month,
@@ -3243,12 +3435,12 @@ export class NetWorthService {
              )) as balance
       FROM generate_series(
         DATE_TRUNC('month', $3::DATE)::TIMESTAMP,
-        DATE_TRUNC('month', CURRENT_DATE)::TIMESTAMP,
+        DATE_TRUNC('month', $4::DATE)::TIMESTAMP,
         '1 month'::INTERVAL
       ) m(month)
       LEFT JOIN monthly_tx_sums mts ON mts.month = m.month::DATE
       ORDER BY m.month`,
-      [account.id, openingBalance, startDate],
+      [account.id, openingBalance, startDate, userToday],
     );
 
     const costByMonth = new Map<string, number>();
@@ -3260,7 +3452,7 @@ export class NetWorthService {
     }
 
     // Load investment transactions for holdings replay (exclude future-dated)
-    const today = formatDateYMDLocal(new Date());
+    const today = userToday;
     const invTxs = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(InvestmentTransaction).find({
         where: {

@@ -1,3 +1,4 @@
+import { userTodayYMD } from "../common/users-by-timezone.util";
 import { Injectable, Logger } from "@nestjs/common";
 import { DataSource, FindOptionsWhere, In, LessThanOrEqual } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -28,11 +29,7 @@ import {
   resolveIndexedRate,
 } from "../common/time-series/rate-index.util";
 import { parseTag } from "../tags/tag-key-value.util";
-import {
-  formatDateYMD,
-  formatDateYMDLocal,
-  todayYMD,
-} from "../common/date-utils";
+import { formatDateYMD, todayYMD } from "../common/date-utils";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { FxAggregate } from "../common/fx-aggregate";
 import { reportFigure, reportPlacesOfCodes } from "../common/report-figure";
@@ -815,7 +812,7 @@ export class PortfolioCalculationService {
       buys: string;
       sells: string;
       income: string;
-    }[] = await withScopedDb(this.dataSource, (m) =>
+    }[] = await withScopedDb(this.dataSource, async (m) =>
       m.query(
         `SELECT account_id,
                 COALESCE(SUM(CASE WHEN action = 'BUY' THEN total_amount * exchange_rate ELSE 0 END), 0) as buys,
@@ -824,7 +821,7 @@ export class PortfolioCalculationService {
          FROM investment_transactions
          WHERE user_id = $1
            AND account_id = ANY($2)
-           AND transaction_date <= CURRENT_DATE
+           AND transaction_date <= $5::date
            AND status != 'VOID'
          GROUP BY account_id`,
         [
@@ -841,6 +838,7 @@ export class PortfolioCalculationService {
             InvestmentAction.RETURN_OF_CAPITAL,
           ],
           CASH_INCOME_ACTIONS,
+          await userTodayYMD(m, userId),
         ],
       ),
     );
@@ -903,7 +901,7 @@ export class PortfolioCalculationService {
             AND a.account_sub_type = $5
           WHERE it.user_id = $1
             AND it.account_id = ANY($2)
-            AND it.transaction_date <= CURRENT_DATE
+            AND it.transaction_date <= $6::date
             AND it.status != 'VOID'
           GROUP BY it.account_id, it.transaction_date, 3, 4, it.exchange_rate`,
         [
@@ -918,6 +916,7 @@ export class PortfolioCalculationService {
           CASH_INCOME_ACTIONS,
           // Only a brokerage settles in its linked cash account.
           AccountSubType.INVESTMENT_BROKERAGE,
+          await userTodayYMD(m, userId),
         ],
       );
       for (const accountId of accountIds) result.set(accountId, 0);
@@ -1101,12 +1100,12 @@ export class PortfolioCalculationService {
     withRelations = true,
   ): Promise<InvestmentTransaction[]> {
     if (holdingsAccountIds.length === 0) return Promise.resolve([]);
-    return withScopedDb(this.dataSource, (m) =>
+    return withScopedDb(this.dataSource, async (m) =>
       m.getRepository(InvestmentTransaction).find({
         where: {
           userId,
           accountId: In(holdingsAccountIds),
-          transactionDate: LessThanOrEqual(formatDateYMDLocal(new Date())),
+          transactionDate: LessThanOrEqual(await userTodayYMD(m, userId)),
           status: NON_VOID_INVESTMENT_STATUS,
         },
         ...(withRelations && { relations: ["security", "account"] }),
@@ -3333,15 +3332,15 @@ export class PortfolioCalculationService {
 
     const earliestRow: { earliest: string }[] = await withScopedDb(
       this.dataSource,
-      (m) =>
+      async (m) =>
         m.query(
           `SELECT MIN(transaction_date) as earliest
        FROM investment_transactions
        WHERE user_id = $1
          AND account_id = ANY($2)
-         AND transaction_date <= CURRENT_DATE
+         AND transaction_date <= $3::date
          AND status != 'VOID'`,
-          [userId, allInvestmentAccountIds],
+          [userId, allInvestmentAccountIds, await userTodayYMD(m, userId)],
         ),
     );
     if (!earliestRow[0]?.earliest) return null;
