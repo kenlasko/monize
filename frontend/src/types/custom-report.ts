@@ -158,13 +158,15 @@ export type UpdateCustomReportData = Partial<CreateCustomReportData>;
 export interface AggregatedDataPoint {
   label: string;
   /**
-   * The figure in the report's currency. `null` only on a listed transaction
+   * The figure in the report's currency. A budget variance is null when its
+   * plan cannot be valued. It is also null on a listed transaction
    * with no rate into it on its date: the row stays listed under its own
    * `accountAmount` so it can be matched against a statement, and is in no
    * total (`excludedCount` counts it).
    */
   value: number | null;
   /**
+   * A budget variance is withheld when its plan cannot be valued.
    * Under a transfer measure, a part of the group had no rate: the figure is
    * partial (`value` the known part) or, for a net or a group nothing of which
    * converted, withheld (`value` null, `knownValue` the known part).

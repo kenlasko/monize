@@ -26,7 +26,8 @@ export class ExecuteReportDto {
 export interface AggregatedDataPoint {
   label: string;
   /**
-   * The figure in {@link ReportResult.currency}. `null` only on a listed
+   * The figure in {@link ReportResult.currency}. A variance is null when the plan
+   * cannot be valued. It is also null on a listed
    * transaction (metric NONE, no grouping) with no rate into it on its date:
    * the row stays listed under its own `accountAmount` so it can be matched
    * against a statement, and is in no total (`excludedCount` counts it).
@@ -60,8 +61,8 @@ export interface AggregatedDataPoint {
   originalAmount?: number;
   originalCurrency?: string;
   /**
-   * Under a transfer measure, a part of this group was left out for want of a
-   * rate: the figure is partial and is labelled so. Absent otherwise.
+   * Set when a budget variance is unpriced or a transfer group has
+   * amounts it could not convert.
    */
   incomplete?: true;
   /** The known part of a group whose `value` is withheld (`incomplete`). */
@@ -72,8 +73,7 @@ export interface AggregatedDataPoint {
 }
 
 /**
- * A data point whose value is known: every grouped point is, since a group's
- * sum leaves a row with no rate out rather than listing it.
+ * A data point whose value is known in the reporting currency.
  */
 export type KnownDataPoint = AggregatedDataPoint & { value: number };
 
