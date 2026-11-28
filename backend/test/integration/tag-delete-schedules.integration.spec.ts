@@ -134,6 +134,8 @@ describe("tag delete vs scheduled tag_ids (integration)", () => {
       scheduledTransactions: 1,
       scheduledSplits: 0,
       securities: 0,
+      rules: 0,
+      customReports: 0,
     });
   });
 });
