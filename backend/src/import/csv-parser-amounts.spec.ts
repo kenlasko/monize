@@ -194,9 +194,42 @@ describe("parseCsv amounts", () => {
     ]);
   });
 
-  it("ignores an unreadable price and quantity on a dividend, as unknown", () => {
+  it("reports an unreadable buy price the amount cannot derive", () => {
     const result = parseCsv(
-      HEADER + "01/15/2026,Dividend,AAPL,N/A,N/A,N/A,12.50\n",
+      HEADER + '01/15/2026,Buy,AAPL,2,"1,2.3",5,5\n',
+      investmentConfig(),
+    );
+
+    expect(result.transactions).toHaveLength(0);
+    expect(result.unreadableAmountRows).toEqual([
+      {
+        rowNumber: 2,
+        field: "price",
+        rawAmount: "1,2.3",
+        date: "2026-01-15",
+        payee: "",
+      },
+    ]);
+  });
+
+  it.each([
+    ["Dividend,AAPL,N/A,,,12.50", "quantity"],
+    ["Dividend,AAPL,,N/A,,12.50", "price"],
+    ["Shares In,AAPL,3,1.2.3,,", "price"],
+    ["Add Shares,AAPL,3,N/A,,", "price"],
+  ])("reports an unreadable cell on %s", (cells, field) => {
+    const result = parseCsv(
+      HEADER + `01/15/2026,${cells}\n`,
+      investmentConfig(),
+    );
+
+    expect(result.transactions).toHaveLength(0);
+    expect(result.unreadableAmountRows?.map((r) => r.field)).toEqual([field]);
+  });
+
+  it("reads blank quantity and price on a dividend as unknown", () => {
+    const result = parseCsv(
+      HEADER + "01/15/2026,Dividend,AAPL,,,,12.50\n",
       investmentConfig(),
     );
 
@@ -204,17 +237,6 @@ describe("parseCsv amounts", () => {
     expect(
       result.transactions.map((t) => [t.amount, t.quantity, t.price]),
     ).toEqual([[12.5, 0, 0]]);
-  });
-
-  it("reads a grouped commission and a blank commission as 0", () => {
-    const csv =
-      "Date,Action,Symbol,Quantity,Price,Commission,Amount\n" +
-      '01/15/2026,Buy,AAPL,1,10,"1,234.56",1244.56\n' +
-      "01/16/2026,Buy,AAPL,1,10,,10\n";
-    const result = parseCsv(csv, investmentConfig());
-
-    expect(result.unreadableAmountRows).toEqual([]);
-    expect(result.transactions.map((t) => t.commission)).toEqual([1234.56, 0]);
   });
 
   it("returns an empty list for an empty file", () => {

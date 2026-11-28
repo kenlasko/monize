@@ -305,7 +305,7 @@ describe('ReviewStep', () => {
   // --- Unreadable CSV amounts ---
 
   describe('unreadable amounts', () => {
-    function csvFile(unreadableAmounts: { count: number; rows: { rowNumber: number; rawAmount: string }[] } | undefined, fileName = 'march.csv') {
+    function csvFile(unreadableAmounts: { count: number; rows: { rowNumber: number; rawAmount: string; field?: 'commission' | 'price' }[] } | undefined, fileName = 'march.csv') {
       return {
         fileName,
         fileContent: '',
@@ -315,6 +315,20 @@ describe('ReviewStep', () => {
         matchConfidence: 'exact',
       };
     }
+
+    it('names the column of an unreadable investment cell', () => {
+      const unreadable = {
+        count: 2,
+        rows: [
+          { rowNumber: 4, rawAmount: 'N/A', field: 'commission' as const },
+          { rowNumber: 5, rawAmount: '1.2.3', field: 'price' as const },
+        ],
+      };
+      render(<ReviewStep {...defaultProps} importFiles={[csvFile(unreadable)] as any[]} />);
+
+      expect(screen.getByText('Row 4, commission: "N/A"')).toBeInTheDocument();
+      expect(screen.getByText('Row 5, price: "1.2.3"')).toBeInTheDocument();
+    });
 
     it('counts the rows whose amount cannot be read and names each by row and text', () => {
       const unreadable = {

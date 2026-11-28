@@ -41,6 +41,7 @@ describe("normalizeAmountSeparators", () => {
     "12,34,56",
     "1,2,3",
     "1.234.56,7",
+    "12.34.567",
   ])("leaves %s unread", (input) => {
     expect(normalizeAmountSeparators(input)).toBe(input);
   });

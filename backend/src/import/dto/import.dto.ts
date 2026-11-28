@@ -350,6 +350,12 @@ export class CsvUnreadableAmountRowDto {
 
   @ApiProperty({ description: "The amount field as the file gave it" })
   rawAmount: string;
+
+  @ApiPropertyOptional({
+    enum: ["amount", "quantity", "price", "commission"],
+    description: "The CSV column the text is in; absent for QIF and OFX",
+  })
+  field?: "amount" | "quantity" | "price" | "commission";
 }
 
 export class CsvUnreadableAmountsDto {
@@ -502,6 +508,13 @@ export class ImportSkippedRowDto {
       "The amount field as the file gave it; set for `unreadableAmount`, whose `amount` is 0 because the file's text gives none",
   })
   rawAmount?: string;
+
+  @ApiPropertyOptional({
+    enum: ["amount", "quantity", "price", "commission"],
+    description:
+      "The CSV column `rawAmount` is in; set for a CSV `unreadableAmount` row",
+  })
+  field?: "amount" | "quantity" | "price" | "commission";
 }
 
 /**

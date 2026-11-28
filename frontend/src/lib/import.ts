@@ -168,6 +168,8 @@ export interface CsvUnreadableAmountRow {
   rowNumber: number;
   /** The amount field as the file gave it. */
   rawAmount: string;
+  /** CSV only: the column the text is in (an investment import also reads quantity, price and commission). */
+  field?: 'amount' | 'quantity' | 'price' | 'commission';
 }
 
 export interface CsvUnreadableAmounts {
@@ -457,6 +459,8 @@ export interface ImportSkippedRow {
   rawDate?: string;
   /** The amount field as the file gave it; set for `unreadableAmount`, whose `amount` is 0. */
   rawAmount?: string;
+  /** CSV only: the column `rawAmount` is in. */
+  field?: 'amount' | 'quantity' | 'price' | 'commission';
 }
 
 export interface ImportResult {

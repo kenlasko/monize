@@ -111,7 +111,7 @@ export interface CsvUnreadableDateRow {
 export interface CsvUnreadableAmountRow {
   /** The line of the file the row starts on, 1-based, the header included. */
   rowNumber: number;
-  /** CSV: the column the text is in. Absent means the amount. */
+  /** Set by the CSV parser only (QIF and OFX leave it out): the column the text is in. */
   field?: "amount" | "quantity" | "price" | "commission";
   /** The field as the file gave it. */
   rawAmount: string;
@@ -1088,29 +1088,34 @@ function buildInvestmentRow(params: {
     return { rejectReason: "missingSecurity" };
   }
 
-  // Truth table: Q is needed by every action but dividend, interest, capital
-  // gain and cash; C by buy, sell and reinvest; P by buy, sell and reinvest
-  // only when the row amount cannot derive it. Elsewhere it is unknown.
+  // Truth table: text that does not read is reported where the action uses the
+  // cell. Q: every action but cash. C: buy, sell, reinvest. P: dividend,
+  // interest, capital gain and the inflows (a basis); for buy, sell and
+  // reinvest only once the amount could not derive it (in the cases below).
+  // A blank cell is unknown everywhere.
   const tradeAction =
     canonical === "buy" || canonical === "sell" || canonical === "reinvest";
-  const quantityNeeded =
-    tradeAction ||
-    canonical === "split" ||
-    canonical === "transferIn" ||
-    canonical === "transferOut" ||
-    canonical === "addShares" ||
-    canonical === "removeShares";
-  const unreadable = (
-    [
-      ["quantity", quantityNeeded, quantityCell],
-      ["price", tradeAction && !amountKnown, priceCell],
-      ["commission", tradeAction, commissionCell],
-    ] as const
-  ).find(([, needed, c]) => needed && c.unreadable !== undefined);
-  if (unreadable) {
-    return {
-      unreadable: { field: unreadable[0], text: unreadable[2].unreadable! },
-    };
+  const incomeAction =
+    canonical === "dividend" ||
+    canonical === "interest" ||
+    canonical === "capitalGain";
+  const cashAction = canonical === "cashIn" || canonical === "cashOut";
+  const unreadableCell = (
+    field: NonNullable<InvestmentRowOutcome["unreadable"]>["field"],
+    c: { unreadable?: string },
+  ): InvestmentRowOutcome | null =>
+    c.unreadable === undefined
+      ? null
+      : { unreadable: { field, text: c.unreadable } };
+  const unreadablePrice = () => unreadableCell("price", priceCell);
+  const earlyUnreadable =
+    (cashAction ? null : unreadableCell("quantity", quantityCell)) ??
+    (incomeAction || canonical === "transferIn" || canonical === "addShares"
+      ? unreadablePrice()
+      : null) ??
+    (tradeAction ? unreadableCell("commission", commissionCell) : null);
+  if (earlyUnreadable) {
+    return earlyUnreadable;
   }
 
   const emit = (
@@ -1159,6 +1164,8 @@ function buildInvestmentRow(params: {
         }
       }
       if (price === null) {
+        const unreadable = unreadablePrice();
+        if (unreadable) return unreadable;
         // No cost is derivable: uncosted shares enter as addshares with the
         // price left unknown rather than invented as 0.
         return emit({ amount: 0, security, quantity }, "addShares", {
@@ -1179,6 +1186,8 @@ function buildInvestmentRow(params: {
         price = roundToDecimals((absAmount + commission) / quantity, 10);
       }
       if (price === null || price <= 0) {
+        const unreadable = unreadablePrice();
+        if (unreadable) return unreadable;
         // Downgrading to removeshares would silently drop the cash proceeds.
         return { rejectReason: "missingProceeds" };
       }

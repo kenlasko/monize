@@ -299,6 +299,7 @@
     "unreadableDatesGoBack": "ファイルの日付が別の順序で書かれている場合は、列マッピングの手順に戻り、ファイルが使用している日付形式を選択してください。",
     "unreadableAmountsNotice": "{count, plural, other {# 件の行}}は金額を読み取れないため、インポートされません:",
     "unreadableAmountRow": "{line} 行目: 「{rawAmount}」",
+    "unreadableAmountRowField": "{line} 行目、{field, select, quantity {数量} price {価格} commission {手数料} other {金額}}: 「{rawAmount}」",
     "unreadableAmountsMore": "...ほか {count} 件",
     "unreadableAmountsGoBack": "金額の列が正しく割り当てられているか確認するか、ファイル内のこれらの行を修正してから再度インポートしてください。",
     "unreadableAmountLine": "{line} 行目: \"{rawAmount}\"",

@@ -72,7 +72,10 @@ function isGrouped(integer: string, separator: string): boolean {
   if (last === undefined || !/^\d{3}$/.test(last)) return false;
   return (
     (/^\d{1,3}$/.test(first) && rest.every((g) => /^\d{3}$/.test(g))) ||
-    (/^\d{1,2}$/.test(first) && rest.every((g) => /^\d{2}$/.test(g)))
+    // The lakh form is written with commas only ("12.34.567" is not a number).
+    (separator === "," &&
+      /^\d{1,2}$/.test(first) &&
+      rest.every((g) => /^\d{2}$/.test(g)))
   );
 }
 

@@ -2895,6 +2895,10 @@ describe("unreadable amounts", () => {
       ["5000.00 CAD", 5000],
       ["1,000,000 CAD", 1000000],
       ["1.000.000 EUR", 1000000],
+      ["1,000,000 (CAD)", 1000000],
+      ["1,000,000 kr.", 1000000],
+      ["1,000,000 Canadian", 1000000],
+      ["1.000.000 Euros", 1000000],
     ])(
       "reads an account credit limit with a currency code after it: %s",
       (limit, expected) => {

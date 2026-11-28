@@ -245,6 +245,7 @@ export function recordSkippedRow(
     rowNumber?: number;
     rawDate?: string;
     rawAmount?: string;
+    field?: "amount" | "quantity" | "price" | "commission";
   },
   reason: ImportSkipReason,
   currencyCode: string,
@@ -260,6 +261,7 @@ export function recordSkippedRow(
     ...(row.rowNumber !== undefined ? { rowNumber: row.rowNumber } : {}),
     ...(row.rawDate !== undefined ? { rawDate: row.rawDate } : {}),
     ...(row.rawAmount !== undefined ? { rawAmount: row.rawAmount } : {}),
+    ...(row.field !== undefined ? { field: row.field } : {}),
   });
 }
 
