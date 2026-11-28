@@ -58,6 +58,18 @@ describe('BudgetStatusWidget', () => {
     expect(Array.from(bars, (bar) => bar.style.width)).toEqual([width, width]);
   });
 
+  it('clears the failure when the next load succeeds', async () => {
+    mockGetDashboardSummary.mockRejectedValueOnce(new Error('500'));
+    const { rerender } = render(<BudgetStatusWidget isLoading={false} />);
+    expect(await screen.findByText(/Couldn't load your budget status/)).toBeInTheDocument();
+
+    rerender(<BudgetStatusWidget isLoading={true} />);
+    rerender(<BudgetStatusWidget isLoading={false} />);
+
+    expect(await screen.findByText('View full budget')).toBeInTheDocument();
+    expect(screen.queryByText(/Couldn't load your budget status/)).not.toBeInTheDocument();
+  });
+
   it('shows loading skeleton when parent is loading', () => {
     render(<BudgetStatusWidget isLoading={true} />);
 

@@ -741,5 +741,6 @@
     "depthSubcategories": "子类别",
     "viewDiagram": "图表",
     "viewTable": "表格"
-  }
+  },
+  "accountsLoadFailed": "无法加载您的账户，因此无法显示此小组件。请重新加载仪表板后再试。"
 }

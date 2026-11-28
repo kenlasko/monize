@@ -27,6 +27,8 @@ interface CashFlowForecastWidgetProps {
   scheduledTransactions: ScheduledTransaction[];
   accounts: Account[];
   isLoading: boolean;
+  /** The accounts or scheduled transactions request failed; the projection would look complete without them. */
+  error?: boolean;
 }
 
 /**
@@ -40,6 +42,7 @@ export function CashFlowForecastWidget({
   scheduledTransactions,
   accounts,
   isLoading,
+  error = false,
 }: CashFlowForecastWidgetProps) {
   const t = useTranslations('dashboard');
   const tb = useTranslations('bills');
@@ -111,7 +114,7 @@ export function CashFlowForecastWidget({
           data-testid="cash-flow-forecast-widget-loading"
           className="flex-1 min-h-[288px] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50"
         />
-      ) : futureError ? (
+      ) : futureError || error ? (
         // Never a forecast without the future-dated rows: it would project
         // from a balance missing them and look complete.
         <WidgetMessage>{t('cashFlowForecast.loadFailed')}</WidgetMessage>

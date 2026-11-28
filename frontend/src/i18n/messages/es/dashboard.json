@@ -741,5 +741,6 @@
     "depthSubcategories": "Subcategorías",
     "viewDiagram": "Diagrama",
     "viewTable": "Tabla"
-  }
+  },
+  "accountsLoadFailed": "No se pudieron cargar tus cuentas, por lo que no se puede mostrar este widget. Recarga el panel para intentarlo de nuevo."
 }

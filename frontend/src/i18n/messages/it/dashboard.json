@@ -741,5 +741,6 @@
     "depthSubcategories": "Sottocategorie",
     "viewDiagram": "Diagramma",
     "viewTable": "Tabella"
-  }
+  },
+  "accountsLoadFailed": "Impossibile caricare i tuoi conti, quindi questo widget non può essere mostrato. Ricarica la dashboard per riprovare."
 }

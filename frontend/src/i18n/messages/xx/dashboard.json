@@ -741,5 +741,6 @@
     "depthSubcategories": "[XX-Subcategories-XX]",
     "viewDiagram": "[XX-Diagram-XX]",
     "viewTable": "[XX-Table-XX]"
-  }
+  },
+  "accountsLoadFailed": "[XX-Couldn't load your accounts, so this widget can't be shown. Reload the dashboard to try again.-XX]"
 }

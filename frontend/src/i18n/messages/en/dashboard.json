@@ -741,5 +741,6 @@
     "depthSubcategories": "Subcategories",
     "viewDiagram": "Diagram",
     "viewTable": "Table"
-  }
+  },
+  "accountsLoadFailed": "Couldn't load your accounts, so this widget can't be shown. Reload the dashboard to try again."
 }

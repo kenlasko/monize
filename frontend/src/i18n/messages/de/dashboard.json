@@ -741,5 +741,6 @@
     "depthSubcategories": "Unterkategorien",
     "viewDiagram": "Diagramm",
     "viewTable": "Tabelle"
-  }
+  },
+  "accountsLoadFailed": "Deine Konten konnten nicht geladen werden, daher kann dieses Widget nicht angezeigt werden. Lade das Dashboard neu und versuche es erneut."
 }

@@ -741,5 +741,6 @@
     "depthSubcategories": "子類別",
     "viewDiagram": "圖表",
     "viewTable": "表格"
-  }
+  },
+  "accountsLoadFailed": "無法載入您的帳戶，因此無法顯示此小工具。請重新載入儀表板後再試一次。"
 }

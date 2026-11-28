@@ -741,5 +741,6 @@
     "depthSubcategories": "サブカテゴリ",
     "viewDiagram": "図",
     "viewTable": "テーブル"
-  }
+  },
+  "accountsLoadFailed": "口座を読み込めなかったため、このウィジェットを表示できません。ダッシュボードを再読み込みして、もう一度お試しください。"
 }

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { render, screen } from '@/test/render';
 import {
   DASHBOARD_WIDGETS,
   DEFAULT_DASHBOARD_WIDGET_IDS,
@@ -42,6 +43,28 @@ describe('widget-registry', () => {
     expect(ids.indexOf('cash-flow-forecast')).toBe(ids.indexOf('upcoming-bills') + 1);
     const def = DASHBOARD_WIDGETS.find((w) => w.id === 'cash-flow-forecast')!;
     expect(def.delegateVisible).toBeUndefined();
+  });
+
+  it.each([
+    'top-movers',
+    'portfolio-value',
+    'credit-utilization-accounts',
+    'credit-utilization-total',
+    'sector-weightings',
+    'security-type-allocation',
+    'geographic-allocation',
+  ] as const)('%s shows a load failure, and does not hide, when the accounts request failed', (id) => {
+    const def = DASHBOARD_WIDGETS.find((w) => w.id === id)!;
+    // Failed accounts leave hasInvestments/hasSecurities unknown (false).
+    const ctx = {
+      accountsFailed: true,
+      isLoading: false,
+      hasInvestments: false,
+      hasSecurities: false,
+    } as unknown as Parameters<typeof def.render>[0];
+    expect(def.shouldRender?.(ctx) ?? true).toBe(true);
+    render(<>{def.render(ctx)}</>);
+    expect(screen.getByRole('alert')).toHaveTextContent(/Couldn't load your accounts/);
   });
 
   it('every widget declares a valid minWidth and defaultHeight', () => {

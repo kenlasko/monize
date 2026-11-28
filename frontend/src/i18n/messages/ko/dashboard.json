@@ -741,5 +741,6 @@
     "depthSubcategories": "하위 카테고리",
     "viewDiagram": "다이어그램",
     "viewTable": "표"
-  }
+  },
+  "accountsLoadFailed": "계좌를 불러오지 못해 이 위젯을 표시할 수 없습니다. 대시보드를 새로고침한 후 다시 시도하세요."
 }

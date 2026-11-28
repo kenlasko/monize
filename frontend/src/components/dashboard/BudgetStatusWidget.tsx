@@ -31,6 +31,9 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
     if (parentLoading) return;
 
     const loadBudgetSummary = async () => {
+      // A retry starts clean: the last failure must not outlive a success.
+      setHasError(false);
+      setIsLoading(true);
       try {
         const data = await budgetsApi.getDashboardSummary();
         setSummary(data);

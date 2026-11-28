@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import { Account } from '@/types/account';
 import type { Institution } from '@/types/institution';
@@ -16,6 +17,7 @@ import { InsightsWidget } from './InsightsWidget';
 import { BudgetStatusWidget } from './BudgetStatusWidget';
 import { FavouriteReportsWidget } from './FavouriteReportsWidget';
 import { Card } from '@/components/ui/Card';
+import { WidgetHeading } from './widget-meta';
 import type { WidgetHeight, WidgetWidth } from './dashboard-layout';
 
 /**
@@ -154,7 +156,53 @@ const upcomingBillsMaxItems = (accounts: Account[]) =>
  * All dashboard widgets in default display order. Each starts half the grid
  * wide, so in the default layout consecutive visible widgets pair up into rows.
  */
-export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
+/** What a widget that reads the accounts shows when that request failed. */
+function AccountsUnavailable({ id, titleSection }: { id: DashboardWidgetId; titleSection: string }) {
+  const t = useTranslations('dashboard');
+  return (
+    <Card padding="md">
+      <WidgetHeading id={id} className="mb-4">
+        {t(`${titleSection}.title` as Parameters<typeof t>[0])}
+      </WidgetHeading>
+      <p role="alert" className="text-gray-500 dark:text-gray-400 text-sm">
+        {t('accountsLoadFailed')}
+      </p>
+    </Card>
+  );
+}
+
+/**
+ * Widgets with no failed state of their own that read `accounts` /
+ * `accountsWithClosed` or `hasInvestments`. Favourite accounts, Upcoming bills
+ * and the Cash flow forecast take the flags themselves; the report widgets
+ * (Expenses, Income vs expenses, Sankey) load their own data.
+ */
+const NEEDS_ACCOUNTS: ReadonlySet<DashboardWidgetId> = new Set([
+  'top-movers',
+  'portfolio-value',
+  'credit-utilization-accounts',
+  'credit-utilization-total',
+  'sector-weightings',
+  'security-type-allocation',
+  'geographic-allocation',
+]);
+
+/** A failed accounts call must show the failure, never the empty state or a hidden widget. */
+function withAccountsFailure(def: DashboardWidgetDefinition): DashboardWidgetDefinition {
+  if (!NEEDS_ACCOUNTS.has(def.id)) return def;
+  return {
+    ...def,
+    shouldRender: def.shouldRender ? (ctx) => ctx.accountsFailed || def.shouldRender!(ctx) : undefined,
+    render: (ctx) =>
+      ctx.accountsFailed && !ctx.isLoading ? (
+        <AccountsUnavailable id={def.id} titleSection={def.titleSection} />
+      ) : (
+        def.render(ctx)
+      ),
+  };
+}
+
+export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = ([
   {
     id: 'favourite-accounts',
     titleSection: 'favouriteAccounts',
@@ -208,6 +256,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
         scheduledTransactions={ctx.scheduledTransactions}
         accounts={ctx.accounts}
         isLoading={ctx.isLoading}
+        error={ctx.accountsFailed || ctx.scheduledFailed}
       />
     ),
   },
@@ -472,7 +521,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     defaultHeight: 'compact',
     render: (ctx) => <TriviaWidget isLoading={ctx.isLoading} />,
   },
-];
+] satisfies DashboardWidgetDefinition[]).map(withAccountsFailure);
 
 export const DEFAULT_DASHBOARD_WIDGET_IDS: DashboardWidgetId[] = DASHBOARD_WIDGETS.filter(
   (w) => w.defaultEnabled,

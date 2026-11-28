@@ -601,6 +601,27 @@ describe('DashboardPage', () => {
     expect(mockGetInstitutions).not.toHaveBeenCalled();
   });
 
+  it('flags a delegate\'s failed accounts call instead of showing no favourites', async () => {
+    authState.current.actingAsUserId = 'owner-1';
+    authState.current.delegateSections = { bills: false };
+    mockGetAccounts.mockRejectedValue(new Error('500'));
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('favourite-accounts')).toHaveAttribute('data-error', 'true');
+    });
+  });
+
+  it('does not carry a scheduled failure into a delegate view without the Bills grant', async () => {
+    authState.current.actingAsUserId = 'owner-1';
+    authState.current.delegateSections = { bills: false };
+    mockGetScheduled.mockRejectedValue(new Error('500'));
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('favourite-accounts')).toHaveAttribute('data-error', 'false');
+    });
+    expect(mockGetScheduled).not.toHaveBeenCalled();
+  });
+
   it('delegate with the Bills grant also sees Upcoming Bills', async () => {
     authState.current.actingAsUserId = 'owner-1';
     authState.current.delegateSections = { bills: true };

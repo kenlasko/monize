@@ -741,5 +741,6 @@
     "depthSubcategories": "Danh mục con",
     "viewDiagram": "Biểu đồ",
     "viewTable": "Bảng"
-  }
+  },
+  "accountsLoadFailed": "Không thể tải các tài khoản của bạn nên không thể hiển thị tiện ích này. Hãy tải lại bảng điều khiển để thử lại."
 }

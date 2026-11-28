@@ -741,5 +741,6 @@
     "depthSubcategories": "Subkategori",
     "viewDiagram": "Diagram",
     "viewTable": "Tabel"
-  }
+  },
+  "accountsLoadFailed": "Akun Anda tidak dapat dimuat, sehingga widget ini tidak dapat ditampilkan. Muat ulang dasbor untuk mencoba lagi."
 }

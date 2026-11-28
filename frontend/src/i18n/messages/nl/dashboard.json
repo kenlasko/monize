@@ -741,5 +741,6 @@
     "depthSubcategories": "Subcategorieën",
     "viewDiagram": "Diagram",
     "viewTable": "Tabel"
-  }
+  },
+  "accountsLoadFailed": "Je rekeningen konden niet worden geladen, dus deze widget kan niet worden getoond. Laad het dashboard opnieuw om het nog eens te proberen."
 }

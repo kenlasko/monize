@@ -741,5 +741,6 @@
     "depthSubcategories": "Podkategorie",
     "viewDiagram": "Diagram",
     "viewTable": "Tabela"
-  }
+  },
+  "accountsLoadFailed": "Nie udało się wczytać Twoich kont, więc ten widżet nie może zostać wyświetlony. Odśwież pulpit, aby spróbować ponownie."
 }

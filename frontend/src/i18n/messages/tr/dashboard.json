@@ -741,5 +741,6 @@
     "depthSubcategories": "Alt kategoriler",
     "viewDiagram": "Diyagram",
     "viewTable": "Tablo"
-  }
+  },
+  "accountsLoadFailed": "Hesaplarınız yüklenemedi, bu yüzden bu pano parçası gösterilemiyor. Yeniden denemek için panoyu yeniden yükleyin."
 }
