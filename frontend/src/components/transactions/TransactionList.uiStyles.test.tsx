@@ -117,6 +117,29 @@ function renderList(extra: Record<string, unknown> = {}) {
   );
 }
 
+/**
+ * The props `app/investments/page.tsx` hands its cash register when one cash
+ * account is selected: its own density view, no sort (the rows arrive newest
+ * first) and the response's seed (issue #2508).
+ */
+function renderInvestmentsCashRegister() {
+  return render(
+    <TransactionList
+      densityView="investments"
+      transactions={rows}
+      onEdit={vi.fn()}
+      onRefresh={vi.fn()}
+      currentPage={1}
+      totalPages={1}
+      totalItems={rows.length}
+      pageSize={25}
+      onPageChange={vi.fn()}
+      startingBalance={1000}
+      isSingleAccountView
+    />,
+  );
+}
+
 describe('Standard', () => {
   beforeEach(() => {
     style.value = 'standard';
@@ -328,6 +351,11 @@ describe('Folio register', () => {
       expect(groups[1].querySelector('.ui-register-group-net')?.textContent).toBe('$-75.00');
     });
 
+    it('prints the close on the Investments page cash register, which passes no sort (issue #2508)', () => {
+      const { container } = renderInvestmentsCashRegister();
+      expect(figures(container)).toEqual(['$1000.00', '$800.00']);
+    });
+
     it('keeps the day net across accounts, where there is no running balance', () => {
       const { container } = renderList({ isSingleAccountView: false, startingBalance: undefined });
       expect(container.querySelector('[data-testid="day-closing-balance"]')).toBeNull();
@@ -419,6 +447,14 @@ describe('Pebble register', () => {
     expect(net.closest('.md\\:inline')).toBeTruthy();
     // The rows' own balance column is the one hidden below md.
     expect(sections[1].querySelector('[data-testid="pebble-row"] .md\\:block')?.textContent).toBe('$800.00');
+  });
+
+  it('heads each day with its close on the Investments page cash register (issue #2508)', () => {
+    const { container } = renderInvestmentsCashRegister();
+    const figures = Array.from(
+      container.querySelectorAll('section [data-testid="day-closing-balance-figure"]'),
+    ).map((el) => el.textContent);
+    expect(figures).toEqual(['$1000.00', '$800.00']);
   });
 
   it('withholds the close of a day continued on the previous page', () => {
