@@ -64,7 +64,10 @@ import { Budget } from "../budgets/entities/budget.entity";
 import { CustomReport } from "../reports/entities/custom-report.entity";
 import { acquireAdvisoryLock, LockScope } from "../common/db/locks";
 import { withSystemContext } from "../common/db/with-context";
-import { withScopedDb } from "../common/db/scoped-db";
+import {
+  runOutsideActiveScopedManager,
+  withScopedDb,
+} from "../common/db/scoped-db";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
 import {
   LockedTransactionRow,
@@ -1656,38 +1659,34 @@ export class ActionHistoryService {
   }
 
   /**
-   * Row-lock the caller's own legs of a transfer. An id the lock did not
-   * return is either gone (skipped) or the other owner's leg of a cross-owner
-   * transfer, which an undo cannot remove under this owner's identity (refused
-   * with 409). RLS hides the other owner's row, so the two are told apart in
-   * the same transaction by the leg's snapshot account: one of the caller's
-   * accounts means the leg is gone, any other means another owner's.
+   * Row-lock the caller's own legs of a transfer. RLS hides another owner's
+   * row from the lock, so which legs exist is read first, on its own short
+   * connection under the system context and before any row lock is held. An id
+   * that existed but the lock did not return now belongs to another owner (a
+   * cross-owner transfer, or a leg moved into another owner's account): the
+   * undo is refused with 409. An id absent from the read is gone and skipped.
    */
   private async lockOwnTransferLegs(
     manager: EntityManager,
     userId: string,
-    legs: { id: string; accountId?: string | null }[],
+    ids: string[],
   ): Promise<Map<string, LockedTransactionRow>> {
-    const locked = await lockTransactionRows(
-      manager,
-      legs.map((leg) => leg.id),
-      userId,
+    const existing: { id: string }[] = await runOutsideActiveScopedManager(() =>
+      withSystemContext(() =>
+        withScopedDb(this.dataSource, (m) =>
+          m.query(`SELECT id FROM transactions WHERE id = ANY($1)`, [ids]),
+        ),
+      ),
     );
-    for (const leg of legs) {
-      if (locked.has(leg.id) || !leg.accountId) continue;
-      const own: { id: string }[] = await manager.query(
-        `SELECT id FROM accounts WHERE id = $1 AND user_id = $2`,
-        [leg.accountId, userId],
-      );
-      if (own.length === 0) {
-        throw new ConflictException({
-          message: tr(
-            "errors.actionHistory.undoCrossOwnerTransferNotSupported",
-            "This transfer has a side in an account of another owner, so it cannot be undone. Delete the transfer instead.",
-          ),
-          errorCode: "UNDO_CROSS_OWNER_TRANSFER_NOT_SUPPORTED",
-        });
-      }
+    const locked = await lockTransactionRows(manager, ids, userId);
+    if (existing.some((row) => !locked.has(row.id))) {
+      throw new ConflictException({
+        message: tr(
+          "errors.actionHistory.undoCrossOwnerTransferNotSupported",
+          "This transfer has a side in an account of another owner, so it cannot be undone. Delete the transfer instead.",
+        ),
+        errorCode: "UNDO_CROSS_OWNER_TRANSFER_NOT_SUPPORTED",
+      });
     }
     return locked;
   }
@@ -1698,8 +1697,7 @@ export class ActionHistoryService {
   ): Promise<void> {
     if (!action.afterData) return;
 
-    const { fromTransactionId, toTransactionId, fromAccountId, toAccountId } =
-      action.afterData;
+    const { fromTransactionId, toTransactionId } = action.afterData;
 
     // INV-RECONCILE-001: the caller's own legs are locked and held to the
     // reconciled lock before the first write. A leg that no longer exists is
@@ -1707,10 +1705,7 @@ export class ActionHistoryService {
     const lockedLegs = await this.lockOwnTransferLegs(
       manager,
       action.userId,
-      [
-        { id: fromTransactionId, accountId: fromAccountId },
-        { id: toTransactionId, accountId: toAccountId },
-      ].filter((leg) => !!leg.id),
+      [fromTransactionId, toTransactionId].filter((id): id is string => !!id),
     );
     const legIds = [fromTransactionId, toTransactionId].filter(
       (id): id is string => !!id && lockedLegs.has(id),

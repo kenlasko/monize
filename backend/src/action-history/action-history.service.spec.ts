@@ -39,15 +39,13 @@ function lockQueries(
   rows: {
     investment?: Record<string, unknown>[];
     transactions?: Record<string, unknown>[];
-    /** Account ids that belong to the acting user. */
-    ownAccounts?: string[];
+    /** Ids the system-context existence read sees (other owners' included). */
+    existing?: string[];
   },
 ) {
   return async (sql: string, params?: unknown[]) => {
-    if (/SELECT id FROM accounts WHERE id = \$1 AND user_id/.test(sql)) {
-      return (rows.ownAccounts ?? []).includes(String(params?.[0]))
-        ? [{ id: params?.[0] }]
-        : [];
+    if (/SELECT id FROM transactions WHERE id = ANY/.test(sql)) {
+      return (rows.existing ?? []).map((id) => ({ id }));
     }
     if (/FROM investment_transactions[\s\S]*FOR UPDATE/.test(sql)) {
       return (rows.investment ?? []).filter((row) => row.id === params?.[0]);
@@ -2247,7 +2245,9 @@ describe("ActionHistoryService", () => {
       mockQueryRunner.query.mockImplementation(
         lockQueries([], {
           transactions: [lockedTx("tx-from", "acc-1")],
-          ownAccounts: ["acc-1"],
+          // acc-2 is the caller's in the snapshot, but the row now belongs to
+          // another owner: it exists, and the lock does not return it.
+          existing: ["tx-from", "tx-other"],
         }),
       );
 
@@ -2270,7 +2270,7 @@ describe("ActionHistoryService", () => {
       mockQueryRunner.query.mockImplementation(
         lockQueries([{ opening_balance: "0", tx_sum: "0" }], {
           transactions: [lockedTx("tx-from", "acc-1")],
-          ownAccounts: ["acc-1", "acc-2"],
+          existing: ["tx-from"],
         }),
       );
 
@@ -2312,9 +2312,7 @@ describe("ActionHistoryService", () => {
     it("treats a transfer whose legs are both gone as a no-op", async () => {
       mockRepository.findOne.mockResolvedValue(transferCreate);
       mockQueryRunner.query.mockImplementation(
-        lockQueries([{ opening_balance: "0", tx_sum: "0" }], {
-          ownAccounts: ["acc-1", "acc-2"],
-        }),
+        lockQueries([{ opening_balance: "0", tx_sum: "0" }], {}),
       );
 
       const result = await service.undo(userId);

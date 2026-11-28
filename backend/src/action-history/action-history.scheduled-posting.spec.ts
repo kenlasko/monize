@@ -168,12 +168,16 @@ describe("ActionHistoryService: scheduled posting entries", () => {
       (assertReconciledRowsMutable as jest.Mock).mockRejectedValue(
         new ConflictException("reconciled"),
       );
-      manager.query.mockClear();
+      manager.query.mockReset();
+      manager.query.mockResolvedValue([]);
       manager.delete.mockClear();
       await expect(
         remover({ kind: "transfer", ...transferLegs }),
       ).rejects.toBeInstanceOf(ConflictException);
-      expect(manager.query).not.toHaveBeenCalled();
+      expect(manager.query).not.toHaveBeenCalledWith(
+        expect.stringContaining("DELETE FROM transaction_tags"),
+        expect.anything(),
+      );
       expect(manager.delete).not.toHaveBeenCalled();
     });
 
