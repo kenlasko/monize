@@ -1888,19 +1888,20 @@ export class McpTransactionsTools {
         "Cancelled: the confirmation was declined, so nothing was deleted.",
       );
     const ids: string[] = [];
-    // Both legs of a transfer selected: the first delete removes the mirror.
-    const mirrorLegIds = await this.transactionsService.findMirrorLegIds(
-      userId,
-      bulk.okRows.map((row) => row.transactionId),
-    );
+    // A row already removed with its partner (the other leg of a transfer, a
+    // split parent's leg) counts as deleted; it is not deleted twice.
+    const removedIds = new Set<string>();
     for (const row of bulk.okRows) {
-      // An earlier delete that threw leaves this loop, so a mirror is only
-      // ever skipped after its partner was removed.
-      if (!mirrorLegIds.has(row.transactionId)) {
-        await this.transactionsService.removeAny(userId, row.transactionId);
+      if (!removedIds.has(row.transactionId)) {
+        for (const gone of await this.transactionsService.removeAny(
+          userId,
+          row.transactionId,
+        )) {
+          removedIds.add(gone);
+        }
+        await this.writeLimiter.record(userId, "delete_transaction");
       }
       ids.push(row.transactionId);
-      await this.writeLimiter.record(userId, "delete_transaction");
     }
     return toolResult({ ids, count: ids.length, skipped: bulk.skipped });
   }
@@ -1936,9 +1937,12 @@ export class McpTransactionsTools {
     );
     if (!(answers instanceof Map)) return answers.ask;
     const ids: string[] = [];
+    // Shared across the cards: a delete card whose row went with an earlier
+    // card's delete (the other leg of a transfer) is reported, not repeated.
+    const removedIds = new Set<string>();
     for (const [index, card] of cards.entries()) {
       if (answers.get(cardKey(index)) === "declined") continue;
-      const id = await this.commitCard(userId, card);
+      const id = await this.commitCard(userId, card, removedIds);
       if (id) ids.push(id);
     }
     return toolResult({ ids, count: ids.length, skipped });
@@ -1963,6 +1967,7 @@ export class McpTransactionsTools {
   private async commitCard(
     userId: string,
     card: PendingAiAction,
+    removedIds: Set<string>,
   ): Promise<string | null> {
     const d = card.descriptor;
     switch (d.type) {
@@ -2028,8 +2033,15 @@ export class McpTransactionsTools {
         return r.fromTransaction.id;
       }
       case "delete_transaction": {
-        await this.transactionsService.removeAny(userId, d.transactionId);
-        await this.writeLimiter.record(userId, "delete_transaction");
+        if (!removedIds.has(d.transactionId)) {
+          for (const gone of await this.transactionsService.removeAny(
+            userId,
+            d.transactionId,
+          )) {
+            removedIds.add(gone);
+          }
+          await this.writeLimiter.record(userId, "delete_transaction");
+        }
         return d.transactionId;
       }
       default:

@@ -82,8 +82,7 @@ describe("AiActionsService", () => {
       update: jest.fn().mockResolvedValue({ id: TX }),
       updateSplits: jest.fn().mockResolvedValue([]),
       remove: jest.fn().mockResolvedValue(undefined),
-      removeAny: jest.fn().mockResolvedValue(undefined),
-      findMirrorLegIds: jest.fn().mockResolvedValue(new Map()),
+      removeAny: jest.fn().mockResolvedValue([]),
       createBulk: jest.fn(),
       createTransfer: jest.fn().mockResolvedValue({
         fromTransaction: { id: "tf-1" },
@@ -2206,7 +2205,7 @@ describe("AiActionsService", () => {
 
     it("executes batch_actions(delete) best-effort, collecting skips", async () => {
       transactions.removeAny
-        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce([TX])
         .mockRejectedValueOnce(new Error("nope"));
       const descriptor: import("./ai-action.types").BatchActionsDescriptor = {
         type: "batch_actions",
@@ -2222,41 +2221,44 @@ describe("AiActionsService", () => {
       expect(result.skipped).toHaveLength(1);
     });
 
-    it("skips the mirror leg of a transfer selected with its other leg", async () => {
-      transactions.findMirrorLegIds.mockResolvedValueOnce(
-        new Map([[ACC2, TX]]),
+    const deleteBatch = (actionId: string) =>
+      service.confirm(
+        USER,
+        dtoFor({
+          type: "batch_actions",
+          userId: USER,
+          actionId,
+          expiresAt: Date.now() + 60_000,
+          operation: "delete",
+          rows: [{ transactionId: TX }, { transactionId: ACC2 }],
+        } as import("./ai-action.types").BatchActionsDescriptor),
       );
-      const descriptor: import("./ai-action.types").BatchActionsDescriptor = {
-        type: "batch_actions",
-        userId: USER,
-        actionId: "act-batch-mirror",
-        expiresAt: Date.now() + 60_000,
-        operation: "delete",
-        rows: [{ transactionId: TX }, { transactionId: ACC2 }],
-      };
-      const result = await service.confirm(USER, dtoFor(descriptor));
+
+    it("does not delete a row a previous delete already took with it", async () => {
+      transactions.removeAny.mockResolvedValueOnce([TX, ACC2]);
+      const result = await deleteBatch("act-batch-mirror");
       expect(transactions.removeAny).toHaveBeenCalledTimes(1);
       expect(transactions.removeAny).toHaveBeenCalledWith(USER, TX);
       expect(result.count).toBe(2);
       expect(result.skipped).toHaveLength(0);
     });
 
-    it("reports the mirror leg skipped when the other leg's delete failed", async () => {
-      transactions.findMirrorLegIds.mockResolvedValueOnce(
-        new Map([[ACC2, TX]]),
-      );
-      transactions.removeAny.mockRejectedValueOnce(new Error("nope"));
-      const descriptor: import("./ai-action.types").BatchActionsDescriptor = {
-        type: "batch_actions",
-        userId: USER,
-        actionId: "act-batch-mirror-fail",
-        expiresAt: Date.now() + 60_000,
-        operation: "delete",
-        rows: [{ transactionId: TX }, { transactionId: ACC2 }],
-      };
-      const result = await service.confirm(USER, dtoFor(descriptor));
-      expect(result.count).toBe(0);
-      expect(result.skipped).toHaveLength(2);
+    it("deletes the second row itself when the first delete failed", async () => {
+      transactions.removeAny
+        .mockRejectedValueOnce(new Error("nope"))
+        .mockResolvedValueOnce([TX, ACC2]);
+      const result = await deleteBatch("act-batch-mirror-fail");
+      expect(transactions.removeAny).toHaveBeenCalledTimes(2);
+      expect(transactions.removeAny).toHaveBeenLastCalledWith(USER, ACC2);
+      expect(result.count).toBe(1);
+      expect(result.skipped).toHaveLength(1);
+    });
+
+    it("deletes the second row when the first delete did not remove it", async () => {
+      transactions.removeAny.mockResolvedValueOnce([TX]);
+      const result = await deleteBatch("act-batch-unlinked");
+      expect(transactions.removeAny).toHaveBeenCalledTimes(2);
+      expect(result.count).toBe(2);
     });
 
     it("executes batch_actions(update) for each row", async () => {

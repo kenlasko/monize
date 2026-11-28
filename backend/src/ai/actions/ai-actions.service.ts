@@ -610,36 +610,19 @@ export class AiActionsService {
     // is signature-verified and assertBulkRowCount already rejects oversize
     // input. Defense-in-depth; also clears CodeQL's loop-bound-injection flag.
     const rowCount = Math.min(descriptor.rows.length, MAX_BULK_ACTION_ROWS);
-    // Both legs of a transfer selected: the first delete removes the mirror, so
-    // the second must not run (it would 404 after the first wrote).
-    const deleteRows = descriptor.rows as BatchDeleteTransactionRow[];
-    const mirrorOf =
-      descriptor.operation === "delete"
-        ? await this.transactionsService.findMirrorLegIds(
-            userId,
-            deleteRows.slice(0, rowCount).map((row) => row.transactionId),
-          )
-        : new Map<string, string>();
-    const failedIds = new Set<string>();
+    // Delete only: ids a delete took with it (the other leg of a transfer, a
+    // split parent's legs), so a later selected row is not deleted twice.
+    const removedIds = new Set<string>();
     for (let i = 0; i < rowCount; i++) {
-      const mirrored = mirrorOf.get(deleteRows[i].transactionId);
-      if (mirrored !== undefined) {
-        if (failedIds.has(mirrored)) {
-          skipped.push({ index: i, reason: this.bulkRowInvalidReason() });
-        } else {
-          ids.push(deleteRows[i].transactionId);
-        }
-        continue;
-      }
       try {
         const id = await this.executeBatchRow(
           userId,
           descriptor.operation,
           descriptor.rows[i],
+          removedIds,
         );
         ids.push(id);
       } catch {
-        failedIds.add(deleteRows[i].transactionId);
         skipped.push({ index: i, reason: this.bulkRowInvalidReason() });
       }
     }
@@ -651,6 +634,7 @@ export class AiActionsService {
     userId: string,
     operation: BatchActionsDescriptor["operation"],
     row: BatchActionsDescriptor["rows"][number],
+    removedIds: Set<string>,
   ): Promise<string> {
     switch (operation) {
       case "update": {
@@ -672,7 +656,14 @@ export class AiActionsService {
       }
       case "delete": {
         const r = row as BatchDeleteTransactionRow;
-        await this.transactionsService.removeAny(userId, r.transactionId);
+        if (!removedIds.has(r.transactionId)) {
+          for (const gone of await this.transactionsService.removeAny(
+            userId,
+            r.transactionId,
+          )) {
+            removedIds.add(gone);
+          }
+        }
         return r.transactionId;
       }
       case "create_transfer": {

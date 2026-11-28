@@ -5267,57 +5267,54 @@ export class TransactionsService {
    * manage_transactions delete all land here, where the caller does not know
    * up front whether the target is a transfer. Like removeTransfer it records
    * no action-history entry (INV-TRANSFER-001).
+   *
+   * Returns the ids that are gone afterwards: the row and whatever went with
+   * it (a transfer's mirror, a split parent's transfer legs). A caller deleting
+   * a selection row by row skips a selected id already in the union of these,
+   * so the second leg of a transfer is not deleted twice (a 404 after the
+   * first delete wrote). Read after the commit from the rows themselves, so a
+   * mirror that was not removed (unlinked meanwhile) is not reported.
    */
   async removeAny(
     userId: string,
     transactionId: string,
     actor?: TransferActor,
-  ): Promise<void> {
-    // Only the two columns the routing needs; a miss falls through to
+  ): Promise<string[]> {
+    // Only the columns the routing needs; a miss falls through to
     // remove(), whose findOne throws the not-found error.
     const row = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(Transaction).findOne({
         where: { id: transactionId, userId },
-        select: ["id", "isTransfer", "linkedTransactionId"],
+        select: ["id", "isTransfer", "linkedTransactionId", "isSplit"],
       }),
     );
-    if (row?.isTransfer && row.linkedTransactionId) {
-      return this.removeTransfer(userId, transactionId, actor);
-    }
-    return this.remove(userId, transactionId);
-  }
-
-  /**
-   * Of a selection to delete one row at a time with `removeAny`, the ids that
-   * are the mirror leg of an EARLIER selected id (mirror id -> that earlier
-   * id): deleting the earlier leg already removes them, so deleting them again
-   * fails with a 404 after the first delete wrote. Callers skip them, and count
-   * them as deleted only when the earlier leg's delete succeeded.
-   * Only a mutual link counts; a split-transfer leg links to its split parent,
-   * which does not link back, so it never qualifies.
-   */
-  async findMirrorLegIds(
-    userId: string,
-    transactionIds: string[],
-  ): Promise<Map<string, string>> {
-    if (transactionIds.length === 0) return new Map();
-    const rows = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Transaction).find({
-        where: { id: In(transactionIds), userId, isTransfer: true },
-        select: ["id", "linkedTransactionId"],
-      }),
-    );
-    const linkOf = new Map(rows.map((r) => [r.id, r.linkedTransactionId]));
-    const mirrors = new Map<string, string>();
-    const seen = new Set<string>();
-    for (const id of transactionIds) {
-      const linked = linkOf.get(id);
-      if (linked && seen.has(linked) && linkOf.get(linked) === id) {
-        mirrors.set(id, linked);
+    // Every row this delete may take with it, read before it runs.
+    const candidates = new Set<string>([transactionId]);
+    if (row?.linkedTransactionId) candidates.add(row.linkedTransactionId);
+    if (row?.isSplit) {
+      const legs = await withScopedDb(this.dataSource, (m) =>
+        m.find(TransactionSplit, {
+          where: { transactionId },
+          select: ["id", "linkedTransactionId"],
+        }),
+      );
+      for (const leg of legs) {
+        if (leg.linkedTransactionId) candidates.add(leg.linkedTransactionId);
       }
-      seen.add(id);
     }
-    return mirrors;
+    if (row?.isTransfer && row.linkedTransactionId) {
+      await this.removeTransfer(userId, transactionId, actor);
+    } else {
+      await this.remove(userId, transactionId);
+    }
+    const remaining = await withScopedDb(this.dataSource, (m) =>
+      m.getRepository(Transaction).find({
+        where: { id: In([...candidates]), userId },
+        select: ["id"],
+      }),
+    );
+    const remainingIds = new Set(remaining.map((r) => r.id));
+    return [...candidates].filter((id) => !remainingIds.has(id));
   }
 
   /**
