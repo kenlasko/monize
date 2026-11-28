@@ -68,7 +68,10 @@ import {
   isUniqueViolation,
   normalizeEmail,
 } from "./email-change.util";
-import { mergeWidgetConfig } from "./widget-config-merge";
+import {
+  mergeWidgetConfig,
+  stripAccountIdsFromWidgetConfig,
+} from "./widget-config-merge";
 
 @Injectable()
 export class UsersService {
@@ -1071,6 +1074,15 @@ export class UsersService {
       await manager.query(
         "DELETE FROM monte_carlo_scenarios WHERE user_id = $1 AND cardinality(account_ids) > 0",
         [userId],
+      );
+      const accountRows: { id: string }[] = await manager.query(
+        "SELECT id FROM accounts WHERE user_id = $1",
+        [userId],
+      );
+      await stripAccountIdsFromWidgetConfig(
+        manager,
+        userId,
+        accountRows.map((r) => r.id),
       );
       result = await manager.query("DELETE FROM accounts WHERE user_id = $1", [
         userId,

@@ -77,6 +77,7 @@ import {
 } from "./account-name.util";
 import { formatDateYMD, todayInTimezone, todayYMD } from "../common/date-utils";
 import { getUsersByEffectiveTimezone } from "../common/users-by-timezone.util";
+import { stripAccountIdsFromWidgetConfig } from "../users/widget-config-merge";
 import { didYouMean } from "../common/name-suggestions.util";
 import { ActionHistoryService } from "../action-history/action-history.service";
 import { withSystemContext } from "../common/db/with-context";
@@ -2643,6 +2644,8 @@ export class AccountsService {
           );
         }
 
+        // Widget settings name accounts in JSONB with no foreign key.
+        await stripAccountIdsFromWidgetConfig(m, userId, [id]);
         await m.remove(account);
         return { removedSchedule: removed, unlinkedSchedule: !!ownSchedule };
       },
