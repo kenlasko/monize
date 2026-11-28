@@ -26,6 +26,7 @@ import {
   type StaleUnreconciledSummary,
 } from "./stale-reconciliation";
 import { tr } from "../i18n/translate";
+import { TransactionTransferService } from "./transaction-transfer.service";
 import { withScopedDb } from "../common/db/scoped-db";
 import { lockTransactionRow } from "../common/db/locks";
 import {
@@ -54,6 +55,8 @@ export class TransactionReconciliationService {
     @Inject(forwardRef(() => TransactionSplitService))
     private splitService: TransactionSplitService,
     private dataSource: DataSource,
+    @Inject(forwardRef(() => TransactionTransferService))
+    private transferService: TransactionTransferService,
   ) {}
 
   /**
@@ -87,6 +90,9 @@ export class TransactionReconciliationService {
     /** Accounts a counterpart or split propagation moved besides the row's own. */
     counterpartAccountIds: string[];
   }> {
+    // Legs of a transfer this status change reaches, for the history entry.
+    let transferLegIds: string[] = [];
+    let statusChanged = false;
     // Securities of embedded investment rows that crossed the VOID boundary
     // with a split parent, repriced by the bond engine after the commit
     // (INV-BOND-005, INV-CACHE-001).
@@ -170,6 +176,11 @@ export class TransactionReconciliationService {
         }
       }
 
+      statusChanged = status !== oldStatus;
+      if (!locked.isSplit && locked.linkedTransactionId) {
+        transferLegIds = [locked.linkedTransactionId];
+      }
+
       const fields: Partial<Transaction> = { status };
       if (
         status === TransactionStatus.RECONCILED &&
@@ -205,6 +216,16 @@ export class TransactionReconciliationService {
 
       if (balanceMoved) {
         if (locked.isSplit) {
+          // The parent is no transfer, but its transfer lines' counterpart
+          // legs change status with it.
+          transferLegIds = (
+            await m.query(
+              `SELECT linked_transaction_id AS id FROM transaction_splits
+                WHERE transaction_id = $1 AND transfer_account_id IS NOT NULL
+                  AND linked_transaction_id IS NOT NULL`,
+              [transactionId],
+            )
+          ).map((row: { id: string }) => row.id);
           for (const affected of await this.splitService.applyParentStatusToTransferCounterparts(
             m,
             transactionId,
@@ -237,6 +258,20 @@ export class TransactionReconciliationService {
       userId,
       touchedSecurityIds,
     );
+    // Every status path of a transfer leg (void, cleared, reconcile, the joint
+    // register) lands here, so Undo is stopped at each of them; a no-op write
+    // records nothing.
+    if (statusChanged && transferLegIds.length > 0) {
+      await this.transferService.recordTransferChangeHistory(
+        userId,
+        await this.transferService.resolveTransferLegOwners(
+          userId,
+          transactionId,
+          transferLegIds,
+        ),
+        "status",
+      );
+    }
     return result;
   }
 

@@ -1,6 +1,10 @@
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { ForbiddenException, NotFoundException } from "@nestjs/common";
+import {
+  ActionHistoryService,
+  settlePendingHistoryWrites,
+} from "@/action-history/action-history.service";
 import { TransactionsService } from "@/transactions/transactions.service";
 import { TransactionsModule } from "@/transactions/transactions.module";
 import { DelegationService } from "@/delegation/delegation.service";
@@ -28,6 +32,7 @@ describe("Cross-owner transfers (integration)", () => {
   let module: TestingModule;
   let service: TransactionsService;
   let delegationService: DelegationService;
+  let history: ActionHistoryService;
   let dataSource: DataSource;
 
   let ownerId: string; // "A" -- shares an account
@@ -122,6 +127,7 @@ describe("Cross-owner transfers (integration)", () => {
     module = await createIntegrationModule([TransactionsModule]);
     service = module.get(TransactionsService);
     delegationService = module.get(DelegationService);
+    history = module.get(ActionHistoryService, { strict: false });
     dataSource = module.get(DataSource);
   });
 
@@ -317,6 +323,37 @@ describe("Cross-owner transfers (integration)", () => {
       expect(survivor!.linkedTransactionId).toBeNull(); // FK SET NULL detach
       expect((await loadAccount(delegateAccountId)).currentBalance).toBe(2000);
       expect((await loadAccount(ownerAccountId)).currentBalance).toBe(5500);
+    });
+  });
+
+  describe("undo after an edit of a connected transfer", () => {
+    it("is refused for both owners, who each keep their leg", async () => {
+      await grantOwnerAccount({ create: true, edit: true });
+      const { fromTransaction, toTransaction } =
+        await createCrossOwnerTransfer(500);
+      await settlePendingHistoryWrites();
+
+      await withUserContext(delegateId, () =>
+        service.updateTransfer(
+          delegateId,
+          fromTransaction.id,
+          { amount: 700 },
+          actorB(),
+        ),
+      );
+      await settlePendingHistoryWrites();
+
+      for (const userId of [delegateId, ownerId]) {
+        await expect(
+          withUserContext(userId, () => history.undo(userId)),
+        ).rejects.toMatchObject({
+          response: { errorCode: "UNDO_TRANSFER_CHANGE_NOT_SUPPORTED" },
+        });
+      }
+      expect(await loadTx(fromTransaction.id)).not.toBeNull();
+      expect(await loadTx(toTransaction.id)).not.toBeNull();
+      expect((await loadAccount(delegateAccountId)).currentBalance).toBe(1300);
+      expect((await loadAccount(ownerAccountId)).currentBalance).toBe(5700);
     });
   });
 

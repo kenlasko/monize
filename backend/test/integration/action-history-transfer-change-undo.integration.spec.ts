@@ -125,6 +125,24 @@ describe("Undo after a transfer change (integration)", () => {
     expect(await legCount()).toBe(2);
   });
 
+  it("refuses the undo after a leg is reconciled and keeps the transfer", async () => {
+    const fromId = await createTransfer();
+    await asUser(() => transactions.reconcile(userId, fromId));
+    const settled = await balances();
+    await expectUndoRefusedAndTransferKept(settled);
+    expect(await legCount()).toBe(2);
+  });
+
+  it("records nothing for a tags-only save, so Undo still reaches the create", async () => {
+    const fromId = await createTransfer();
+    await asUser(() =>
+      transactions.updateTransfer(userId, fromId, { tagIds: [] }),
+    );
+    await settlePendingHistoryWrites();
+    await asUser(() => history.undo(userId));
+    expect(await legCount()).toBe(0);
+  });
+
   it("refuses the undo after a transfer is deleted", async () => {
     const fromId = await createTransfer();
     await asUser(() => transactions.removeTransfer(userId, fromId));

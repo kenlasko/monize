@@ -1331,8 +1331,8 @@ export class TransactionTransferService {
       fromAccount.userId === effectiveUserId &&
       toAccount.userId === effectiveUserId
     ) {
-      // Same-owner: fire-and-forget, exactly today's behavior.
-      void this.actionHistoryService.record(effectiveUserId, {
+      // Same-owner: awaited, so a fast edit is never recorded before the create.
+      await this.actionHistoryService.record(effectiveUserId, {
         entityType: "transfer",
         entityId: savedFromId,
         action: "create",
@@ -1387,14 +1387,42 @@ export class TransactionTransferService {
   }
 
   /**
-   * Records a transfer edit, status change or delete so Undo stops at it.
-   * Awaited: an entry still in flight when the user presses Undo would let it
-   * reach the transfer's creation and delete both legs. Its undo is refused
+   * The owners of a transfer's legs, each with a leg they hold, read before a
+   * delete removes the rows. The acting user is always present. A counterpart
+   * owner's row is not readable from the actor's scope, so the lookup runs
+   * under the audited system context, as the create's counterpart write does.
+   */
+  async resolveTransferLegOwners(
+    actingUserId: string,
+    ownLegId: string,
+    otherLegIds: readonly string[],
+  ): Promise<ReadonlyMap<string, string>> {
+    const owners = new Map<string, string>([[actingUserId, ownLegId]]);
+    if (otherLegIds.length === 0) return owners;
+    const rows: { id: string; userId: string }[] = await withSystemContext(() =>
+      withScopedDb(this.dataSource, (m) =>
+        m.query(
+          `SELECT id, user_id AS "userId" FROM transactions WHERE id = ANY($1::uuid[])`,
+          [[...otherLegIds]],
+        ),
+      ),
+    );
+    for (const row of rows) {
+      if (!owners.has(row.userId)) owners.set(row.userId, row.id);
+    }
+    return owners;
+  }
+
+  /**
+   * Records a transfer edit, status change or delete for every owner of its
+   * legs, as the create does, so Undo stops at it for each of them. Awaited:
+   * an entry still in flight when the user presses Undo would let it reach the
+   * transfer's creation and delete both legs. Its undo is refused
    * (`UNDO_TRANSFER_CHANGE_NOT_SUPPORTED`); it carries no snapshot.
    */
   async recordTransferChangeHistory(
-    userId: string,
-    transferLegId: string,
+    actingUserId: string,
+    legOwners: ReadonlyMap<string, string>,
     change: "update" | "status" | "delete",
   ): Promise<void> {
     const text = {
@@ -1402,12 +1430,26 @@ export class TransactionTransferService {
       status: "Changed the status of a transfer",
       delete: "Deleted a transfer",
     }[change];
-    await this.actionHistoryService.record(userId, {
-      entityType: "transfer",
-      entityId: transferLegId,
-      action: change === "delete" ? "delete" : "update",
-      description: text,
-    });
+    const descriptionKey = {
+      update: "editedTransfer",
+      status: "changedTransferStatus",
+      delete: "deletedTransfer",
+    }[change];
+    for (const [ownerId, legId] of legOwners) {
+      const record = () =>
+        this.actionHistoryService.record(ownerId, {
+          entityType: "transfer",
+          entityId: legId,
+          action: change === "delete" ? "delete" : "update",
+          description: text,
+          descriptionKey,
+        });
+      if (ownerId === actingUserId) {
+        await record();
+      } else {
+        await withSystemContext(record);
+      }
+    }
   }
 
   async getLinkedTransaction(

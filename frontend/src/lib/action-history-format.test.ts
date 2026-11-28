@@ -93,10 +93,13 @@ describe('renderActionDescription', () => {
 
   it('covers every description key the backend can emit', () => {
     expect(KNOWN_DESCRIPTION_KEYS.has('createdTransfer')).toBe(true);
+    for (const key of ['editedTransfer', 'changedTransferStatus', 'deletedTransfer']) {
+      expect(KNOWN_DESCRIPTION_KEYS.has(key)).toBe(true);
+    }
     expect(KNOWN_DESCRIPTION_KEYS.has('convertedToTransfer')).toBe(true);
     expect(KNOWN_DESCRIPTION_KEYS.has('convertedToTransaction')).toBe(true);
     expect(KNOWN_DESCRIPTION_KEYS.has('postedScheduledTransaction')).toBe(true);
     expect(KNOWN_DESCRIPTION_KEYS.has('confirmedTransactionAmount')).toBe(true);
-    expect(KNOWN_DESCRIPTION_KEYS.size).toBe(45);
+    expect(KNOWN_DESCRIPTION_KEYS.size).toBe(48);
   });
 });

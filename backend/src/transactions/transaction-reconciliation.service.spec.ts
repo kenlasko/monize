@@ -12,6 +12,7 @@ import { TransactionSplit } from "./entities/transaction-split.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { AccountsService } from "../accounts/accounts.service";
 import { TransactionSplitService } from "./transaction-split.service";
+import { TransactionTransferService } from "./transaction-transfer.service";
 import { isTransactionInFuture } from "../common/date-utils";
 import {
   createScopedDbMocks,
@@ -49,6 +50,7 @@ describe("TransactionReconciliationService", () => {
   let transactionsRepository: Record<string, jest.Mock>;
   let accountsService: Record<string, jest.Mock>;
   let splitService: Record<string, jest.Mock>;
+  let transferService: Record<string, jest.Mock>;
   let splitsRepository: Record<string, jest.Mock>;
   let userPreferenceRepository: Record<string, jest.Mock>;
   let managerQuery: jest.Mock;
@@ -187,9 +189,16 @@ describe("TransactionReconciliationService", () => {
       recomputeBondPricesAfterWrite: jest.fn().mockResolvedValue(undefined),
     };
 
+    const legOwners = new Map([[userId, "leg-1"]]);
+    transferService = {
+      resolveTransferLegOwners: jest.fn().mockResolvedValue(legOwners),
+      recordTransferChangeHistory: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TransactionReconciliationService,
+        { provide: TransactionTransferService, useValue: transferService },
         { provide: AccountsService, useValue: accountsService },
         { provide: TransactionSplitService, useValue: splitService },
         { provide: DataSource, useValue: dataSource },
@@ -340,6 +349,130 @@ describe("TransactionReconciliationService", () => {
         "account-2",
         userId,
       );
+    });
+
+    describe("transfer history entry", () => {
+      const stageLegs = (status: TransactionStatus, linked: string | null) =>
+        stubLockedTransactions(
+          {
+            lockTransactionRow: lockTransactionRow as jest.Mock,
+            lockTransactionRows: jest.fn(),
+          },
+          [
+            lockedTransactionRow({
+              id: "leg-1",
+              accountId,
+              amount: -100,
+              transactionDate: "2026-01-15",
+              status,
+              linkedTransactionId: linked,
+            }),
+            lockedTransactionRow({
+              id: "leg-2",
+              accountId: "account-2",
+              amount: 100,
+              transactionDate: "2026-01-15",
+              status,
+              linkedTransactionId: "leg-1",
+            }),
+          ],
+        );
+
+      it("records one status entry for every owner of a transfer leg that changed status", async () => {
+        stageLegs(TransactionStatus.UNRECONCILED, "leg-2");
+        mockFindOne.mockResolvedValue(makeTransaction());
+
+        await service.markCleared(
+          userId,
+          "leg-1",
+          true,
+          mockTriggerNetWorthRecalc,
+          mockFindOne,
+        );
+
+        expect(transferService.resolveTransferLegOwners).toHaveBeenCalledWith(
+          userId,
+          "leg-1",
+          ["leg-2"],
+        );
+        expect(
+          transferService.recordTransferChangeHistory,
+        ).toHaveBeenCalledWith(userId, expect.any(Map), "status");
+      });
+
+      it("records nothing when the status does not change", async () => {
+        stageLegs(TransactionStatus.CLEARED, "leg-2");
+        mockFindOne.mockResolvedValue(makeTransaction());
+
+        await service.updateStatus(
+          userId,
+          "leg-1",
+          TransactionStatus.CLEARED,
+          mockTriggerNetWorthRecalc,
+          mockFindOne,
+        );
+
+        expect(
+          transferService.recordTransferChangeHistory,
+        ).not.toHaveBeenCalled();
+      });
+
+      it("records nothing for a row that is not a transfer leg", async () => {
+        stageLegs(TransactionStatus.UNRECONCILED, null);
+        mockFindOne.mockResolvedValue(makeTransaction());
+
+        await service.reconcile(
+          userId,
+          "leg-1",
+          mockTriggerNetWorthRecalc,
+          mockFindOne,
+        );
+
+        expect(
+          transferService.recordTransferChangeHistory,
+        ).not.toHaveBeenCalled();
+      });
+
+      it("records an entry when voiding a split moves its transfer lines' counterpart legs", async () => {
+        stubLockedTransactions(
+          {
+            lockTransactionRow: lockTransactionRow as jest.Mock,
+            lockTransactionRows: jest.fn(),
+          },
+          [
+            lockedTransactionRow({
+              id: "leg-1",
+              accountId,
+              amount: -100,
+              status: TransactionStatus.CLEARED,
+              isSplit: true,
+            }),
+          ],
+        );
+        managerQuery.mockImplementation(async (sql: string) =>
+          String(sql).includes("FROM transaction_splits")
+            ? [{ id: "counterpart-1" }]
+            : [],
+        );
+        mockFindOne.mockResolvedValue(makeTransaction());
+
+        await service.updateStatus(
+          userId,
+          "leg-1",
+          TransactionStatus.VOID,
+          mockTriggerNetWorthRecalc,
+          mockFindOne,
+        );
+
+        expect(transferService.resolveTransferLegOwners).toHaveBeenCalledWith(
+          userId,
+          "leg-1",
+          ["counterpart-1"],
+        );
+        expect(
+          transferService.recordTransferChangeHistory,
+        ).toHaveBeenCalledWith(userId, expect.any(Map), "status");
+      });
     });
 
     it("restores a voided transfer's mirror leg to UNRECONCILED, not the chosen status (#2071)", async () => {

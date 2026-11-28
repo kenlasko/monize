@@ -2183,7 +2183,7 @@ describe("ActionHistoryService", () => {
       );
     });
 
-    it("should throw ConflictException for unsupported transfer action", async () => {
+    it("refuses the undo of a recorded transfer edit or status change with its own code", async () => {
       const transferAction = {
         ...mockAction,
         entityType: "transfer",
@@ -2194,6 +2194,26 @@ describe("ActionHistoryService", () => {
       mockRepository.findOne.mockResolvedValue(transferAction);
 
       await expect(service.undo(userId)).rejects.toThrow(ConflictException);
+      await expect(service.undo(userId)).rejects.toMatchObject({
+        response: { errorCode: "UNDO_TRANSFER_CHANGE_NOT_SUPPORTED" },
+      });
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
+
+    it("refuses the redo of a transfer create, before anything is written", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType: "transfer",
+        action: "create",
+        entityId: "tx-from",
+        isUndone: true,
+        afterData: { fromTransactionId: "tx-from", toTransactionId: "tx-to" },
+      });
+
+      await expect(service.redo(userId)).rejects.toMatchObject({
+        response: { errorCode: "REDO_CREATE_WITH_LEGS" },
+      });
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
     });
 
     it("should return early if afterData is null for transfer create", async () => {

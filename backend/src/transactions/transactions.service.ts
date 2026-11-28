@@ -556,6 +556,23 @@ export interface DeleteTransactionPreview {
 
 export { TransferResult };
 
+/** The columns of a transfer leg an edit can change, as one comparable string. */
+function transferLegSnapshot(leg: Transaction): string {
+  return JSON.stringify([
+    leg.accountId,
+    Number(leg.amount),
+    String(leg.transactionDate),
+    leg.currencyCode,
+    leg.exchangeRate === null ? null : Number(leg.exchangeRate),
+    leg.status,
+    leg.payeeId ?? null,
+    leg.payeeName ?? null,
+    leg.categoryId ?? null,
+    leg.description ?? null,
+    leg.referenceNumber ?? null,
+  ]);
+}
+
 @Injectable()
 export class TransactionsService {
   private readonly logger = new Logger(TransactionsService.name);
@@ -4742,7 +4759,7 @@ export class TransactionsService {
     id: string,
     status: TransactionStatus,
   ): Promise<Transaction> {
-    const updated = await this.reconciliationService.updateStatus(
+    return this.reconciliationService.updateStatus(
       userId,
       id,
       status,
@@ -4750,14 +4767,6 @@ export class TransactionsService {
         this.netWorthService.triggerDebouncedRecalc(accountId, userId),
       this.findOne.bind(this),
     );
-    if (updated.isTransfer && updated.linkedTransactionId) {
-      await this.transferService.recordTransferChangeHistory(
-        userId,
-        id,
-        "status",
-      );
-    }
-    return updated;
   }
 
   async markCleared(
@@ -5260,17 +5269,32 @@ export class TransactionsService {
         parentSplit.id,
       );
     }
+    // The owners are resolved on the delete's own first read of the leg, which
+    // is before it writes: the rows are gone afterwards.
+    let owners: ReadonlyMap<string, string> | undefined;
     await this.transferService.removeTransfer(
       userId,
       transactionId,
-      this.findOne.bind(this),
+      async (uid: string, id: string) => {
+        const leg = await this.findOne(uid, id);
+        if (id === transactionId && !owners) {
+          owners = await this.transferService.resolveTransferLegOwners(
+            userId,
+            transactionId,
+            leg.linkedTransactionId ? [leg.linkedTransactionId] : [],
+          );
+        }
+        return leg;
+      },
       actor,
     );
-    await this.transferService.recordTransferChangeHistory(
-      userId,
-      transactionId,
-      "delete",
-    );
+    if (owners) {
+      await this.transferService.recordTransferChangeHistory(
+        userId,
+        owners,
+        "delete",
+      );
+    }
   }
 
   /**
@@ -5345,11 +5369,20 @@ export class TransactionsService {
   ): Promise<TransferResult> {
     const addTagNames = tagChange?.addTagNames ?? [];
     const removeTagIds = tagChange?.removeTagIds ?? [];
+    // What the undo engine treats as the transfer: both legs' own columns.
+    // Tags are not part of it, so a tags-only save records no entry. The edit
+    // reads each leg before it writes; that first read is the "before".
+    const before = new Map<string, string>();
+    const findOneBefore = async (uid: string, id: string) => {
+      const leg = await this.findOne(uid, id);
+      if (!before.has(leg.id)) before.set(leg.id, transferLegSnapshot(leg));
+      return leg;
+    };
     const result = await this.transferService.updateTransfer(
       userId,
       transactionId,
       updateDto,
-      this.findOne.bind(this),
+      findOneBefore,
       actor,
       addTagNames.length > 0 || removeTagIds.length > 0
         ? (m, target) =>
@@ -5362,11 +5395,26 @@ export class TransactionsService {
             )
         : undefined,
     );
-    await this.transferService.recordTransferChangeHistory(
-      userId,
-      transactionId,
-      "update",
+    const changed = [result.fromTransaction, result.toTransaction].some(
+      (leg) => {
+        const was = before.get(leg.id);
+        return was !== undefined && was !== transferLegSnapshot(leg);
+      },
     );
+    if (changed) {
+      const owners = await this.transferService.resolveTransferLegOwners(
+        userId,
+        transactionId,
+        [result.fromTransaction.id, result.toTransaction.id].filter(
+          (id) => id !== transactionId,
+        ),
+      );
+      await this.transferService.recordTransferChangeHistory(
+        userId,
+        owners,
+        "update",
+      );
+    }
 
     if (updateDto.tagIds !== undefined) {
       // Tags are per-user reference data: cross-owner counterpart legs keep

@@ -8311,6 +8311,79 @@ describe("TransactionsService", () => {
       );
     });
 
+    describe("history entry for the edit", () => {
+      const transferChangeEntries = () =>
+        ((service as any).actionHistoryService.record as jest.Mock).mock.calls
+          .map(([, params]) => params)
+          .filter((params) => params.entityType === "transfer");
+
+      beforeEach(() => {
+        ((service as any).actionHistoryService.record as jest.Mock).mockClear();
+        jest
+          .spyOn((service as any).transferService, "resolveTransferLegOwners")
+          .mockResolvedValue(new Map([["user-1", "tx-from"]]));
+      });
+
+      it("records a refused-undo entry when a leg's amount changed", async () => {
+        transactionsRepository.findOne
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValueOnce({ ...fromTx, amount: -300 })
+          .mockResolvedValueOnce({ ...toTx, amount: 300 });
+
+        await service.updateTransfer("user-1", "tx-from", { amount: 300 });
+
+        expect(transferChangeEntries()).toEqual([
+          expect.objectContaining({
+            entityId: "tx-from",
+            action: "update",
+            descriptionKey: "editedTransfer",
+          }),
+        ]);
+      });
+
+      it("records nothing when the save leaves both legs as they were", async () => {
+        transactionsRepository.findOne
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx });
+
+        await service.updateTransfer("user-1", "tx-from", { amount: 200 });
+
+        expect(transferChangeEntries()).toEqual([]);
+      });
+
+      it("records nothing for a tags-only save", async () => {
+        transactionsRepository.findOne
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValue({ ...fromTx });
+
+        await service.updateTransfer("user-1", "tx-from", { tagIds: [] });
+
+        expect(transferChangeEntries()).toEqual([]);
+      });
+
+      it("records nothing when the target is not a transfer", async () => {
+        transactionsRepository.findOne.mockResolvedValue({
+          id: "tx-1",
+          userId: "user-1",
+          isTransfer: false,
+          linkedTransactionId: null,
+          splits: [],
+        });
+
+        await expect(
+          service.updateTransfer("user-1", "tx-1", { amount: 300 }),
+        ).rejects.toThrow();
+
+        expect(transferChangeEntries()).toEqual([]);
+      });
+    });
+
     it("updates accounts without writing payee names (issue #1214)", async () => {
       const newToAccount = {
         ...mockAccount,
@@ -9336,6 +9409,49 @@ describe("TransactionsService", () => {
   });
 
   describe("removeTransfer regular", () => {
+    it("records a refused-undo delete entry for each leg owner", async () => {
+      const fromTx = {
+        id: "tx-from",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -200,
+        isTransfer: true,
+        linkedTransactionId: "tx-to",
+        splits: [],
+      };
+      const toTx = {
+        id: "tx-to",
+        userId: "user-1",
+        accountId: "account-2",
+        amount: 200,
+      };
+      const record = (service as any).actionHistoryService.record as jest.Mock;
+      record.mockClear();
+      const resolve = jest
+        .spyOn((service as any).transferService, "resolveTransferLegOwners")
+        .mockResolvedValue(
+          new Map([
+            ["user-1", "tx-from"],
+            ["user-2", "tx-to"],
+          ]),
+        );
+      transactionsRepository.findOne.mockResolvedValueOnce(fromTx);
+      transactionsRepository.findOne.mockResolvedValueOnce(toTx);
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(toTx);
+      splitsRepository.findOne.mockResolvedValue(null);
+
+      await service.removeTransfer("user-1", "tx-from");
+
+      expect(resolve).toHaveBeenCalledWith("user-1", "tx-from", ["tx-to"]);
+      const owners = record.mock.calls
+        .filter(([, params]) => params.entityType === "transfer")
+        .map(([ownerId, params]) => [ownerId, params.action]);
+      expect(owners).toEqual([
+        ["user-1", "delete"],
+        ["user-2", "delete"],
+      ]);
+    });
+
     it("removes both linked transfer transactions and reverts balances", async () => {
       const fromTx = {
         id: "tx-from",
