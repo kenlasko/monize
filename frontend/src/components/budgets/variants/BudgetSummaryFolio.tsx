@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { MoneyFigure } from '@/components/ui/MoneyFigure';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { BudgetProgressBar } from '../BudgetProgressBar';
 import type { BudgetSummaryViewProps } from './budget-summary-view';
@@ -30,43 +31,64 @@ export function BudgetSummaryFolio({
   remaining,
   totalIncome,
   percentUsed,
+  partialReason,
   daysRemaining,
   displayCurrency,
 }: BudgetSummaryViewProps) {
   const t = useTranslations('budgets');
   const { formatPercentTrimmed } = useNumberFormat();
-  const projectedSavings = totalIncome - totalSpent;
+  const spentKnown = totalSpent !== null && percentUsed !== null;
+  const savingsKnown = totalSpent !== null && totalIncome !== null;
+  const projectedSavings = savingsKnown ? totalIncome - totalSpent : 0;
+  const unknown = <UnknownAmount reasonText={partialReason} />;
   return (
     <section aria-label={t('summaryCards.ariaLabel')} className="ui-bud-statement">
       <dl className="ui-bud-statement-row">
         <Entry label={t('summaryCards.totalBudget')}>
           <MoneyFigure amount={totalBudgeted} currencyCode={displayCurrency} display />
         </Entry>
-        <Entry label={t('summaryCards.spent')} hint={`(${formatPercentTrimmed(Math.round(percentUsed))})`}>
-          <span className={percentUsed > 100 ? LOSS : undefined}>
-            <MoneyFigure amount={totalSpent} currencyCode={displayCurrency} display />
-          </span>
+        <Entry
+          label={t('summaryCards.spent')}
+          hint={spentKnown ? `(${formatPercentTrimmed(Math.round(percentUsed))})` : undefined}
+        >
+          {spentKnown ? (
+            <span className={percentUsed > 100 ? LOSS : undefined}>
+              <MoneyFigure amount={totalSpent} currencyCode={displayCurrency} display />
+            </span>
+          ) : (
+            unknown
+          )}
         </Entry>
         <Entry
           label={t('summaryCards.remaining')}
           hint={daysRemaining > 0 ? t('summaryCards.days', { count: String(daysRemaining) }) : t('summaryCards.periodEnded')}
         >
-          <span className={remaining < 0 ? LOSS : undefined}>
-            <MoneyFigure amount={Math.abs(remaining)} currencyCode={displayCurrency} display />
-          </span>
+          {remaining !== null ? (
+            <span className={remaining < 0 ? LOSS : undefined}>
+              <MoneyFigure amount={Math.abs(remaining)} currencyCode={displayCurrency} display />
+            </span>
+          ) : (
+            unknown
+          )}
         </Entry>
         <Entry
           label={t('summaryCards.savings')}
-          hint={projectedSavings >= 0 ? t('summaryCards.onTrack') : t('summaryCards.overBudget')}
+          hint={savingsKnown ? (projectedSavings >= 0 ? t('summaryCards.onTrack') : t('summaryCards.overBudget')) : undefined}
         >
-          <span className={projectedSavings < 0 ? LOSS : undefined}>
-            <MoneyFigure amount={Math.abs(projectedSavings)} currencyCode={displayCurrency} display />
-          </span>
+          {savingsKnown ? (
+            <span className={projectedSavings < 0 ? LOSS : undefined}>
+              <MoneyFigure amount={Math.abs(projectedSavings)} currencyCode={displayCurrency} display />
+            </span>
+          ) : (
+            unknown
+          )}
         </Entry>
       </dl>
-      <div className="mt-4">
-        <BudgetProgressBar percentUsed={percentUsed} />
-      </div>
+      {percentUsed !== null && (
+        <div className="mt-4">
+          <BudgetProgressBar percentUsed={percentUsed} />
+        </div>
+      )}
     </section>
   );
 }

@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import type { BudgetVelocity } from '@/types/budget';
 import { gainLossColor } from '@/lib/format';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { CARD_CLASS } from '@/components/ui/Card';
 import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
@@ -55,6 +56,7 @@ function BudgetVelocityWidgetStandard({
 }: BudgetVelocityWidgetProps) {
   const t = useTranslations('budgets');
   const tr = useTranslations('reports');
+  const partialReason = useBudgetPartialReason();
   const pairs = velocity.projectionMissingRatePairs;
   const missingRate = pairs?.length ? tr('partialData.weightingNoRate', { pairs: pairs.join(', ') }) : undefined;
   const paceColor = velocity.paceStatus && getPaceColor(velocity.paceStatus);
@@ -67,6 +69,10 @@ function BudgetVelocityWidgetStandard({
     (velocity.upcomingBillsMissingRates?.length ?? 0) > 0
       ? 'displayFx'
       : 'scheduledFx';
+  // Unknown spending (a row with no exchange rate) withholds what is left, which
+  // is a different cause and a different repair from an unpriced bill.
+  const spendingUnknown = velocity.spendingComplete === false;
+  const spendingReason = partialReason(velocity.spendingMissingRatePairs);
   const paceLabel = velocity.paceStatus && t(`velocity.paceStatus.${velocity.paceStatus}`);
 
   return (
@@ -97,7 +103,7 @@ function BudgetVelocityWidgetStandard({
               upcoming bill's current amount is (issue #1247). A `?? 0` here
               would present the unknown as a measured zero. */}
           {velocity.safeDailySpend === null ? (
-            <UnknownAmount />
+            <UnknownAmount reasonText={spendingUnknown ? spendingReason : undefined} />
           ) : (
             <div className="ui-bud-fig text-lg font-semibold text-green-600 dark:text-green-400">
               {formatCurrency(velocity.safeDailySpend)}/day
@@ -149,7 +155,10 @@ function BudgetVelocityWidgetStandard({
               {t('velocity.trulyAvailable')}
             </div>
             {velocity.trulyAvailable === null ? (
-              <UnknownAmount reason={unknownReason} />
+              <UnknownAmount
+                reason={unknownReason}
+                reasonText={spendingUnknown ? spendingReason : undefined}
+              />
             ) : (
               <div className={`ui-bud-fig text-lg font-semibold ${
                 gainLossColor(velocity.trulyAvailable)

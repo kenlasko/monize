@@ -57,8 +57,15 @@ export interface CategoryTrendSeries {
 }
 
 export interface HealthScoreResult {
-  score: number;
-  label: string;
+  /**
+   * `null` while a row had no rate to the budget currency (`valuationComplete`
+   * is `false`): a score over partial spending would read as a measurement.
+   */
+  score: number | null;
+  label: string | null;
+  valuationComplete: boolean;
+  /** `"JPY->CAD"` for each pair with no rate behind an unknown score. */
+  missingRatePairs: string[];
   breakdown: {
     baseScore: number;
     overBudgetDeductions: number;
@@ -143,17 +150,18 @@ export interface LlmBudgetStatusResult {
   /** `"JPY->CAD"` for each pair with no rate behind the withheld totals. */
   missingRatePairs: string[];
   /** Total Budget Funding: `categoryIncome` plus `transferFunding`. */
-  totalIncome: number;
+  totalIncome: number | null;
   /**
    * Actual Income: the income lines on an Income or Expense category
-   * (docs/specs/transfer-categories.md section 6.2).
+   * (docs/specs/transfer-categories.md section 6.2). `null` (like
+   * `totalIncome` and `transferFunding`) while an income row had no rate.
    */
-  categoryIncome: number;
+  categoryIncome: number | null;
   /**
    * Transfer Funding: transfer income lines, income lines on a Transfer
    * category and the transfers in from outside the budget. Not income.
    */
-  transferFunding: number;
+  transferFunding: number | null;
   remaining: number | null;
   percentUsed: number | null;
   overBudgetCategories: Array<{
@@ -161,8 +169,6 @@ export interface LlmBudgetStatusResult {
     budgeted: number;
     spent: number;
     percentUsed: number;
-    /** `false`: `spent` is the converted part only. */
-    valuationComplete: boolean;
   }>;
   nearLimitCategories: Array<{
     category: string;
@@ -170,7 +176,17 @@ export interface LlmBudgetStatusResult {
     spent: number;
     remaining: number;
     percentUsed: number;
-    valuationComplete: boolean;
+  }>;
+  /**
+   * Lines with a row that had no rate: left out of the two lists above, whose
+   * thresholds a partial figure cannot answer. `knownSpent` is the converted
+   * part.
+   */
+  incompleteCategories: Array<{
+    category: string;
+    budgeted: number;
+    knownSpent: number;
+    missingRatePairs: string[];
   }>;
   categoryCount: number;
   velocity?: {
@@ -190,8 +206,10 @@ export interface LlmBudgetStatusResult {
     paceStatus: "under" | "on_track" | "over" | null;
   };
   healthScore?: {
-    score: number;
-    label: string;
+    /** `null` while spending is partial; `missingRatePairs` says why. */
+    score: number | null;
+    label: string | null;
+    missingRatePairs?: string[];
   };
   /**
    * Present only for a BUCKET budget with at least one bucket; the current
@@ -379,20 +397,29 @@ export class BudgetReportsService {
       }
     }
 
+    const incompleteCategories = summary.categoryBreakdown
+      .filter((c) => !c.isIncome && !c.valuationComplete)
+      .map((c) => ({
+        category: c.categoryName,
+        budgeted: c.budgeted,
+        knownSpent: c.spent,
+        missingRatePairs: c.missingRatePairs,
+      }));
+
     const overBudgetCategories = summary.categoryBreakdown
-      .filter((c) => !c.isIncome && c.remaining < 0)
+      .filter((c) => !c.isIncome && c.valuationComplete && c.remaining < 0)
       .map((c) => ({
         category: c.categoryName,
         budgeted: c.budgeted,
         spent: c.spent,
         percentUsed: c.percentUsed,
-        valuationComplete: c.valuationComplete,
       }));
 
     const nearLimitCategories = summary.categoryBreakdown
       .filter(
         (c) =>
           !c.isIncome &&
+          c.valuationComplete &&
           c.remaining >= 0 &&
           c.percentUsed >= 80 &&
           c.percentUsed <= 100,
@@ -403,7 +430,6 @@ export class BudgetReportsService {
         spent: c.spent,
         remaining: c.remaining,
         percentUsed: c.percentUsed,
-        valuationComplete: c.valuationComplete,
       }));
 
     const result: LlmBudgetStatusResult = {
@@ -422,6 +448,7 @@ export class BudgetReportsService {
       percentUsed: summary.percentUsed,
       overBudgetCategories,
       nearLimitCategories,
+      incompleteCategories,
       categoryCount: summary.categoryBreakdown.filter((c) => !c.isIncome)
         .length,
     };
@@ -443,6 +470,9 @@ export class BudgetReportsService {
       result.healthScore = {
         score: healthScore.score,
         label: healthScore.label,
+        ...(healthScore.valuationComplete
+          ? {}
+          : { missingRatePairs: healthScore.missingRatePairs }),
       };
     }
 

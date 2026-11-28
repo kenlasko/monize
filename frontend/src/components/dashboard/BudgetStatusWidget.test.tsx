@@ -68,14 +68,9 @@ describe('BudgetStatusWidget', () => {
       knownTotalSpent: 20,
       valuationComplete: false,
       missingRatePairs: ['QQQ->USD'],
-      topCategories: [
-        {
-          ...mockSummary.topCategories[0],
-          spent: 20,
-          percentUsed: 2,
-          valuationComplete: false,
-          missingRatePairs: ['QQQ->USD'],
-        },
+      topCategories: [],
+      incompleteCategories: [
+        { categoryName: 'Groceries', budgeted: 1000, knownSpent: 20, missingRatePairs: ['QQQ->USD'] },
       ],
     });
     render(<BudgetStatusWidget isLoading={false} />);
@@ -83,6 +78,7 @@ describe('BudgetStatusWidget', () => {
     expect(note).toHaveTextContent('QQQ->USD');
     expect(note).toHaveTextContent('$20.00');
     expect(screen.queryByText('2%')).not.toBeInTheDocument();
+    expect(screen.getByTestId('budget-incomplete-categories')).toHaveTextContent('Groceries');
     expect(screen.getAllByTestId('unknown-amount').length).toBeGreaterThanOrEqual(3);
   });
 

@@ -13,6 +13,7 @@ import type {
   SortColumnsByField as TableSortColumnsByField,
 } from '@/components/ui/Table';
 import { useTranslations } from 'next-intl';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import { useReportData } from '@/hooks/useReportData';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import type { HealthScoreCategoryDetail } from '@/types/budget';
@@ -165,6 +166,7 @@ const FIGURE_CELL =
 
 export function BudgetHealthScoreReport() {
   const t = useTranslations('reports');
+  const partialReasonOf = useBudgetPartialReason();
   const { formatPercentTrimmed } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -298,13 +300,15 @@ export function BudgetHealthScoreReport() {
           .sort((a, b) => a.impact - b.impact)
           .map((cat) => sortColumns.map((col) => col.value(cat)))
       : [];
-    const scoreColor = healthScore
-      ? healthScore.score >= 80 ? '#16a34a' : healthScore.score >= 60 ? '#ca8a04' : '#dc2626'
-      : '#111827';
+    const score = healthScore?.score ?? null;
+    const scoreColor = score === null
+      ? '#111827'
+      : score >= 80 ? '#16a34a' : score >= 60 ? '#ca8a04' : '#dc2626';
     await exportToPdf({
       title: t('budgetHealthScore.pdfTitle'),
-      summaryCards: healthScore ? [
-        { label: t('budgetHealthScore.finalScore'), value: `${healthScore.score}/100`, color: scoreColor },
+      // An unknown score has no figure to print: the cards are left out.
+      summaryCards: score !== null ? [
+        { label: t('budgetHealthScore.finalScore'), value: `${score}/100`, color: scoreColor },
       ] : undefined,
       tableData: healthScore ? {
         headers: [t('budgetHealthScore.colCategory'), t('budgetHealthScore.colScoreImpact')],
@@ -376,7 +380,10 @@ export function BudgetHealthScoreReport() {
         <>
           {/* Gauge */}
           <div ref={chartRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <BudgetHealthGauge score={healthScore.score} />
+            <BudgetHealthGauge
+              score={healthScore.score}
+              partialReason={partialReasonOf(healthScore.missingRatePairs)}
+            />
 
             {/* Score Breakdown */}
             <div className={`${CARD_CLASS} p-4 sm:p-6`}>

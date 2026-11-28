@@ -2958,7 +2958,11 @@ export class ToolExecutorService {
       // not defaulted -- the summary is the line a model quotes (issue #1247).
       summaryParts.push(
         data.velocity.safeDailySpend === null
-          ? `Safe daily spend: unknown (an upcoming bill's current amount could not be determined), ${data.velocity.daysRemaining} days remaining`
+          ? `Safe daily spend: unknown (${
+              data.velocity.upcomingBillsComplete
+                ? `spending in a currency with no exchange rate (${data.missingRatePairs.join(", ")}) is not converted`
+                : "an upcoming bill's current amount could not be determined"
+            }), ${data.velocity.daysRemaining} days remaining`
           : `Safe daily spend: $${data.velocity.safeDailySpend.toFixed(2)}, ${data.velocity.daysRemaining} days remaining`,
       );
     }
@@ -2969,9 +2973,19 @@ export class ToolExecutorService {
       );
     }
 
+    // A partial line can neither be over nor under budget: say it is unknown
+    // rather than letting "0 over budget" read as a clean bill.
+    if (data.incompleteCategories.length > 0) {
+      summaryParts.push(
+        `${data.incompleteCategories.length} categories with unknown spending (no exchange rate for ${data.missingRatePairs.join(", ")}): ${data.incompleteCategories.map((c) => c.category).join(", ")}`,
+      );
+    }
+
     if (data.healthScore) {
       summaryParts.push(
-        `Health score: ${data.healthScore.score}/100 (${data.healthScore.label})`,
+        data.healthScore.score === null
+          ? "Health score: unknown while spending is partial"
+          : `Health score: ${data.healthScore.score}/100 (${data.healthScore.label})`,
       );
     }
 

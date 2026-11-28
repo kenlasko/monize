@@ -17,6 +17,7 @@ import {
   withoutTransferLines,
 } from '@/lib/scheduled-effective-amount';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import { isComplete } from '@/lib/currency-total';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { OVERDUE_CARRY_DAYS } from '@/lib/forecast';
@@ -26,6 +27,8 @@ interface BudgetUpcomingBillsProps {
   scheduledTransactions: ScheduledTransaction[];
   /** `null` when the period's spending is unknown (a row had no rate). */
   currentSpent: number | null;
+  /** The pairs with no rate behind an unknown `currentSpent`. */
+  spendingMissingRatePairs?: string[];
   totalBudgeted: number;
   periodEnd: string;
   /**
@@ -59,6 +62,7 @@ function getSpending(st: ScheduledTransaction) {
 export function BudgetUpcomingBills({
   scheduledTransactions,
   currentSpent,
+  spendingMissingRatePairs,
   totalBudgeted,
   periodEnd,
   displayCurrency,
@@ -125,6 +129,7 @@ export function BudgetUpcomingBills({
   );
 
   const t = useTranslations('budgets');
+  const partialReason = useBudgetPartialReason();
   // A named currency pair is a display rate to refresh; an unnamed shortfall is
   // the occurrence's own settlement rate. Different screens fix them.
   const unknownReason =
@@ -205,7 +210,16 @@ export function BudgetUpcomingBills({
               Showing a number here would be the whole defect: a budget that
               silently counted a stale bill (issue #1247). */}
           {trulyAvailable === null ? (
-            <UnknownAmount reason={unknownReason} />
+            // Bills converted but the spending did not: the cause is the
+            // spending's missing rate, not the scheduled item's.
+            <UnknownAmount
+              reason={unknownReason}
+              reasonText={
+                currentSpent === null && isComplete(upcomingTotal)
+                  ? partialReason(spendingMissingRatePairs)
+                  : undefined
+              }
+            />
           ) : (
             <span className={`font-semibold ${gainLossColor(trulyAvailable)}`}>
               {formatCurrency(Math.abs(trulyAvailable))}

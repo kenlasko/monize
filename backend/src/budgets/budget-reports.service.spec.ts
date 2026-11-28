@@ -276,6 +276,8 @@ describe("BudgetReportsService", () => {
             remaining: 150,
             percentUsed: 70,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-2",
@@ -286,6 +288,8 @@ describe("BudgetReportsService", () => {
             remaining: 150,
             percentUsed: 50,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-income",
@@ -296,6 +300,8 @@ describe("BudgetReportsService", () => {
             remaining: 0,
             percentUsed: 100,
             isIncome: true,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
         ],
       }),
@@ -679,6 +685,8 @@ describe("BudgetReportsService", () => {
             remaining: 300,
             percentUsed: 40,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-2",
@@ -689,6 +697,8 @@ describe("BudgetReportsService", () => {
             remaining: 200,
             percentUsed: 33.33,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
         ],
       });
@@ -721,6 +731,8 @@ describe("BudgetReportsService", () => {
             remaining: -200,
             percentUsed: 140,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-2",
@@ -731,6 +743,8 @@ describe("BudgetReportsService", () => {
             remaining: -100,
             percentUsed: 133.33,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
         ],
       });
@@ -761,6 +775,8 @@ describe("BudgetReportsService", () => {
             remaining: -150,
             percentUsed: 130,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
         ],
       });
@@ -825,6 +841,8 @@ describe("BudgetReportsService", () => {
             remaining: 450,
             percentUsed: 10,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
         ],
       });
@@ -856,6 +874,8 @@ describe("BudgetReportsService", () => {
             remaining: 0,
             percentUsed: 0,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
         ],
       });
@@ -886,6 +906,8 @@ describe("BudgetReportsService", () => {
             remaining: -2500,
             percentUsed: 600,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-2",
@@ -896,6 +918,8 @@ describe("BudgetReportsService", () => {
             remaining: -1700,
             percentUsed: 666.67,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
         ],
       });
@@ -1128,6 +1152,8 @@ describe("BudgetReportsService", () => {
             remaining: 150,
             percentUsed: 70,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-2",
@@ -1138,6 +1164,8 @@ describe("BudgetReportsService", () => {
             remaining: 150,
             percentUsed: 50,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
         ],
       });
@@ -1178,6 +1206,8 @@ describe("BudgetReportsService", () => {
             remaining: 0,
             percentUsed: 0,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
         ],
       });
@@ -1973,6 +2003,8 @@ describe("BudgetReportsService", () => {
             remaining: 300,
             percentUsed: 40,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
         ],
       });
@@ -2027,6 +2059,8 @@ describe("BudgetReportsService", () => {
             remaining: 50,
             percentUsed: 90,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
         ],
       });
@@ -2281,6 +2315,8 @@ describe("BudgetReportsService", () => {
           remaining: -150,
           percentUsed: 130,
           isIncome: false,
+          valuationComplete: true,
+          missingRatePairs: [],
         },
         {
           budgetCategoryId: "bc-2",
@@ -2291,6 +2327,8 @@ describe("BudgetReportsService", () => {
           remaining: 200,
           percentUsed: 86.67,
           isIncome: false,
+          valuationComplete: true,
+          missingRatePairs: [],
         },
         {
           budgetCategoryId: "bc-3",
@@ -2301,6 +2339,8 @@ describe("BudgetReportsService", () => {
           remaining: 900,
           percentUsed: 10,
           isIncome: false,
+          valuationComplete: true,
+          missingRatePairs: [],
         },
       ],
     };
@@ -2378,6 +2418,54 @@ describe("BudgetReportsService", () => {
         valuationComplete: false,
         missingRatePairs: ["QQQ->USD"],
       });
+    });
+
+    it("keeps an incomplete line out of the over-budget and near-limit lists and lists it apart", async () => {
+      budgetsService.getSummary.mockResolvedValue({
+        ...summary,
+        categoryBreakdown: [
+          {
+            budgetCategoryId: "bc-1",
+            categoryId: "cat-1",
+            categoryName: "Groceries",
+            budgeted: 1000,
+            spent: 20,
+            remaining: 980,
+            percentUsed: 2,
+            isIncome: false,
+            valuationComplete: false,
+            missingRatePairs: ["QQQ->USD"],
+          },
+          {
+            budgetCategoryId: "bc-2",
+            categoryId: "cat-2",
+            categoryName: "Dining",
+            budgeted: 100,
+            spent: 150,
+            remaining: -50,
+            percentUsed: 150,
+            isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
+          },
+        ],
+      });
+
+      const result = await service.getLlmBudgetStatus("user-1");
+
+      if ("error" in result) throw new Error("unexpected error payload");
+      expect(result.overBudgetCategories.map((c) => c.category)).toEqual([
+        "Dining",
+      ]);
+      expect(result.nearLimitCategories).toEqual([]);
+      expect(result.incompleteCategories).toEqual([
+        {
+          category: "Groceries",
+          budgeted: 1000,
+          knownSpent: 20,
+          missingRatePairs: ["QQQ->USD"],
+        },
+      ]);
     });
 
     it("names Actual Income and Transfer Funding beside Total Budget Funding", async () => {

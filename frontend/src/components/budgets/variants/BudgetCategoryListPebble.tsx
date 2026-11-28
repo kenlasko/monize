@@ -3,6 +3,8 @@
 import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/Badge';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { BudgetProgressBar } from '../BudgetProgressBar';
 import type { BudgetCategoryListViewProps } from './budget-category-list-view';
 
@@ -19,11 +21,14 @@ export function BudgetCategoryListPebble({
 }: BudgetCategoryListViewProps) {
   const t = useTranslations('budgets');
   const { formatPercentTrimmed } = useNumberFormat();
+  const partialReason = useBudgetPartialReason();
   return (
     <ul className="ui-bud-tiles grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
       {rows.map(({ category, rolloverType, flexGroup }) => {
-        const over = category.remaining < 0;
-        const hasPositiveBudget = category.budgeted > 0;
+        const partial = category.valuationComplete === false;
+        const unknown = <UnknownAmount reasonText={partialReason(category.missingRatePairs)} />;
+        const over = !partial && category.remaining < 0;
+        const hasPositiveBudget = category.budgeted > 0 && !partial;
         const body = (
           <>
             <span className="flex items-start justify-between gap-2">
@@ -37,12 +42,18 @@ export function BudgetCategoryListPebble({
               )}
             </span>
             <span className="ui-bud-tile-figure mt-3 block text-3xl text-gray-900 dark:text-gray-50">
-              <span className={over ? 'text-red-600 dark:text-red-400' : undefined}>
-                {formatCurrency(Math.abs(category.remaining))}
-              </span>
-              <span className="ml-1.5 text-sm font-medium text-gray-500 dark:text-gray-400">
-                {over ? t('categoryRow.overWord') : t('categoryRow.leftWord')}
-              </span>
+              {partial ? (
+                unknown
+              ) : (
+                <>
+                  <span className={over ? 'text-red-600 dark:text-red-400' : undefined}>
+                    {formatCurrency(Math.abs(category.remaining))}
+                  </span>
+                  <span className="ml-1.5 text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {over ? t('categoryRow.overWord') : t('categoryRow.leftWord')}
+                  </span>
+                </>
+              )}
             </span>
             {hasPositiveBudget && (
               <span className="mt-3 block">
@@ -55,7 +66,7 @@ export function BudgetCategoryListPebble({
             )}
             <span className="mt-2 flex items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400">
               <span>
-                {formatCurrency(category.spent)} / {formatCurrency(category.budgeted)}
+                {partial ? unknown : formatCurrency(category.spent)} / {formatCurrency(category.budgeted)}
               </span>
               <span className="flex items-center gap-1.5">
                 {flexGroup && <Badge variant="purple">{flexGroup}</Badge>}

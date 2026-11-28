@@ -113,6 +113,8 @@ describe("BudgetHealthReportsService", () => {
       isTransfer: false,
       amount: 500,
       isIncome: false,
+      valuationComplete: true,
+      missingRatePairs: [],
       rolloverType: RolloverType.NONE,
       rolloverCap: null,
       flexGroup: null,
@@ -235,6 +237,8 @@ describe("BudgetHealthReportsService", () => {
             spent: 700,
             percentUsed: 70,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-discretionary",
@@ -244,6 +248,8 @@ describe("BudgetHealthReportsService", () => {
             spent: 250,
             percentUsed: 50,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
         ],
       });
@@ -258,6 +264,33 @@ describe("BudgetHealthReportsService", () => {
       expect(result.categoryScores).toHaveLength(2);
     });
 
+    it("returns an unknown score and the missing pair when a line is incomplete (audit #2365 p)", async () => {
+      budgetsService.getSummary.mockResolvedValue({
+        budget: mockBudget,
+        missingRatePairs: ["QQQ->USD"],
+        categoryBreakdown: [
+          {
+            budgetCategoryId: "bc-essential",
+            categoryId: "cat-essential",
+            categoryName: "Rent",
+            budgeted: 1000,
+            spent: 20,
+            percentUsed: 2,
+            isIncome: false,
+            valuationComplete: false,
+            missingRatePairs: ["QQQ->USD"],
+          },
+        ],
+      });
+
+      const result = await service.getHealthScore("user-1", "budget-1");
+
+      expect(result.score).toBeNull();
+      expect(result.label).toBeNull();
+      expect(result.valuationComplete).toBe(false);
+      expect(result.missingRatePairs).toEqual(["QQQ->USD"]);
+    });
+
     it("deducts more from the score for overspending essential categories", async () => {
       budgetsService.getSummary.mockResolvedValue({
         budget: mockBudget,
@@ -270,6 +303,8 @@ describe("BudgetHealthReportsService", () => {
             spent: 1500,
             percentUsed: 150,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-discretionary",
@@ -279,6 +314,8 @@ describe("BudgetHealthReportsService", () => {
             spent: 750,
             percentUsed: 150,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
         ],
       });
@@ -299,6 +336,8 @@ describe("BudgetHealthReportsService", () => {
         spent: 1000,
         percentUsed: 1000,
         isIncome: false,
+        valuationComplete: true,
+        missingRatePairs: [],
       }));
       budgetsService.getSummary.mockResolvedValue({
         budget: mockBudget,
@@ -323,6 +362,8 @@ describe("BudgetHealthReportsService", () => {
             spent: 5000,
             percentUsed: 100,
             isIncome: true,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-empty",
@@ -332,6 +373,8 @@ describe("BudgetHealthReportsService", () => {
             spent: 0,
             percentUsed: 0,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
           },
         ],
       });
@@ -399,6 +442,8 @@ describe("BudgetHealthReportsService", () => {
               budgetCategory: {
                 id: "bc-essential",
                 isIncome: false,
+                valuationComplete: true,
+                missingRatePairs: [],
                 categoryGroup: CategoryGroup.NEED,
               },
             },
@@ -418,6 +463,8 @@ describe("BudgetHealthReportsService", () => {
               budgetCategory: {
                 id: "bc-essential",
                 isIncome: false,
+                valuationComplete: true,
+                missingRatePairs: [],
                 categoryGroup: CategoryGroup.NEED,
               },
             },
@@ -467,6 +514,8 @@ describe("BudgetHealthReportsService", () => {
               budgetCategory: {
                 id: "bc-essential",
                 isIncome: false,
+                valuationComplete: true,
+                missingRatePairs: [],
                 categoryGroup: CategoryGroup.NEED,
               },
             },
@@ -515,6 +564,8 @@ describe("BudgetHealthReportsService", () => {
               budgetCategory: {
                 id: "bc-essential",
                 isIncome: false,
+                valuationComplete: true,
+                missingRatePairs: [],
                 categoryGroup: CategoryGroup.NEED,
               },
             },
@@ -549,6 +600,8 @@ describe("BudgetHealthReportsService", () => {
             categoryId: null,
             isTransfer: true,
             isIncome: true,
+            valuationComplete: true,
+            missingRatePairs: [],
             transferAccountId: "acct-hisa",
             amount: 2000,
           },
@@ -558,6 +611,8 @@ describe("BudgetHealthReportsService", () => {
             categoryId: "cat-food",
             isTransfer: false,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
             transferAccountId: null,
             amount: 500,
           },
@@ -602,6 +657,8 @@ describe("BudgetHealthReportsService", () => {
             categoryId: null,
             isTransfer: true,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
             transferAccountId: "acct-tfsa",
             amount: 300,
           },

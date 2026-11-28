@@ -485,7 +485,10 @@ export const getBudgetStatusOutput = toolOutput({
     paceStatus: str.nullable(),
     projectionMissingRatePairs: z.array(str).optional(),
   }).optional(),
-  healthScore: looseObject({ score: num, label: str }).optional(),
+  healthScore: looseObject({
+    score: num.nullable(),
+    label: str.nullable(),
+  }).optional(),
   // Not-found branch.
   error: str.optional(),
   availableBudgets: z.array(str).optional(),

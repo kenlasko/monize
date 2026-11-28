@@ -389,7 +389,13 @@ export interface BudgetSummary {
   valuationComplete?: boolean;
   /** `"JPY->CAD"` for each pair with no rate behind the withheld totals. */
   missingRatePairs?: string[];
-  totalIncome: number;
+  /**
+   * Total Budget Funding; `null` while an income row had no exchange rate
+   * (`knownTotalIncome` is the converted part). `categoryIncome` and
+   * `transferFunding` are `null` on the same ground.
+   */
+  totalIncome: number | null;
+  knownTotalIncome?: number;
   remaining: number | null;
   percentUsed: number | null;
   incomeLinked: boolean;
@@ -399,12 +405,14 @@ export interface BudgetSummary {
    * `transferFunding` it makes `totalIncome`, Total Budget Funding
    * (docs/specs/transfer-categories.md section 6.2).
    */
-  categoryIncome: number;
+  categoryIncome: number | null;
+  knownCategoryIncome?: number;
   /**
    * Transfer Funding: transfer income lines, income lines on a Transfer
    * category and `outsideTransferIncome`. Never income.
    */
-  transferFunding: number;
+  transferFunding: number | null;
+  knownTransferFunding?: number;
   /**
    * Income from transfers in from the excluded accounts (`transfersInAsIncome`),
    * included in `totalIncome`; `0` with the option off.
@@ -471,8 +479,16 @@ export interface BudgetVelocity {
    * resolvable amount at all -- that one has no pair to name.
    */
   upcomingBillsMissingRates: string[];
-  /** `null` when the upcoming-bills total is unknown. */
+  /** `null` when the upcoming-bills total or the period's spending is unknown. */
   trulyAvailable: number | null;
+  /**
+   * `false` when a row had no exchange rate to the budget currency, so the
+   * spending is unknown and `trulyAvailable` / `safeDailySpend` are `null`.
+   * Read as `=== false`; absent is no information.
+   */
+  spendingComplete?: boolean;
+  /** The pairs with no rate behind unknown spending. */
+  spendingMissingRatePairs?: string[];
 }
 
 // --- Report Types ---
@@ -535,8 +551,11 @@ export interface HealthScoreCategoryDetail {
 }
 
 export interface HealthScoreResult {
-  score: number;
-  label: string;
+  /** `null` while spending is partial (a row had no exchange rate). */
+  score: number | null;
+  label: string | null;
+  valuationComplete?: boolean;
+  missingRatePairs?: string[];
   breakdown: HealthScoreBreakdown;
   categoryScores: HealthScoreCategoryDetail[];
 }
@@ -587,14 +606,20 @@ export interface DashboardBudgetSummary {
   /** `null` when `remaining` is unknown. */
   safeDailySpend: number | null;
   daysRemaining: number;
+  /** Complete lines only; an incomplete line cannot be ranked. */
   topCategories: Array<{
     categoryName: string;
     budgeted: number;
     spent: number;
     remaining: number;
     percentUsed: number;
-    valuationComplete?: boolean;
-    missingRatePairs?: string[];
+  }>;
+  /** Lines with a row that had no rate; `knownSpent` is their converted part. */
+  incompleteCategories?: Array<{
+    categoryName: string;
+    budgeted: number;
+    knownSpent: number;
+    missingRatePairs: string[];
   }>;
 }
 

@@ -81,6 +81,24 @@ export class BudgetHealthReportsService {
     }
 
     const baseScore = 100;
+    // A score over partial spending would read as a measurement: a row with no
+    // rate to the budget currency makes it unknown (audit #2365 p).
+    if (expenseCategories.some((c) => !c.valuationComplete)) {
+      return {
+        score: null,
+        label: null,
+        valuationComplete: false,
+        missingRatePairs: summary.missingRatePairs,
+        breakdown: {
+          baseScore,
+          overBudgetDeductions: 0,
+          underBudgetBonus: 0,
+          trendBonus: 0,
+          essentialWeightPenalty: 0,
+        },
+        categoryScores: [],
+      };
+    }
     let overBudgetDeductions = 0;
     let underBudgetBonus = 0;
     let essentialWeightPenalty = 0;
@@ -141,6 +159,8 @@ export class BudgetHealthReportsService {
     return {
       score,
       label,
+      valuationComplete: true,
+      missingRatePairs: [],
       breakdown: {
         baseScore,
         overBudgetDeductions: roundToDecimals(overBudgetDeductions, 2),

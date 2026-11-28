@@ -134,7 +134,11 @@ export interface CategoryActualRow {
    * `percentUsed` are computed over it (audit #2365 p).
    */
   valuationComplete: boolean;
-  /** `"JPY->CAD"` for each pair with no rate behind the line; empty while complete. */
+  /**
+   * `"JPY->CAD"` for each pair with no rate behind the BUDGET's figures (the
+   * query keys its pairs by budget, not by line); empty while this line is
+   * complete.
+   */
   missingRatePairs: string[];
 }
 
@@ -154,6 +158,45 @@ interface CategoryActuals {
   provisionalCount: number;
   /** The pairs with no rate behind any incomplete line (`CategorySpending.missingRatePairs`). */
   missingRatePairs: string[];
+  /** `false` when a row of `outsideTransferIncome` had no rate. */
+  outsideTransferIncomeComplete: boolean;
+}
+
+/**
+ * Total Budget Funding and its two parts over the income lines. A part with an
+ * unconverted row is unknown (`null`), its converted part beside it under a
+ * `known*` name ("A subtotal is not a total"). Category income depends on the
+ * non-transfer lines; transfer funding on the transfer-funding lines and the
+ * outside transfers in; the total on both.
+ */
+function incomeFundingTotals(
+  incomeCategories: CategoryActualRow[],
+  outsideTransferIncome: number,
+  outsideTransferIncomeComplete: boolean,
+) {
+  const funding = budgetFunding(
+    incomeCategories.map((c) => ({
+      actual: c.spent,
+      isTransferFunding: c.isTransferFunding,
+    })),
+    outsideTransferIncome,
+  );
+  const categoryComplete = incomeCategories.every(
+    (c) => c.isTransferFunding || c.valuationComplete,
+  );
+  const transferComplete =
+    outsideTransferIncomeComplete &&
+    incomeCategories.every((c) => !c.isTransferFunding || c.valuationComplete);
+  return {
+    totalIncome:
+      categoryComplete && transferComplete ? funding.totalIncome : null,
+    knownTotalIncome: funding.totalIncome,
+    categoryIncome: categoryComplete ? funding.categoryIncome : null,
+    knownCategoryIncome: funding.categoryIncome,
+    transferFunding: transferComplete ? funding.transferFunding : null,
+    knownTransferFunding: funding.transferFunding,
+    incomeValuationComplete: categoryComplete && transferComplete,
+  };
 }
 
 /**
@@ -672,10 +715,19 @@ export class BudgetsService {
     /** `null` while `valuationComplete` is `false`; `knownTotalSpent` is then the converted part. */
     totalSpent: number | null;
     knownTotalSpent: number;
-    totalIncome: number;
+    /**
+     * Total Budget Funding; `null` while an income line or the outside
+     * transfers in had a row with no rate (`knownTotalIncome` is the converted
+     * part). The same holds for `categoryIncome` and `transferFunding`.
+     */
+    totalIncome: number | null;
+    knownTotalIncome: number;
     remaining: number | null;
     percentUsed: number | null;
-    /** `false` when an expense line had a row with no rate to the budget currency. */
+    /**
+     * `false` when an expense or income line had a row with no rate to the
+     * budget currency; which totals are withheld is each total's own `null`.
+     */
     valuationComplete: boolean;
     /** `"JPY->CAD"` for each pair with no rate behind the withheld totals. */
     missingRatePairs: string[];
@@ -686,12 +738,14 @@ export class BudgetsService {
      * (docs/specs/transfer-categories.md section 6.2). With `transferFunding`
      * it makes `totalIncome`, Total Budget Funding.
      */
-    categoryIncome: number;
+    categoryIncome: number | null;
+    knownCategoryIncome: number;
     /**
      * Transfer Funding: transfer income lines, income lines on a Transfer
      * category and `outsideTransferIncome`.
      */
-    transferFunding: number;
+    transferFunding: number | null;
+    knownTransferFunding: number;
     /** Included in `totalIncome`; `0` unless `config.transfersInAsIncome`. */
     outsideTransferIncome: number;
     categoryBreakdown: CategoryActualRow[];
@@ -711,6 +765,7 @@ export class BudgetsService {
       outsideTransferIncome,
       provisionalCount,
       missingRatePairs: actualsMissingPairs,
+      outsideTransferIncomeComplete,
     } = await this.getCachedCategoryActuals(
       userId,
       budget,
@@ -727,17 +782,17 @@ export class BudgetsService {
       totalBudgeted,
       actualsMissingPairs,
     );
-    const { totalIncome, categoryIncome, transferFunding } = budgetFunding(
-      incomeCategories.map((c) => ({
-        actual: c.spent,
-        isTransferFunding: c.isTransferFunding,
-      })),
+    const { incomeValuationComplete, ...income } = incomeFundingTotals(
+      incomeCategories,
       outsideTransferIncome,
+      outsideTransferIncomeComplete,
     );
+    const valuationComplete =
+      spentTotals.valuationComplete && incomeValuationComplete;
 
     let actualIncome: number | null = null;
     if (budget.incomeLinked) {
-      actualIncome = totalIncome;
+      actualIncome = income.totalIncome;
     }
 
     return {
@@ -746,11 +801,11 @@ export class BudgetsService {
       periodEnd,
       totalBudgeted,
       ...spentTotals,
-      totalIncome,
+      valuationComplete,
+      missingRatePairs: valuationComplete ? [] : actualsMissingPairs,
+      ...income,
       incomeLinked: budget.incomeLinked,
       actualIncome,
-      categoryIncome,
-      transferFunding,
       outsideTransferIncome,
       categoryBreakdown,
       provisionalCount,
@@ -835,8 +890,16 @@ export class BudgetsService {
      * pair to name.
      */
     upcomingBillsMissingRates: string[];
-    /** `null` when the upcoming-bills total is unknown. */
+    /** `null` when the upcoming-bills total or the period's spending is unknown. */
     trulyAvailable: number | null;
+    /**
+     * `false` when an expense line had a row with no rate to the budget
+     * currency: the period's spending is unknown, so `trulyAvailable` and
+     * `safeDailySpend` are `null` (audit #2365 p).
+     */
+    spendingComplete: boolean;
+    /** The pairs with no rate behind unknown spending; empty while complete. */
+    spendingMissingRatePairs: string[];
   }> {
     const budget = await this.findOne(userId, budgetId);
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
@@ -848,14 +911,17 @@ export class BudgetsService {
       todayStr,
     );
 
-    const { lines: categoryBreakdown, paceByLine } =
-      await this.getCachedCategoryActuals(
-        userId,
-        budget,
-        periodStart,
-        periodEnd,
-        todayStr,
-      );
+    const {
+      lines: categoryBreakdown,
+      paceByLine,
+      missingRatePairs: actualsMissingPairs,
+    } = await this.getCachedCategoryActuals(
+      userId,
+      budget,
+      periodStart,
+      periodEnd,
+      todayStr,
+    );
 
     const expenseCategories = categoryBreakdown.filter((c) => !c.isIncome);
     const projection = projectBudgetSpending(
@@ -899,10 +965,11 @@ export class BudgetsService {
     const projectedVariance =
       projectedTotal === null ? null : roundMoney(projectedTotal - budgetTotal);
     // Available funds still include transactions booked for the whole period.
-    const periodSpent = sumMoney(expenseCategories.map((line) => line.spent));
-    const remaining = roundMoney(budgetTotal - periodSpent);
+    // A line with an unconverted row makes the spending unknown, not small.
+    const { remaining, valuationComplete, missingRatePairs } =
+      expenseSpentTotals(expenseCategories, budgetTotal, actualsMissingPairs);
     const trulyAvailable =
-      totalUpcomingBills === null
+      totalUpcomingBills === null || remaining === null
         ? null
         : roundMoney(remaining - totalUpcomingBills);
     const safeDailySpend =
@@ -948,6 +1015,8 @@ export class BudgetsService {
       upcomingBillsComplete,
       upcomingBillsMissingRates,
       trulyAvailable,
+      spendingComplete: valuationComplete,
+      spendingMissingRatePairs: missingRatePairs,
     };
   }
 
@@ -1153,13 +1222,19 @@ export class BudgetsService {
     /** `null` when `remaining` is unknown. */
     safeDailySpend: number | null;
     daysRemaining: number;
+    /** Complete lines only; an incomplete line cannot be ranked. */
     topCategories: Array<{
       categoryName: string;
       budgeted: number;
       spent: number;
       remaining: number;
       percentUsed: number;
-      valuationComplete: boolean;
+    }>;
+    /** Lines with a row that had no rate; `knownSpent` is their converted part. */
+    incompleteCategories: Array<{
+      categoryName: string;
+      budgeted: number;
+      knownSpent: number;
       missingRatePairs: string[];
     }>;
   } | null> {
@@ -1208,7 +1283,8 @@ export class BudgetsService {
           ? Math.max(0, remaining / daysRemaining)
           : 0;
 
-    const topCategories = [...expenseCategories]
+    const topCategories = expenseCategories
+      .filter((c) => c.valuationComplete)
       .sort((a, b) => b.percentUsed - a.percentUsed)
       .slice(0, 3)
       .map((c) => ({
@@ -1217,7 +1293,13 @@ export class BudgetsService {
         spent: c.spent,
         remaining: c.remaining,
         percentUsed: c.percentUsed,
-        valuationComplete: c.valuationComplete,
+      }));
+    const incompleteCategories = expenseCategories
+      .filter((c) => !c.valuationComplete)
+      .map((c) => ({
+        categoryName: c.categoryName,
+        budgeted: c.budgeted,
+        knownSpent: c.spent,
         missingRatePairs: c.missingRatePairs,
       }));
 
@@ -1230,6 +1312,7 @@ export class BudgetsService {
         safeDailySpend === null ? null : roundMoney(safeDailySpend),
       daysRemaining,
       topCategories,
+      incompleteCategories,
     };
   }
 
@@ -1381,6 +1464,7 @@ export class BudgetsService {
         outsideTransferIncome: 0,
         provisionalCount: 0,
         missingRatePairs: [],
+        outsideTransferIncomeComplete: true,
       };
     }
 
@@ -1459,6 +1543,7 @@ export class BudgetsService {
       outsideTransferIncome: resolveOutsideTransferIncome(spending),
       provisionalCount: spending.provisionalCount,
       missingRatePairs: spending.missingRatePairs,
+      outsideTransferIncomeComplete: spending.outsideTransferIncomeComplete,
     };
   }
 }

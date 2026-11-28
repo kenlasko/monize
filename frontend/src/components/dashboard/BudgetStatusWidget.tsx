@@ -166,26 +166,35 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
                   <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
                     {cat.categoryName}
                   </span>
-                  {cat.valuationComplete === false ? (
-                    <UnknownAmount
-                      className="text-xs font-medium"
-                      reasonText={partialReason(cat.missingRatePairs)}
-                    />
-                  ) : (
-                    <span className={`text-xs font-medium ${budgetPercentColor(cat.percentUsed)}`}>
-                      {formatPercent(cat.percentUsed, 0)}
-                    </span>
-                  )}
+                  <span className={`text-xs font-medium ${budgetPercentColor(cat.percentUsed)}`}>
+                    {formatPercent(cat.percentUsed, 0)}
+                  </span>
                 </div>
-                {cat.valuationComplete !== false && (
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                    <div
-                      className={`h-1.5 rounded-full ${budgetCategoryBarColor(cat.percentUsed)}`}
-                      style={{ width: `${clamp(cat.percentUsed, 0, 100)}%` }}
-                    />
-                  </div>
-                )}
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                  <div
+                    className={`h-1.5 rounded-full ${budgetCategoryBarColor(cat.percentUsed)}`}
+                    style={{ width: `${clamp(cat.percentUsed, 0, 100)}%` }}
+                  />
+                </div>
               </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Lines with a row that had no exchange rate cannot be ranked or given a
+          percent: listed apart, each as unknown. */}
+      {(summary.incompleteCategories ?? []).length > 0 && (
+        <div className="space-y-1 mt-3" data-testid="budget-incomplete-categories">
+          {(summary.incompleteCategories ?? []).map((cat) => (
+            <div key={cat.categoryName} className="flex items-center justify-between gap-2">
+              <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                {cat.categoryName}
+              </span>
+              <UnknownAmount
+                className="text-xs font-medium"
+                reasonText={partialReason(cat.missingRatePairs)}
+              />
             </div>
           ))}
         </div>

@@ -7,6 +7,7 @@ import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { CARD_CLASS } from '@/components/ui/Card';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 
 interface BudgetVelocityPebbleProps {
   velocity: BudgetVelocity;
@@ -29,6 +30,9 @@ const PACE_BADGE: Record<NonNullable<BudgetVelocity['paceStatus']>, BadgeVariant
 export function BudgetVelocityPebble({ velocity, formatCurrency }: BudgetVelocityPebbleProps) {
   const t = useTranslations('budgets');
   const tr = useTranslations('reports');
+  const partialReason = useBudgetPartialReason();
+  const spendingReason =
+    velocity.spendingComplete === false ? partialReason(velocity.spendingMissingRatePairs) : undefined;
   const pairs = velocity.projectionMissingRatePairs;
   const missingRate = pairs?.length ? tr('partialData.weightingNoRate', { pairs: pairs.join(', ') }) : undefined;
   const unknownReason =
@@ -48,7 +52,7 @@ export function BudgetVelocityPebble({ velocity, formatCurrency }: BudgetVelocit
         <div className="ui-figure-label">{t('velocity.safeToSpend')}</div>
         <div className="ui-bud-lead-figure mt-1 text-4xl">
           {velocity.safeDailySpend === null ? (
-            <UnknownAmount />
+            <UnknownAmount reasonText={spendingReason} />
           ) : (
             <>
               {formatCurrency(velocity.safeDailySpend)}
@@ -100,7 +104,7 @@ export function BudgetVelocityPebble({ velocity, formatCurrency }: BudgetVelocit
                 }`}
               >
                 {velocity.trulyAvailable === null ? (
-                  <UnknownAmount reason={unknownReason} />
+                  <UnknownAmount reason={unknownReason} reasonText={spendingReason} />
                 ) : (
                   <>
                     {formatCurrency(Math.abs(velocity.trulyAvailable))}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import { BudgetSummaryCards } from './BudgetSummaryCards';
 import { BudgetHealthGauge } from './BudgetHealthGauge';
 import { BudgetVelocityWidget } from './BudgetVelocityWidget';
@@ -14,7 +14,6 @@ import { Budget503020Summary } from './Budget503020Summary';
 import { BudgetBucketSummary, type BudgetBucketStatusState } from './BudgetBucketSummary';
 import { BudgetScenarioPlanner } from './BudgetScenarioPlanner';
 import { STRATEGY_LABELS, STRATEGY_DESCRIPTIONS } from './utils/budget-labels';
-import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import type { BudgetSummary, BudgetTrendPoint, BudgetVelocity } from '@/types/budget';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
@@ -30,7 +29,8 @@ interface BudgetDashboardProps {
   scheduledTransactions: ScheduledTransaction[];
   dailySpending: DailySpending[];
   trendData: BudgetTrendPoint[];
-  healthScore: number;
+  /** `null` while spending is partial (a row had no exchange rate). */
+  healthScore: number | null;
   /** The bucket-status request's state; read only for a Bucket budget. */
   bucketStatus?: BudgetBucketStatusState;
   /**
@@ -54,7 +54,7 @@ export function BudgetDashboard({
   formatCurrency,
   onCategoryClick,
 }: BudgetDashboardProps) {
-  const tp = useTranslations('budgets');
+  const partialReasonOf = useBudgetPartialReason();
   const { periodStart, periodEnd } = summary;
 
   // Compute pace percent: what % of the period has elapsed
@@ -64,7 +64,7 @@ export function BudgetDashboard({
       : 0;
 
   const strategy = summary.budget.strategy;
-  const missingPairs = (summary.missingRatePairs ?? []).join(', ');
+  const partialReason = partialReasonOf(summary.missingRatePairs);
 
   return (
     <div className="space-y-6">
@@ -79,32 +79,17 @@ export function BudgetDashboard({
       </div>
 
       {/* Summary Cards */}
-      {summary.totalSpent === null || summary.remaining === null || summary.percentUsed === null ? (
-        // A row with no exchange rate makes the totals unknown, not small: the
-        // cards would print the converted part as the whole.
-        <div
-          className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-800 dark:text-amber-200"
-          data-testid="budget-partial-spent"
-          role="note"
-        >
-          <div className="flex items-center gap-2 font-medium">
-            <UnknownAmount reasonText={tp('partialSpent.reason', { pairs: missingPairs })} />
-            {tp('partialSpent.known', { amount: formatCurrency(summary.knownTotalSpent ?? 0) })}
-          </div>
-          <p className="mt-1">{tp('partialSpent.reason', { pairs: missingPairs })}</p>
-        </div>
-      ) : (
-        <BudgetSummaryCards
-          totalBudgeted={summary.totalBudgeted}
-          totalSpent={summary.totalSpent}
-          remaining={summary.remaining}
-          totalIncome={summary.totalIncome}
-          percentUsed={summary.percentUsed}
-          daysRemaining={velocity.daysRemaining}
-          displayCurrency={displayCurrency}
-          formatCurrency={formatCurrency}
-        />
-      )}
+      <BudgetSummaryCards
+        totalBudgeted={summary.totalBudgeted}
+        totalSpent={summary.totalSpent}
+        remaining={summary.remaining}
+        totalIncome={summary.totalIncome}
+        percentUsed={summary.percentUsed}
+        partialReason={partialReason}
+        daysRemaining={velocity.daysRemaining}
+        displayCurrency={displayCurrency}
+        formatCurrency={formatCurrency}
+      />
       {/* A transfer line's actual can hold an imported estimate of a
           cross-currency leg; the figures include it and the note says so. */}
       <ProvisionalDataNotice count={summary.provisionalCount} />
@@ -113,6 +98,7 @@ export function BudgetDashboard({
       {strategy === 'ZERO_BASED' && (
         <BudgetZeroBasedBar
           totalIncome={summary.totalIncome}
+          partialReason={partialReason}
           totalBudgeted={summary.totalBudgeted}
           formatCurrency={formatCurrency}
         />
@@ -122,6 +108,7 @@ export function BudgetDashboard({
           budgetCategories={summary.budget.categories}
           categoryBreakdown={summary.categoryBreakdown}
           totalIncome={summary.totalIncome}
+          partialReason={partialReason}
           formatCurrency={formatCurrency}
         />
       )}
@@ -136,7 +123,7 @@ export function BudgetDashboard({
 
       {/* Health Gauge + Velocity Widget */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <BudgetHealthGauge score={healthScore} />
+        <BudgetHealthGauge score={healthScore} partialReason={partialReason} />
         <BudgetVelocityWidget
           velocity={velocity}
           formatCurrency={formatCurrency}
@@ -164,6 +151,7 @@ export function BudgetDashboard({
         <BudgetUpcomingBills
           scheduledTransactions={scheduledTransactions}
           currentSpent={summary.totalSpent}
+          spendingMissingRatePairs={summary.missingRatePairs}
           totalBudgeted={summary.totalBudgeted}
           periodEnd={periodEnd}
           displayCurrency={displayCurrency}
@@ -184,6 +172,7 @@ export function BudgetDashboard({
       <BudgetScenarioPlanner
         categories={summary.categoryBreakdown}
         totalIncome={summary.totalIncome}
+        partialReason={partialReason}
         formatCurrency={formatCurrency}
       />
     </div>

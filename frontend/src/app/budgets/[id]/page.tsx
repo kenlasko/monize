@@ -41,9 +41,13 @@ export default function BudgetDetailPage() {
   );
 }
 
-function computeHealthScore(summary: BudgetSummary): number {
+// `null` while spending is partial: a score over a converted part would read as
+// a measurement (read as `=== false`; absent is no information).
+function computeHealthScore(summary: BudgetSummary): number | null {
   let score = 100;
   const expenseCategories = summary.categoryBreakdown.filter((c) => !c.isIncome);
+  if (summary.valuationComplete === false && summary.totalSpent === null) return null;
+  if (expenseCategories.some((c) => c.valuationComplete === false)) return null;
 
   for (const cat of expenseCategories) {
     if (cat.percentUsed > 100) {

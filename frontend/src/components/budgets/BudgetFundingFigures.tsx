@@ -1,17 +1,20 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
 
 interface BudgetFundingFiguresProps {
   /** Actual Income: the income lines on an Income or Expense category. */
-  categoryIncome: number;
+  categoryIncome: number | null;
   /**
    * Transfer Funding: transfer income lines, income lines on a Transfer
    * category and the transfers counted in from excluded accounts.
    */
-  transferFunding: number;
+  transferFunding: number | null;
   /** Total Budget Funding, the two together. */
-  totalFunding: number;
+  totalFunding: number | null;
+  /** The translated cause shown beside a figure the server withheld (`null`). */
+  partialReason?: string;
   formatCurrency: (amount: number) => string;
   /** The caption over the three figures, e.g. "This period" or "Planned". */
   caption?: string;
@@ -28,6 +31,7 @@ export function BudgetFundingFigures({
   categoryIncome,
   transferFunding,
   totalFunding,
+  partialReason,
   formatCurrency,
   caption,
 }: BudgetFundingFiguresProps) {
@@ -48,7 +52,9 @@ export function BudgetFundingFigures({
         {rows.map((row) => (
           <div key={row.key} className="flex items-center justify-between">
             <dt className="text-gray-600 dark:text-gray-300">{row.label}</dt>
-            <dd className="text-gray-900 dark:text-gray-100">{formatCurrency(row.value)}</dd>
+            <dd className="text-gray-900 dark:text-gray-100">
+              {row.value === null ? <UnknownAmount reasonText={partialReason} /> : formatCurrency(row.value)}
+            </dd>
           </div>
         ))}
         <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-1 mt-1">
@@ -56,7 +62,7 @@ export function BudgetFundingFigures({
             {t('funding.totalFunding')}
           </dt>
           <dd className="font-semibold text-green-600 dark:text-green-400">
-            {formatCurrency(totalFunding)}
+            {totalFunding === null ? <UnknownAmount reasonText={partialReason} /> : formatCurrency(totalFunding)}
           </dd>
         </div>
       </dl>

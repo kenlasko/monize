@@ -331,8 +331,12 @@ describe("ToolExecutorService", () => {
         totalIncome: 5000,
         remaining: 1800,
         percentUsed: 40,
+        knownTotalSpent: 1200,
+        valuationComplete: true,
+        missingRatePairs: [],
         overBudgetCategories: [],
         nearLimitCategories: [],
+        incompleteCategories: [],
         categoryCount: 5,
       }),
     };
@@ -1840,6 +1844,19 @@ describe("ToolExecutorService", () => {
         valuationComplete: false,
         missingRatePairs: ["QQQ->USD"],
         overBudgetCategories: [],
+        incompleteCategories: [
+          {
+            category: "Groceries",
+            budgeted: 1000,
+            knownSpent: 20,
+            missingRatePairs: ["QQQ->USD"],
+          },
+        ],
+        healthScore: {
+          score: null,
+          label: null,
+          missingRatePairs: ["QQQ->USD"],
+        },
       } as never);
 
       const result = await service.execute(userId, "get_budget_status", {});
@@ -1847,6 +1864,8 @@ describe("ToolExecutorService", () => {
       expect(result.summary).toContain("total spent unknown");
       expect(result.summary).toContain("QQQ->USD");
       expect(result.summary).not.toContain("% used");
+      expect(result.summary).toContain("1 categories with unknown spending");
+      expect(result.summary).toContain("Health score: unknown");
     });
 
     it("list_upcoming_bills delegates to scheduledTransactions.getLlmUpcomingBillsAndDeposits", async () => {

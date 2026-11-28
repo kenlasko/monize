@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -48,6 +49,7 @@ export default function BudgetEditPage() {
 
 function BudgetEditContent() {
   const t = useTranslations('budgets');
+  const partialReasonOf = useBudgetPartialReason();
   const params = useParams();
   const router = useRouter();
   const { formatCurrency } = useNumberFormat();
@@ -350,6 +352,7 @@ function BudgetEditContent() {
                       categoryIncome={summary.categoryIncome}
                       transferFunding={summary.transferFunding}
                       totalFunding={summary.totalIncome}
+                      partialReason={partialReasonOf(summary.missingRatePairs)}
                       formatCurrency={(amount) => formatCurrency(amount, budget.currencyCode)}
                     />
                   )}
