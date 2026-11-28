@@ -38,7 +38,7 @@ describe("Category type, through the service (integration)", () => {
   const typeOf = async (id: string) =>
     (
       await db.query(
-        `SELECT category_type AS "type", is_income AS "isIncome" FROM categories WHERE id = $1`,
+        `SELECT category_type AS "type" FROM categories WHERE id = $1`,
         [id],
       )
     )[0];
@@ -83,7 +83,7 @@ describe("Category type, through the service (integration)", () => {
   it("creates, lists, edits and deletes a Transfer category", async () => {
     const savings = await create({ name: "Savings", type: "transfer" });
     expect(savings.categoryType).toBe("transfer");
-    expect(savings.isIncome).toBe(false);
+    expect(savings).not.toHaveProperty("isIncome");
 
     const listed = await asUser(() =>
       service.findByCategoryType(userId, "transfer"),
@@ -110,21 +110,11 @@ describe("Category type, through the service (integration)", () => {
   it("gives a subcategory its parent's type and refuses another", async () => {
     const parent = await create({ name: "Transfers", type: "transfer" });
     const child = await create({ name: "Brokerage", parentId: parent.id });
-    expect(await typeOf(child.id)).toEqual({
-      type: "transfer",
-      isIncome: false,
-    });
+    expect(await typeOf(child.id)).toEqual({ type: "transfer" });
 
     await expect(
       create({ name: "Odd", parentId: parent.id, type: "income" }),
     ).rejects.toBeInstanceOf(BadRequestException);
-  });
-
-  it("reads the legacy isIncome flag from a client that does not know the type", async () => {
-    const salary = await create({ name: "Salary", isIncome: true });
-    expect(await typeOf(salary.id)).toEqual({ type: "income", isIncome: true });
-    const food = await create({ name: "Food", isIncome: false });
-    expect(await typeOf(food.id)).toEqual({ type: "expense", isIncome: false });
   });
 
   it("refuses a type change while a category row holds the category, naming nothing written", async () => {
@@ -156,7 +146,7 @@ describe("Category type, through the service (integration)", () => {
     );
 
     await update(top.id, { type: "income" });
-    expect(await typeOf(leaf.id)).toEqual({ type: "income", isIncome: true });
+    expect(await typeOf(leaf.id)).toEqual({ type: "income" });
   });
 
   it("re-types the moved category's subtree when it moves under another type", async () => {
@@ -186,7 +176,7 @@ describe("Category type, through the service (integration)", () => {
     await update(food.id, { type: "transfer" });
     await settlePendingHistoryWrites();
     await asUser(() => history.undo(userId));
-    expect(await typeOf(food.id)).toEqual({ type: "expense", isIncome: false });
+    expect(await typeOf(food.id)).toEqual({ type: "expense" });
 
     // Redo to Transfer, then an ordinary row takes the category's place in the
     // way: undoing the next change back to Transfer is refused.
@@ -201,11 +191,11 @@ describe("Category type, through the service (integration)", () => {
     expect((await typeOf(food.id)).type).toBe("expense");
   });
 
-  it("seeds the default Transfer set under one parent, and the mirror keeps the flag false", async () => {
+  it("seeds the default Transfer set under one parent", async () => {
     await asUser(() => service.importDefaults(userId, {}));
 
     const rows = await db.query(
-      `SELECT c.name, c.category_type AS "type", c.is_income AS "isIncome", p.name AS "parent"
+      `SELECT c.name, c.category_type AS "type", p.name AS "parent"
          FROM categories c LEFT JOIN categories p ON p.id = c.parent_id
         WHERE c.user_id = $1 AND c.category_type = 'transfer'
         ORDER BY c.name`,
@@ -219,9 +209,6 @@ describe("Category type, through the service (integration)", () => {
       "Savings Contributions",
       "Transfers",
     ]);
-    expect(rows.every((r: { isIncome: boolean }) => r.isIncome === false)).toBe(
-      true,
-    );
     expect(
       rows
         .filter((r: { parent: string | null }) => r.parent)

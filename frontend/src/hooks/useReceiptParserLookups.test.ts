@@ -30,7 +30,7 @@ const category = (id: string, name: string, parentId: string | null = null) => (
   id,
   name,
   parentId,
-  isIncome: false,
+  categoryType: 'expense' as const,
   isSystem: false,
   children: [],
 });

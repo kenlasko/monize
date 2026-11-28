@@ -124,8 +124,6 @@ export const RULES: Record<string, TableRules> = {
     description: drop,
     icon: keep,
     color: keep,
-    // income-flag-ok: column classification of the legacy column
-    is_income: keep,
     category_type: keep,
     auto_sign: keep,
     is_system: keep,

@@ -36,7 +36,7 @@ describe('budgetLineName', () => {
           category: {
             id: 'c-1',
             name: 'Restaurants',
-            isIncome: false,
+            categoryType: 'expense',
             parent: { id: 'c-0', name: 'Food' },
           },
         }),
@@ -44,7 +44,7 @@ describe('budgetLineName', () => {
       ),
     ).toBe('Food: Restaurants');
     expect(
-      budgetLineName(line({ category: { id: 'c-2', name: 'Salary', isIncome: true } }), labels),
+      budgetLineName(line({ category: { id: 'c-2', name: 'Salary', categoryType: 'income' } }), labels),
     ).toBe('Salary');
   });
 

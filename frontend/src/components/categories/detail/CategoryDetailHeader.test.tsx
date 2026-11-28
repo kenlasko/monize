@@ -24,7 +24,7 @@ function category(overrides: Partial<Category> = {}): Category {
     effectiveIcon: null,
     autoSign: null,
     effectiveAutoSign: true,
-    isIncome: false,
+    categoryType: 'expense',
     isSystem: false,
     createdAt: '2024-01-15T00:00:00.000Z',
     ...overrides,
@@ -87,7 +87,7 @@ describe('CategoryDetailHeader', () => {
   });
 
   it('badges an income category as Income', () => {
-    renderHeader({ isIncome: true });
+    renderHeader({ categoryType: 'income' });
     expect(screen.getByText('Income')).toBeInTheDocument();
     expect(screen.queryByText('Expense')).toBeNull();
   });

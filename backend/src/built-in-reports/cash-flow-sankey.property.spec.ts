@@ -117,7 +117,7 @@ function generate(seed: number, places: number): Ledger {
     name: `Category ${i}`,
     parentId: null,
     color: null,
-    isIncome: random() < 0.4,
+    categoryType: random() < 0.4 ? "income" : "expense",
   }));
   const children: SankeyCategory[] = roots.flatMap((root, i) =>
     random() < 0.5
@@ -127,7 +127,7 @@ function generate(seed: number, places: number): Ledger {
             name: `Child ${i}`,
             parentId: root.id,
             color: null,
-            isIncome: random() < 0.3,
+            categoryType: random() < 0.3 ? "income" : "expense",
           },
         ]
       : [],
@@ -522,7 +522,8 @@ describe.each([CAD, JPY, BTC])(
         }
         for (const [root, net] of nets) {
           const isIncome =
-            net.sign > 0 || (net.sign === 0 && byId.get(root)!.isIncome);
+            net.sign > 0 ||
+            (net.sign === 0 && byId.get(root)!.categoryType === "income");
           if (isIncome) income.merge(net);
           else expenses.mergeNegated(net);
         }

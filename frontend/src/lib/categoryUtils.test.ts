@@ -11,7 +11,7 @@ function makeCategory(overrides: Partial<Category> & { id: string; name: string 
     description: null,
     icon: null,
     color: null,
-    isIncome: false,
+    categoryType: 'expense' as const,
     isSystem: false,
     createdAt: '2026-01-01T00:00:00Z',
     ...overrides,
@@ -261,8 +261,8 @@ const labels: SpecialCategoryFilterLabels = {
   income: 'All income categories',
   expense: 'All expense categories',
 };
-const salary = makeCategory({ id: 'inc-1', name: 'Salary', isIncome: true });
-const bonus = makeCategory({ id: 'inc-2', name: 'Bonus', isIncome: true, parentId: 'inc-1' });
+const salary = makeCategory({ id: 'inc-1', name: 'Salary', categoryType: 'income' as const });
+const bonus = makeCategory({ id: 'inc-2', name: 'Bonus', categoryType: 'income' as const, parentId: 'inc-1' });
 
 describe('buildCategoryFilterOptions', () => {
   it('lists the four labelled pseudo-ids first, then the tree', () => {
@@ -337,8 +337,8 @@ describe('canonicalizeCategoryFilter', () => {
 });
 
 describe('signAmountByCategory', () => {
-  const expense = { isIncome: false, effectiveAutoSign: true };
-  const income = { isIncome: true, effectiveAutoSign: true };
+  const expense = { categoryType: 'expense' as const, effectiveAutoSign: true };
+  const income = { categoryType: 'income' as const, effectiveAutoSign: true };
 
   it('makes a typed amount negative for an expense category', () => {
     expect(signAmountByCategory(25, undefined, expense)).toBe(-25);
@@ -349,18 +349,18 @@ describe('signAmountByCategory', () => {
   });
 
   it('treats an absent effectiveAutoSign as on', () => {
-    expect(signAmountByCategory(25, undefined, { isIncome: false } as never)).toBe(-25);
+    expect(signAmountByCategory(25, undefined, { categoryType: 'expense' as const } as never)).toBe(-25);
   });
 
   it('leaves the typed value unchanged when automatic sign is off', () => {
-    expect(signAmountByCategory(25, undefined, { isIncome: false, effectiveAutoSign: false })).toBe(25);
-    expect(signAmountByCategory(-25, undefined, { isIncome: true, effectiveAutoSign: false })).toBe(-25);
+    expect(signAmountByCategory(25, undefined, { categoryType: 'expense' as const, effectiveAutoSign: false })).toBe(25);
+    expect(signAmountByCategory(-25, undefined, { categoryType: 'income' as const, effectiveAutoSign: false })).toBe(-25);
   });
 
   it('preserves a pure sign flip of the reference whatever the setting', () => {
     expect(signAmountByCategory(25, -25, expense)).toBe(25);
     expect(signAmountByCategory(-25, 25, income)).toBe(-25);
-    expect(signAmountByCategory(25, -25, { isIncome: false, effectiveAutoSign: false })).toBe(25);
+    expect(signAmountByCategory(25, -25, { categoryType: 'expense' as const, effectiveAutoSign: false })).toBe(25);
   });
 
   it('returns the value unchanged with no category', () => {
@@ -370,8 +370,8 @@ describe('signAmountByCategory', () => {
 });
 
 describe('getCategorySelectOptionsFor (INV-CATEGORY-001)', () => {
-  const transfers = makeCategory({ id: 't', name: 'Transfers', categoryType: 'transfer' });
-  const brokerage = makeCategory({ id: 't2', name: 'Brokerage', parentId: 't', categoryType: 'transfer' });
+  const transfers = makeCategory({ id: 't', name: 'Transfers', categoryType: 'transfer' as const });
+  const brokerage = makeCategory({ id: 't2', name: 'Brokerage', parentId: 't', categoryType: 'transfer' as const });
   const list = [groceries, transfers, brokerage, dining];
 
   it('offers a transfer every type, Transfer categories first, each with its path', () => {
@@ -397,8 +397,8 @@ describe('getCategorySelectOptionsFor (INV-CATEGORY-001)', () => {
 });
 
 describe('buildCategoryPickerOptions (INV-CATEGORY-001)', () => {
-  const transfers = makeCategory({ id: 't', name: 'Transfers', categoryType: 'transfer' });
-  const brokerage = makeCategory({ id: 't2', name: 'Brokerage', parentId: 't', categoryType: 'transfer' });
+  const transfers = makeCategory({ id: 't', name: 'Transfers', categoryType: 'transfer' as const });
+  const brokerage = makeCategory({ id: 't2', name: 'Brokerage', parentId: 't', categoryType: 'transfer' as const });
   const list = [groceries, transfers, brokerage, dining];
   const labels = (holder: 'transfer' | 'category') =>
     buildCategoryPickerOptions(list, holder, (_c, label) => label);

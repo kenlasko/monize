@@ -82,9 +82,7 @@ export interface JointReferenceData {
     parentId: string | null;
     icon: string | null;
     color: string | null;
-    categoryType?: CategoryType;
-    /** Read-only, derived; read the type through `@/lib/category-type`. */
-    isIncome: boolean;
+    categoryType: CategoryType;
     isSystem: boolean;
   }>;
   payees: Array<{

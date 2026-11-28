@@ -129,7 +129,7 @@ function categoryFixture(overrides: Partial<Category> = {}): Category {
     effectiveIcon: null,
     autoSign: null,
     effectiveAutoSign: true,
-    isIncome: false,
+    categoryType: 'expense',
     isSystem: false,
     createdAt: '2024-01-15T00:00:00.000Z',
     ...overrides,
@@ -150,7 +150,7 @@ function categoryListFixture(): Category[] {
       autoSign: null,
       effectiveAutoSign: true,
     }),
-    categoryFixture({ id: 'cat-2', name: 'Salary', isIncome: true }),
+    categoryFixture({ id: 'cat-2', name: 'Salary', categoryType: 'income' }),
   ];
 }
 
@@ -270,7 +270,7 @@ describe('CategoryDetailPage', () => {
 
   it('frames an income category as received, not spent', async () => {
     mockGetDetail.mockResolvedValue(
-      detailFixture({ category: categoryFixture({ isIncome: true }) }),
+      detailFixture({ category: categoryFixture({ categoryType: 'income' }) }),
     );
 
     await renderPage();
@@ -544,7 +544,7 @@ describe('CategoryDetailPage', () => {
       resolveSlowRead = resolve;
     });
     const salary = detailFixture({
-      category: categoryFixture({ id: 'cat-2', name: 'Salary', isIncome: true }),
+      category: categoryFixture({ id: 'cat-2', name: 'Salary', categoryType: 'income' }),
     });
     mockGetDetail.mockImplementation((id: string) =>
       id === 'cat-1' ? slowRead : Promise.resolve(salary),

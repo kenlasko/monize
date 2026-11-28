@@ -20,22 +20,16 @@ export interface Category {
   /**
    * This category's own explicit automatic-sign choice, or `null` to inherit
    * from the nearest ancestor that has one (a root with none behaves as on).
-   * Never forced to match a parent the way `isIncome` is.
+   * Never forced to match a parent the way the type is.
    */
   autoSign: boolean | null;
   /** Resolved server-side by walking the ancestor chain; always a concrete boolean. */
   effectiveAutoSign: boolean;
   /**
    * Income, expense or transfer; a Transfer category goes only on a transfer.
-   * Always sent by the API; optional here so a value built before the type
-   * existed (a fixture) reads through `categoryTypeOf`.
+   * Read it through `@/lib/category-type`.
    */
-  categoryType?: CategoryType;
-  /**
-   * Read-only, derived: true only for an income category. Read a category's
-   * type through `@/lib/category-type`, never this flag.
-   */
-  isIncome: boolean;
+  categoryType: CategoryType;
   isSystem: boolean;
   createdAt: string;
   transactionCount?: number;

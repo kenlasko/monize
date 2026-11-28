@@ -101,7 +101,7 @@ describe("BudgetReportsService", () => {
     description: null,
     icon: null,
     color: null,
-    isIncome: false,
+    categoryType: "expense",
     autoSign: null,
     isSystem: false,
     createdAt: new Date("2025-01-01"),
@@ -117,7 +117,7 @@ describe("BudgetReportsService", () => {
     description: null,
     icon: null,
     color: null,
-    isIncome: false,
+    categoryType: "expense",
     autoSign: null,
     isSystem: false,
     createdAt: new Date("2025-01-01"),
@@ -180,7 +180,7 @@ describe("BudgetReportsService", () => {
       ...mockCategory,
       id: "cat-income",
       name: "Salary",
-      isIncome: true,
+      categoryType: "income",
     },
     categoryGroup: null,
     transferAccountId: null,
@@ -570,7 +570,7 @@ describe("BudgetReportsService", () => {
         budgetedAmount: 5000,
         actualAmount: 5000,
         budgetCategory: incomeCategory,
-        category: { ...mockCategory, id: "cat-income", isIncome: true },
+        category: { ...mockCategory, id: "cat-income", categoryType: "income" },
       };
 
       const periods: Partial<BudgetPeriod>[] = [

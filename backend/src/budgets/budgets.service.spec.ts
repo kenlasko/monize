@@ -130,7 +130,7 @@ describe("BudgetsService", () => {
     description: null,
     icon: null,
     color: null,
-    isIncome: false,
+    categoryType: "expense",
     autoSign: null,
     isSystem: false,
     createdAt: new Date("2025-01-01"),

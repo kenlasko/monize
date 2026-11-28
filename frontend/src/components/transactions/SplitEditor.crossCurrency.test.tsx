@@ -23,7 +23,7 @@ const accounts = [
 ] as unknown as Account[];
 
 const categories = [
-  { id: 'cat-1', name: 'Groceries', parentId: null, isIncome: false },
+  { id: 'cat-1', name: 'Groceries', parentId: null, categoryType: 'expense' as const },
 ] as never[];
 
 function line(overrides: Partial<SplitRow>): SplitRow {

@@ -533,7 +533,7 @@ describe("QuickAddInterpretService: pins, transfers and the payee", () => {
               id: COSTCO_CATEGORY,
               name: "Costco",
               path: "Costco",
-              isIncome: false,
+              categoryType: "expense",
             },
           ],
         }),

@@ -26,7 +26,7 @@ function category(overrides: Partial<Category> = {}): Category {
     effectiveIcon: null,
     autoSign: null,
     effectiveAutoSign: true,
-    isIncome: false,
+    categoryType: 'expense',
     isSystem: false,
     createdAt: '2024-01-15T00:00:00.000Z',
     ...overrides,
@@ -89,7 +89,7 @@ describe('CategorySummaryCards', () => {
   it('headlines an income category as money received, in green', () => {
     const income = { income: 5000, expenses: 0, net: 5000 };
     renderCards({
-      detail: detailFixture({ category: category({ isIncome: true }) }),
+      detail: detailFixture({ category: category({ categoryType: 'income' }) }),
       lifetime: income,
       thisYear: income,
     });
@@ -129,7 +129,7 @@ describe('CategorySummaryCards', () => {
   it('nets a debit filed against an income category out of the headline', () => {
     const netted = { income: 5000, expenses: 250, net: 4750 };
     renderCards({
-      detail: detailFixture({ category: category({ isIncome: true }) }),
+      detail: detailFixture({ category: category({ categoryType: 'income' }) }),
       lifetime: netted,
       thisYear: netted,
     });

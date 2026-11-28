@@ -41,7 +41,7 @@ describe("TaxRecurringReportsService", () => {
     description: null,
     icon: null,
     color: "#5733FF",
-    isIncome: true,
+    categoryType: "income",
     autoSign: null,
     isSystem: false,
     createdAt: new Date("2025-01-01"),
@@ -57,7 +57,7 @@ describe("TaxRecurringReportsService", () => {
     description: null,
     icon: null,
     color: "#FF5733",
-    isIncome: false,
+    categoryType: "expense",
     autoSign: null,
     isSystem: false,
     createdAt: new Date("2025-01-02"),
@@ -73,7 +73,7 @@ describe("TaxRecurringReportsService", () => {
     description: null,
     icon: null,
     color: "#33FF57",
-    isIncome: false,
+    categoryType: "expense",
     autoSign: null,
     isSystem: false,
     createdAt: new Date("2025-01-03"),
@@ -89,7 +89,7 @@ describe("TaxRecurringReportsService", () => {
     description: null,
     icon: null,
     color: "#3357FF",
-    isIncome: false,
+    categoryType: "expense",
     autoSign: null,
     isSystem: false,
     createdAt: new Date("2025-01-04"),
@@ -105,7 +105,7 @@ describe("TaxRecurringReportsService", () => {
     description: null,
     icon: null,
     color: "#FF3357",
-    isIncome: false,
+    categoryType: "expense",
     autoSign: null,
     isSystem: false,
     createdAt: new Date("2025-01-05"),
@@ -121,7 +121,7 @@ describe("TaxRecurringReportsService", () => {
     description: null,
     icon: null,
     color: "#57FF33",
-    isIncome: false,
+    categoryType: "expense",
     autoSign: null,
     isSystem: false,
     createdAt: new Date("2025-01-06"),
@@ -332,7 +332,7 @@ describe("TaxRecurringReportsService", () => {
 
     it("uses the net direction when a stored category has no type", async () => {
       categoriesRepository.find.mockResolvedValue([
-        { ...mockMedicalCategory, isIncome: null },
+        { ...mockMedicalCategory, categoryType: null },
       ]);
       scopedManager.query.mockResolvedValue([
         {

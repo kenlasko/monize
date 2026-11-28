@@ -52,33 +52,33 @@ describe("CategoriesService write paths (integration)", () => {
     ]);
   });
 
-  it("updates a category and cascades the isIncome change to descendants", async () => {
+  it("updates a category and cascades the type change to descendants", async () => {
     const user = await createTestUserDirect(dataSource);
     const parent = await createTestCategory(dataSource, user.id, {
       name: "Parent",
-      isIncome: false,
+      categoryType: "expense",
     });
     const child = await createTestCategory(dataSource, user.id, {
       name: "Child",
-      isIncome: false,
+      categoryType: "expense",
       parentId: parent.id,
     });
 
     const updated = await withUserContext(user.id, () =>
       service.update(user.id, parent.id, {
         name: "Parent Renamed",
-        isIncome: true,
+        type: "income",
       }),
     );
 
     expect(updated.name).toBe("Parent Renamed");
-    expect(updated.isIncome).toBe(true);
+    expect(updated.categoryType).toBe("income");
 
     // The type change must cascade to the descendant within the transaction.
     const reChild = await dataSource.manager.findOneByOrFail(Category, {
       id: child.id,
     });
-    expect(reChild.isIncome).toBe(true);
+    expect(reChild.categoryType).toBe("income");
   });
 
   it("removes a category and clears the default-category reference on payees", async () => {

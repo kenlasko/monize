@@ -78,8 +78,10 @@ export interface SankeyCategory {
   name: string;
   parentId: string | null;
   color: string | null;
-  isIncome: boolean;
-  /** Undefined when the category's type is unknown, which is never a refund. */
+  /**
+   * Undefined when the category's type is unknown, which is never a refund and
+   * never places a category on the income side.
+   */
   categoryType?: CategoryType;
 }
 

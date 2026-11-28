@@ -46,16 +46,26 @@ describe("FinancialContextBuilder", () => {
     {
       id: "cat-1",
       name: "Food",
-      isIncome: false,
+      categoryType: "expense",
       children: [
-        { id: "cat-1a", name: "Groceries", isIncome: false, children: [] },
-        { id: "cat-1b", name: "Dining Out", isIncome: false, children: [] },
+        {
+          id: "cat-1a",
+          name: "Groceries",
+          categoryType: "expense",
+          children: [],
+        },
+        {
+          id: "cat-1b",
+          name: "Dining Out",
+          categoryType: "expense",
+          children: [],
+        },
       ],
     },
     {
       id: "cat-2",
       name: "Salary",
-      isIncome: true,
+      categoryType: "income",
       children: [],
     },
   ];

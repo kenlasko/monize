@@ -102,9 +102,9 @@ describe("Category fit and one category per transfer: scheduled transactions (in
     const category = async (owner: string, name: string, type: string) =>
       (
         await db.query(
-          `INSERT INTO categories (user_id, name, category_type, is_income)
-           VALUES ($1, $2, $3, $4) RETURNING id`,
-          [owner, name, type, type === "income"],
+          `INSERT INTO categories (user_id, name, category_type)
+           VALUES ($1, $2, $3) RETURNING id`,
+          [owner, name, type],
         )
       )[0].id as string;
     transferCat = await category(userId, "Savings contributions", "transfer");

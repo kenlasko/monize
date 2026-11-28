@@ -45,7 +45,7 @@ describe("SpendingReportsService", () => {
     description: null,
     icon: null,
     color: "#FF5733",
-    isIncome: false,
+    categoryType: "expense",
     autoSign: null,
     isSystem: false,
     createdAt: new Date("2025-01-01"),
@@ -61,7 +61,7 @@ describe("SpendingReportsService", () => {
     description: null,
     icon: null,
     color: "#33FF57",
-    isIncome: false,
+    categoryType: "expense",
     autoSign: null,
     isSystem: false,
     createdAt: new Date("2025-01-02"),
@@ -162,7 +162,7 @@ describe("SpendingReportsService", () => {
 
     it("uses the net direction when a stored category has no type", async () => {
       categoriesRepository.find.mockResolvedValue([
-        { ...mockParentCategory, isIncome: null },
+        { ...mockParentCategory, categoryType: null },
       ]);
       scopedManager.query.mockResolvedValue([
         {
@@ -659,7 +659,7 @@ describe("SpendingReportsService", () => {
         description: null,
         icon: null,
         color: null,
-        isIncome: false,
+        categoryType: "expense",
         autoSign: null,
         isSystem: false,
         createdAt: new Date(),
@@ -1663,7 +1663,7 @@ describe("SpendingReportsService", () => {
         description: null,
         icon: null,
         color: null,
-        isIncome: false,
+        categoryType: "expense",
         autoSign: null,
         isSystem: false,
         createdAt: new Date(),

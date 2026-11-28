@@ -13,8 +13,12 @@ describe("CreateCategoryDto type", () => {
     expect(await errorsFor({ type })).toEqual([]);
   });
 
-  it("rejects any other type, and still accepts the legacy flag alone", async () => {
+  it("rejects any other type", async () => {
     expect((await errorsFor({ type: "savings" })).length).toBe(1);
-    expect(await errorsFor({ isIncome: true })).toEqual([]);
+  });
+
+  it("refuses the dropped isIncome flag, which no longer names a type", async () => {
+    const errors = await errorsFor({ isIncome: true });
+    expect(errors.map((e) => e.property)).toEqual(["isIncome"]);
   });
 });

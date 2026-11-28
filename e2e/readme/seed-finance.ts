@@ -167,7 +167,7 @@ export async function seedLoans(api: ApiClient): Promise<void> {
   // The demo data books mortgage interest only; the car loan's payment schedule
   // needs an expense category of its own to book interest to.
   if (!has((await loadAccountsAndInstitutions(api)).categories, 'Loan Interest')) {
-    await api.post('/categories', { name: 'Loan Interest', isIncome: false });
+    await api.post('/categories', { name: 'Loan Interest', type: 'expense' });
   }
   let lookups = await loadAccountsAndInstitutions(api);
   const { institutions } = lookups;

@@ -7,7 +7,7 @@ const mockCategory: BudgetCategory = {
   id: 'bc-1',
   budgetId: 'budget-1',
   categoryId: 'cat-1',
-  category: { id: 'cat-1', name: 'Groceries', isIncome: false },
+  category: { id: 'cat-1', name: 'Groceries', categoryType: 'expense' },
   categoryGroup: null,
   bucketId: null,
   transferAccountId: null,

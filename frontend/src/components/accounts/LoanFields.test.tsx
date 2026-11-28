@@ -78,7 +78,7 @@ const mockCategories: Category[] = [
   {
     id: 'cat-1', userId: 'user-1', parentId: null, parent: null, children: [],
     name: 'Interest Expenses', description: null, icon: null, color: null, effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-    isIncome: false, isSystem: false, createdAt: '2024-01-01T00:00:00Z',
+    categoryType: 'expense', isSystem: false, createdAt: '2024-01-01T00:00:00Z',
   },
 ];
 

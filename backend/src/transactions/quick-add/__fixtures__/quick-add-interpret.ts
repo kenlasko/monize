@@ -87,14 +87,19 @@ export function candidates(
       },
     ],
     categories: [
-      { id: "c-food", name: "Food", path: "Food", isIncome: false },
+      { id: "c-food", name: "Food", path: "Food", categoryType: "expense" },
       {
         id: "c-groc",
         name: "Groceries",
         path: "Food: Groceries",
-        isIncome: false,
+        categoryType: "expense",
       },
-      { id: "c-salary", name: "Salary", path: "Salary", isIncome: true },
+      {
+        id: "c-salary",
+        name: "Salary",
+        path: "Salary",
+        categoryType: "income",
+      },
     ],
     numberFormat: "en-US",
     dateFormat: "YYYY-MM-DD",

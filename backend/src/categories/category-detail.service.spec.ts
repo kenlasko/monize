@@ -35,7 +35,7 @@ describe("CategoryDetailService", () => {
     userId: USER_ID,
     name: "Groceries",
     parentId: null,
-    isIncome: false,
+    categoryType: "expense",
     isSystem: false,
     color: "#22c55e",
     effectiveColor: "#22c55e",

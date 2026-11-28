@@ -151,6 +151,30 @@ describe("production migration path (baseline schema + migrations)", () => {
     return Number(rows[0].count) > 0;
   };
 
+  it("drops categories.is_income and keeps the type trigger working (#2478)", async () => {
+    // The baseline still has the flag; only the contract migration removes it.
+    expect(fs.readFileSync(FIXTURE, "utf8")).toContain("is_income BOOLEAN");
+    await expect(columnExists("categories", "is_income")).resolves.toBe(false);
+    await expect(columnExists("categories", "category_type")).resolves.toBe(
+      true,
+    );
+    await expect(triggerExists("trg_categories_sync_type")).resolves.toBe(true);
+
+    // The replaced trigger function names no dropped column: a child still
+    // takes its parent's type on insert.
+    const [parent]: { id: string }[] = await db.query(
+      `INSERT INTO categories (user_id, name, category_type)
+       VALUES ($1, 'Migrated income', 'income') RETURNING id`,
+      [owner],
+    );
+    const [child]: { category_type: string }[] = await db.query(
+      `INSERT INTO categories (user_id, name, parent_id, category_type)
+       VALUES ($1, 'Migrated child', $2, 'expense') RETURNING category_type`,
+      [owner, parent.id],
+    );
+    expect(child.category_type).toBe("income");
+  });
+
   it("creates every Phase 4 object the code depends on", async () => {
     // Not redundant with the replay in beforeAll: a migration whose guards
     // accidentally skip its own work applies cleanly and creates nothing.

@@ -39,7 +39,7 @@ function category(
     effectiveIcon: null,
     autoSign: null,
     effectiveAutoSign: true,
-    isIncome: false,
+    categoryType: 'expense',
     isSystem: false,
     createdAt: '2024-01-01T00:00:00.000Z',
     ...overrides,
@@ -48,7 +48,7 @@ function category(
 
 const food = category('cat-food', 'Food');
 const coffee = category('cat-coffee', 'Coffee', { parentId: 'cat-food' });
-const salary = category('cat-salary', 'Salary', { isIncome: true });
+const salary = category('cat-salary', 'Salary', { categoryType: 'income' });
 const travel = category('cat-travel', 'Travel');
 
 const all = [food, coffee, salary, travel];

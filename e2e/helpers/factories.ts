@@ -77,7 +77,7 @@ export function createWarranty(
 export interface CreatedCategory {
   id: string;
   name: string;
-  isIncome: boolean;
+  categoryType: 'income' | 'expense' | 'transfer';
   parentId: string | null;
 }
 
@@ -85,16 +85,15 @@ export function createCategory(
   api: ApiClient,
   data: {
     name?: string;
-    isIncome?: boolean;
     parentId?: string;
     description?: string;
-    /** `transfer` makes a Transfer category; omit it and `isIncome` picks Income or Expense. */
+    /** The category type; omitted, the server makes an Expense category (a subcategory takes its parent's). */
     type?: 'income' | 'expense' | 'transfer';
   } = {},
 ): Promise<CreatedCategory> {
   return api.post<CreatedCategory>('/categories', {
     name: data.name ?? `E2E Category ${uniqueId()}`,
-    ...(data.type !== undefined ? { type: data.type } : { isIncome: data.isIncome ?? false }),
+    ...(data.type !== undefined ? { type: data.type } : {}),
     ...(data.parentId !== undefined ? { parentId: data.parentId } : {}),
     ...(data.description !== undefined ? { description: data.description } : {}),
   });

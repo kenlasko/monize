@@ -1396,7 +1396,6 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
                       icon: c.icon,
                       color: c.color,
                       categoryType: c.categoryType,
-                      isIncome: c.isIncome, // income-flag-ok: carried to the joint picker's own shape
                       isSystem: c.isSystem,
                     })),
                   ],

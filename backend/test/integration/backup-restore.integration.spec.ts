@@ -275,12 +275,12 @@ describe("Backup export/restore round-trip (integration)", () => {
     );
 
     await dataSource.query(
-      `INSERT INTO categories (id, user_id, name, is_income) VALUES ($1, $2, 'Food', false)`,
+      `INSERT INTO categories (id, user_id, name, category_type) VALUES ($1, $2, 'Food', 'expense')`,
       [ids.parentCategoryId, userId],
     );
     await dataSource.query(
-      `INSERT INTO categories (id, user_id, parent_id, name, is_income)
-       VALUES ($1, $2, $3, 'Groceries', false)`,
+      `INSERT INTO categories (id, user_id, parent_id, name, category_type)
+       VALUES ($1, $2, $3, 'Groceries', 'expense')`,
       [ids.childCategoryId, userId, ids.parentCategoryId],
     );
 

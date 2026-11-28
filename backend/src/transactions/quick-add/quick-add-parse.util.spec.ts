@@ -3,6 +3,7 @@ import {
   QuickAddReading,
   readQuickAddText,
 } from "./quick-add-parse.util";
+import type { CategoryType } from "../../categories/category-type.util";
 import { resolveQuickAddVocabulary } from "./quick-add-vocabulary";
 import {
   QuickAddCandidateAccount,
@@ -27,8 +28,8 @@ const category = (
   id: string,
   name: string,
   path = name,
-  isIncome = false,
-): QuickAddCandidateCategory => ({ id, name, path, isIncome });
+  categoryType: CategoryType = "expense",
+): QuickAddCandidateCategory => ({ id, name, path, categoryType });
 
 const ACCOUNTS = [
   account("acc-chq", "Chequing"),
@@ -52,7 +53,7 @@ const PAYEES = [
 const CATEGORIES = [
   category("c-food", "Food"),
   category("c-groc", "Groceries", "Food: Groceries"),
-  category("c-salary", "Salary", "Salary", true),
+  category("c-salary", "Salary", "Salary", "income"),
 ];
 
 function read(

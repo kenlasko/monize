@@ -39,7 +39,7 @@ function createCategory(overrides: Partial<Category> = {}): Category {
     effectiveIcon: null,
     autoSign: null,
     effectiveAutoSign: true,
-    isIncome: false,
+    categoryType: 'expense',
     isSystem: false,
     createdAt: '2024-01-01T00:00:00Z',
     ...overrides,

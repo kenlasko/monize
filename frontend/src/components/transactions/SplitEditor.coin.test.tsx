@@ -17,8 +17,8 @@ const accounts = [
 ] as unknown as Account[];
 
 const categories = [
-  { id: 'cat-1', name: 'Fees', parentId: null, isIncome: false },
-  { id: 'cat-2', name: 'Purchases', parentId: null, isIncome: false },
+  { id: 'cat-1', name: 'Fees', parentId: null, categoryType: 'expense' as const },
+  { id: 'cat-2', name: 'Purchases', parentId: null, categoryType: 'expense' as const },
 ] as never[];
 
 const onChangeSpy = vi.fn();

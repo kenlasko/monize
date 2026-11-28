@@ -6,7 +6,7 @@
  * handles it.
  */
 import {
-  isIncomeCategory,
+  categoryTypeOf,
   isTransferCategory,
 } from "../../categories/category-type.util";
 import { EntityManager, In, Not } from "typeorm";
@@ -133,7 +133,6 @@ export async function loadQuickAddCandidates(
       name: true,
       parentId: true,
       categoryType: true,
-      isIncome: true,
     },
   });
   const paths = qualifiedNamesById(categoryRows);
@@ -145,7 +144,7 @@ export async function loadQuickAddCandidates(
       id: c.id,
       name: c.name,
       path: paths.get(c.id) ?? c.name,
-      isIncome: isIncomeCategory(c),
+      categoryType: categoryTypeOf(c),
     }));
 
   const formats = await loadSearchFormats(m, userId);

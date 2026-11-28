@@ -31,7 +31,7 @@ test.describe('Categories', () => {
     const expense = await createCategory(api, { name: `Groceries ${uniqueId()}` });
     const income = await createCategory(api, {
       name: `Salary ${uniqueId()}`,
-      isIncome: true,
+      type: 'income',
     });
 
     await page.goto('/categories');

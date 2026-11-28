@@ -2,14 +2,14 @@ import { Repository } from "typeorm";
 import { Category } from "../categories/entities/category.entity";
 import { getAllCategoryIdsWithChildren } from "./category-tree.util";
 
-type Row = Pick<Category, "id" | "parentId" | "isIncome">;
+type Row = Pick<Category, "id" | "parentId" | "categoryType">;
 
 const rows: Row[] = [
-  { id: "salary", parentId: null, isIncome: true },
-  { id: "bonus", parentId: "salary", isIncome: true },
-  { id: "food", parentId: null, isIncome: false },
-  { id: "groceries", parentId: "food", isIncome: false },
-  { id: "rent", parentId: null, isIncome: false },
+  { id: "salary", parentId: null, categoryType: "income" },
+  { id: "bonus", parentId: "salary", categoryType: "income" },
+  { id: "food", parentId: null, categoryType: "expense" },
+  { id: "groceries", parentId: "food", categoryType: "expense" },
+  { id: "rent", parentId: null, categoryType: "expense" },
 ];
 
 function repo(data: Row[] = rows): Repository<Category> {
@@ -44,7 +44,7 @@ describe("getAllCategoryIdsWithChildren", () => {
   });
 
   it("resolves a type with no categories to nothing", async () => {
-    const onlyExpenses = rows.filter((r) => !r.isIncome);
+    const onlyExpenses = rows.filter((r) => r.categoryType === "expense");
     const ids = await getAllCategoryIdsWithChildren(repo(onlyExpenses), "u1", [
       "income",
     ]);

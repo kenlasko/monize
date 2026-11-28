@@ -17,12 +17,12 @@ const mockCategories: Category[] = [
   {
     id: 'cat-1', userId: 'user-1', parentId: null, parent: null, children: [],
     name: 'Home Value Change', description: null, icon: null, color: null, effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-    isIncome: false, isSystem: false, createdAt: '2024-01-01T00:00:00Z',
+    categoryType: 'expense', isSystem: false, createdAt: '2024-01-01T00:00:00Z',
   },
   {
     id: 'cat-2', userId: 'user-1', parentId: 'cat-1', parent: null, children: [],
     name: 'Appreciation', description: null, icon: null, color: null, effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-    isIncome: false, isSystem: false, createdAt: '2024-01-01T00:00:00Z',
+    categoryType: 'expense', isSystem: false, createdAt: '2024-01-01T00:00:00Z',
   },
 ];
 
@@ -172,7 +172,7 @@ describe('AssetFields', () => {
       {
         id: 'cat-3', userId: 'user-1', parentId: 'unknown-parent', parent: null, children: [],
         name: 'Orphan', description: null, icon: null, color: null, effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-        isIncome: false, isSystem: false, createdAt: '2024-01-01T00:00:00Z',
+        categoryType: 'expense', isSystem: false, createdAt: '2024-01-01T00:00:00Z',
       },
     ];
     render(<AssetFields {...defaultProps} categories={catsWithOrphan} />);

@@ -47,11 +47,9 @@ export class Category {
   color: string | null;
 
   /**
-   * The category's type, the source of truth. `isIncome` is the previous
-   * release's flag, kept one release in step by a trigger and never read by
-   * application code (INV-CATEGORY-004); the API's `isIncome` is derived.
-   * Always set on a loaded row; optional here so a value built in code may omit
-   * it and let the database default and its trigger decide.
+   * The category's type: Income, Expense or Transfer (INV-CATEGORY-003). A
+   * child has its parent's; the categories trigger gives it on insert and on a
+   * move. A value built in code may leave it to the column default.
    */
   @Column({
     name: "category_type",
@@ -59,11 +57,7 @@ export class Category {
     length: 10,
     default: "expense",
   })
-  categoryType?: CategoryType;
-
-  // income-flag-ok: the legacy column the entity still maps
-  @Column({ name: "is_income", default: false })
-  isIncome: boolean;
+  categoryType: CategoryType;
 
   @Column({ name: "auto_sign", type: "boolean", nullable: true })
   autoSign: boolean | null;

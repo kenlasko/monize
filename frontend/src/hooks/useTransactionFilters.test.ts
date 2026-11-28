@@ -28,10 +28,10 @@ vi.mock('@/lib/categoryUtils', async (importOriginal) => {
 
 import { useTransactionFilters } from './useTransactionFilters';
 
-const incomeCategory = { id: 'cat-salary', name: 'Salary', isIncome: true, parentId: null };
-const incomeCategory2 = { id: 'cat-bonus', name: 'Bonus', isIncome: true, parentId: null };
-const expenseCategory = { id: 'cat-food', name: 'Food', isIncome: false, parentId: null };
-const expenseCategory2 = { id: 'cat-rent', name: 'Rent', isIncome: false, parentId: null };
+const incomeCategory = { id: 'cat-salary', name: 'Salary', categoryType: 'income' as const, parentId: null };
+const incomeCategory2 = { id: 'cat-bonus', name: 'Bonus', categoryType: 'income' as const, parentId: null };
+const expenseCategory = { id: 'cat-food', name: 'Food', categoryType: 'expense' as const, parentId: null };
+const expenseCategory2 = { id: 'cat-rent', name: 'Rent', categoryType: 'expense' as const, parentId: null };
 
 const allCategories = [incomeCategory, incomeCategory2, expenseCategory, expenseCategory2] as any[];
 
@@ -88,7 +88,7 @@ describe('useTransactionFilters - category type canonicalisation', () => {
   const manyCategories = Array.from({ length: 300 }, (_, i) => ({
     id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
     name: `Category ${i}`,
-    isIncome: i % 3 === 0,
+    categoryType: i % 3 === 0 ? ('income' as const) : ('expense' as const),
     parentId: null,
   })) as any[];
 
@@ -124,7 +124,7 @@ describe('useTransactionFilters - category type canonicalisation', () => {
   it('collapses an oversized list stored before the fix once categories load', () => {
     localStorage.setItem(
       'transactions.filter.categoryIds',
-      JSON.stringify(manyCategories.filter((c) => c.isIncome).map((c) => c.id)),
+      JSON.stringify(manyCategories.filter((c) => c.categoryType === 'income').map((c) => c.id)),
     );
     const { result } = renderHook(() =>
       useTransactionFilters({ ...defaultOptions, categories: manyCategories }),

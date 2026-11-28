@@ -53,6 +53,7 @@ import {
 } from "../transactions/transfer-category-partner";
 import { Account } from "../accounts/entities/account.entity";
 import { withResolvedMortgageTypeProperty } from "../accounts/legacy-mortgage-type.util";
+import { withResolvedCategoryTypeProperty } from "../categories/legacy-income-flag.util";
 import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { Tag } from "../tags/entities/tag.entity";
@@ -467,8 +468,6 @@ const ALLOWED_COLUMNS: Record<string, Set<string>> = {
     "description",
     "icon",
     "color",
-    // income-flag-ok: column whitelist of the legacy column
-    "is_income",
     "category_type",
     "is_system",
     "created_at",
@@ -2702,6 +2701,11 @@ export class ActionHistoryService {
   ): Record<string, any> {
     if (tableName === "accounts") {
       return withResolvedMortgageTypeProperty(snapshot);
+    }
+    // A category snapshot from before 1.22.0 carries only the dropped
+    // income flag; its type is the flag's.
+    if (tableName === "categories") {
+      return withResolvedCategoryTypeProperty(snapshot);
     }
     // A schedule's frequency and its Custom rule are written back as a pair,
     // or not at all (docs/specs/custom-recurrence.md section 5).

@@ -3,6 +3,7 @@ import {
   categoriesForHolder,
   categoryFitsHolder,
   categoryTypeOf,
+  categoryTypeOrUndefined,
   isExpenseCategory,
   isIncomeCategory,
   isTransferCategory,
@@ -10,16 +11,20 @@ import {
 } from './category-type';
 
 describe('category type', () => {
-  it('reads the type, and the legacy flag only for a value built without one', () => {
-    expect(categoryTypeOf({ categoryType: 'transfer', isIncome: false })).toBe('transfer');
+  it('reads the type', () => {
+    expect(categoryTypeOf({ categoryType: 'transfer' })).toBe('transfer');
     expect(categoryTypeOf({ categoryType: 'income' })).toBe('income');
-    expect(categoryTypeOf({ isIncome: true })).toBe('income');
-    expect(categoryTypeOf({ isIncome: false })).toBe('expense');
-    expect(categoryTypeOf({})).toBe('expense');
+    expect(categoryTypeOf({ categoryType: 'expense' })).toBe('expense');
+  });
+
+  it('answers undefined for a value that carries no type, never a guessed expense', () => {
+    expect(categoryTypeOrUndefined({})).toBeUndefined();
+    expect(categoryTypeOrUndefined({ categoryType: null })).toBeUndefined();
+    expect(categoryTypeOrUndefined({ categoryType: 'income' })).toBe('income');
   });
 
   it('never reads a Transfer category as an expense or as income', () => {
-    const transfer = { categoryType: 'transfer', isIncome: false } as const;
+    const transfer = { categoryType: 'transfer' } as const;
     expect(isTransferCategory(transfer)).toBe(true);
     expect(isExpenseCategory(transfer)).toBe(false);
     expect(isIncomeCategory(transfer)).toBe(false);

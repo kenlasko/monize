@@ -1,5 +1,4 @@
 import { FxAggregate } from "../common/fx-aggregate";
-import { isExpenseCategory } from "../categories/category-type.util";
 import { reportFigure } from "../common/report-figure";
 
 /**
@@ -183,10 +182,13 @@ export function breakdownTotals(
       sums: new Map(),
     };
     // Deposits less withdrawals is money in, so an expense section reads it
-    // negated: positive is what it cost.
-    addColumns(section.sums, netByColumn, isExpenseCategory(section));
+    // negated: positive is what it cost. A row and a section carry the side
+    // they are listed on, which the service derived from the category's type.
+    // income-flag-ok: a section's listed side, not a category's type
+    addColumns(section.sums, netByColumn, !section.isIncome);
     sections.set(key, section);
-    return rowFigures(netByColumn, columns, places, isExpenseCategory(row));
+    // income-flag-ok: a row's listed side, not a category's type
+    return rowFigures(netByColumn, columns, places, !row.isIncome);
   });
 
   for (const section of sections.values()) {

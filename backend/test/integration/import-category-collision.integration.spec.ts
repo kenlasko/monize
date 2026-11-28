@@ -52,8 +52,8 @@ describe("A category created during an import (integration)", () => {
     await opened.connect();
     await opened.startTransaction();
     const inserted = (await opened.query(
-      `INSERT INTO categories (user_id, name, parent_id, is_income)
-       VALUES ($1, 'Fuel', $2, false) RETURNING id`,
+      `INSERT INTO categories (user_id, name, parent_id, category_type)
+       VALUES ($1, 'Fuel', $2, 'expense') RETURNING id`,
       [aliceId, autoId],
     )) as Array<{ id: string }>;
     runner = opened;

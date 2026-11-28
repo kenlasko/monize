@@ -822,8 +822,8 @@ describe('AccountForm', () => {
     ['MORTGAGE', 'Home Mortgage', 'Mortgage Details'],
   ])('blocks new %s submit until an interest category is chosen, with no default picked', async (type, name, heading) => {
     (categoriesApi.getAll as any).mockResolvedValue([
-      { id: 'loan-parent', userId: 'u1', name: 'Loan', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, isIncome: false, isSystem: true, createdAt: '' },
-      { id: 'loan-int', userId: 'u1', name: 'Loan Interest', parentId: 'loan-parent', parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, isIncome: false, isSystem: true, createdAt: '' },
+      { id: 'loan-parent', userId: 'u1', name: 'Loan', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, categoryType: 'expense' as const, isSystem: true, createdAt: '' },
+      { id: 'loan-int', userId: 'u1', name: 'Loan Interest', parentId: 'loan-parent', parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, categoryType: 'expense' as const, isSystem: true, createdAt: '' },
     ]);
     render(<AccountForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
 
@@ -1758,8 +1758,8 @@ describe('AccountForm', () => {
 
   it('auto-selects existing loan interest category when already set', async () => {
     (categoriesApi.getAll as any).mockResolvedValue([
-      { id: 'loan-parent', userId: 'u1', name: 'Loan', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, isIncome: false, isSystem: true, createdAt: '' },
-      { id: 'loan-int', userId: 'u1', name: 'Loan Interest', parentId: 'loan-parent', parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, isIncome: false, isSystem: true, createdAt: '' },
+      { id: 'loan-parent', userId: 'u1', name: 'Loan', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, categoryType: 'expense' as const, isSystem: true, createdAt: '' },
+      { id: 'loan-int', userId: 'u1', name: 'Loan Interest', parentId: 'loan-parent', parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, categoryType: 'expense' as const, isSystem: true, createdAt: '' },
     ]);
     // Use an existing loan account where interestCategoryId is already set
     const existingLoan = createExistingAccount({
@@ -1956,7 +1956,7 @@ describe('AccountForm', () => {
 
     it('handleAssetCategoryCreate creates parent:child category when parent exists', async () => {
       (categoriesApi.getAll as any).mockResolvedValue([
-        { id: 'assets-parent', userId: 'u1', name: 'Assets', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, isIncome: false, isSystem: false, createdAt: '' },
+        { id: 'assets-parent', userId: 'u1', name: 'Assets', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, categoryType: 'expense' as const, isSystem: false, createdAt: '' },
       ]);
       (categoriesApi.create as any).mockResolvedValue({
         id: 'new-child-id',
@@ -2275,7 +2275,7 @@ describe('AccountForm', () => {
     it('creates child under existing parent category via capturedHandleAssetCategoryCreate', async () => {
       // Load a parent category so it's in state when ASSET is selected
       (categoriesApi.getAll as any).mockResolvedValue([
-        { id: 'assets-parent', userId: 'u1', name: 'Assets', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, isIncome: false, isSystem: false, createdAt: '' },
+        { id: 'assets-parent', userId: 'u1', name: 'Assets', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, categoryType: 'expense' as const, isSystem: false, createdAt: '' },
       ]);
       (categoriesApi.create as any).mockResolvedValue({
         id: 'new-child-id',

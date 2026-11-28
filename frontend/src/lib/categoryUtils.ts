@@ -405,7 +405,7 @@ export function resolveSelectedCategories(
 export function signAmountByCategory(
   value: number,
   reference: number | undefined,
-  category: Pick<Category, 'categoryType' | 'isIncome' | 'effectiveAutoSign'> | undefined,
+  category: Pick<Category, 'categoryType' | 'effectiveAutoSign'> | undefined,
 ): number {
   const referenceAbs = reference !== undefined ? Math.abs(reference) : 0;
   const isJustSignChange = referenceAbs === Math.abs(value) && referenceAbs !== 0;

@@ -158,7 +158,7 @@ async function routePaycheque(p: Page): Promise<void> {
         id,
         name,
         parentId,
-        isIncome: false,
+        categoryType: "expense",
         icon: parentId ? null : "R",
         color: parentId ? null : "#7F8C8D",
         transactionCount: 0,

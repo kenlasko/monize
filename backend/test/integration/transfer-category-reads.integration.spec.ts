@@ -84,8 +84,8 @@ describe("Transfer categories on the read surfaces (integration)", () => {
     const category = async (name: string, type: string) =>
       (
         await db.query(
-          `INSERT INTO categories (user_id, name, category_type, is_income)
-           VALUES ($1, $2, $3, false) RETURNING id`,
+          `INSERT INTO categories (user_id, name, category_type)
+           VALUES ($1, $2, $3) RETURNING id`,
           [userId, name, type],
         )
       )[0].id as string;

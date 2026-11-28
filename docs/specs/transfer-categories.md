@@ -54,7 +54,7 @@ that builds its mechanism moves it.
 |---|---|---|---|
 | INV-CATEGORY-001 | FIT | No category row holds a Transfer category | PR 3 (service helper, matrix); the database backstop with the type in PR 2 (section 13) |
 | INV-CATEGORY-002 | ONE | A category write on a transfer sets both of its legs to that category (a split's transfer line and its linked row likewise); across two owners it sets the writer's leg only. Legs that differed before this work keep their values until the next category write | PR 3 |
-| INV-CATEGORY-003 | TYPE | A category's type equals its parent's, and `is_income` equals `type = 'income'` while the column exists | PR 2 |
+| INV-CATEGORY-003 | TYPE | A category's type equals its parent's, and `is_income` equals `type = 'income'` while the column exists (dropped in the release after 1.22.0, #2478) | PR 2 |
 | INV-CATEGORY-004 | READ | "Expense" is read as `type = 'expense'`, never as "not income" | PR 2 |
 | INV-REPORT-003 | unchanged | A transfer leg is never income, expenses or net. Its entry is amended in PR 4 to name the breakdown's Transfer category rows and the custom report's transfer measure as named flows | PR 4 |
 | INV-REPORT-004 | amended | Under a transfer measure, a category's transfer legs net within that category (section 8); otherwise transfers are still not netted | PR 4 |
@@ -570,7 +570,9 @@ a category line; each such reader is listed below.
   column being nullable), so every existing category is Income or Expense and
   every existing row already fits. `is_income` stays one release for the
   previous pods and is dropped in the next release as a `contract-after` change; the API
-  field `isIncome` stays, derived.
+  field `isIncome` stays, derived, until then. #2478 dropped the column, the
+  trigger's mirror and the API field together
+  (`20261127205950_categories_drop_is_income.sql`, `contract-after: 1.22.0`).
 - **Children whose flag differs from their parent's exist today.** A moved
   category is re-typed alone and its children keep their flag
   (`CategoriesService.update`), and the Money importer stores each category's
@@ -915,7 +917,8 @@ revised that day; the introduction says why.
    plus an Outgoing / Incoming / Net measure for transfers.
 9. **Wire shape.** A new `type` field is the source of truth. Responses keep
    `isIncome` (true only for income) as a read-only derived field; requests may
-   send either, `type` winning.
+   send either, `type` winning. Superseded by #2478: from the release after
+   1.22.0 requests send `type` only and responses carry no `isIncome`.
 10. **Defaults.** The default category import gains a short Transfer set, for
     new users only.
 11. **Automation.** A rule's "Set the category" applies to a transfer with a
@@ -948,7 +951,7 @@ pages and their screenshots, the end-to-end specs
 (`e2e/tests/transfer-categories.spec.ts`), the corrected tool and DTO text,
 release notes and a What's new entry (`docs/release-notes/1.22.0.md`), the
 full-locale pass, and the owed follow-up to drop `categories.is_income` in the
-next release (the issue is still to be opened; its number goes here).
+next release (#2478).
 
 ###### PR 1: Specification
 
@@ -1006,5 +1009,5 @@ Done when a report or budget with no Transfer category returns the figures it re
 - [x] E2E specs from section 14. (8452e2264, 4b994c8e2)
 - [x] Full-locale i18n pass. (435d33b83)
 - [x] Release notes and What's new (the What's new digest is `docs/release-notes/1.22.0.md`). (70783f308)
-- [ ] A follow-up issue for the `is_income` column drop in the next release: pending, to be opened by the maintainer.
+- [x] The `is_income` column drop in the next release: #2478, with the trigger's mirror and the API's `isIncome`. (the #2478 pull request)
 - [x] Retire the plan pair into this specification. (0edb383cd)

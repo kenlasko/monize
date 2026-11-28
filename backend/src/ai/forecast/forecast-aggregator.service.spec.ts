@@ -316,6 +316,7 @@ describe("ForecastAggregatorService", () => {
       expect(june.totalExpenses).toBe(600);
       expect(june.categoryBreakdown).toContainEqual({
         categoryName: "Groceries",
+        categoryType: "expense",
         total: 600,
         isIncome: false,
       });
@@ -418,7 +419,12 @@ describe("ForecastAggregatorService", () => {
             totalExpenses: 100,
             netCashFlow: -100,
             categoryBreakdown: [
-              { categoryName: "Travel", total: 100, isIncome: false },
+              {
+                categoryName: "Travel",
+                categoryType: "expense",
+                total: 100,
+                isIncome: false,
+              },
             ],
           },
         ]);
@@ -581,9 +587,24 @@ describe("ForecastAggregatorService", () => {
       const breakdown = result.monthlyHistory[0].categoryBreakdown;
       // Merged by name, Fees would net 100 against 40 and read 60.
       expect(breakdown).toEqual([
-        { categoryName: "Fees", total: 100, isIncome: false },
-        { categoryName: "Uncategorized", total: 30, isIncome: false },
-        { categoryName: "Uncategorized", total: 20, isIncome: false },
+        {
+          categoryName: "Fees",
+          categoryType: "expense",
+          total: 100,
+          isIncome: false,
+        },
+        {
+          categoryName: "Uncategorized",
+          categoryType: "expense",
+          total: 30,
+          isIncome: false,
+        },
+        {
+          categoryName: "Uncategorized",
+          categoryType: "expense",
+          total: 20,
+          isIncome: false,
+        },
       ]);
     });
 

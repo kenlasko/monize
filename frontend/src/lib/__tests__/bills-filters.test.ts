@@ -207,18 +207,18 @@ describe('filterScheduledTransactions - special categories', () => {
     const salary = makeTransaction({
       id: 'inc',
       categoryId: 'cat-salary',
-      category: { id: 'cat-salary', isIncome: true } as any,
+      category: { id: 'cat-salary', categoryType: 'income' as const } as any,
     });
     const rent = makeTransaction({
       id: 'exp',
       categoryId: 'cat-rent',
-      category: { id: 'cat-rent', isIncome: false } as any,
+      category: { id: 'cat-rent', categoryType: 'expense' as const } as any,
     });
     const split = makeTransaction({
       id: 'split',
       categoryId: null,
       isSplit: true,
-      splits: [{ categoryId: 'cat-bonus', category: { id: 'cat-bonus', isIncome: true } }] as any,
+      splits: [{ categoryId: 'cat-bonus', category: { id: 'cat-bonus', categoryType: 'income' as const } }] as any,
     });
     const uncat = makeTransaction({ id: 'u', categoryId: null });
     const income = filterScheduledTransactions(
