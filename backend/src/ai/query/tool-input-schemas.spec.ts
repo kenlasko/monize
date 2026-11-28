@@ -900,12 +900,25 @@ describe("tool-input-schemas", () => {
       expect(result.success).toBe(false);
     });
 
-    it("rejects negative values", () => {
+    it.each(["bar", "line", "area"])("preserves signed %s values", (type) => {
+      const data = [{ label: "Net spending", value: -20 }];
+      expect(
+        renderChartSchema.parse({ ...validInput, type, data }).data,
+      ).toEqual(data);
+    });
+
+    it("rejects negative pie slices", () => {
       const result = renderChartSchema.safeParse({
         ...validInput,
+        type: "pie",
         data: [{ label: "Groceries", value: -10 }],
       });
-      expect(result.success).toBe(false);
+      expect(result.error?.issues).toEqual([
+        expect.objectContaining({
+          code: "too_small",
+          path: ["data", 0, "value"],
+        }),
+      ]);
     });
 
     it("rejects NaN values", () => {

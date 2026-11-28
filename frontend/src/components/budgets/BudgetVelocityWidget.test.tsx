@@ -120,7 +120,7 @@ describe('BudgetVelocityWidget', () => {
     const velocityWithBills: BudgetVelocity = {
       ...baseVelocity,
       upcomingBills: [
-        { id: 'st-1', name: 'Rent', amount: 1200, currencyCode: 'USD', amountComplete: true, dueDate: '2026-02-25', categoryId: null },
+        { id: 'st-1', name: 'Rent', amount: 1200, amountDue: 1200, isReminder: false, currencyCode: 'USD', amountComplete: true, dueDate: '2026-02-25', categoryId: null },
       ],
       totalUpcomingBills: 1200,
       knownUpcomingBillsSubtotal: 1200,
@@ -158,6 +158,8 @@ describe('BudgetVelocityWidget', () => {
           id: 'st-inv',
           name: 'Monthly ETF buy',
           amount: null,
+          amountDue: null,
+          isReminder: false,
           currencyCode: 'USD',
           amountComplete: false,
           dueDate: '2026-02-25',
@@ -167,6 +169,8 @@ describe('BudgetVelocityWidget', () => {
           id: 'st-rent',
           name: 'Rent',
           amount: 1200,
+          amountDue: 1200,
+          isReminder: false,
           currencyCode: 'USD',
           amountComplete: true,
           dueDate: '2026-02-26',
@@ -200,7 +204,7 @@ describe('BudgetVelocityWidget', () => {
     const velocityOverBudget: BudgetVelocity = {
       ...baseVelocity,
       upcomingBills: [
-        { id: 'st-1', name: 'Big Bill', amount: 5000, currencyCode: 'USD', amountComplete: true, dueDate: '2026-02-25', categoryId: null },
+        { id: 'st-1', name: 'Big Bill', amount: 5000, amountDue: 5000, isReminder: false, currencyCode: 'USD', amountComplete: true, dueDate: '2026-02-25', categoryId: null },
       ],
       totalUpcomingBills: 5000,
       knownUpcomingBillsSubtotal: 5000,

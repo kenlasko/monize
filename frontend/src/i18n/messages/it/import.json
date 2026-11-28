@@ -299,6 +299,7 @@
     "unreadableDatesGoBack": "Se il file scrive le date in un altro ordine, torna al passaggio di mappatura delle colonne e scegli il formato di data che usa.",
     "unreadableAmountsNotice": "{count, plural, one {# riga ha un importo che non può essere letto} other {# righe hanno importi che non possono essere letti}} e non {count, plural, one {verrà importata} other {verranno importate}}:",
     "unreadableAmountRow": "Riga {line}: \"{rawAmount}\"",
+    "unreadableAmountRowField": "Riga {line}, {field, select, quantity {quantità} price {prezzo} commission {commissione} other {importo}}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...e altre {count}",
     "unreadableAmountsGoBack": "Verifica che le colonne dell'importo siano mappate correttamente, oppure correggi queste righe nel file e importalo di nuovo.",
     "unreadableAmountLine": "Riga {line}: \"{rawAmount}\"",

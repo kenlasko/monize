@@ -156,6 +156,24 @@ describe("TriviaDailyLoader", () => {
       expect(input.bills?.occurrences).toHaveLength(2);
     });
 
+    it("reads the total at a coin reporting currency's eight places", async () => {
+      budgetFind.mockImplementation(
+        async (options?: { select?: { code?: boolean } }) =>
+          options?.select?.code ? [{ code: "BTC", decimalPlaces: 8 }] : [],
+      );
+      rates.getRateForDate.mockResolvedValue(0.00004115);
+      occurrences.findOccurrences.mockResolvedValue([
+        occurrence({ amount: -1, currencyCode: "USD" }),
+        occurrence({ amount: -1, currencyCode: "USD" }),
+        occurrence({ amount: -1, currencyCode: "USD" }),
+      ]);
+      const input = await loader.load(USER, "BTC", TODAY, {
+        ...noOptions,
+        bills: true,
+      });
+      expect(input.bills?.total).toBe(0.00012345);
+    });
+
     it("withholds the total when a bill is in a currency with no rate", async () => {
       occurrences.findOccurrences.mockResolvedValue([
         occurrence(),

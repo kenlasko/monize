@@ -299,6 +299,7 @@
     "unreadableDatesGoBack": "如果文件中的日期采用其他顺序，请返回列映射步骤并选择文件使用的日期格式。",
     "unreadableAmountsNotice": "{count, plural, other {# 行}}的金额无法读取，将不会导入：",
     "unreadableAmountRow": "第 {line} 行：“{rawAmount}”",
+    "unreadableAmountRowField": "第 {line} 行，{field, select, quantity {数量} price {价格} commission {佣金} other {金额}}：“{rawAmount}”",
     "unreadableAmountsMore": "...以及另外 {count} 行",
     "unreadableAmountsGoBack": "请检查金额列是否映射正确，或在文件中更正这些行后重新导入。",
     "unreadableAmountLine": "第 {line} 行：\"{rawAmount}\"",

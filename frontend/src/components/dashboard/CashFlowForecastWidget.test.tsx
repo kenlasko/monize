@@ -203,6 +203,18 @@ describe('CashFlowForecastWidget', () => {
     expect(screen.queryByText('Starting')).not.toBeInTheDocument();
   });
 
+  it('says the forecast cannot be shown when the scheduled transactions failed to load', async () => {
+    await renderWidget({ scheduledError: true });
+    expect(screen.getByText(/Couldn't load your upcoming bills/)).toBeInTheDocument();
+    expect(screen.queryByText(/Couldn't load the transactions already dated after today/)).not.toBeInTheDocument();
+  });
+
+  it('names the accounts, not the future-dated rows, when only the accounts request failed', async () => {
+    await renderWidget({ accountsError: true });
+    expect(screen.getByText(/Couldn't load your accounts/)).toBeInTheDocument();
+    expect(screen.queryByText(/Couldn't load the transactions already dated after today/)).not.toBeInTheDocument();
+  });
+
   it('says the forecast cannot be shown when the future-dated rows fail to load', async () => {
     mockGetTransactions.mockRejectedValue(new Error('boom'));
     await renderWidget();

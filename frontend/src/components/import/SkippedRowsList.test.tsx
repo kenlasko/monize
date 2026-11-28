@@ -195,6 +195,16 @@ describe('SkippedRowsList', () => {
     expect(screen.getByText(/Line 9, "x".*date could not be read; this transfer may already exist/)).toBeInTheDocument();
   });
 
+  it('names the column of an unreadable investment cell', () => {
+    render(
+      <SkippedRowsList
+        rows={[row({ reason: 'unreadableAmount', rowNumber: 4, rawAmount: 'N/A', field: 'commission', amount: 0 })]}
+        fileType="csv"
+      />,
+    );
+    expect(screen.getByText(/Row 4, commission: "N\/A"/)).toBeInTheDocument();
+  });
+
   it('keeps "Row" for a CSV row', () => {
     render(
       <SkippedRowsList

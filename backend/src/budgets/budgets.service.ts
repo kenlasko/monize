@@ -55,6 +55,8 @@ import {
   resolveCategoryName,
   resolveCategorySpent,
   resolveOutsideTransferIncome,
+  budgetExcludedAccountIds,
+  transferCountsAgainstBudget,
 } from "./budget-spending.util";
 import {
   budgetPaceWindow,
@@ -84,6 +86,14 @@ export interface UpcomingBill {
    * quietly counts a stale figure understates or overstates what is available.
    */
   amount: number | null;
+  /**
+   * The positive magnitude of the whole occurrence -- what is DUE, as the bills
+   * page prints it. `amount` is the part of it that counts toward the budget
+   * (a split's untracked transfer lines are not spending). `null` when unknown.
+   */
+  amountDue: number | null;
+  /** A schedule left at 0 because the amount is not known until it arrives (issue #1124). */
+  isReminder: boolean;
   /**
    * The currency `amount` is expressed in -- the occurrence's own, which for an
    * investment schedule is the settlement currency rather than the brokerage
@@ -286,11 +296,18 @@ export class BudgetsService {
   }
 
   async remove(userId: string, id: string): Promise<void> {
-    const budget = await this.findOne(userId, id);
-    const beforeData = { ...budget };
-    await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Budget).remove(budget),
-    );
+    // The budget is locked before the snapshot is read, so a line committed
+    // meanwhile is in the snapshot the undo restores from.
+    const beforeData = await withScopedDb(this.dataSource, async (m) => {
+      await m.query(
+        `SELECT id FROM budgets WHERE id = $1 AND user_id = $2 FOR UPDATE`,
+        [id, userId],
+      );
+      const budget = await this.findOne(userId, id);
+      const snapshot = { ...budget };
+      await m.getRepository(Budget).remove(budget);
+      return snapshot;
+    });
 
     this.actionHistoryService.record(userId, {
       entityType: "budget",
@@ -707,8 +724,12 @@ export class BudgetsService {
   }
 
   /**
-   * The next occurrence of every outflow schedule due by `periodEnd`, priced at
-   * what it would actually cost today. An occurrence that fell due in the last
+   * The next occurrence of every outflow schedule due by `periodEnd` (and every
+   * zero-amount reminder), priced at what it would actually cost today. Only
+   * what this budget tracks is listed: nothing settling out of an excluded
+   * account, and a transfer only where posting it would add to the budget's
+   * spent (`transferCountsAgainstBudget`). A row's `amountDue` is the whole
+   * occurrence and its `amount` the part that counts. An occurrence that fell due in the last
    * `OVERDUE_CARRY_DAYS` and was neither posted nor skipped is still owed, so it
    * is the schedule's next one, listed on the date it was due: the balance
    * forecasts apply it too (discussion #1784), and safe-to-spend must not count
@@ -723,6 +744,7 @@ export class BudgetsService {
   async getUpcomingBills(
     userId: string,
     periodEnd: string,
+    budget: Pick<Budget, "categories" | "config">,
   ): Promise<UpcomingBill[]> {
     const occurrences = await this.occurrences.findOccurrences(
       userId,
@@ -732,23 +754,59 @@ export class BudgetsService {
         // One row per schedule, which is the shape this list has always had.
         maxOccurrences: 1,
       },
-      { outflowsOnly: true },
+      { outflowsOnly: true, includeZeroAmount: true },
     );
 
-    // A split's transfer lines are not spending: the amount is the part that is.
-    return occurrences.map((occurrence) => {
-      const spending = nonTransferAmount(occurrence);
-      return {
-        id: occurrence.scheduledTransactionId,
-        name: occurrence.schedule.name,
-        // Spending, so only where that part is an outflow: a refund beside a
-        // larger transfer line is not a bill (the row's amount DUE is the whole).
-        amount: spending === null ? null : spending < 0 ? -spending : 0,
-        currencyCode: occurrence.currencyCode,
-        amountComplete: spending !== null,
-        dueDate: occurrence.dueDate,
-        categoryId: occurrence.schedule.categoryId,
-      };
+    // A bill counts what posting it would add to the budget's spent. An
+    // occurrence settling out of an excluded account adds nothing (the cash
+    // leg's account, which the actuals filter on). A transfer adds only where
+    // the actuals would count it (`transferCountsAgainstBudget`): a plain one
+    // untracked, or a split made only of untracked transfer lines, is not a
+    // bill at all. The bills page and calendar still list every transfer.
+    const excluded = budgetExcludedAccountIds(budget.config);
+    const counts = (
+      transferAccountId: string | null,
+      categoryId: string | null,
+    ) =>
+      transferCountsAgainstBudget(
+        budget.categories ?? [],
+        { transferAccountId, categoryId },
+        excluded,
+      );
+    return occurrences.flatMap((occurrence) => {
+      const { schedule } = occurrence;
+      if (excluded.includes(occurrence.settlementAccountId)) return [];
+      if (
+        schedule.isTransfer &&
+        !counts(schedule.transferAccountId, occurrence.categoryId)
+      ) {
+        return [];
+      }
+      // A split's transfer lines are not spending, unless the budget tracks
+      // where they go: the amount is the part that is.
+      const spending = nonTransferAmount(occurrence, (line) =>
+        counts(line.transferAccountId, line.categoryId ?? null),
+      );
+      if (occurrence.transferLines.length > 0 && spending === 0) return [];
+      return [
+        {
+          id: occurrence.scheduledTransactionId,
+          name: schedule.name,
+          // Spending, so only where that part is an outflow: a refund beside a
+          // larger transfer line adds nothing to the totals.
+          amount: spending === null ? null : spending < 0 ? -spending : 0,
+          // What is due is the whole occurrence, as the bills page and the
+          // reminder email print it.
+          amountDue:
+            occurrence.amount === null ? null : Math.abs(occurrence.amount),
+          currencyCode: occurrence.currencyCode,
+          amountComplete: spending !== null,
+          // A schedule left at 0 until the amount arrives (issue #1124).
+          isReminder: occurrence.amount === 0,
+          dueDate: occurrence.dueDate,
+          categoryId: occurrence.categoryId,
+        },
+      ];
     });
   }
 
@@ -815,7 +873,11 @@ export class BudgetsService {
     const { currentSpent, dailyBurnRate, projectedTotal } = projection;
     const budgetTotal = sumMoney(expenseCategories.map((c) => c.budgeted));
 
-    const upcomingBills = await this.getUpcomingBills(userId, periodEnd);
+    const upcomingBills = await this.getUpcomingBills(
+      userId,
+      periodEnd,
+      budget,
+    );
     // Today on the caller's own clock, so the rate is the one the bills list is
     // showing rather than one from the container's timezone.
     // Every bill converted into the budget's own currency before it joins the
@@ -832,6 +894,7 @@ export class BudgetsService {
     // owns the memoized per-pair lookup, the rejecting rate resolver, and both
     // ways a component goes missing. This block used to be written out here and
     // again in the AI/MCP rollup, comments included.
+    // shortcut: budget figures are read at 4 places on every budget surface; coin-precise budgets need getSummary, dashboard-summary and projectBudgetSpending together.
     const billsTotal = await convertingTotal(
       upcomingBills.map((bill) => ({
         amount: bill.amount,
@@ -1105,6 +1168,8 @@ export class BudgetsService {
       percentUsed: number;
     }>;
   } | null> {
+    // Read once, as getBudgetSummary does, so the pace window has one day.
+    const todayStr = todayYMD();
     const budget = await this.findNewestActiveBudget(userId);
     if (!budget) return null;
 
@@ -1127,21 +1192,11 @@ export class BudgetsService {
         ? Math.round((totalSpent / totalBudgeted) * 10000) / 100
         : 0;
 
-    const today = new Date();
-    const startDate = new Date(periodStart);
-    const endDate = new Date(periodEnd);
-    // periodEnd is the inclusive last day, so the period spans one more day.
-    const totalDays =
-      Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      ) + 1;
-    const daysElapsed = Math.max(
-      1,
-      Math.ceil(
-        (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      ),
+    const { daysRemaining } = budgetPaceWindow(
+      periodStart,
+      periodEnd,
+      todayStr,
     );
-    const daysRemaining = Math.max(0, totalDays - daysElapsed);
     const safeDailySpend =
       daysRemaining > 0 ? Math.max(0, remaining / daysRemaining) : 0;
 

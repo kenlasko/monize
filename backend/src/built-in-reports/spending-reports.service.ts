@@ -642,11 +642,10 @@ export class SpendingReportsService {
           },
         );
 
-        // The month's listed categories, folded and rounded once (rule 2).
+        // The headline includes every eligible category, including those below the chart limit.
         const monthSpending = new FxAggregate();
-        for (const catId of topCategories) {
-          const catData = catMap.get(catId);
-          if (catData) monthSpending.merge(catData.agg);
+        for (const [catId, catData] of catMap) {
+          if (spendingCategories.has(catId)) monthSpending.merge(catData.agg);
         }
 
         return {

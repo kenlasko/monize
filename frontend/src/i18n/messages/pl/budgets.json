@@ -134,6 +134,7 @@
       "carriedIn": "Przeniesione z poprzedniego okresu:",
       "carriedOut": "Przeniesione na następny okres:"
     },
+    "noPositiveFunding": "Procent wykorzystania można obliczyć tylko przy dodatnim budżecie.",
     "overallUsage": "Całkowite wykorzystanie budżetu",
     "expenseCategories": "Kategorie wydatków",
     "incomeCategories": "Kategorie przychodów",

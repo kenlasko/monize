@@ -98,7 +98,9 @@ export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total, fileType }
       // An unreadable amount has no number to format; the file's text is shown.
       amount:
         row.rawAmount !== undefined
-          ? t('complete.skippedRowRawAmount', { rawAmount: row.rawAmount })
+          ? row.field && row.rowNumber !== undefined
+            ? t('review.unreadableAmountRowField', { line: row.rowNumber, rawAmount: row.rawAmount, field: row.field })
+            : t('complete.skippedRowRawAmount', { rawAmount: row.rawAmount })
           : formatCurrency(row.amount, row.currencyCode),
       reason: describeReason(row),
     };

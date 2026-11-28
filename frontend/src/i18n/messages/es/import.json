@@ -299,6 +299,7 @@
     "unreadableDatesGoBack": "Si el archivo escribe sus fechas en otro orden, vuelve al paso de mapeo de columnas y elige el formato de fecha que usa.",
     "unreadableAmountsNotice": "{count, plural, one {# fila tiene un importe que no se puede leer} other {# filas tienen importes que no se pueden leer}} y no {count, plural, one {se importará} other {se importarán}}:",
     "unreadableAmountRow": "Fila {line}: \"{rawAmount}\"",
+    "unreadableAmountRowField": "Fila {line}, {field, select, quantity {cantidad} price {precio} commission {comisión} other {importe}}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...y {count} más",
     "unreadableAmountsGoBack": "Compruebe que las columnas de importe estén bien asignadas, o corrija estas filas en el archivo e impórtelo de nuevo.",
     "unreadableAmountLine": "Línea {line}: \"{rawAmount}\"",

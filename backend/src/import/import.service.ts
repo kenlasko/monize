@@ -309,7 +309,11 @@ export class ImportService {
               count: unreadable.length,
               rows: unreadable
                 .slice(0, SKIPPED_ROWS_LIMIT)
-                .map(({ rowNumber, rawAmount }) => ({ rowNumber, rawAmount })),
+                .map(({ rowNumber, rawAmount, field }) => ({
+                  rowNumber,
+                  rawAmount,
+                  ...(field !== undefined ? { field } : {}),
+                })),
             },
           }
         : {}),
@@ -592,6 +596,7 @@ export class ImportService {
                 payee: row.payee,
                 rowNumber: row.rowNumber,
                 rawAmount: row.rawAmount,
+                field: row.field,
               },
               reason: row.isTransfer
                 ? ("unreadableAmountTransfer" as const)
@@ -1443,7 +1448,11 @@ export class ImportService {
               count: result.unreadableAmountRows.length,
               rows: result.unreadableAmountRows
                 .slice(0, SKIPPED_ROWS_LIMIT)
-                .map(({ rowNumber, rawAmount }) => ({ rowNumber, rawAmount })),
+                .map(({ rowNumber, rawAmount, field }) => ({
+                  rowNumber,
+                  rawAmount,
+                  ...(field !== undefined ? { field } : {}),
+                })),
             },
           }
         : {}),
@@ -1581,6 +1590,7 @@ export class ImportService {
           payee: row.payee,
           rowNumber: row.rowNumber,
           rawAmount: row.rawAmount,
+          field: row.field,
         },
         reason: row.isTransfer
           ? ("unreadableAmountTransfer" as const)

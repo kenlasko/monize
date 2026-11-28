@@ -299,6 +299,7 @@
     "unreadableDatesGoBack": "Wenn die Datei ihre Daten in einer anderen Reihenfolge schreibt, gehen Sie zurück zum Schritt Spaltenzuordnung und wählen Sie das Datumsformat der Datei.",
     "unreadableAmountsNotice": "{count, plural, one {# Zeile hat einen Betrag, der} other {# Zeilen haben Beträge, die}} nicht gelesen werden {count, plural, one {kann} other {können}} und nicht importiert {count, plural, one {wird} other {werden}}:",
     "unreadableAmountRow": "Zeile {line}: \"{rawAmount}\"",
+    "unreadableAmountRowField": "Zeile {line}, {field, select, quantity {Menge} price {Preis} commission {Provision} other {Betrag}}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...und {count} weitere",
     "unreadableAmountsGoBack": "Prüfen Sie, ob die Betragsspalten richtig zugeordnet sind, oder korrigieren Sie diese Zeilen in der Datei und importieren Sie sie erneut.",
     "unreadableAmountLine": "Zeile {line}: \"{rawAmount}\"",

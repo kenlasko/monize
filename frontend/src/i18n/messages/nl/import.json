@@ -299,6 +299,7 @@
     "unreadableDatesGoBack": "Als het bestand de datums in een andere volgorde schrijft, ga dan terug naar de stap kolomkoppeling en kies de datumnotatie die het gebruikt.",
     "unreadableAmountsNotice": "{count, plural, one {# rij heeft een bedrag dat} other {# rijen hebben bedragen die}} niet gelezen {count, plural, one {kan} other {kunnen}} worden en niet {count, plural, one {wordt} other {worden}} geïmporteerd:",
     "unreadableAmountRow": "Rij {line}: \"{rawAmount}\"",
+    "unreadableAmountRowField": "Rij {line}, {field, select, quantity {aantal} price {prijs} commission {commissie} other {bedrag}}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...en nog {count}",
     "unreadableAmountsGoBack": "Controleer of de bedragkolommen goed zijn toegewezen, of corrigeer deze rijen in het bestand en importeer het opnieuw.",
     "unreadableAmountLine": "Regel {line}: \"{rawAmount}\"",

@@ -299,6 +299,7 @@
     "unreadableDatesGoBack": "यदि फ़ाइल अपनी तारीखें किसी अन्य क्रम में लिखती है, तो कॉलम मैपिंग चरण पर वापस जाएं और फ़ाइल का तारीख प्रारूप चुनें।",
     "unreadableAmountsNotice": "{count, plural, one {# पंक्ति की राशि पढ़ी नहीं जा सकती और वह आयात नहीं की जाएगी} other {# पंक्तियों की राशियाँ पढ़ी नहीं जा सकतीं और वे आयात नहीं की जाएंगी}}:",
     "unreadableAmountRow": "पंक्ति {line}: \"{rawAmount}\"",
+    "unreadableAmountRowField": "पंक्ति {line}, {field, select, quantity {मात्रा} price {मूल्य} commission {कमीशन} other {राशि}}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...और {count} अन्य",
     "unreadableAmountsGoBack": "जांचें कि राशि वाले कॉलम सही ढंग से मैप किए गए हैं, या फ़ाइल में इन पंक्तियों को ठीक करके उसे फिर से आयात करें।",
     "unreadableAmountLine": "पंक्ति {line}: \"{rawAmount}\"",

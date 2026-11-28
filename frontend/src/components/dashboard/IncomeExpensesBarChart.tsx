@@ -31,7 +31,7 @@ import { resolveRangePreset } from '@/lib/date-range';
 import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
-import { WidgetCard, WidgetConfigRow } from './WidgetCard';
+import { WidgetCard, WidgetConfigRow, WidgetMessage } from './WidgetCard';
 import {
   INCOME_EXPENSES_DEFAULT,
   SPENDING_RANGES,
@@ -125,7 +125,7 @@ export function IncomeExpensesBarChart({
    * the server, which returns every bucket in the window with the dates it
    * covers.
    */
-  const { data: response, isLoading: dataLoading } = useReportData(
+  const { data: response, isLoading: dataLoading, error } = useReportData(
     () =>
       builtInReportsApi.getIncomeVsExpenses({
         startDate: start || undefined,
@@ -236,6 +236,8 @@ export function IncomeExpensesBarChart({
     >
       {loading ? (
         <div className="flex-1 min-h-[16rem] animate-pulse skeleton-shimmer rounded-md bg-gray-100 dark:bg-gray-700/50" />
+      ) : error ? (
+        <WidgetMessage>{t('incomeExpenses.loadFailed')}</WidgetMessage>
       ) : (
         <>
           <div className="flex-1 min-h-[16rem]">

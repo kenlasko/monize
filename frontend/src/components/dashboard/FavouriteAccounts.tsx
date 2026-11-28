@@ -35,6 +35,8 @@ interface FavouriteAccountsProps {
   /** Where each card's logo comes from; a card without one shows the star. */
   institutions?: InstitutionLogoData[];
   isLoading: boolean;
+  /** The accounts request failed; `accounts` is then empty, not "no favourites". */
+  error?: boolean;
   onAccountsChanged?: () => void;
 }
 
@@ -44,7 +46,7 @@ const FAVOURITE_ACCOUNTS_VARIANTS: StyleVariants<FavouriteAccountsViewProps> = {
   pebble: FavouriteAccountsPebble,
 };
 
-export function FavouriteAccounts({ accounts, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, institutions, isLoading, onAccountsChanged: _onAccountsChanged }: FavouriteAccountsProps) {
+export function FavouriteAccounts({ accounts, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, institutions, isLoading, error = false, onAccountsChanged: _onAccountsChanged }: FavouriteAccountsProps) {
   const mainAccountName = useMainAccountName();
   const t = useTranslations('dashboard');
   const uiStyle = useUiStyle();
@@ -175,6 +177,19 @@ export function FavouriteAccounts({ accounts, brokerageMarketValues, unpricedHol
             <div key={i} className="h-12 bg-gray-200 dark:bg-gray-700 rounded" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
+        <WidgetHeading id="favourite-accounts" href="/accounts" className="mb-4">
+          {t('favouriteAccounts.title')}
+        </WidgetHeading>
+        <p role="alert" className="text-gray-500 dark:text-gray-400 text-sm">
+          {t('favouriteAccounts.loadFailed')}
+        </p>
       </div>
     );
   }
