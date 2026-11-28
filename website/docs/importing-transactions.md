@@ -238,7 +238,7 @@ After a successful import, you see:
 | Metric | Description |
 |--------|-------------|
 | **Imported** | Transactions successfully imported |
-| **Skipped** | Rows not imported: an OFX row imported before ("already imported"), the other side of a transfer that is already recorded ("transfer already recorded"), a possible duplicate you kept your transaction for ("kept your existing transaction instead", see [Possible Duplicates](#possible-duplicates)), a CSV row whose date could not be read ("date could not be read", or "no date"), or an investment CSV row missing what its action needs ("missing security", "missing quantity", "missing amount", "sell without price or proceeds", "split without ratio"). The skipped rows are listed with their date (for a CSV row, its row number too; for an unreadable date, the date text instead), amount and payee |
+| **Skipped** | Rows not imported: an OFX row imported before ("already imported"), the other side of a transfer that is already recorded ("transfer already recorded"), a possible duplicate you kept your transaction for ("kept your existing transaction instead", see [Possible Duplicates](#possible-duplicates)), a CSV row, QIF record or OFX transaction whose date could not be read ("date could not be read", or "no date"; Monize never makes up a date), or an investment CSV row missing what its action needs ("missing security", "missing quantity", "missing amount", "sell without price or proceeds", "split without ratio"). The skipped rows are listed with their date (for a CSV row, its row number too; for an unreadable date, the date text instead), amount and payee |
 | **Errors** | Transactions that failed (with error details) |
 | **Categories created** | New categories added |
 | **Accounts created** | New accounts added |
@@ -512,7 +512,7 @@ After a transaction is imported, your rules set to run on import (**Tools > Rule
 
 **Cause:** The date format was auto-detected incorrectly.
 
-**Solution:** For CSV, change the **Date Format** in the options bar, or enter a custom pattern. Monize defaults to MM/DD/YYYY when every date in the file is ambiguous (both parts are 12 or less). When the file mixes orders, the format that reads the most rows is chosen and the review step lists the others as unreadable, a sign that some rows would import on swapped dates. OFX dates are unambiguous. For a QIF full-file export, change the **Date Format** on the review step; a single-account QIF file's date format is detected from the file itself.
+**Solution:** For CSV, change the **Date Format** in the options bar, or enter a custom pattern. Monize defaults to MM/DD/YYYY when every date in the file is ambiguous (both parts are 12 or less). When the file mixes orders, the format that reads the most rows is chosen and the review step lists the others as unreadable, a sign that some rows would import on swapped dates. OFX dates are unambiguous. A QIF record or OFX transaction whose date is not a real day (such as 02/30/2026) or is empty is not imported; the review step and the skipped rows list it by line (QIF) or position (OFX), so correct the date in the file and import it again. For a QIF full-file export, change the **Date Format** on the review step; a single-account QIF file's date format is detected from the file itself.
 
 ### Amounts Have Wrong Sign
 

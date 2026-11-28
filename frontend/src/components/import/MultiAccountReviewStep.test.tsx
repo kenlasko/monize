@@ -257,6 +257,41 @@ describe('MultiAccountReviewStep', () => {
     expect(screen.queryByText(/mapped correctly/)).not.toBeInTheDocument();
   });
 
+  it('lists the QIF records whose date cannot be read by line, without column-mapping advice', () => {
+    const multiAccountData = {
+      ...defaultMultiAccountData,
+      unreadableDates: {
+        count: 2,
+        rows: [
+          { rowNumber: 9, rawDate: '13/45/2026' },
+          { rowNumber: 12, rawDate: '' },
+        ],
+      },
+    };
+    render(<MultiAccountReviewStep {...defaultProps} multiAccountData={multiAccountData} />);
+    expect(screen.getByText('2 records have dates that cannot be read and will not be imported:')).toBeInTheDocument();
+    expect(screen.getByText('Line 9: "13/45/2026"')).toBeInTheDocument();
+    expect(screen.getByText('Line 12: no date')).toBeInTheDocument();
+    expect(screen.getByText('Correct these dates in the file and import it again.')).toBeInTheDocument();
+    expect(screen.queryByText(/column mapping/)).not.toBeInTheDocument();
+  });
+
+  it('says unreadable dates are known only after the import while another date format is selected', () => {
+    const multiAccountData = {
+      ...defaultMultiAccountData,
+      detectedDateFormat: 'MM/DD/YYYY' as const,
+      unreadableDates: { count: 1, rows: [{ rowNumber: 9, rawDate: '13/45/2026' }] },
+    };
+    const { rerender } = render(
+      <MultiAccountReviewStep {...defaultProps} dateFormat="MM/DD/YYYY" multiAccountData={multiAccountData} />,
+    );
+    expect(screen.getByText('Line 9: "13/45/2026"')).toBeInTheDocument();
+    expect(screen.queryByText(/listed with the skipped rows afterwards/)).not.toBeInTheDocument();
+    rerender(<MultiAccountReviewStep {...defaultProps} dateFormat="DD/MM/YYYY" multiAccountData={multiAccountData} />);
+    expect(screen.queryByText('Line 9: "13/45/2026"')).not.toBeInTheDocument();
+    expect(screen.getByText(/Dates that cannot be read as DD\/MM\/YYYY/)).toBeInTheDocument();
+  });
+
   it('shows no unreadable-amount notice when every amount reads', () => {
     render(<MultiAccountReviewStep {...defaultProps} />);
     expect(screen.queryByText(/cannot be read/)).not.toBeInTheDocument();

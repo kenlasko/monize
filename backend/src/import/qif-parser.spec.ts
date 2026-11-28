@@ -1022,14 +1022,15 @@ CR
     });
   });
 
-  describe("parseQif - unparseable date returns as-is", () => {
-    it("returns unparseable date string as-is", () => {
+  describe("parseQif - unparseable date", () => {
+    it("reports an unparseable date instead of importing it", () => {
       const qif = `!Type:Bank
-DJanuary 15, 2026
+DSmarch 15, 2026
 T-50.00
 ^`;
       const result = parseQif(qif);
-      expect(result.transactions[0].date).toBe("January 15, 2026");
+      expect(result.transactions).toHaveLength(0);
+      expect(result.unreadableDateRows?.[0].rawDate).toBe("Smarch 15, 2026");
     });
   });
 
@@ -3036,5 +3037,179 @@ describe("unreadable amounts", () => {
     const result = parseQif(bank(record("D01/02/2026", tLine)));
     expect(result.unreadableAmountRows).toBeUndefined();
     expect(result.transactions[0].amount).toBe(amount);
+  });
+});
+
+describe("unreadable dates", () => {
+  const record = (...fields: string[]) => [...fields, "^"].join("\n");
+  const bank = (...records: string[]) => ["!Type:Bank", ...records].join("\n");
+
+  it.each([
+    ["D13/45/2026", "13/45/2026"],
+    ["D02/30/2026", "02/30/2026"],
+    ["Dgarbage", "garbage"],
+    ["D", ""],
+  ])("reports %s by its line and does not import it", (dLine, raw) => {
+    const result = parseQif(
+      bank(
+        record("D01/02/2026", "T10.00", "PGood"),
+        record(dLine, "T-5.00", "PBad"),
+      ),
+    );
+    expect(result.transactions).toHaveLength(1);
+    expect(result.transactions[0].date).toBe("2026-01-02");
+    expect(result.unreadableDateRows).toEqual([
+      { rowNumber: 6, rawDate: raw, amount: -5, payee: "Bad" },
+    ]);
+  });
+
+  it("reports a record at the end of the file with no closing caret", () => {
+    const result = parseQif(
+      [bank(record("D01/02/2026", "T1.00")), "D31/02/2026", "T2.00"].join("\n"),
+    );
+    expect(result.transactions).toHaveLength(1);
+    expect(result.unreadableDateRows).toHaveLength(1);
+  });
+
+  it("reads a day above 12 under the format the file's other dates show", () => {
+    const result = parseQif(
+      bank(record("D25/12/2026", "T1.00"), record("D01/02/2026", "T1.00")),
+    );
+    expect(result.unreadableDateRows).toBeUndefined();
+    expect(result.transactions.map((t) => t.date)).toEqual([
+      "2026-12-25",
+      "2026-02-01",
+    ]);
+  });
+
+  it("reads a dotted DD.MM.YYYY date once the file's order is DD/MM", () => {
+    const result = parseQif(
+      bank(record("D25.12.2023", "T1.00"), record("D05.01.2024", "T2.00")),
+    );
+    expect(result.unreadableDateRows).toBeUndefined();
+    expect(result.detectedDateFormat).toBe("DD/MM/YYYY");
+    expect(result.transactions.map((t) => t.date)).toEqual([
+      "2023-12-25",
+      "2024-01-05",
+    ]);
+  });
+
+  it("reads a compact YYYYMMDD date", () => {
+    const result = parseQif(bank(record("D20240105", "T1.00")));
+    expect(result.unreadableDateRows).toBeUndefined();
+    expect(result.transactions[0].date).toBe("2024-01-05");
+  });
+
+  it("reports a three-digit year instead of building a malformed date", () => {
+    const result = parseQif(bank(record("D1/5/024", "T1.00")));
+    expect(result.transactions).toHaveLength(0);
+    expect(result.unreadableDateRows?.[0].rawDate).toBe("1/5/024");
+  });
+
+  it("does not let a date no order can read set the file's order", () => {
+    const result = parseQif(
+      bank(record("D13/45/2026", "T1.00"), record("D01/02/2026", "T1.00")),
+    );
+    expect(result.detectedDateFormat).toBe("MM/DD/YYYY");
+    expect(result.transactions[0].date).toBe("2026-01-02");
+    expect(result.unreadableDateRows).toHaveLength(1);
+  });
+
+  it.each([
+    ["January 15, 2026", "2026-01-15"],
+    ["15 Jan 2026", "2026-01-15"],
+    ["Jan 15 2026", "2026-01-15"],
+    ["SEPTEMBER 3, 2026", "2026-09-03"],
+  ])("reads the English month name in %s", (raw, expected) => {
+    const result = parseQif(bank(record(`D${raw}`, "T1.00")));
+    expect(result.unreadableDateRows).toBeUndefined();
+    expect(result.transactions[0].date).toBe(expected);
+  });
+
+  it.each([
+    ["15-Jan-2026", "2026-01-15"],
+    ["15-JAN-26", "2026-01-15"],
+    ["Jan-15-2026", "2026-01-15"],
+    ["2026-Jan-15", "2026-01-15"],
+    ["Jan 15, 26", "2026-01-15"],
+    ["Jan 15, 99", "1999-01-15"],
+    ["Sept 15, 2026", "2026-09-15"],
+  ])("reads %s as PostgreSQL did", (raw, expected) => {
+    const result = parseQif(bank(record(`D${raw}`, "T1.00")));
+    expect(result.unreadableDateRows).toBeUndefined();
+    expect(result.transactions[0].date).toBe(expected);
+  });
+
+  it("flags a transfer record with an unreadable date", () => {
+    const result = parseQif(
+      bank(record("Dgarbage", "T-5.00", "L[Savings]", "PMove")),
+    );
+    expect(result.unreadableDateRows?.[0].isTransfer).toBe(true);
+    const plain = parseQif(bank(record("Dgarbage", "T-5.00", "LFood")));
+    expect(plain.unreadableDateRows?.[0].isTransfer).toBeUndefined();
+  });
+
+  it("takes sample dates only from dates that were read", () => {
+    const result = parseQif(
+      bank(record("Dgarbage", "T1.00"), record("D01/02/2026", "T1.00")),
+    );
+    expect(result.sampleDates).toEqual(["01/02/2026"]);
+  });
+
+  it("says whether the dates prove the format", () => {
+    const conclusive = (...d: string[]) =>
+      parseQif(bank(...d.map((x) => record(`D${x}`, "T1.00"))))
+        .dateFormatConclusive;
+    expect(conclusive("25/12/2026")).toBe(true);
+    expect(conclusive("2026-01-02")).toBe(true);
+    expect(conclusive("01/02/2026", "03/04/2026")).toBe(false);
+    expect(conclusive("13/45/2026", "01/02/2026")).toBe(false);
+  });
+
+  it.each(["Janu 15, 2026", "Foo 15, 2026", "February 30, 2026"])(
+    "reports %s",
+    (raw) => {
+      const result = parseQif(bank(record(`D${raw}`, "T1.00")));
+      expect(result.transactions).toHaveLength(0);
+      expect(result.unreadableDateRows).toHaveLength(1);
+    },
+  );
+
+  it("reports year 0000", () => {
+    const result = parseQif(bank(record("D01/01/0000", "T1.00")));
+    expect(result.unreadableDateRows).toHaveLength(1);
+  });
+
+  it("carries the amount text when the amount cannot be read either", () => {
+    const result = parseQif(bank(record("Dgarbage", "Tabc", "PBad")));
+    expect(result.unreadableAmountRows).toBeUndefined();
+    expect(result.unreadableDateRows).toEqual([
+      {
+        rowNumber: 2,
+        rawDate: "garbage",
+        amount: 0,
+        rawAmount: "abc",
+        payee: "Bad",
+      },
+    ]);
+  });
+
+  it("reports a bad date in a multi-account block", () => {
+    const full = parseQifFull(
+      [
+        "!Account",
+        "NChecking",
+        "TBank",
+        "^",
+        "!Type:Bank",
+        record("D01/02/2026", "T1.00"),
+        record("D13/45/2026", "T2.00", "PBad"),
+      ].join("\n"),
+      "MM/DD/YYYY",
+    );
+    expect(full.accountBlocks[0].transactions).toHaveLength(1);
+    expect(full.accountBlocks[0].unreadableDateRows).toMatchObject([
+      { rawDate: "13/45/2026", payee: "Bad" },
+    ]);
   });
 });

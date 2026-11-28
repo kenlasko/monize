@@ -142,15 +142,17 @@ export interface ParsedQifResponse {
     end: string;
   };
   detectedDateFormat: DateFormat;
+  /** QIF: the file's dates prove `detectedDateFormat` (a part above 12 or an ISO shape); false means the month-first default. */
+  dateFormatConclusive?: boolean;
   sampleDates: string[];
   investmentSummary?: CsvInvestmentSummary;
-  /** CSV parses only: the rows the import will leave out because their date cannot be read. */
+  /** The rows (CSV), QIF records (by line) and OFX transactions (by position) the import will leave out because their date cannot be read. */
   unreadableDates?: CsvUnreadableDates;
   /** The rows (CSV), records (QIF) or transactions (OFX) the import will leave out because their amount cannot be read. */
   unreadableAmounts?: CsvUnreadableAmounts;
 }
 
-/** A CSV row whose date the mapping's date format cannot read, by its line in the file. */
+/** A CSV row, QIF record (by its line) or OFX transaction (by its position) whose date cannot be read. */
 export interface CsvUnreadableDateRow {
   rowNumber: number;
   /** The date field as the file gave it, empty when it has none. */
@@ -437,6 +439,7 @@ export type ImportSkipReason =
   | 'unreadableDate'
   | 'unreadableAmount'
   | 'unreadableAmountTransfer'
+  | 'unreadableDateTransfer'
   // An investment-mode CSV row whose action needs data it does not carry.
   | 'missingSecurity'
   | 'missingQuantity'
@@ -457,7 +460,7 @@ export interface ImportSkippedRow {
   rowNumber?: number;
   /** The date field as the file gave it, empty when it has none; set for `unreadableDate`. */
   rawDate?: string;
-  /** The cell named by `field`, as the file gave it; set for `unreadableAmount`, whose `amount` is 0. */
+  /** The cell named by `field` (the amount when `field` is absent), as the file gave it; set for `unreadableAmount`, and for an `unreadableDate` whose amount cannot be read either; `amount` is then 0. */
   rawAmount?: string;
   /** CSV only: the column `rawAmount` is in. */
   field?: 'amount' | 'quantity' | 'price' | 'commission';
@@ -527,6 +530,8 @@ export interface ParsedQifMultiAccountResponse {
   sampleDates: string[];
   /** The QIF records, across all accounts, the import will leave out because an amount cannot be read. */
   unreadableAmounts?: CsvUnreadableAmounts;
+  /** The QIF records, across all accounts, the import will leave out because a date cannot be read. */
+  unreadableDates?: CsvUnreadableDates;
 }
 
 export interface ImportQifMultiAccountRequest {
