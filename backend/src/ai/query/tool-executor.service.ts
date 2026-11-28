@@ -548,6 +548,7 @@ export class ToolExecutorService {
     const accountFilter = await this.accountsService.resolveAccountFilter(
       userId,
       accountNames,
+      "historical",
     );
     if (accountFilter.error) return this.toolError(accountFilter.error);
     const accountIds = accountFilter.accountIds;
@@ -2865,6 +2866,7 @@ export class ToolExecutorService {
     const accountFilter = await this.accountsService.resolveAccountFilter(
       userId,
       accountNames,
+      "historical",
     );
     if (accountFilter.error) return this.toolError(accountFilter.error);
     const accountIds = accountFilter.accountIds;
@@ -2932,6 +2934,7 @@ export class ToolExecutorService {
     const accountFilter = await this.accountsService.resolveAccountFilter(
       userId,
       accountNames,
+      "historical",
     );
     if (accountFilter.error) return this.toolError(accountFilter.error);
     const accountIds = accountFilter.accountIds;

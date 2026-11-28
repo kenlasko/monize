@@ -1069,9 +1069,11 @@ describe("ToolExecutorService", () => {
         accountNames: ["Checking"],
       });
 
-      expect(accounts.resolveAccountFilter).toHaveBeenCalledWith(userId, [
-        "Checking",
-      ]);
+      expect(accounts.resolveAccountFilter).toHaveBeenCalledWith(
+        userId,
+        ["Checking"],
+        "historical",
+      );
       expect(analytics.getLlmListTransactions).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ accountIds: ["acc-1"] }),
@@ -1826,9 +1828,11 @@ describe("ToolExecutorService", () => {
         accountNames: ["Checking"],
       });
 
-      expect(accounts.resolveAccountFilter).toHaveBeenCalledWith(userId, [
-        "Checking",
-      ]);
+      expect(accounts.resolveAccountFilter).toHaveBeenCalledWith(
+        userId,
+        ["Checking"],
+        "historical",
+      );
       expect(
         investmentTransactions.getLlmInvestmentTransactions,
       ).toHaveBeenCalledWith(
@@ -1923,9 +1927,11 @@ describe("ToolExecutorService", () => {
         accountNames: ["Checking"],
       });
 
-      expect(accounts.resolveAccountFilter).toHaveBeenCalledWith(userId, [
-        "Checking",
-      ]);
+      expect(accounts.resolveAccountFilter).toHaveBeenCalledWith(
+        userId,
+        ["Checking"],
+        "historical",
+      );
       expect(investmentTransactions.getLlmCapitalGains).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({

@@ -6104,6 +6104,40 @@ describe("AccountsService", () => {
       expect(result).toEqual({ accountIds: ["a1", "a2"] });
     });
 
+    it("rejects a partial historical selection when another name is ambiguous or an ID is unknown", async () => {
+      const [first, second, separate, unknown] = [
+        "e247d997-a631-43c0-84de-ea53937f4211",
+        "77aa8989-5d64-49b6-9fa6-228c0fd0140b",
+        "3e52e1f3-34ba-4fc0-b9c0-ee835d666bd0",
+        "dcc0f14c-0f8d-400f-8ee1-8b4b31faf027",
+      ];
+      jest.spyOn(service, "findAll").mockResolvedValue([
+        { id: first, name: "Savings", isClosed: true },
+        { id: second, name: "SAVINGS", isClosed: true },
+        { id: separate, name: "Checking", isClosed: false },
+      ] as never);
+      for (const names of [
+        ["Checking", "savings"],
+        ["SAVINGS", "Checking"],
+      ]) {
+        const result = await service.resolveAccountFilter(
+          "user-1",
+          names,
+          "historical",
+        );
+        expect(result.accountIds).toBeUndefined();
+        expect(result.error).toContain(`Closed: ${first}, ${second}`);
+      }
+      const result = await service.resolveAccountFilter(
+        "user-1",
+        [separate, unknown],
+        "historical",
+      );
+      expect(result.accountIds).toBeUndefined();
+      expect(result.error).toContain(`Unknown account: ${unknown}`);
+      expect(service.findAll).toHaveBeenCalledWith("user-1", true);
+    });
+
     it("returns a did-you-mean error when a name does not match", async () => {
       jest.spyOn(service, "findAll").mockResolvedValue([
         { id: "a1", name: "Checking", currencyCode: "USD" },

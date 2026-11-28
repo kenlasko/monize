@@ -341,9 +341,11 @@ describe("McpInvestmentsTools", () => {
         ctx,
       );
 
-      expect(accountsService.resolveAccountFilter).toHaveBeenCalledWith("u1", [
-        "RRSP",
-      ]);
+      expect(accountsService.resolveAccountFilter).toHaveBeenCalledWith(
+        "u1",
+        ["RRSP"],
+        "historical",
+      );
       expect(
         investmentTransactionsService.getLlmInvestmentTransactions,
       ).toHaveBeenCalledWith("u1", {
@@ -459,9 +461,11 @@ describe("McpInvestmentsTools", () => {
         ctx,
       );
 
-      expect(accountsService.resolveAccountFilter).toHaveBeenCalledWith("u1", [
-        "RRSP",
-      ]);
+      expect(accountsService.resolveAccountFilter).toHaveBeenCalledWith(
+        "u1",
+        ["RRSP"],
+        "historical",
+      );
       expect(
         investmentTransactionsService.getLlmCapitalGains,
       ).toHaveBeenCalledWith("u1", {

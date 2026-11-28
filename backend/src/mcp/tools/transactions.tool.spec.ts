@@ -1,3 +1,4 @@
+import { AccountsService } from "@/accounts/accounts.service";
 import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { sharedReviewMock } from "../../shared-expenses/__fixtures__/shared-review";
 import { BadRequestException, ConflictException } from "@nestjs/common";
@@ -153,6 +154,9 @@ describe("McpTransactionsTools", () => {
     };
 
     accountsService = {
+      resolveAccountFilter: jest.fn(
+        AccountsService.prototype.resolveAccountFilter,
+      ),
       findAll: jest.fn().mockResolvedValue([]),
     };
 

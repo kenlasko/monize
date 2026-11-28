@@ -178,8 +178,8 @@ export class McpInvestmentsTools {
         title: "List investment transactions",
         annotations: READ_ONLY,
         description:
-          "Brokerage trades, income, splits, transfers and share adjustments " +
-          "by account, symbol, action and date, optionally grouped. A VOID " +
+          "Trades, income, splits, transfers and share adjustments " +
+          "by account, symbol, action and date. A VOID " +
           "row is listed but in no total. incomeByCurrency includes " +
           "reinvested income.",
         inputSchema: z.object({
@@ -189,7 +189,7 @@ export class McpInvestmentsTools {
             .array(z.string().max(100))
             .max(50)
             .optional()
-            .describe("Account names."),
+            .describe("Account names or IDs (open or closed)."),
           symbols: z
             .array(z.string().min(1).max(20))
             .max(50)
@@ -217,6 +217,7 @@ export class McpInvestmentsTools {
           const accountFilter = await this.accountsService.resolveAccountFilter(
             user.userId,
             args.accountNames,
+            "historical",
           );
           if (accountFilter.error) return toolError(accountFilter.error);
           const accountIds = accountFilter.accountIds;
@@ -261,9 +262,7 @@ export class McpInvestmentsTools {
             .array(z.string().max(100))
             .max(50)
             .optional()
-            .describe(
-              "Optional investment account names (resolved internally).",
-            ),
+            .describe("Account names or IDs (open or closed)."),
           symbols: z
             .array(z.string().min(1).max(20))
             .max(50)
@@ -286,6 +285,7 @@ export class McpInvestmentsTools {
           const accountFilter = await this.accountsService.resolveAccountFilter(
             user.userId,
             args.accountNames,
+            "historical",
           );
           if (accountFilter.error) return toolError(accountFilter.error);
           const accountIds = accountFilter.accountIds;

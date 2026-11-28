@@ -266,7 +266,7 @@ export class McpTransactionsTools {
             .array(z.string().max(100))
             .max(50)
             .optional()
-            .describe("Account names."),
+            .describe("Account names or IDs (open or closed)."),
           categoryNames: z
             .array(z.string().max(100))
             .max(100)
@@ -774,30 +774,13 @@ export class McpTransactionsTools {
     payeeIds?: string[];
     error?: string;
   }> {
-    let accountIds: string[] | undefined;
-    if (names.accountNames && names.accountNames.length > 0) {
-      const accounts = await this.accountsService.findAll(userId, true);
-      const nameMap = new Map(
-        accounts.map((a) => [a.name.toLowerCase(), a.id]),
+    const { accountIds, error } =
+      await this.accountsService.resolveAccountFilter(
+        userId,
+        names.accountNames,
+        "historical",
       );
-      const ids: string[] = [];
-      const unresolved: string[] = [];
-      for (const name of names.accountNames) {
-        const id = nameMap.get(name.toLowerCase());
-        if (id) ids.push(id);
-        else unresolved.push(name);
-      }
-      if (unresolved.length > 0) {
-        const suggestion = didYouMean(
-          unresolved[0],
-          accounts.map((a) => a.name),
-        );
-        return {
-          error: `Unknown account${unresolved.length === 1 ? "" : "s"}: ${unresolved.join(", ")}.${suggestion} Use exact names from the user's account list.`,
-        };
-      }
-      accountIds = ids;
-    }
+    if (error) return { error };
 
     let categoryIds: string[] | undefined;
     if (names.categoryNames && names.categoryNames.length > 0) {

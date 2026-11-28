@@ -79,6 +79,7 @@
     "sourceNotFound": "Bronrekening niet gevonden",
     "loanSourceCurrencyMismatch": "De betaalrekening is in {{ source }} en de lening in {{ loan }}. Kies een rekening in {{ loan }}.",
     "invalidSourceAccount": "Kies een open rekening, anders dan de lening zelf, om vanaf te betalen",
+    "historicalNameAmbiguous": "Kies een rekening-ID voor ‘{{ name }}’. Open rekeningen: {{ openIds }}. Gesloten rekeningen: {{ closedIds }}.",
     "ambiguousBrokerage": "\"{{ query }}\" komt overeen met meerdere effectenrekeningen: {{ list }}. Gebruik de exacte rekeningnaam.",
     "unknownInvestmentAccount": "Onbekende rekening: {{ name }}. Gebruik een exacte naam uit de rekeninglijst van de gebruiker.",
     "notACreditCard": "Afschriftperiodes zijn alleen beschikbaar voor creditcardrekeningen",

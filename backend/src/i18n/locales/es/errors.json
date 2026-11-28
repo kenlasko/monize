@@ -79,6 +79,7 @@
     "sourceNotFound": "Cuenta de origen no encontrada",
     "loanSourceCurrencyMismatch": "La cuenta de pago está en {{ source }} y el préstamo en {{ loan }}. Elija una cuenta en {{ loan }}.",
     "invalidSourceAccount": "Elija una cuenta abierta, distinta del propio préstamo, desde la que pagar",
+    "historicalNameAmbiguous": "Elija un ID de cuenta para «{{ name }}». Abiertas: {{ openIds }}. Cerradas: {{ closedIds }}.",
     "ambiguousBrokerage": "\"{{ query }}\" coincide con varias cuentas de corretaje: {{ list }}. Use el nombre exacto de la cuenta.",
     "unknownInvestmentAccount": "Cuenta desconocida: {{ name }}. Use un nombre exacto de la lista de cuentas del usuario.",
     "notACreditCard": "Los ciclos de facturación solo están disponibles para cuentas de tarjeta de crédito",

@@ -79,6 +79,7 @@
     "sourceNotFound": "Nie znaleziono konta źródłowego",
     "loanSourceCurrencyMismatch": "Konto płatności jest w {{ source }}, a kredyt w {{ loan }}. Wybierz konto w {{ loan }}.",
     "invalidSourceAccount": "Wybierz otwarte konto, inne niż sama pożyczka, z którego będą płatności",
+    "historicalNameAmbiguous": "Wybierz identyfikator konta o nazwie „{{ name }}”. Konta otwarte: {{ openIds }}. Konta zamknięte: {{ closedIds }}.",
     "ambiguousBrokerage": "„{{ query }}\" pasuje do wielu kont maklerskich: {{ list }}. Użyj dokładnej nazwy konta.",
     "unknownInvestmentAccount": "Nieznane konto: {{ name }}. Użyj dokładnej nazwy z listy kont użytkownika.",
     "notACreditCard": "Cykle rozliczeniowe są dostępne tylko dla kont kart kredytowych",
