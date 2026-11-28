@@ -886,16 +886,24 @@ export class AccountsService {
 
     const historical = scope === "historical";
     const accounts = await this.findAll(userId, historical);
+    const accountsById = new Map(accounts.map((a) => [a.id, a]));
+    const accountsByName = new Map<string, typeof accounts>();
+    for (const account of accounts) {
+      const key = account.name.toLowerCase();
+      const group = accountsByName.get(key);
+      if (group) group.push(account);
+      else accountsByName.set(key, [account]);
+    }
     const accountIds: string[] = [];
     const unresolved: string[] = [];
     for (const name of names) {
       const key = name.toLowerCase();
-      const byId = historical && accounts.find((a) => a.id === key);
+      const byId = historical && accountsById.get(key);
       if (byId) {
         accountIds.push(byId.id);
         continue;
       }
-      const matches = accounts.filter((a) => a.name.toLowerCase() === key);
+      const matches = accountsByName.get(key) ?? [];
       if (historical && matches.length > 1) {
         const idsFor = (closed: boolean) =>
           matches
@@ -912,7 +920,7 @@ export class AccountsService {
           ),
         };
       }
-      const match = matches.at(-1);
+      const match = matches[matches.length - 1];
       if (match) accountIds.push(match.id);
       else unresolved.push(name);
     }
