@@ -1105,6 +1105,8 @@ export class BudgetsService {
       percentUsed: number;
     }>;
   } | null> {
+    // Read once, as getBudgetSummary does, so the pace window has one day.
+    const todayStr = todayYMD();
     const budget = await this.findNewestActiveBudget(userId);
     if (!budget) return null;
 
@@ -1130,7 +1132,7 @@ export class BudgetsService {
     const { daysRemaining } = budgetPaceWindow(
       periodStart,
       periodEnd,
-      todayYMD(),
+      todayStr,
     );
     const safeDailySpend =
       daysRemaining > 0 ? Math.max(0, remaining / daysRemaining) : 0;

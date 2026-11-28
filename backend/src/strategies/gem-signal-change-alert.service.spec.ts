@@ -255,7 +255,15 @@ describe("GemSignalChangeAlertService.run dates the report by the user's day", (
       query: jest.fn(async (sql: string) =>
         sql.includes("gem_strategies")
           ? [{ user_id: userId }]
-          : [{ timezone, last_client_timezone: null }],
+          : [
+              { user_id: userId, timezone, last_client_timezone: null },
+              // A user with no strategy is not evaluated.
+              {
+                user_id: "22222222-2222-4222-8222-222222222222",
+                timezone: null,
+                last_client_timezone: null,
+              },
+            ],
       ),
     };
     const seen: string[] = [];

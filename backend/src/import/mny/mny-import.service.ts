@@ -10,6 +10,7 @@ import {
 import { DataSource, In } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
 import { withUserContext } from "../../common/db/with-context";
+import { isValidIanaTimezone } from "../../common/date-utils";
 import { getRequestTimezone } from "../../common/request-context";
 import { getStoredTimezoneOfUser } from "../../common/users-by-timezone.util";
 import { Account } from "../../accounts/entities/account.entity";
@@ -250,15 +251,28 @@ export class MnyImportService {
     // import writes are cut at `todayYMD()`, which is the server's day without
     // it, so a transaction dated the user's today would be left out. The zone
     // is the request's (read here, before the request scope is gone: what the
-    // user's own requests use), else the stored one; none leaves it unset, as
-    // REST does.
+    // user's own requests use), else the stored one. Unlike the crons (which
+    // fall back to UTC for a determinate day) no zone stays unset here, as it
+    // does for the same user's REST calls. A failed zone read must not fail the
+    // import: it only means the zone stays unset.
     const requestTimezone = getRequestTimezone();
     void withUserContext(userId, async () => {
-      const timezone =
-        requestTimezone ??
-        (await withScopedDb(this.dataSource, (m) =>
-          getStoredTimezoneOfUser(m, userId),
-        ));
+      let timezone: string | undefined;
+      if (isValidIanaTimezone(requestTimezone)) {
+        timezone = requestTimezone;
+      } else {
+        try {
+          timezone = await withScopedDb(this.dataSource, (m) =>
+            getStoredTimezoneOfUser(m, userId),
+          );
+        } catch (error) {
+          this.logger.warn(
+            `Could not read the timezone of user ${userId} for import job ${job.id}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+      }
       return withUserContext(
         userId,
         () =>

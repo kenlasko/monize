@@ -1,14 +1,16 @@
 import { ConflictException, NotFoundException } from "@nestjs/common";
 import { DataSource, EntityManager } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
-import { withUserContext } from "../../common/db/with-context";
 import { CurrenciesService } from "../../currencies/currencies.service";
 import { UsersService } from "../../users/users.service";
 import { ImportPostProcessingService } from "../import-post-processing.service";
 import { MnyStagedFileMissingError } from "./mny-errors";
-import { requestContextStorage } from "../../common/request-context";
+import { todayYMD } from "../../common/date-utils";
 import {
-  JOB_FAILED_ERROR_KEY,
+  getRequestTimezone,
+  requestContextStorage,
+} from "../../common/request-context";
+import {
   JobRunContext,
   MnyImportJobService,
   importAlreadyRunningException,
@@ -46,8 +48,15 @@ jest.mock("../../common/db/scoped-db", () => ({
 }));
 
 jest.mock("../../common/db/with-context", () => ({
-  withUserContext: jest.fn(<T>(_userId: string, fn: () => T, _tz?: string): T =>
-    fn(),
+  // Runs `fn` in the real request-context storage, as the real helper does.
+  withUserContext: jest.fn(
+    <T>(userId: string, fn: () => T, timezone?: string): T =>
+      jest
+        .requireActual("../../common/request-context")
+        .requestContextStorage.run(
+          { userId, ...(timezone !== undefined ? { timezone } : {}) },
+          fn,
+        ),
   ),
   withSystemContext: <T>(fn: () => T): T => fn(),
 }));
@@ -650,70 +659,82 @@ describe("MnyImportService", () => {
       await flushBackground();
     });
 
-    it.each(["Pacific/Kiritimati", "America/Los_Angeles"])(
-      "seeds the job's identity with the user's timezone (%s), so todayYMD() is the user's day",
-      async (timezone) => {
+    // What the job body sees: the zone and the day inside the worker's scope.
+    const startAndCapture = async (inRequestZone?: string) => {
+      const seen: { zone?: string; day?: string }[] = [];
+      jobs.runClaimed.mockImplementation(async () => {
+        seen.push({ zone: getRequestTimezone(), day: todayYMD() });
+        return true;
+      });
+      const begin = () => service.start("user-1", { stagedFileId: "staged-1" });
+      await (inRequestZone
+        ? requestContextStorage.run(
+            { userId: "user-1", timezone: inRequestZone },
+            begin,
+          )
+        : begin());
+      await flushBackground();
+      return seen;
+    };
+
+    describe("the job's timezone", () => {
+      beforeEach(() => {
+        jest.useFakeTimers({
+          now: new Date("2026-10-30T23:30:00Z"),
+          doNotFake: ["nextTick", "setImmediate", "queueMicrotask"],
+        });
+      });
+      afterEach(() => jest.useRealTimers());
+
+      it.each([
+        ["Pacific/Kiritimati", "2026-10-31"],
+        ["America/Los_Angeles", "2026-10-30"],
+      ])("is the stored zone %s: the day is %s", async (timezone, day) => {
         (mockManager.query as jest.Mock).mockResolvedValue([
           { timezone, last_client_timezone: null },
         ]);
-        (withUserContext as jest.Mock).mockClear();
 
-        await service.start("user-1", { stagedFileId: "staged-1" });
-        await flushBackground();
+        expect(await startAndCapture()).toEqual([{ zone: timezone, day }]);
+      });
 
-        expect(withUserContext).toHaveBeenCalledWith(
-          "user-1",
-          expect.any(Function),
-          timezone,
+      it("is the request's zone, without reading the stored one", async () => {
+        (mockManager.query as jest.Mock).mockClear();
+
+        expect(await startAndCapture("Pacific/Kiritimati")).toEqual([
+          { zone: "Pacific/Kiritimati", day: "2026-10-31" },
+        ]);
+        expect(mockManager.query).not.toHaveBeenCalled();
+      });
+
+      it("reads the stored zone when the request's is not a real zone", async () => {
+        (mockManager.query as jest.Mock).mockResolvedValue([
+          { timezone: "America/Los_Angeles", last_client_timezone: null },
+        ]);
+
+        expect(await startAndCapture("Foo/Bar")).toEqual([
+          { zone: "America/Los_Angeles", day: "2026-10-30" },
+        ]);
+      });
+
+      it("stays unset for a user with no timezone, as REST does", async () => {
+        (mockManager.query as jest.Mock).mockResolvedValue([]);
+
+        const [seen] = await startAndCapture();
+        expect(seen.zone).toBeUndefined();
+      });
+
+      it("still runs the import, zone unset, when the timezone read rejects", async () => {
+        const warn = jest.spyOn(service["logger"], "warn");
+        mockedScopedDb.mockRejectedValueOnce(new Error("pool exhausted"));
+
+        const [seen] = await startAndCapture();
+
+        expect(seen.zone).toBeUndefined();
+        expect(jobs.fail).not.toHaveBeenCalled();
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining("pool exhausted"),
         );
-      },
-    );
-
-    it("uses the request's timezone without reading the stored one", async () => {
-      (mockManager.query as jest.Mock).mockClear();
-      (withUserContext as jest.Mock).mockClear();
-
-      await requestContextStorage.run(
-        { userId: "user-1", timezone: "Pacific/Kiritimati" },
-        () => service.start("user-1", { stagedFileId: "staged-1" }),
-      );
-      await flushBackground();
-
-      expect(withUserContext).toHaveBeenCalledWith(
-        "user-1",
-        expect.any(Function),
-        "Pacific/Kiritimati",
-      );
-      expect(mockManager.query).not.toHaveBeenCalled();
-    });
-
-    it("leaves the zone unset for a user with no timezone, as REST does", async () => {
-      (mockManager.query as jest.Mock).mockResolvedValue([]);
-      (withUserContext as jest.Mock).mockClear();
-
-      await service.start("user-1", { stagedFileId: "staged-1" });
-      await flushBackground();
-
-      expect(withUserContext).toHaveBeenCalledWith(
-        "user-1",
-        expect.any(Function),
-        undefined,
-      );
-    });
-
-    it("fails the job and never starts it when the timezone read rejects", async () => {
-      mockedScopedDb.mockRejectedValueOnce(new Error("pool exhausted"));
-
-      await service.start("user-1", { stagedFileId: "staged-1" });
-      await flushBackground();
-
-      expect(jobs.runClaimed).not.toHaveBeenCalled();
-      expect(jobs.fail).toHaveBeenCalledWith(
-        "job-1",
-        JOB_FAILED_ERROR_KEY,
-        "pool exhausted",
-        true,
-      );
+      });
     });
 
     it("runs the import as the job body", async () => {
