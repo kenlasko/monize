@@ -519,9 +519,15 @@ export class ToolExecutorService {
     userId: string,
     input: Record<string, unknown>,
   ): Promise<ToolResult> {
-    const defaults = getDefaultDateRange(await this.userToday(userId));
-    const startDate = (input.startDate as string) ?? defaults.startDate;
-    const endDate = (input.endDate as string) ?? defaults.endDate;
+    // The day is read only when a bound is missing: a call with both dates
+    // needs no default and no extra transaction.
+    let startDate = input.startDate as string | undefined;
+    let endDate = input.endDate as string | undefined;
+    if (startDate == null || endDate == null) {
+      const defaults = getDefaultDateRange(await this.userToday(userId));
+      startDate ??= defaults.startDate;
+      endDate ??= defaults.endDate;
+    }
     const accountNames = input.accountNames as string[] | undefined;
     const categoryNames = input.categoryNames as string[] | undefined;
     const payeeNames = input.payeeNames as string[] | undefined;
