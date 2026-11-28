@@ -1686,8 +1686,7 @@ export class ReportsService {
         [budgetBasis],
         conv.currency,
       );
-      const budgetMap = new Map<string, number>();
-      const unconvertible = new Set<string>();
+      const budgetMap = new Map<string, number | null>();
       const narrowed =
         config.direction !== DirectionFilter.BOTH ||
         (filters?.accountIds?.length ?? 0) > 0 ||
@@ -1711,8 +1710,9 @@ export class ReportsService {
             amount === 0 ? 0 : convertBudget(amount, budgetBasis);
           if (converted === null) {
             conv.gaps.record(budget.currencyCode);
-            unconvertible.add(bc.categoryId);
-          } else budgetMap.set(bc.categoryId, converted);
+          }
+          if (budgetMap.get(bc.categoryId) !== null)
+            budgetMap.set(bc.categoryId, converted);
         }
       }
 
@@ -1721,10 +1721,22 @@ export class ReportsService {
       const enriched = data.map((row): ReportRow => {
         const { point, sum } = row;
         const id = point.id || "";
-        if (unconvertible.has(id) || point.value === null || sum === null) {
-          return row;
+        const planned = budgetMap.get(id);
+        if (planned === null) {
+          // The actual is known, but it is not a variance until the plan is priced.
+          return {
+            point: {
+              ...point,
+              actual: point.value ?? undefined,
+              value: null,
+              incomplete: true,
+              percentage: undefined,
+            },
+            sum: null,
+          };
         }
-        const budgeted = budgetMap.get(id) ?? 0;
+        if (point.value === null || sum === null) return row;
+        const budgeted = planned ?? 0;
         const variance = new FxAggregate();
         variance.merge(sum);
         variance.addConverted(-budgeted);
@@ -1751,8 +1763,8 @@ export class ReportsService {
       for (const [categoryId, budgeted] of budgetMap) {
         const category = categoryMap.get(categoryId);
         if (seen.has(categoryId) || !category) continue;
-        const sum = new FxAggregate();
-        sum.addConverted(-budgeted);
+        const sum = budgeted === null ? null : new FxAggregate();
+        if (budgeted !== null) sum?.addConverted(-budgeted);
         enriched.push({
           point: {
             id: categoryId,
@@ -1764,11 +1776,15 @@ export class ReportsService {
                   }
                 : category,
             ) as string,
-            value: sum.knownSubtotalAt(conv.places),
+            value: sum?.knownSubtotalAt(conv.places) ?? null,
+            incomplete: budgeted === null ? true : undefined,
             color: category.color || undefined,
-            percentage: zeroShare,
+            percentage: budgeted === null ? undefined : zeroShare,
             count: 0,
-            budgeted: reportFigure(budgeted, conv.places),
+            budgeted:
+              budgeted === null
+                ? undefined
+                : reportFigure(budgeted, conv.places),
             actual: 0,
           },
           sum,

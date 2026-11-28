@@ -5757,7 +5757,7 @@ describe("ReportsService", () => {
         expect(groceries!.value).toBe(-20);
       });
 
-      it("leaves a budget with no rate unenriched and withholds the total", async () => {
+      it("withholds an unpriced variance while keeping its actual separate", async () => {
         setupExecuteMocks(
           {
             groupBy: GroupByType.CATEGORY,
@@ -5779,9 +5779,43 @@ describe("ReportsService", () => {
 
         const groceries = result.data.find((d) => d.label === "Groceries");
         expect(groceries!.budgeted).toBeUndefined();
-        expect(groceries!.value).toBe(80);
+        expect(groceries!.actual).toBe(80);
+        expect(groceries!.value).toBeNull();
+        expect(groceries!.incomplete).toBe(true);
+        expect(result.summary.knownTotal).toBe(0);
         expect(result.summary.total).toBeNull();
         expect(result.missingCurrencies).toEqual(["JPY"]);
+      });
+
+      it("keeps a category with an unpriced plan and no spending in scope", async () => {
+        setupExecuteMocks(
+          {
+            groupBy: GroupByType.CATEGORY,
+            timeframeType: TimeframeType.LAST_MONTH,
+            config: {
+              ...defaultConfig,
+              direction: DirectionFilter.BOTH,
+              metric: MetricType.BUDGET_VARIANCE,
+            },
+          },
+          [],
+        );
+        categoriesRepository.find.mockResolvedValue([mockCategory]);
+        budgetOf([{ categoryId: "cat-1", amount: 50, isIncome: false }], "JPY");
+
+        const result = await service.execute("user-1", "report-1");
+
+        expect(result.data).toContainEqual(
+          expect.objectContaining({
+            id: "cat-1",
+            actual: 0,
+            value: null,
+            incomplete: true,
+            count: 0,
+          }),
+        );
+        expect(result.summary.total).toBeNull();
+        expect(result.summary.knownTotal).toBe(0);
       });
     });
     describe("additional sorting columns", () => {
