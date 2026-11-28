@@ -285,7 +285,7 @@ interface InvestmentTransactionCardBodyProps {
   /** The register's hidden columns; each is absent from the card as from the tier row. */
   hidden: ReadonlySet<HideableColumn<'investmentRegister'>>;
   /**
-   * False under a date heading (Folio and Pebble on a phone), which names the
+   * False under a date heading (Folio's phone eyebrow), which names the
    * day for every card below it (issue #2508).
    */
   showDate?: boolean;

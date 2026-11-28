@@ -183,8 +183,8 @@ interface InvestmentTransactionRowProps {
    */
   wrapped?: boolean;
   /**
-   * The row sits under a date heading (`InvestmentDayHeading`: Folio at every
-   * width, Pebble on a phone), so it drops its own date: the card's, and the
+   * The row sits under a date heading (`InvestmentDayHeading`, Folio at every
+   * width), so it drops its own date: the card's, and the
    * tier row's Date cell (issues #2508, #2510).
    */
   groupedByDate?: boolean;
@@ -511,13 +511,13 @@ export function InvestmentTransactionList({
   // beside it (issues #2508, #2510). Folio is a ledger at every width: rules,
   // green bars and the date as a group row over each day's trades, with no
   // Date column. Pebble groups the day's trades into white blocks
-  // (`InvestmentPebbleRegister`) from `sm` up; a phone keeps this table, its
-  // Normal-density cards under a day title. The server orders this register
-  // by date, so a change of date is a new day. Standard is unchanged.
+  // (`InvestmentPebbleRegister`) at every width and density, phones included,
+  // as the cash register's `PebbleRegister` does. The server orders this
+  // register by date, so a change of date is a new day. Standard is unchanged.
   const uiStyle = useUiStyle();
   const ledger = uiStyle === 'folio';
-  const pebbleList = uiStyle === 'pebble' && !isMobile;
-  const groupedByDate = ledger || (wrapped && uiStyle === 'pebble');
+  const pebbleList = uiStyle === 'pebble';
+  const groupedByDate = ledger;
 
   // The stored `investmentRegister` set (one per table kind), so the
   // Investments page and the account detail page's register panel follow the
