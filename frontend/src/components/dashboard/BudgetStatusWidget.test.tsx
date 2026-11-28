@@ -101,7 +101,19 @@ describe('BudgetStatusWidget', () => {
     expect(screen.queryByText('60%')).not.toBeInTheDocument();
   });
 
-  it('shows a loading skeleton when parent is loading', () => {
+  it('clears the failure when the next load succeeds', async () => {
+    mockGetDashboardSummary.mockRejectedValueOnce(new Error('500'));
+    const { rerender } = render(<BudgetStatusWidget isLoading={false} />);
+    expect(await screen.findByText(/Couldn't load your budget status/)).toBeInTheDocument();
+
+    rerender(<BudgetStatusWidget isLoading={true} />);
+    rerender(<BudgetStatusWidget isLoading={false} />);
+
+    expect(await screen.findByText('View full budget')).toBeInTheDocument();
+    expect(screen.queryByText(/Couldn't load your budget status/)).not.toBeInTheDocument();
+  });
+
+  it('shows loading skeleton when parent is loading', () => {
     render(<BudgetStatusWidget isLoading={true} />);
 
     expect(screen.getByText('Budget Status')).toBeInTheDocument();
@@ -135,16 +147,14 @@ describe('BudgetStatusWidget', () => {
     });
   });
 
-  it('shows "No active budget found" on API error', async () => {
+  it('says the summary failed to load, not that there is no budget, on API error', async () => {
     mockGetDashboardSummary.mockRejectedValue(new Error('Network error'));
 
     render(<BudgetStatusWidget isLoading={false} />);
 
-    await waitFor(() => {
-      expect(
-        screen.getByText('No active budget found. Create a budget to track your spending.'),
-      ).toBeInTheDocument();
-    });
+    expect(await screen.findByText(/Couldn't load your budget status/)).toBeInTheDocument();
+    expect(screen.queryByText(/No active budget found/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Create Budget')).not.toBeInTheDocument();
   });
 
   it('renders budget summary with correct percentages', async () => {

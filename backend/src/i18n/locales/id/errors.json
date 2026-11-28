@@ -94,6 +94,7 @@
     "undoSplitLegsChanged": "Pengeditan ini mengubah baris pecahan yang memindahkan uang ke akun lain, sehingga tidak dapat dibatalkan secara otomatis. Edit transaksi untuk mengembalikannya.",
     "undoDeletedSplitHasTransferLine": "Pecahan ini memiliki baris yang memindahkan uang di akun lain (transfer atau baris investasi), dan pembatalan tidak dapat memulihkan sisi akun lainnya. Masukkan pecahan itu lagi.",
     "undoTransferLegDeleted": "Baris ini adalah satu sisi dari transfer atau pecahan. Pembatalan tidak dapat memulihkannya sendiri. Periksa akun lainnya: edit sisi yang masih ada, atau masukkan transaksi lagi jika tidak ada yang tersisa.",
+    "undoTransferChangeNotSupported": "Perubahan pada transfer ini (pengeditan, perubahan status, atau penghapusan) tidak dapat dibatalkan secara otomatis. Edit transfer untuk mengembalikannya, atau masukkan lagi jika transfer dihapus.",
     "undoBulkDeletedSplit": "Penghapusan ini mencakup transaksi pecahan, dan pembatalan penghapusan massal tidak dapat memulihkan baris pecahan. Masukkan pecahan itu lagi.",
     "undoVoidWithLegs": "Perubahan ini membatalkan atau memulihkan entri di akun lain, sehingga tidak dapat dibatalkan secara otomatis. Ubah kembali statusnya.",
     "loanEditNotUndoable": "Perubahan pinjaman ini tidak dapat dibatalkan secara otomatis. Edit pinjaman untuk mengembalikannya.",

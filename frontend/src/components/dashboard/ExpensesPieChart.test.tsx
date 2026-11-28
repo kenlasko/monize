@@ -127,6 +127,15 @@ describe('ExpensesPieChart', () => {
     expect(screen.getByText('1M')).toBeInTheDocument();
   });
 
+  it('says the report failed to load, not that there is no spending', async () => {
+    mockGetSpendingByCategory.mockRejectedValue(new Error('500'));
+    await act(async () => {
+      render(<ExpensesPieChart accounts={[]} isLoading={false} />);
+    });
+    expect(screen.getByText(/Couldn't load your spending by category/)).toBeInTheDocument();
+    expect(screen.queryByText('No expense data for this period.')).not.toBeInTheDocument();
+  });
+
   it('renders empty state when the report finds no spending', async () => {
     await renderChart(report([]));
     await waitFor(() => {

@@ -371,7 +371,8 @@
     "settlement": "Settlement: {ordinal}",
     "settlementTooltip": "The last day of the billing cycle. Transactions posted on or before this day appear on the current statement.",
     "dueShort": "due {ordinal}",
-    "metaWithDue": "{institution} · {due}"
+    "metaWithDue": "{institution} · {due}",
+    "loadFailed": "Couldn't load your accounts. Reload the dashboard to try again."
   },
   "upcomingBills": {
     "title": "Upcoming Bills & Deposits",
@@ -407,7 +408,8 @@
     "dayEmpty": "No bills or deposits are scheduled for this day.",
     "metaPayee": "· {payee}",
     "metaManual": "· paid by hand",
-    "metaWhen": "· {when}"
+    "metaWhen": "· {when}",
+    "loadFailed": "Couldn't load your upcoming bills. Reload the dashboard to try again."
   },
   "cashFlowForecast": {
     "title": "Cash Flow Forecast",
@@ -444,7 +446,8 @@
     "viewFullBudget": "View full budget",
     "daysLeft": "{count} days left",
     "safeToSpend": "Safe to spend today",
-    "topCategories": "Top Categories"
+    "topCategories": "Top Categories",
+    "loadFailed": "Couldn't load your budget status. Reload the dashboard to try again."
   },
   "insights": {
     "title": "Spending Insights",
@@ -520,13 +523,15 @@
     "topLevelOnly": "Top level categories",
     "topLevelOnlyHint": "Count subcategories against their parent",
     "viewCallouts": "Labels",
-    "viewLegend": "Legend"
+    "viewLegend": "Legend",
+    "loadFailed": "Couldn't load your spending by category. Reload the dashboard to try again."
   },
   "incomeExpenses": {
     "title": "Income vs Expenses",
     "income": "Income",
     "expenses": "Expenses",
-    "net": "Net"
+    "net": "Net",
+    "loadFailed": "Couldn't load your income and expenses. Reload the dashboard to try again."
   },
   "customize": {
     "button": "Customize",
@@ -736,5 +741,6 @@
     "depthSubcategories": "Subcategories",
     "viewDiagram": "Diagram",
     "viewTable": "Table"
-  }
+  },
+  "accountsLoadFailed": "Couldn't load your accounts, so this widget can't be shown. Reload the dashboard to try again."
 }
