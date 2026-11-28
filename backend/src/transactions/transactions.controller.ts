@@ -1875,7 +1875,9 @@ export class TransactionsController {
     ) {
       return this.jointRegister.remove(req.user.realUserId ?? req.user.id, id);
     }
-    return this.transactionsService.removeAny(
+    // The ids the delete removed are for the in-process callers; the route's
+    // response stays empty.
+    await this.transactionsService.removeAny(
       req.user.id,
       id,
       transferActorFrom(req),
@@ -2031,12 +2033,12 @@ export class TransactionsController {
   @ApiResponse({ status: 200, description: "Split removed successfully" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({ status: 404, description: "Transaction or split not found" })
-  removeSplit(
+  async removeSplit(
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
     @Param("splitId", ParseUUIDPipe) splitId: string,
   ) {
-    return this.transactionsService.removeSplit(req.user.id, id, splitId);
+    await this.transactionsService.removeSplit(req.user.id, id, splitId);
   }
 
   @Get(":id/linked")
@@ -2070,8 +2072,8 @@ export class TransactionsController {
   @AllowDelegate()
   @DelegatedTransferParam("id")
   @DelegateRequires("delete")
-  removeTransfer(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
-    return this.transactionsService.removeTransfer(
+  async removeTransfer(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    await this.transactionsService.removeTransfer(
       req.user.id,
       id,
       transferActorFrom(req),

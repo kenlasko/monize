@@ -80,6 +80,7 @@ import { Account } from "../accounts/entities/account.entity";
 import { PayeesService } from "../payees/payees.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { TransactionSplitService } from "./transaction-split.service";
+import { ownRowIds, removedBetween } from "./remove-transaction-leg";
 import {
   applyRegisterOrder,
   creditsBeforeDebitsDirection,
@@ -4467,7 +4468,7 @@ export class TransactionsService {
         securityIds: Set<string>;
       };
     },
-  ): Promise<void> {
+  ): Promise<string[]> {
     const transaction = await this.findOne(userId, id);
     const beforeSnapshot = this.snapshotTransaction(transaction);
     // Every account this deletion moves, not only the selected row's, so the
@@ -4479,6 +4480,9 @@ export class TransactionsService {
     // fan-out (RR5-002 must not undo the P4-002 locked-account guarantee).
     const affectedAccountIds = new Set<string>();
     const touchedSecurityIds = new Set<string>();
+    // What this delete removed: the own rows before and after, read inside the
+    // transaction under the locks below (returned to the caller).
+    let removedIds: string[] = [];
 
     // One transaction: split side effects, linked/parent cleanup, the delete
     // itself, and the balance adjustment commit or roll back together.
@@ -4547,6 +4551,24 @@ export class TransactionsService {
       // have moved the row, and the balance reversal below uses locked.accountId.
       affectedAccountIds.add(locked.accountId);
 
+      // Every row this delete can take with it, snapshotted under the lock: a
+      // split parent's transfer legs, or, for a leg, its parent and the
+      // parent's other legs.
+      const splitOwnerId = locked.isSplit ? id : parentSplit?.transactionId;
+      const candidateIds = new Set<string>([id]);
+      if (splitOwnerId) {
+        candidateIds.add(splitOwnerId);
+        for (const line of await m.find(TransactionSplit, {
+          where: { transactionId: splitOwnerId },
+          select: { id: true, linkedTransactionId: true },
+        })) {
+          if (line.linkedTransactionId) {
+            candidateIds.add(line.linkedTransactionId);
+          }
+        }
+      }
+      const rowsBefore = await ownRowIds(m, userId, candidateIds);
+
       if (locked.isSplit) {
         // Transfer-target and brokerage accounts this split's cleanup moved join
         // the set invalidated after commit (recheck RR5-002).
@@ -4570,6 +4592,10 @@ export class TransactionsService {
       }
 
       const deleted = await m.delete(Transaction, { id, userId });
+      removedIds = removedBetween(
+        rowsBefore,
+        await ownRowIds(m, userId, rowsBefore),
+      );
       if ((deleted.affected ?? 0) === 0) {
         // The row was removed by the parent cleanup above (a split counterpart
         // cascade). Reversing its amount again would double-count.
@@ -4605,13 +4631,14 @@ export class TransactionsService {
         securityIds: touchedSecurityIds,
       });
     }
-    if (options?.recordHistory === false) return;
+    if (options?.recordHistory === false) return removedIds;
     this.recordTransactionAction(
       userId,
       { ...transaction, ...beforeSnapshot } as Transaction,
       "delete",
       beforeSnapshot,
     );
+    return removedIds;
   }
 
   /**
@@ -5228,7 +5255,7 @@ export class TransactionsService {
     userId: string,
     transactionId: string,
     actor?: TransferActor,
-  ): Promise<void> {
+  ): Promise<string[]> {
     // The receiving leg of a split transfer is one line of the split, not a
     // whole transfer: remove that line and re-total the parent, leaving the
     // parent and its other lines in place (kenlasko/monize#2366).
@@ -5268,53 +5295,30 @@ export class TransactionsService {
    * up front whether the target is a transfer. Like removeTransfer it records
    * no action-history entry (INV-TRANSFER-001).
    *
-   * Returns the ids that are gone afterwards: the row and whatever went with
-   * it (a transfer's mirror, a split parent's transfer legs). A caller deleting
+   * Returns the ids this delete removed, from the delete's own transaction
+   * under its locks: the row and whatever went with it (a transfer's mirror, a
+   * split parent's transfer legs). Never another owner's row. A caller deleting
    * a selection row by row skips a selected id already in the union of these,
    * so the second leg of a transfer is not deleted twice (a 404 after the
-   * first delete wrote). Read after the commit from the rows themselves, so a
-   * mirror that was not removed (unlinked meanwhile) is not reported.
+   * first delete wrote). A mirror that was not removed is not reported.
    */
   async removeAny(
     userId: string,
     transactionId: string,
     actor?: TransferActor,
   ): Promise<string[]> {
-    // Only the columns the routing needs; a miss falls through to
+    // Only the two columns the routing needs; a miss falls through to
     // remove(), whose findOne throws the not-found error.
     const row = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(Transaction).findOne({
         where: { id: transactionId, userId },
-        select: ["id", "isTransfer", "linkedTransactionId", "isSplit"],
+        select: ["id", "isTransfer", "linkedTransactionId"],
       }),
     );
-    // Every row this delete may take with it, read before it runs.
-    const candidates = new Set<string>([transactionId]);
-    if (row?.linkedTransactionId) candidates.add(row.linkedTransactionId);
-    if (row?.isSplit) {
-      const legs = await withScopedDb(this.dataSource, (m) =>
-        m.find(TransactionSplit, {
-          where: { transactionId },
-          select: ["id", "linkedTransactionId"],
-        }),
-      );
-      for (const leg of legs) {
-        if (leg.linkedTransactionId) candidates.add(leg.linkedTransactionId);
-      }
-    }
     if (row?.isTransfer && row.linkedTransactionId) {
-      await this.removeTransfer(userId, transactionId, actor);
-    } else {
-      await this.remove(userId, transactionId);
+      return this.removeTransfer(userId, transactionId, actor);
     }
-    const remaining = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Transaction).find({
-        where: { id: In([...candidates]), userId },
-        select: ["id"],
-      }),
-    );
-    const remainingIds = new Set(remaining.map((r) => r.id));
-    return [...candidates].filter((id) => !remainingIds.has(id));
+    return this.remove(userId, transactionId);
   }
 
   /**

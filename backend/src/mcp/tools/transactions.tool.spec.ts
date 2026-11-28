@@ -2358,6 +2358,98 @@ describe("McpTransactionsTools", () => {
       expect((result.structuredContent as any).ids).toEqual(["t1", "t2"]);
     });
 
+    it("reports a declined delete card as deleted when the accepted card removed its transfer", async () => {
+      relayService.emitPendingAction.mockResolvedValue(false);
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput
+        .mockResolvedValueOnce({ action: "accept" })
+        .mockResolvedValueOnce({ action: "decline" });
+      prepService.prepareDelete.mockResolvedValue({ transactionId: "t1" });
+      actionBuilder.buildDeleteTransaction
+        .mockReturnValueOnce({
+          type: "delete_transaction",
+          preview: { accountName: "Checking" },
+          descriptor: { type: "delete_transaction", transactionId: "t1" },
+        })
+        .mockReturnValueOnce({
+          type: "delete_transaction",
+          preview: { accountName: "Savings" },
+          descriptor: { type: "delete_transaction", transactionId: "t2" },
+        });
+      transactionsService.removeAny.mockResolvedValueOnce(["t1", "t2"]);
+      const result = await handlers["manage_transactions"](
+        {
+          operation: "delete",
+          items: [{ transactionId: "t1" }, { transactionId: "t2" }],
+          approvalMode: "individual",
+        },
+        ctx,
+      );
+      expect(transactionsService.removeAny).toHaveBeenCalledTimes(1);
+      expect((result.structuredContent as any).ids).toEqual(["t1", "t2"]);
+    });
+
+    it("keeps a declined delete card out of the result when nothing removed its row", async () => {
+      relayService.emitPendingAction.mockResolvedValue(false);
+      server.server.getClientCapabilities.mockReturnValue({
+        elicitation: { form: {} },
+      });
+      elicitInput
+        .mockResolvedValueOnce({ action: "accept" })
+        .mockResolvedValueOnce({ action: "decline" });
+      prepService.prepareDelete.mockResolvedValue({ transactionId: "t1" });
+      actionBuilder.buildDeleteTransaction
+        .mockReturnValueOnce({
+          type: "delete_transaction",
+          preview: { accountName: "Checking" },
+          descriptor: { type: "delete_transaction", transactionId: "t1" },
+        })
+        .mockReturnValueOnce({
+          type: "delete_transaction",
+          preview: { accountName: "Savings" },
+          descriptor: { type: "delete_transaction", transactionId: "t2" },
+        });
+      transactionsService.removeAny.mockResolvedValueOnce(["t1"]);
+      const result = await handlers["manage_transactions"](
+        {
+          operation: "delete",
+          items: [{ transactionId: "t1" }, { transactionId: "t2" }],
+          approvalMode: "individual",
+        },
+        ctx,
+      );
+      expect((result.structuredContent as any).ids).toEqual(["t1"]);
+    });
+
+    it("skips a bulk delete row that fails and still reports the ids deleted", async () => {
+      relayService.emitPendingAction.mockResolvedValue(false);
+      acceptingClient();
+      prepService.prepareDeleteBulk.mockResolvedValue({
+        okRows: [{ transactionId: "t1" }, { transactionId: "t2" }],
+        previewRows: [{ status: "ok" }, { status: "ok" }],
+        okIndex: [0, 1],
+        skipped: [],
+      });
+      transactionsService.removeAny
+        .mockResolvedValueOnce(["t1"])
+        .mockRejectedValueOnce(new Error("locked"));
+      const result = await handlers["manage_transactions"](
+        {
+          operation: "delete",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            transactionId: `t${i + 1}`,
+          })),
+        },
+        ctx,
+      );
+      const parsed = result.structuredContent as any;
+      expect(result.isError).toBeFalsy();
+      expect(parsed.ids).toEqual(["t1"]);
+      expect(parsed.skipped).toEqual([{ index: 1, reason: "locked" }]);
+    });
+
     it("commits an individual create_transfer card via confirmWrite", async () => {
       relayService.emitPendingAction.mockResolvedValue(false);
       acceptingClient();

@@ -171,7 +171,7 @@ export class JointRegisterService {
       row.accountId,
       "delete",
     );
-    return withSystemContext(() =>
+    await withSystemContext(() =>
       this.transactionsService.remove(access.ownerUserId, transactionId, {
         beforeWrite: this.stillAuthorized(
           realUserId,

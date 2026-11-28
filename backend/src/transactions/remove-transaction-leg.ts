@@ -1,4 +1,4 @@
-import { EntityManager } from "typeorm";
+import { EntityManager, In } from "typeorm";
 import { deletionBalanceEffect } from "../common/deletion-balance.util";
 import { Transaction } from "./entities/transaction.entity";
 import { LockedTransactionRow } from "../common/db/locks";
@@ -64,4 +64,32 @@ export async function removeLockedTransactionLeg(
     await balances.recalculateCurrentBalance(userId, leg.accountId);
   }
   return true;
+}
+
+/**
+ * Which of these ids are the user's rows right now, read inside the caller's
+ * transaction. Read before and after a delete, the difference
+ * (`removedBetween`) is exactly what this delete removed, and never another
+ * owner's row, which the user-scoped read does not see on either side.
+ */
+export async function ownRowIds(
+  m: EntityManager,
+  userId: string,
+  ids: Iterable<string>,
+): Promise<Set<string>> {
+  const wanted = [...new Set(ids)];
+  if (wanted.length === 0) return new Set();
+  const rows = await m.find(Transaction, {
+    where: { id: In(wanted), userId },
+    select: { id: true },
+  });
+  return new Set(rows.map((r) => r.id));
+}
+
+/** The ids in `before` that are not in `after`. */
+export function removedBetween(
+  before: ReadonlySet<string>,
+  after: ReadonlySet<string>,
+): string[] {
+  return [...before].filter((id) => !after.has(id));
 }

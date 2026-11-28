@@ -1891,19 +1891,27 @@ export class McpTransactionsTools {
     // A row already removed with its partner (the other leg of a transfer, a
     // split parent's leg) counts as deleted; it is not deleted twice.
     const removedIds = new Set<string>();
-    for (const row of bulk.okRows) {
+    // Best-effort per row, like the AI batch: a refused row is reported by its
+    // item index and the ids already deleted stay in the result.
+    const skipped = [...bulk.skipped];
+    for (const [i, row] of bulk.okRows.entries()) {
       if (!removedIds.has(row.transactionId)) {
-        for (const gone of await this.transactionsService.removeAny(
-          userId,
-          row.transactionId,
-        )) {
-          removedIds.add(gone);
+        try {
+          for (const gone of await this.transactionsService.removeAny(
+            userId,
+            row.transactionId,
+          )) {
+            removedIds.add(gone);
+          }
+        } catch (err) {
+          skipped.push({ index: bulk.okIndex[i], reason: this.reason(err) });
+          continue;
         }
         await this.writeLimiter.record(userId, "delete_transaction");
       }
       ids.push(row.transactionId);
     }
-    return toolResult({ ids, count: ids.length, skipped: bulk.skipped });
+    return toolResult({ ids, count: ids.length, skipped });
   }
 
   /**
@@ -1940,10 +1948,21 @@ export class McpTransactionsTools {
     // Shared across the cards: a delete card whose row went with an earlier
     // card's delete (the other leg of a transfer) is reported, not repeated.
     const removedIds = new Set<string>();
+    const declinedDeletes: string[] = [];
     for (const [index, card] of cards.entries()) {
-      if (answers.get(cardKey(index)) === "declined") continue;
+      if (answers.get(cardKey(index)) === "declined") {
+        if (card.descriptor.type === "delete_transaction") {
+          declinedDeletes.push(card.descriptor.transactionId);
+        }
+        continue;
+      }
       const id = await this.commitCard(userId, card, removedIds);
       if (id) ids.push(id);
+    }
+    // A declined delete whose row went with an accepted card's delete (the
+    // other leg of its transfer) is gone: say so, not that it survived.
+    for (const id of declinedDeletes) {
+      if (removedIds.has(id)) ids.push(id);
     }
     return toolResult({ ids, count: ids.length, skipped });
   }
