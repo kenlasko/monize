@@ -147,6 +147,12 @@ export interface LlmBudgetStatusResult {
   totalSpent: number | null;
   knownTotalSpent: number;
   valuationComplete: boolean;
+  /**
+   * `false` when an income-linked budget's income had a row with no rate:
+   * `totalBudgeted` derives from its converted part, and its percentage lines
+   * are in `incompleteCategories`.
+   */
+  budgetedComplete: boolean;
   /** `"JPY->CAD"` for each pair with no rate behind the withheld totals. */
   missingRatePairs: string[];
   /** Total Budget Funding: `categoryIncome` plus `transferFunding`. */
@@ -199,6 +205,9 @@ export interface LlmBudgetStatusResult {
      */
     safeDailySpend: number | null;
     upcomingBillsComplete: boolean;
+    /** `false`: spending had a row with no rate, so `safeDailySpend` is `null`. */
+    spendingComplete: boolean;
+    spendingMissingRatePairs: string[];
     projectedTotal: number | null;
     projectedVariance: number | null;
     daysRemaining: number;
@@ -440,6 +449,7 @@ export class BudgetReportsService {
       totalSpent: summary.totalSpent,
       knownTotalSpent: summary.knownTotalSpent,
       valuationComplete: summary.valuationComplete,
+      budgetedComplete: summary.budgetedComplete,
       missingRatePairs: summary.missingRatePairs,
       totalIncome: summary.totalIncome,
       categoryIncome: summary.categoryIncome,
@@ -458,6 +468,8 @@ export class BudgetReportsService {
         dailyBurnRate: velocity.dailyBurnRate,
         safeDailySpend: velocity.safeDailySpend,
         upcomingBillsComplete: velocity.upcomingBillsComplete,
+        spendingComplete: velocity.spendingComplete,
+        spendingMissingRatePairs: velocity.spendingMissingRatePairs,
         projectedTotal: velocity.projectedTotal,
         projectedVariance: velocity.projectedVariance,
         daysRemaining: velocity.daysRemaining,

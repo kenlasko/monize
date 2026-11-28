@@ -80,7 +80,7 @@ export function BudgetDashboard({
 
       {/* Summary Cards */}
       <BudgetSummaryCards
-        totalBudgeted={summary.totalBudgeted}
+        totalBudgeted={summary.budgetedComplete === false ? null : summary.totalBudgeted}
         totalSpent={summary.totalSpent}
         remaining={summary.remaining}
         totalIncome={summary.totalIncome}

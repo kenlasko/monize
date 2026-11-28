@@ -66,7 +66,11 @@ export function BudgetSummaryPebble({
           </dd>
         </div>
         <Block label={t('summaryCards.totalBudget')}>
-          <MoneyFigure amount={totalBudgeted} currencyCode={displayCurrency} display />
+          {totalBudgeted === null ? (
+            <UnknownAmount reasonText={partialReason} />
+          ) : (
+            <MoneyFigure amount={totalBudgeted} currencyCode={displayCurrency} display />
+          )}
         </Block>
         <Block
           label={t('summaryCards.spent')}

@@ -2958,11 +2958,18 @@ export class ToolExecutorService {
       // not defaulted -- the summary is the line a model quotes (issue #1247).
       summaryParts.push(
         data.velocity.safeDailySpend === null
-          ? `Safe daily spend: unknown (${
-              data.velocity.upcomingBillsComplete
-                ? `spending in a currency with no exchange rate (${data.missingRatePairs.join(", ")}) is not converted`
-                : "an upcoming bill's current amount could not be determined"
-            }), ${data.velocity.daysRemaining} days remaining`
+          ? `Safe daily spend: unknown (${[
+              ...(data.velocity.spendingComplete === false
+                ? [
+                    `spending in a currency with no exchange rate (${data.velocity.spendingMissingRatePairs.join(", ")}) is not converted`,
+                  ]
+                : []),
+              ...(data.velocity.upcomingBillsComplete
+                ? []
+                : [
+                    "an upcoming bill's current amount could not be determined",
+                  ]),
+            ].join(" and ")}), ${data.velocity.daysRemaining} days remaining`
           : `Safe daily spend: $${data.velocity.safeDailySpend.toFixed(2)}, ${data.velocity.daysRemaining} days remaining`,
       );
     }

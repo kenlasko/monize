@@ -45,7 +45,11 @@ export function BudgetSummaryFolio({
     <section aria-label={t('summaryCards.ariaLabel')} className="ui-bud-statement">
       <dl className="ui-bud-statement-row">
         <Entry label={t('summaryCards.totalBudget')}>
-          <MoneyFigure amount={totalBudgeted} currencyCode={displayCurrency} display />
+          {totalBudgeted === null ? (
+            <UnknownAmount reasonText={partialReason} />
+          ) : (
+            <MoneyFigure amount={totalBudgeted} currencyCode={displayCurrency} display />
+          )}
         </Entry>
         <Entry
           label={t('summaryCards.spent')}

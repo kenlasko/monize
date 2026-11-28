@@ -374,7 +374,12 @@ export interface CategoryBreakdown {
    * the converted part only. Read as `=== false`; absent is no information.
    */
   valuationComplete?: boolean;
-  /** `"JPY->CAD"` for each pair with no rate behind a partial `spent`. */
+  /**
+   * `false` on a percentage line of an income-linked budget whose income had a
+   * row with no rate: `budgeted` derives from the converted part of that income.
+   */
+  budgetedComplete?: boolean;
+  /** `"JPY->CAD"` for each pair with no rate behind this line. */
   missingRatePairs?: string[];
 }
 
@@ -389,6 +394,11 @@ export interface BudgetSummary {
   valuationComplete?: boolean;
   /** `"JPY->CAD"` for each pair with no rate behind the withheld totals. */
   missingRatePairs?: string[];
+  /**
+   * `false` when an income-linked budget's income had a row with no rate:
+   * `totalBudgeted` derives from its converted part. Read as `=== false`.
+   */
+  budgetedComplete?: boolean;
   /**
    * Total Budget Funding; `null` while an income row had no exchange rate
    * (`knownTotalIncome` is the converted part). `categoryIncome` and

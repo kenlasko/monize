@@ -5,7 +5,8 @@
  * viewer's default currency is used.
  */
 export interface BudgetSummaryViewProps {
-  totalBudgeted: number;
+  /** `null` when the budget derives from income with no exchange rate (`budgetedComplete` is `false`). */
+  totalBudgeted: number | null;
   /**
    * `null` for a figure the server could not work out (a row had no exchange
    * rate to the budget currency): drawn as unknown, never as zero or as the

@@ -49,7 +49,7 @@ function BudgetSummaryCardsStandard({
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <SummaryCard
         label={t('summaryCards.totalBudget')}
-        value={formatCurrency(totalBudgeted)}
+        value={totalBudgeted === null ? <UnknownAmount reasonText={partialReason} /> : formatCurrency(totalBudgeted)}
         icon={SummaryIcons.money}
         valueColor="blue"
       />

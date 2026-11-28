@@ -9,6 +9,7 @@ import { clamp } from '@/lib/clamp';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { CARD_CLASS } from '@/components/ui/Card';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import { WidgetHeading } from './widget-meta';
 import {
   budgetPercentColor,
@@ -23,6 +24,7 @@ interface BudgetStatusWidgetProps {
 export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWidgetProps) {
   const t = useTranslations('dashboard');
   const tb = useTranslations('budgets');
+  const partialReason = useBudgetPartialReason();
   const router = useRouter();
   const { formatCurrency, formatPercent } = useNumberFormat();
   const [summary, setSummary] = useState<DashboardBudgetSummary | null>(null);
@@ -85,8 +87,6 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
   // A row with no exchange rate is left out of the converted figure, so the
   // total is unknown rather than small (read as `=== false`: absent is no
   // information).
-  const partialReason = (pairs?: string[]) =>
-    tb('partialSpent.reason', { pairs: (pairs ?? []).join(', ') });
   const totalUnknown =
     summary.valuationComplete === false || summary.percentUsed === null || summary.totalSpent === null;
 

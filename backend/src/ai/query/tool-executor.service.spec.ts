@@ -1868,6 +1868,37 @@ describe("ToolExecutorService", () => {
       expect(result.summary).toContain("Health score: unknown");
     });
 
+    it("get_budget_status names both causes of an unknown safe daily spend", async () => {
+      budgetReports.getLlmBudgetStatus.mockResolvedValueOnce({
+        budgetName: "Home",
+        period: { start: "2026-02-01", end: "2026-02-28" },
+        totalBudgeted: 1000,
+        totalSpent: 20,
+        knownTotalSpent: 20,
+        percentUsed: 2,
+        remaining: 980,
+        valuationComplete: true,
+        missingRatePairs: [],
+        overBudgetCategories: [],
+        incompleteCategories: [],
+        velocity: {
+          safeDailySpend: null,
+          upcomingBillsComplete: false,
+          spendingComplete: false,
+          spendingMissingRatePairs: ["QQQ->USD"],
+          daysRemaining: 10,
+        },
+      } as never);
+
+      const result = await service.execute(userId, "get_budget_status", {});
+
+      expect(result.summary).toContain("QQQ->USD");
+      expect(result.summary).toContain(
+        "an upcoming bill's current amount could not be determined",
+      );
+      expect(result.summary).toContain(" and ");
+    });
+
     it("list_upcoming_bills delegates to scheduledTransactions.getLlmUpcomingBillsAndDeposits", async () => {
       const result = await service.execute(userId, "list_upcoming_bills", {});
 

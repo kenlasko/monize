@@ -76,6 +76,14 @@ export function BudgetCategoryList({
   const sortedCategories = useMemo(() => {
     const sorted = [...expenseCategories];
     sorted.sort((a, b) => {
+      // A line with an unknown figure has nothing to rank by on the figure
+      // columns: it goes last in either direction (read as `=== false`).
+      if (sortField !== 'name') {
+        const aPartial = a.valuationComplete === false;
+        const bPartial = b.valuationComplete === false;
+        if (aPartial !== bPartial) return aPartial ? 1 : -1;
+        if (aPartial && bPartial) return a.categoryName.localeCompare(b.categoryName);
+      }
       let comparison = 0;
       switch (sortField) {
         case 'name':

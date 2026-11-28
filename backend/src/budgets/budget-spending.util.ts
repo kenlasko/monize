@@ -271,6 +271,15 @@ export interface CategorySpending {
   /** `"JPY->CAD"` for each pair with no admissible rate, sorted. */
   missingRatePairs: string[];
   /**
+   * The pairs behind each incomplete key, so a line names only its own:
+   * categoryId, destination accountId and source accountId respectively, and
+   * the outside transfers in as a list (`missingRatePairs` is their union).
+   */
+  categoryMissingPairs: Map<string, string[]>;
+  transferMissingPairs: Map<string, string[]>;
+  transferIncomeMissingPairs: Map<string, string[]>;
+  outsideMissingPairs: string[];
+  /**
    * destination accountId -> the provisional transfer legs (an imported
    * estimate, `amount_is_provisional`) inside its `transferSpendingMap`
    * figure; absent when there are none. Only rows that converted count
@@ -380,6 +389,10 @@ export function emptyCategorySpending(currency: string): CategorySpending & {
     outsideTransferIncomeAggregate: new FxAggregate(),
     outsideTransferIncomeComplete: true,
     missingRatePairs: [],
+    categoryMissingPairs: new Map(),
+    transferMissingPairs: new Map(),
+    transferIncomeMissingPairs: new Map(),
+    outsideMissingPairs: [],
     transferProvisionalCounts: new Map(),
     transferIncomeProvisionalCounts: new Map(),
     outsideTransferIncomeProvisionalCount: 0,
@@ -802,17 +815,26 @@ export async function queryCategorySpendingBuckets(
     const categories = fold(categoryByBucket.get(bucket) ?? []);
     for (const [key, agg] of categories.totals) {
       spending.spendingMap.set(key, agg.knownSubtotal);
-      if (!agg.isComplete) spending.incompleteCategoryIds.add(key);
+      if (!agg.isComplete) {
+        spending.incompleteCategoryIds.add(key);
+        spending.categoryMissingPairs.set(key, agg.missingPairs);
+      }
     }
     const transfers = fold(transferByBucket.get(bucket) ?? []);
     for (const [key, agg] of transfers.totals) {
       spending.transferSpendingMap.set(key, agg.knownSubtotal);
-      if (!agg.isComplete) spending.incompleteTransferAccountIds.add(key);
+      if (!agg.isComplete) {
+        spending.incompleteTransferAccountIds.add(key);
+        spending.transferMissingPairs.set(key, agg.missingPairs);
+      }
     }
     const lineIncome = fold(lineIncomeByBucket.get(bucket) ?? []);
     for (const [key, agg] of lineIncome.totals) {
       spending.transferIncomeMap.set(key, agg.knownSubtotal);
-      if (!agg.isComplete) spending.incompleteTransferIncomeAccountIds.add(key);
+      if (!agg.isComplete) {
+        spending.incompleteTransferIncomeAccountIds.add(key);
+        spending.transferIncomeMissingPairs.set(key, agg.missingPairs);
+      }
     }
     const outsideIncome = fold(outsideIncomeByBucket.get(bucket) ?? []);
     const outsideAgg = outsideIncome.totals.get("");
@@ -820,6 +842,7 @@ export async function queryCategorySpendingBuckets(
       spending.outsideTransferIncome = outsideAgg.knownSubtotal;
       spending.outsideTransferIncomeAggregate = outsideAgg;
       spending.outsideTransferIncomeComplete = outsideAgg.isComplete;
+      spending.outsideMissingPairs = outsideAgg.missingPairs;
     }
     // An outgoing line and an income line naming one account can both read
     // the same leg, so the whole count is over distinct ids.
@@ -1075,4 +1098,68 @@ export function resolveCategorySpentOrNull(
     spending.transferSpendingMap,
     spending.transferIncomeMap,
   );
+}
+
+/**
+ * The pairs with no rate behind one line's own figure: empty while the line is
+ * complete. Keyed like `resolveCategorySpentOrNull`.
+ */
+export function resolveCategoryMissingPairs(
+  bc: BudgetCategory,
+  spending: Pick<
+    CategorySpending,
+    | "categoryMissingPairs"
+    | "transferMissingPairs"
+    | "transferIncomeMissingPairs"
+  >,
+): string[] {
+  if (isTransferIncomeLine(bc)) {
+    return (
+      spending.transferIncomeMissingPairs.get(bc.transferAccountId as string) ??
+      []
+    );
+  }
+  if (bc.isTransfer && bc.transferAccountId) {
+    return spending.transferMissingPairs.get(bc.transferAccountId) ?? [];
+  }
+  return bc.categoryId
+    ? (spending.categoryMissingPairs.get(bc.categoryId) ?? [])
+    : [];
+}
+
+/**
+ * Whether the income `resolveBudgetIncome` reads is complete and, when it is
+ * not, the pairs with no rate behind it. An income-linked budget derives its
+ * percentage lines from that income, so they are unknown while it is.
+ */
+export function resolveBudgetIncomeCompleteness(
+  budgetCategories: readonly BudgetCategory[],
+  spending: Pick<
+    CategorySpending,
+    | "incompleteCategoryIds"
+    | "incompleteTransferIncomeAccountIds"
+    | "categoryMissingPairs"
+    | "transferMissingPairs"
+    | "transferIncomeMissingPairs"
+    | "outsideMissingPairs"
+    | "outsideTransferIncomeComplete"
+  >,
+): { complete: boolean; missingRatePairs: string[] } {
+  let complete = spending.outsideTransferIncomeComplete;
+  const pairs = new Set<string>(spending.outsideMissingPairs);
+  for (const bc of budgetCategories) {
+    if (!bc.isIncome || (bc.isTransfer && !isTransferIncomeLine(bc))) continue;
+    const incomplete = isTransferIncomeLine(bc)
+      ? spending.incompleteTransferIncomeAccountIds.has(
+          bc.transferAccountId as string,
+        )
+      : bc.categoryId !== null &&
+        spending.incompleteCategoryIds.has(bc.categoryId);
+    if (!incomplete) continue;
+    complete = false;
+    for (const pair of resolveCategoryMissingPairs(bc, spending)) {
+      pairs.add(pair);
+    }
+  }
+  return { complete, missingRatePairs: [...pairs].sort() };
 }

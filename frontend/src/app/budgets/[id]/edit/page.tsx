@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -369,6 +370,9 @@ function BudgetEditContent() {
                   (b) => b.budgetCategoryId === cat.id,
                 );
                 const percentUsed = breakdownItem?.percentUsed ?? 0;
+                // A row with no exchange rate (or income-linked income that has
+                // none) leaves the percent unknown: no bar, no percent.
+                const partial = breakdownItem?.valuationComplete === false;
 
                 return (
                   <button
@@ -397,14 +401,18 @@ function BudgetEditContent() {
                         {formatCurrency(cat.amount, budget.currencyCode)}
                       </span>
                     </div>
-                    <BudgetProgressBar percentUsed={percentUsed} />
+                    {!partial && <BudgetProgressBar percentUsed={percentUsed} />}
                     <div className="flex items-center justify-between mt-1 text-xs text-gray-500 dark:text-gray-400">
                       <span>
                         {cat.rolloverType !== 'NONE'
                           ? t('pages.edit.rolloverType', { type: cat.rolloverType.toLowerCase() })
                           : t('pages.edit.resetsEachPeriod')}
                       </span>
-                      <span>{t('pages.edit.percentUsed', { percent: String(Math.round(percentUsed)) })}</span>
+                      {partial ? (
+                        <UnknownAmount reasonText={partialReasonOf(breakdownItem?.missingRatePairs)} />
+                      ) : (
+                        <span>{t('pages.edit.percentUsed', { percent: String(Math.round(percentUsed)) })}</span>
+                      )}
                     </div>
                   </button>
                 );

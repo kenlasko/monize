@@ -41,9 +41,9 @@ export function Budget503020Summary({
   }
 
   // Compute spent by group from categoryBreakdown
-  const groupTotals = new Map<string, { budgeted: number; spent: number; complete: boolean }>();
+  const groupTotals = new Map<string, { budgeted: number; spent: number; complete: boolean; budgetedComplete: boolean }>();
   for (const group of GROUPS) {
-    groupTotals.set(group.key, { budgeted: 0, spent: 0, complete: true });
+    groupTotals.set(group.key, { budgeted: 0, spent: 0, complete: true, budgetedComplete: true });
   }
 
   for (const cat of categoryBreakdown) {
@@ -54,6 +54,7 @@ export function Budget503020Summary({
       current.budgeted += cat.budgeted;
       current.spent += cat.spent;
       if (cat.valuationComplete === false) current.complete = false;
+      if (cat.budgetedComplete === false) current.budgetedComplete = false;
     }
   }
 
@@ -71,7 +72,8 @@ export function Budget503020Summary({
           // A share needs the income and every line of the group known.
           const spentKnown = incomeKnown && data.complete;
           const actualPercent = spentKnown ? Math.round((data.spent / totalIncome) * 100) : 0;
-          const budgetedPercent = incomeKnown ? Math.round((data.budgeted / totalIncome) * 100) : 0;
+          const budgetedKnown = incomeKnown && data.budgetedComplete;
+          const budgetedPercent = budgetedKnown ? Math.round((data.budgeted / totalIncome) * 100) : 0;
           const diff = actualPercent - group.target;
 
           let statusColor: string;
@@ -112,10 +114,14 @@ export function Budget503020Summary({
                 </div>
               </div>
               <div className="relative w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-300 ${group.color}`}
-                  style={{ width: `${barWidth}%` }}
-                />
+                {/* A 0% bar would read as a measurement: the fill is drawn only
+                    for a known share. */}
+                {spentKnown && (
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${group.color}`}
+                    style={{ width: `${barWidth}%` }}
+                  />
+                )}
                 {/* Target marker */}
                 <div
                   className="absolute top-0 h-full w-px bg-gray-500/60 dark:bg-gray-400/60"
@@ -124,7 +130,7 @@ export function Budget503020Summary({
                 />
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {incomeKnown ? (
+                {budgetedKnown ? (
                   t('summary503020.budgeted', { percent: formatPercentTrimmed(budgetedPercent), amount: formatCurrency(data.budgeted) })
                 ) : (
                   <UnknownAmount reasonText={partialReason} />

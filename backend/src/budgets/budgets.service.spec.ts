@@ -678,7 +678,12 @@ describe("BudgetsService", () => {
     it("drops the budget's cached actuals, so the next summary counts the new line", async () => {
       const compute = jest
         .spyOn(service as any, "computeCategoryActuals")
-        .mockResolvedValue({ lines: [], outsideTransferIncome: 0 });
+        .mockResolvedValue({
+          lines: [],
+          outsideTransferIncome: 0,
+          outsideTransferIncomeComplete: true,
+          outsideMissingPairs: [],
+        });
       budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
       await service.getSummary("user-1", "budget-1");
       await service.getSummary("user-1", "budget-1");
@@ -1039,7 +1044,12 @@ describe("BudgetsService", () => {
     it.each(edits)("after %s", async (_name, edit) => {
       const compute = jest
         .spyOn(service as any, "computeCategoryActuals")
-        .mockResolvedValue({ lines: [], outsideTransferIncome: 0 });
+        .mockResolvedValue({
+          lines: [],
+          outsideTransferIncome: 0,
+          outsideTransferIncomeComplete: true,
+          outsideMissingPairs: [],
+        });
       budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
       await service.getSummary("user-1", "budget-1");
       await service.getSummary("user-1", "budget-1");
@@ -1587,6 +1597,105 @@ describe("BudgetsService", () => {
       expect(result.valuationComplete).toBe(false);
       expect(result.missingRatePairs).toEqual(["QQQ->USD"]);
       expect(result.totalSpent).toBe(0);
+    });
+
+    it("withholds an income-linked percentage line and the budget figures when the income has no rate", async () => {
+      // CAD budget, a 30% line, a USD paycheck and no USD->CAD rate: the line's
+      // budget is 30% of an income nobody can convert, so it is unknown.
+      (
+        transactionsRepository.manager as unknown as { query: jest.Mock }
+      ).query.mockImplementation(async (sql: string) =>
+        sql.includes("FROM budgets") ? [{ currency_code: "CAD" }] : [],
+      );
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        currencyCode: "CAD",
+        incomeLinked: true,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 30,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-3",
+            categoryId: "cat-3",
+            amount: 0,
+            isIncome: true,
+            category: { name: "Salary" },
+          },
+        ],
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([
+            { ...spendingRow("cat-1", "-100"), currencyCode: "CAD" },
+            { ...spendingRow("cat-3", "5000"), currencyCode: "USD" },
+          ]),
+        }),
+      );
+
+      const result = await service.getSummary("user-1", "budget-1");
+      const line = result.categoryBreakdown.find((c) => !c.isIncome)!;
+
+      expect(line.budgetedComplete).toBe(false);
+      expect(line.valuationComplete).toBe(false);
+      expect(line.missingRatePairs).toEqual(["USD->CAD"]);
+      expect(result.budgetedComplete).toBe(false);
+      expect(result.totalSpent).toBeNull();
+      expect(result.remaining).toBeNull();
+      expect(result.percentUsed).toBeNull();
+      expect(result.totalIncome).toBeNull();
+      expect(result.actualIncome).toBeNull();
+    });
+
+    it("names only the expense pairs for unknown spending and the income pairs for unknown income", async () => {
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 1000,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+          {
+            ...mockBudgetCategory,
+            id: "bc-3",
+            categoryId: "cat-3",
+            amount: 0,
+            isIncome: true,
+            category: { name: "Salary" },
+          },
+        ],
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([
+            { ...spendingRow("cat-1", "-100"), currencyCode: "QQQ" },
+            { ...spendingRow("cat-3", "500"), currencyCode: "ZZZ" },
+          ]),
+        }),
+      );
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder(),
+      );
+
+      const result = await service.getSummary("user-1", "budget-1");
+      const expense = result.categoryBreakdown.find((c) => !c.isIncome)!;
+      const income = result.categoryBreakdown.find((c) => c.isIncome)!;
+      expect(expense.missingRatePairs).toEqual(["QQQ->USD"]);
+      expect(income.missingRatePairs).toEqual(["ZZZ->USD"]);
+      expect(result.missingRatePairs).toEqual(["QQQ->USD", "ZZZ->USD"]);
+
+      const velocity = await service.getVelocity("user-1", "budget-1");
+      expect(velocity.spendingMissingRatePairs).toEqual(["QQQ->USD"]);
     });
 
     it("reports a complete summary when every row converts", async () => {
