@@ -1535,6 +1535,58 @@ describe("TransactionTransferService", () => {
   });
 
   describe("removeTransfer", () => {
+    it("refuses a pair whose leg is the cash side of an investment transaction", async () => {
+      const fromTx = {
+        id: "from-tx",
+        isTransfer: true,
+        linkedTransactionId: "to-tx",
+        accountId: "from-account",
+        amount: -500,
+      };
+      mockFindOne.mockResolvedValue(fromTx);
+      splitsRepository.findOne.mockResolvedValue(null);
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "to-tx",
+        accountId: "to-account",
+        amount: 500,
+      });
+      mockQueryRunner.manager.query.mockResolvedValue([
+        { transaction_id: "to-tx" },
+      ]);
+
+      await expect(
+        service.removeTransfer("user-1", "from-tx", mockFindOne),
+      ).rejects.toThrow(/cash side of an investment transaction/);
+
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("refuses a pair whose OWN leg is the cash side of an investment transaction", async () => {
+      mockFindOne.mockResolvedValue({
+        id: "from-tx",
+        isTransfer: true,
+        linkedTransactionId: "to-tx",
+        accountId: "from-account",
+        amount: -500,
+      });
+      splitsRepository.findOne.mockResolvedValue(null);
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "to-tx",
+        accountId: "to-account",
+        amount: 500,
+      });
+      mockQueryRunner.manager.query.mockResolvedValue([
+        { transaction_id: "from-tx" },
+      ]);
+
+      await expect(
+        service.removeTransfer("user-1", "from-tx", mockFindOne),
+      ).rejects.toThrow(/cash side of an investment transaction/);
+
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+    });
+
     it("removes both from and to transactions for standalone transfer", async () => {
       const fromTx = {
         id: "from-tx",
@@ -6044,6 +6096,36 @@ describe("TransactionTransferService", () => {
           "to-account",
           "owner-2",
         );
+      });
+
+      it("refuses when the own leg is an investment cash leg, connected or frozen, writing nothing", async () => {
+        for (const setup of [connect, freeze]) {
+          jest.clearAllMocks();
+          setup();
+          mockQueryRunner.manager.query.mockResolvedValue([{ id: "inv-1" }]);
+
+          await expect(
+            service.removeTransfer("user-1", "own-leg", mockFindOne, actor),
+          ).rejects.toThrow(/cash side of an investment transaction/);
+
+          expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+          expect(accountsService.updateBalance).not.toHaveBeenCalled();
+        }
+      });
+
+      it("connected: refuses when the COUNTERPART leg is an investment cash leg, writing nothing", async () => {
+        connect();
+        mockQueryRunner.manager.query.mockImplementation(
+          async (_sql: string, params?: unknown[]) =>
+            params?.[0] === "foreign-leg" ? [{ id: "inv-1" }] : [],
+        );
+
+        await expect(
+          service.removeTransfer("user-1", "own-leg", mockFindOne, actor),
+        ).rejects.toThrow(/cash side of an investment transaction/);
+
+        expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
       });
 
       it("frozen: removes the own leg only and reverses only the own balance", async () => {

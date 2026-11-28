@@ -8,6 +8,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   Inject,
   forwardRef,
   Logger,
@@ -4518,6 +4519,28 @@ export class TransactionsService {
       if (await isInvestmentCashLeg(m, id)) {
         throw investmentCashLegLockedError();
       }
+      // Safety net for removeAny's unlocked routing read: a transfer leg that
+      // is not a split's line is deleted with its counterpart, never alone
+      // (a lone delete leaves a half transfer, INV-TRANSFER-001). Same
+      // predicate as removeAny (`isTransfer` and a link), so a row with a
+      // link but is_transfer = false still deletes here.
+      if (locked.linkedTransactionId && !parentSplit) {
+        // Read under the row lock just taken, never from the pre-lock
+        // snapshot: a row converted to a transfer after removeAny's read
+        // would still show false there and slip through.
+        const flag: { is_transfer: boolean }[] = await m.query(
+          `SELECT is_transfer FROM transactions WHERE id = $1 AND user_id = $2`,
+          [id, userId],
+        );
+        if (flag[0]?.is_transfer === true) {
+          throw new ConflictException(
+            tr(
+              "errors.transactions.transferLegDeleteTransfer",
+              "This is one side of a transfer. Delete the transfer instead.",
+            ),
+          );
+        }
+      }
       if (options?.beforeWrite) await options.beforeWrite(m);
 
       // The locked row's account joins the fan-out set: a concurrent edit could
@@ -5238,15 +5261,28 @@ export class TransactionsService {
   }
 
   /**
-   * Delete a transaction, routing transfers to removeTransfer so both linked
-   * legs are removed (plain remove() only deletes the single row). Used by the
-   * AI Assistant / MCP manage_transactions delete path, where the caller does
-   * not know up front whether the target is a transfer.
+   * Delete a transaction, routing a transfer to removeTransfer so both linked
+   * legs are removed (plain remove() refuses a transfer leg). The generic
+   * `DELETE /transactions/:id` route, the AI Assistant and the MCP
+   * manage_transactions delete all land here, where the caller does not know
+   * up front whether the target is a transfer. Like removeTransfer it records
+   * no action-history entry (INV-TRANSFER-001).
    */
-  async removeAny(userId: string, transactionId: string): Promise<void> {
-    const transaction = await this.findOne(userId, transactionId);
-    if (transaction.isTransfer && transaction.linkedTransactionId) {
-      return this.removeTransfer(userId, transactionId);
+  async removeAny(
+    userId: string,
+    transactionId: string,
+    actor?: TransferActor,
+  ): Promise<void> {
+    // Only the two columns the routing needs; a miss falls through to
+    // remove(), whose findOne throws the not-found error.
+    const row = await withScopedDb(this.dataSource, (m) =>
+      m.getRepository(Transaction).findOne({
+        where: { id: transactionId, userId },
+        select: ["id", "isTransfer", "linkedTransactionId"],
+      }),
+    );
+    if (row?.isTransfer && row.linkedTransactionId) {
+      return this.removeTransfer(userId, transactionId, actor);
     }
     return this.remove(userId, transactionId);
   }

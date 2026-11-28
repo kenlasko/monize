@@ -8,6 +8,10 @@ import {
   Logger,
 } from "@nestjs/common";
 import { DataSource, EntityManager } from "typeorm";
+import {
+  investmentCashLegLockedError,
+  isInvestmentCashLeg,
+} from "./void-status-transition.util";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { fitCategory } from "../categories/category-fit";
@@ -1943,6 +1947,14 @@ export class TransactionTransferService {
         ? locked.get(transaction.linkedTransactionId)
         : undefined;
 
+      // An investment cash leg belongs to its trade: refuse the pair, as the
+      // single and bulk deletes do (before anything is written).
+      for (const legId of locked.keys()) {
+        if (await isInvestmentCashLeg(m, legId)) {
+          throw investmentCashLegLockedError();
+        }
+      }
+
       // Strict reconciled lock. Both legs are one movement of money, so a
       // reconciled leg refuses the deletion of the pair -- deleting only the
       // unreconciled half is the divergent state the transfer routes exist
@@ -1994,6 +2006,12 @@ export class TransactionTransferService {
     const removeLeg = async (m: EntityManager, leg: Transaction) => {
       const locked = await lockTransactionRow(m, leg.id, leg.userId);
       if (!locked) return;
+      // An investment cash leg belongs to its trade, on either side of the
+      // pair: refuse under this leg's lock, before any write (both legs share
+      // one transaction, so a refusal on the second rolls back the first).
+      if (await isInvestmentCashLeg(m, leg.id)) {
+        throw investmentCashLegLockedError();
+      }
       // Strict reconciled lock, under the leg's own owner's setting: a
       // reconciled leg refuses the deletion of the pair, as on the same-owner
       // path (A26-M11). Both legs run in one transaction, so a refusal on the

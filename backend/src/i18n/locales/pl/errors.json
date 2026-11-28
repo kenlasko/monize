@@ -899,6 +899,7 @@
     "splitTransferLegStatusLocked": "Ten przelew jest częścią transakcji podzielonej. Anuluj go lub przywróć, edytując transakcję podzieloną, do której należy, aby obie strony zmieniły się razem.",
     "splitTransferLegAmountIsParentTotal": "Ta kwota jest sumą całego podziału, a nie tej linii przelewu. Edytuj podział w transakcji źródłowej, aby zmienić kwotę linii.",
     "investmentCashLegLocked": "Ta transakcja jest stroną gotówkową transakcji inwestycyjnej. Zmień lub usuń transakcję inwestycyjną, aby obie strony zmieniły się razem.",
+    "transferLegDeleteTransfer": "To jest jedna strona przelewu. Usuń zamiast tego przelew.",
     "investmentCashLegStatusLocked": "Ta transakcja jest gotówkową stroną transakcji inwestycyjnej. Unieważnij ją lub przywróć, zmieniając status transakcji inwestycyjnej, aby obie strony zmieniły się razem.",
     "notFoundById": "Nie znaleziono transakcji o ID {{ id }}",
     "bulkUpdateNoFields": "Należy podać co najmniej jedno pole do aktualizacji",

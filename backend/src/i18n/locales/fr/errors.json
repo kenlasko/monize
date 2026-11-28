@@ -899,6 +899,7 @@
     "splitTransferLegStatusLocked": "Ce transfert fait partie d'une transaction ventilée. Annulez-le ou rétablissez-le en modifiant la transaction ventilée à laquelle il appartient, afin que les deux côtés changent ensemble.",
     "splitTransferLegAmountIsParentTotal": "Ce montant est le total de toute la ventilation, pas celui de cette ligne de virement. Modifiez la ventilation dans l'opération source pour changer le montant de la ligne.",
     "investmentCashLegLocked": "Cette opération est la partie espèces d'une opération d'investissement. Modifiez ou supprimez plutôt l'opération d'investissement, afin que les deux parties changent ensemble.",
+    "transferLegDeleteTransfer": "Ceci est un côté d'un virement. Supprimez plutôt le virement.",
     "investmentCashLegStatusLocked": "Cette transaction est le volet espèces d'une transaction d'investissement. Annulez-la ou rétablissez-la en modifiant le statut de la transaction d'investissement, afin que les deux côtés changent ensemble.",
     "notFoundById": "Transaction avec l'ID {{ id }} introuvable",
     "bulkUpdateNoFields": "Au moins un champ de mise à jour doit être fourni",

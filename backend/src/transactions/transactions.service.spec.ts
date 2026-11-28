@@ -3090,6 +3090,123 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
 
+    it("refuses a lone transfer leg with a 409 and writes nothing", async () => {
+      // removeAny decides from an unlocked read; the locked row is the truth.
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        isSplit: false,
+        isTransfer: true,
+        linkedTransactionId: "tx-2",
+        splits: [],
+      });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
+      // Cash-leg probe: none; then the is_transfer read under the row lock.
+      mockQueryRunner.manager.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ is_transfer: true }]);
+
+      await expect(service.remove("user-1", "tx-1")).rejects.toThrow(
+        ConflictException,
+      );
+
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("refuses a row converted to a transfer after the pre-lock read (reads is_transfer under the lock)", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        isSplit: false,
+        isTransfer: false,
+        linkedTransactionId: null,
+        splits: [],
+      });
+      // The committed row carries the link the snapshot did not see.
+      lockedRow = {
+        id: "tx-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        linkedTransactionId: "tx-2",
+      };
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
+      mockQueryRunner.manager.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ is_transfer: true }]);
+
+      await expect(service.remove("user-1", "tx-1")).rejects.toThrow(
+        ConflictException,
+      );
+
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("still deletes a row that has a link but is not a transfer", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        isSplit: false,
+        isTransfer: false,
+        linkedTransactionId: "tx-2",
+        splits: [],
+      });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
+      mockQueryRunner.manager.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ is_transfer: false }]);
+
+      await service.remove("user-1", "tx-1");
+
+      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Transaction, {
+        id: "tx-1",
+        userId: "user-1",
+      });
+    });
+
+    it("still deletes a split's transfer line (a linked row with a parent split)", async () => {
+      transactionsRepository.findOne
+        .mockResolvedValueOnce({
+          id: "leg-tx",
+          userId: "user-1",
+          accountId: "account-2",
+          amount: 40,
+          status: TransactionStatus.UNRECONCILED,
+          isSplit: false,
+          isTransfer: true,
+          linkedTransactionId: "parent-tx",
+          splits: [],
+        })
+        .mockResolvedValueOnce({
+          id: "parent-tx",
+          userId: "user-1",
+          accountId: "account-1",
+          amount: -100,
+          status: TransactionStatus.UNRECONCILED,
+        });
+      transactionsRepository.find.mockResolvedValue([]);
+      const parentSplit = {
+        id: "parent-split-1",
+        transactionId: "parent-tx",
+        linkedTransactionId: "leg-tx",
+      };
+      splitsRepository.findOne.mockResolvedValue(parentSplit);
+      mockQueryRunner.manager.find.mockResolvedValueOnce([parentSplit]);
+
+      await expect(service.remove("user-1", "leg-tx")).resolves.toBeUndefined();
+    });
+
     it("reverts balance and removes transaction", async () => {
       transactionsRepository.findOne.mockResolvedValue({
         id: "tx-1",
@@ -3859,8 +3976,47 @@ describe("TransactionsService", () => {
 
       await service.removeAny("user-1", "tx-from");
 
-      expect(removeTransferSpy).toHaveBeenCalledWith("user-1", "tx-from");
+      expect(removeTransferSpy).toHaveBeenCalledWith(
+        "user-1",
+        "tx-from",
+        undefined,
+      );
       expect(removeSpy).not.toHaveBeenCalled();
+    });
+
+    it("passes the actor through to removeTransfer", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-from",
+        userId: "user-1",
+        isTransfer: true,
+        linkedTransactionId: "tx-to",
+        splits: [],
+      });
+      const removeTransferSpy = jest
+        .spyOn(service, "removeTransfer")
+        .mockResolvedValue(undefined);
+      const actor = { effectiveUserId: "user-1", realUserId: "user-2" };
+
+      await service.removeAny("user-1", "tx-from", actor);
+
+      expect(removeTransferSpy).toHaveBeenCalledWith(
+        "user-1",
+        "tx-from",
+        actor,
+      );
+    });
+
+    it("falls through to remove (not found) when the row is not visible", async () => {
+      transactionsRepository.findOne.mockResolvedValue(null);
+      const removeTransferSpy = jest
+        .spyOn(service, "removeTransfer")
+        .mockResolvedValue(undefined);
+      const removeSpy = jest.spyOn(service, "remove").mockResolvedValue();
+
+      await service.removeAny("user-1", "missing");
+
+      expect(removeSpy).toHaveBeenCalledWith("user-1", "missing");
+      expect(removeTransferSpy).not.toHaveBeenCalled();
     });
 
     it("routes a plain transaction to remove", async () => {

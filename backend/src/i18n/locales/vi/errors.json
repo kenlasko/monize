@@ -899,6 +899,7 @@
     "splitTransferLegStatusLocked": "Giao dịch chuyển tiền này là một phần của giao dịch được chia nhỏ. Hãy hủy hoặc phục hồi nó bằng cách chỉnh sửa giao dịch được chia nhỏ mà nó thuộc về, để cả hai bên thay đổi cùng nhau.",
     "splitTransferLegAmountIsParentTotal": "Số tiền này là tổng của toàn bộ giao dịch chia, không phải của dòng chuyển khoản này. Hãy sửa phần chia trong giao dịch nguồn để đổi số tiền của dòng.",
     "investmentCashLegLocked": "Giao dịch này là phần tiền mặt của một giao dịch đầu tư. Hãy sửa hoặc xóa giao dịch đầu tư để cả hai phần cùng thay đổi.",
+    "transferLegDeleteTransfer": "Đây là một phía của một giao dịch chuyển khoản. Hãy xóa giao dịch chuyển khoản thay thế.",
     "investmentCashLegStatusLocked": "Giao dịch này là phần tiền mặt của một giao dịch đầu tư. Hãy hủy hoặc phục hồi nó bằng cách thay đổi trạng thái của giao dịch đầu tư, để cả hai bên thay đổi cùng nhau.",
     "notFoundById": "Không tìm thấy giao tác với ID {{ id }}",
     "bulkUpdateNoFields": "Phải cung cấp ít nhất một trường cập nhật",

@@ -3,6 +3,10 @@ import { Test, TestingModule } from "@nestjs/testing";
 import type { Response } from "express";
 import { TransactionsController } from "./transactions.controller";
 import { TransactionsService } from "./transactions.service";
+import {
+  DELEGATE_OPERATION_KEY,
+  DELEGATED_TRANSFER_PARAM_KEY,
+} from "../delegation/decorators/delegate-access.decorator";
 import { DelegateTransferMaskInterceptor } from "../delegation/interceptors/delegate-transfer-mask.interceptor";
 import { DelegationService } from "../delegation/delegation.service";
 import { TransactionBulkCreateService } from "./transaction-bulk-create.service";
@@ -54,6 +58,7 @@ describe("TransactionsController", () => {
       removeSplit: jest.fn(),
       getLinkedTransaction: jest.fn(),
       removeTransfer: jest.fn(),
+      removeAny: jest.fn(),
       updateTransfer: jest.fn(),
       getSummary: jest.fn(),
       getGroupedTotals: jest.fn(),
@@ -283,7 +288,7 @@ describe("TransactionsController", () => {
 
       await controller.remove(req, "tx-1");
       expect(mockJointRegister.remove).toHaveBeenCalledWith("user-1", "tx-1");
-      expect(mockService.remove).not.toHaveBeenCalled();
+      expect(mockService.removeAny).not.toHaveBeenCalled();
 
       await controller.markCleared(req, "tx-1", { isCleared: true } as never);
       expect(mockJointRegister.markCleared).toHaveBeenCalledWith(
@@ -1175,14 +1180,35 @@ describe("TransactionsController", () => {
     });
   });
 
+  describe("remove() delegate gate", () => {
+    it("requires the delete grant on both legs of a transfer, like DELETE :id/transfer", () => {
+      expect(
+        Reflect.getMetadata(
+          DELEGATED_TRANSFER_PARAM_KEY,
+          TransactionsController.prototype.remove,
+        ),
+      ).toBe("id");
+      expect(
+        Reflect.getMetadata(
+          DELEGATE_OPERATION_KEY,
+          TransactionsController.prototype.remove,
+        ),
+      ).toBe("delete");
+    });
+  });
+
   describe("remove()", () => {
-    it("delegates to service.remove with userId and id", async () => {
-      mockService.remove.mockResolvedValue(undefined);
+    it("delegates to service.removeAny so a transfer leg deletes both legs", async () => {
+      mockService.removeAny.mockResolvedValue(undefined);
 
       const result = await controller.remove(mockReq, "tx-1");
 
       expect(result).toBeUndefined();
-      expect(mockService.remove).toHaveBeenCalledWith("user-1", "tx-1");
+      expect(mockService.removeAny).toHaveBeenCalledWith("user-1", "tx-1", {
+        effectiveUserId: "user-1",
+        realUserId: "user-1",
+      });
+      expect(mockService.remove).not.toHaveBeenCalled();
     });
   });
 
