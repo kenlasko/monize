@@ -189,9 +189,7 @@ describe("TransactionReconciliationService", () => {
       recomputeBondPricesAfterWrite: jest.fn().mockResolvedValue(undefined),
     };
 
-    const legOwners = new Map([[userId, "leg-1"]]);
     transferService = {
-      resolveTransferLegOwners: jest.fn().mockResolvedValue(legOwners),
       recordTransferChangeHistory: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -378,8 +376,17 @@ describe("TransactionReconciliationService", () => {
           ],
         );
 
-      it("records one status entry for every owner of a transfer leg that changed status", async () => {
+      /** The row's own `is_transfer` and whether it is a split's counterpart. */
+      const stageLegKind = (isTransfer: boolean, isSplitLeg = false) =>
+        managerQuery.mockImplementation(async (sql: string) =>
+          String(sql).includes('AS "isSplitLeg"')
+            ? [{ isTransfer, isSplitLeg }]
+            : [],
+        );
+
+      it("records one status entry, for the acting user's own leg, when a transfer leg changes status", async () => {
         stageLegs(TransactionStatus.UNRECONCILED, "leg-2");
+        stageLegKind(true);
         mockFindOne.mockResolvedValue(makeTransaction());
 
         await service.markCleared(
@@ -390,14 +397,45 @@ describe("TransactionReconciliationService", () => {
           mockFindOne,
         );
 
-        expect(transferService.resolveTransferLegOwners).toHaveBeenCalledWith(
-          userId,
-          "leg-1",
-          ["leg-2"],
-        );
         expect(
           transferService.recordTransferChangeHistory,
-        ).toHaveBeenCalledWith(userId, expect.any(Map), "status");
+        ).toHaveBeenCalledWith(userId, new Map([[userId, "leg-1"]]), "status");
+      });
+
+      it("records nothing for a split-transfer counterpart leg, whose pairing is the parent's", async () => {
+        stageLegs(TransactionStatus.UNRECONCILED, "leg-2");
+        stageLegKind(true, true);
+        mockFindOne.mockResolvedValue(makeTransaction());
+
+        await service.markCleared(
+          userId,
+          "leg-1",
+          true,
+          mockTriggerNetWorthRecalc,
+          mockFindOne,
+        );
+
+        expect(
+          transferService.recordTransferChangeHistory,
+        ).not.toHaveBeenCalled();
+      });
+
+      it("records nothing for a row that has a link but is not a transfer", async () => {
+        stageLegs(TransactionStatus.UNRECONCILED, "leg-2");
+        stageLegKind(false);
+        mockFindOne.mockResolvedValue(makeTransaction());
+
+        await service.markCleared(
+          userId,
+          "leg-1",
+          true,
+          mockTriggerNetWorthRecalc,
+          mockFindOne,
+        );
+
+        expect(
+          transferService.recordTransferChangeHistory,
+        ).not.toHaveBeenCalled();
       });
 
       it("records nothing when the status does not change", async () => {
@@ -464,14 +502,9 @@ describe("TransactionReconciliationService", () => {
           mockFindOne,
         );
 
-        expect(transferService.resolveTransferLegOwners).toHaveBeenCalledWith(
-          userId,
-          "leg-1",
-          ["counterpart-1"],
-        );
         expect(
           transferService.recordTransferChangeHistory,
-        ).toHaveBeenCalledWith(userId, expect.any(Map), "status");
+        ).toHaveBeenCalledWith(userId, new Map([[userId, "leg-1"]]), "status");
       });
     });
 
@@ -1891,6 +1924,50 @@ describe("TransactionReconciliationService", () => {
         reconciledDate: "2026-01-31",
       });
       expect(mockQueryBuilder.execute).toHaveBeenCalled();
+    });
+
+    describe("history entry", () => {
+      const leg = (overrides: Partial<Transaction> = {}) =>
+        makeTransaction({
+          id: "leg-1",
+          isTransfer: true,
+          linkedTransactionId: "leg-2",
+          ...overrides,
+        });
+
+      it("records one status entry when a transfer leg is reconciled", async () => {
+        mockQueryBuilder.getMany.mockResolvedValue([leg()]);
+        managerQuery.mockResolvedValue([]);
+
+        await service.bulkReconcile(userId, accountId, ["leg-1"], "2026-01-31");
+
+        expect(
+          transferService.recordTransferChangeHistory,
+        ).toHaveBeenCalledWith(userId, new Map([[userId, "leg-1"]]), "status");
+      });
+
+      it("records nothing for a split-transfer counterpart leg", async () => {
+        mockQueryBuilder.getMany.mockResolvedValue([leg()]);
+        managerQuery.mockResolvedValue([{ id: "leg-1" }]);
+
+        await service.bulkReconcile(userId, accountId, ["leg-1"], "2026-01-31");
+
+        expect(
+          transferService.recordTransferChangeHistory,
+        ).not.toHaveBeenCalled();
+      });
+
+      it("records nothing when no transfer leg is among the rows", async () => {
+        mockQueryBuilder.getMany.mockResolvedValue([
+          makeTransaction({ id: "tx-1" }),
+        ]);
+
+        await service.bulkReconcile(userId, accountId, ["tx-1"], "2026-01-31");
+
+        expect(
+          transferService.recordTransferChangeHistory,
+        ).not.toHaveBeenCalled();
+      });
     });
 
     it("returns zero when transactionIds is empty", async () => {

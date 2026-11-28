@@ -133,6 +133,16 @@ describe("Undo after a transfer change (integration)", () => {
     expect(await legCount()).toBe(2);
   });
 
+  it("refuses the undo after a bulk reconcile of a transfer leg", async () => {
+    const fromId = await createTransfer();
+    await asUser(() =>
+      transactions.bulkReconcile(userId, accountA, [fromId], "2026-01-31"),
+    );
+    const settled = await balances();
+    await expectUndoRefusedAndTransferKept(settled);
+    expect(await legCount()).toBe(2);
+  });
+
   it("records nothing for a tags-only save, so Undo still reaches the create", async () => {
     const fromId = await createTransfer();
     await asUser(() =>

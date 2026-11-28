@@ -662,11 +662,18 @@ const MAX_HISTORY_AGE_DAYS = 30;
 /**
  * History writes that were started without anybody waiting for them.
  *
- * Every one of the ~20 `actionHistoryService.record(...)` call sites invokes it
+ * Most of the ~20 `actionHistoryService.record(...)` call sites invoke it
  * without `await` -- deliberately, because a missing undo entry must never fail
  * the operation the user actually asked for. The write that lands afterwards is
  * still a write, and it arrives with no relationship to the request that caused
  * it.
+ *
+ * The transfer entries (the create and the edit, status change and delete
+ * recorded by `TransactionTransferService`) are awaited. They order the
+ * history: Undo takes the newest entry, so an Undo pressed right after an edit
+ * must find the edit's entry, not the create's, or it would delete the
+ * transfer. An await orders the entries; it does not make a failed write fail
+ * the request, since `recordNow` catches its own errors.
  *
  * Harmless in a running server. Not harmless against a database being torn
  * down: an integration suite that truncates `users ... CASCADE` while one of

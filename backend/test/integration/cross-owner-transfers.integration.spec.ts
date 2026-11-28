@@ -323,6 +323,16 @@ describe("Cross-owner transfers (integration)", () => {
       expect(survivor!.linkedTransactionId).toBeNull(); // FK SET NULL detach
       expect((await loadAccount(delegateAccountId)).currentBalance).toBe(2000);
       expect((await loadAccount(ownerAccountId)).currentBalance).toBe(5500);
+
+      // Only the owner of the removed leg gets a change entry: the surviving
+      // leg's owner made no change and keeps their Undo and Redo as they were.
+      await settlePendingHistoryWrites();
+      const entries = await dataSource.query(
+        `SELECT user_id, action FROM action_history ORDER BY created_at`,
+      );
+      expect(
+        entries.filter((e: { action: string }) => e.action === "delete"),
+      ).toEqual([{ user_id: delegateId, action: "delete" }]);
     });
   });
 

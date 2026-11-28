@@ -61,6 +61,12 @@ import {
   TransactionRulesApplierService,
 } from "../transaction-rules/transaction-rules-applier.service";
 
+/** One transfer leg's owner and its comparable columns (`snapshotTransferLegs`). */
+export interface TransferLegSnapshot {
+  readonly userId: string;
+  readonly snapshot: string;
+}
+
 export interface TransferResult {
   fromTransaction: Transaction;
   toTransaction: Transaction;
@@ -1387,28 +1393,60 @@ export class TransactionTransferService {
   }
 
   /**
-   * The owners of a transfer's legs, each with a leg they hold, read before a
-   * delete removes the rows. The acting user is always present. A counterpart
-   * owner's row is not readable from the actor's scope, so the lookup runs
-   * under the audited system context, as the create's counterpart write does.
+   * Each leg's owner and the columns an edit can change, as one comparable
+   * string, read under the audited system context: a counterpart owner's row
+   * is not readable from the actor's scope. Taken before a write and again
+   * after it, the two reads say which legs the write actually changed or
+   * removed (`writtenLegOwners`), whoever owns them.
    */
-  async resolveTransferLegOwners(
-    actingUserId: string,
-    ownLegId: string,
-    otherLegIds: readonly string[],
-  ): Promise<ReadonlyMap<string, string>> {
-    const owners = new Map<string, string>([[actingUserId, ownLegId]]);
-    if (otherLegIds.length === 0) return owners;
-    const rows: { id: string; userId: string }[] = await withSystemContext(() =>
+  async snapshotTransferLegs(
+    legIds: readonly string[],
+  ): Promise<ReadonlyMap<string, TransferLegSnapshot>> {
+    const rows: Record<string, unknown>[] = await withSystemContext(() =>
       withScopedDb(this.dataSource, (m) =>
         m.query(
-          `SELECT id, user_id AS "userId" FROM transactions WHERE id = ANY($1::uuid[])`,
-          [[...otherLegIds]],
+          `SELECT id, user_id, account_id, amount, currency_code, exchange_rate,
+                  TO_CHAR(transaction_date, 'YYYY-MM-DD') AS transaction_date,
+                  status, payee_id, payee_name, category_id, description,
+                  reference_number
+             FROM transactions WHERE id = ANY($1::uuid[])`,
+          [[...legIds]],
         ),
       ),
     );
+    const snapshots = new Map<string, TransferLegSnapshot>();
     for (const row of rows) {
-      if (!owners.has(row.userId)) owners.set(row.userId, row.id);
+      const { id, user_id: userId, amount, exchange_rate: rate, ...rest } = row;
+      snapshots.set(id as string, {
+        userId: userId as string,
+        snapshot: JSON.stringify([
+          Number(amount),
+          rate === null ? null : Number(rate),
+          ...Object.values(rest),
+        ]),
+      });
+    }
+    return snapshots;
+  }
+
+  /**
+   * The owner of every leg a write changed (`changed`) or removed (`deleted`)
+   * since `before`, each with one such leg. An owner whose leg was not written
+   * is absent: recording for them would wipe their redo stack and block their
+   * Undo for a change they did not make (a frozen cross-owner delete or edit
+   * writes the actor's leg only).
+   */
+  async writtenLegOwners(
+    before: ReadonlyMap<string, TransferLegSnapshot>,
+    mode: "changed" | "deleted",
+  ): Promise<ReadonlyMap<string, string>> {
+    const after = await this.snapshotTransferLegs([...before.keys()]);
+    const owners = new Map<string, string>();
+    for (const [legId, was] of before) {
+      const now = after.get(legId);
+      const written =
+        mode === "deleted" ? !now : !!now && now.snapshot !== was.snapshot;
+      if (written && !owners.has(was.userId)) owners.set(was.userId, legId);
     }
     return owners;
   }

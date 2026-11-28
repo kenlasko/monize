@@ -90,9 +90,14 @@ export class TransactionReconciliationService {
     /** Accounts a counterpart or split propagation moved besides the row's own. */
     counterpartAccountIds: string[];
   }> {
-    // Legs of a transfer this status change reaches, for the history entry.
-    let transferLegIds: string[] = [];
-    let statusChanged = false;
+    // Whether this write changed the status of a transfer leg, or moved a
+    // split's transfer counterparts across the VOID boundary: the history
+    // entry's condition. The legs written are always the acting user's own:
+    // the mirror leg and a split's counterparts are locked under `userId`,
+    // and a cross-owner counterpart is neither locked nor written. A cleared
+    // or reconcile change on a split's counterpart leg, or on a split parent
+    // that does not cross VOID, records nothing on purpose.
+    let recordsTransferChange = false;
     // Securities of embedded investment rows that crossed the VOID boundary
     // with a split parent, repriced by the bond engine after the commit
     // (INV-BOND-005, INV-CACHE-001).
@@ -176,9 +181,22 @@ export class TransactionReconciliationService {
         }
       }
 
-      statusChanged = status !== oldStatus;
-      if (!locked.isSplit && locked.linkedTransactionId) {
-        transferLegIds = [locked.linkedTransactionId];
+      if (
+        status !== oldStatus &&
+        !locked.isSplit &&
+        locked.linkedTransactionId
+      ) {
+        // The predicate `removeAny` routes on: a transfer with a mirror link,
+        // not a split-transfer counterpart (whose link names the split parent).
+        const [leg] = await m.query(
+          `SELECT t.is_transfer AS "isTransfer",
+                  EXISTS (SELECT 1 FROM transaction_splits s
+                           WHERE s.linked_transaction_id = t.id) AS "isSplitLeg"
+             FROM transactions t WHERE t.id = $1`,
+          [transactionId],
+        );
+        recordsTransferChange =
+          leg?.isTransfer === true && leg.isSplitLeg !== true;
       }
 
       const fields: Partial<Transaction> = { status };
@@ -218,14 +236,15 @@ export class TransactionReconciliationService {
         if (locked.isSplit) {
           // The parent is no transfer, but its transfer lines' counterpart
           // legs change status with it.
-          transferLegIds = (
-            await m.query(
-              `SELECT linked_transaction_id AS id FROM transaction_splits
+          const splitLegs: { id: string }[] = await m.query(
+            `SELECT linked_transaction_id AS id FROM transaction_splits
                 WHERE transaction_id = $1 AND transfer_account_id IS NOT NULL
                   AND linked_transaction_id IS NOT NULL`,
-              [transactionId],
-            )
-          ).map((row: { id: string }) => row.id);
+            [transactionId],
+          );
+          if (status !== oldStatus && splitLegs.length > 0) {
+            recordsTransferChange = true;
+          }
           for (const affected of await this.splitService.applyParentStatusToTransferCounterparts(
             m,
             transactionId,
@@ -261,14 +280,10 @@ export class TransactionReconciliationService {
     // Every status path of a transfer leg (void, cleared, reconcile, the joint
     // register) lands here, so Undo is stopped at each of them; a no-op write
     // records nothing.
-    if (statusChanged && transferLegIds.length > 0) {
+    if (recordsTransferChange) {
       await this.transferService.recordTransferChangeHistory(
         userId,
-        await this.transferService.resolveTransferLegOwners(
-          userId,
-          transactionId,
-          transferLegIds,
-        ),
+        new Map([[userId, transactionId]]),
         "status",
       );
     }
@@ -626,7 +641,8 @@ export class TransactionReconciliationService {
       return { reconciled: 0 };
     }
 
-    return withScopedDb(this.dataSource, async (m) => {
+    let changedTransferLegId: string | undefined;
+    const outcome = await withScopedDb(this.dataSource, async (m) => {
       // Locked in ascending id order and re-checked here: the VOID exclusion
       // below is a refusal, so it has to be evaluated against the status this
       // statement is about to overwrite, not against one read a moment earlier.
@@ -680,7 +696,38 @@ export class TransactionReconciliationService {
         .andWhere("userId = :userId", { userId })
         .execute();
 
+      // The transfer legs whose status this changed (a split-transfer
+      // counterpart is the split parent's, as in `applyStatusTransition`).
+      const mirrorLegs = transactions.filter(
+        (t) =>
+          t.isTransfer &&
+          t.linkedTransactionId &&
+          !t.isSplit &&
+          t.status !== TransactionStatus.RECONCILED,
+      );
+      if (mirrorLegs.length > 0) {
+        const splitLegs: { id: string }[] = await m.query(
+          `SELECT linked_transaction_id AS id FROM transaction_splits
+            WHERE linked_transaction_id = ANY($1::uuid[])`,
+          [mirrorLegs.map((t) => t.id)],
+        );
+        const splitLegIds = new Set(splitLegs.map((row) => row.id));
+        changedTransferLegId = mirrorLegs.find(
+          (t) => !splitLegIds.has(t.id),
+        )?.id;
+      }
+
       return { reconciled: transactions.length };
     });
+    // After the commit, one entry for the caller: only their own legs are
+    // written, so Undo cannot reach the create and delete reconciled legs.
+    if (changedTransferLegId) {
+      await this.transferService.recordTransferChangeHistory(
+        userId,
+        new Map([[userId, changedTransferLegId]]),
+        "status",
+      );
+    }
+    return outcome;
   }
 }
