@@ -1,7 +1,9 @@
 import {
+  GemSignalChangeAlertService,
   buildGemSignalNotification,
   detectSignalChange,
 } from "./gem-signal-change-alert.service";
+import { todayYMD } from "../common/date-utils";
 import {
   GemAssetRef,
   GemHistoryEntryView,
@@ -11,6 +13,11 @@ import {
   NotificationSeverity,
   NotificationType,
 } from "../notification-center/entities/notification.entity";
+
+jest.mock("../common/db/scoped-db", () => ({
+  withScopedDb: (_ds: unknown, fn: (m: unknown) => unknown) =>
+    fn((globalThis as { __gemManager?: unknown }).__gemManager),
+}));
 
 /** A target asset ref, identified by security (or a securityless role). */
 function winner(
@@ -224,5 +231,57 @@ describe("buildGemSignalNotification", () => {
     const input = buildGemSignalNotification(ref, change);
     const serialized = JSON.stringify(input.data);
     expect(serialized).not.toMatch(/price|amount|value|balance/i);
+  });
+});
+
+describe("GemSignalChangeAlertService.run dates the report by the user's day", () => {
+  afterEach(() => {
+    jest.useRealTimers();
+    delete (globalThis as { __gemManager?: unknown }).__gemManager;
+  });
+
+  it.each([
+    ["Pacific/Kiritimati", "2026-10-31"],
+    ["America/Los_Angeles", "2026-10-30"],
+  ])("a %s user sees %s", async (timezone, expected) => {
+    // 2026-10-30T23:30Z: 31 Oct in Kiritimati (UTC+14), 30 Oct in Los Angeles
+    // and on a UTC server.
+    jest.useFakeTimers({
+      now: new Date("2026-10-30T23:30:00Z"),
+      doNotFake: ["nextTick", "setImmediate", "queueMicrotask"],
+    });
+    const userId = "11111111-1111-4111-8111-111111111111";
+    (globalThis as { __gemManager?: unknown }).__gemManager = {
+      query: jest.fn(async (sql: string) =>
+        sql.includes("gem_strategies")
+          ? [{ user_id: userId }]
+          : [
+              { user_id: userId, timezone, last_client_timezone: null },
+              // A user with no strategy is not evaluated.
+              {
+                user_id: "22222222-2222-4222-8222-222222222222",
+                timezone: null,
+                last_client_timezone: null,
+              },
+            ],
+      ),
+    };
+    const seen: string[] = [];
+    const gem = {
+      listStrategies: jest.fn().mockResolvedValue([{ id: "s1", name: "S" }]),
+      getReport: jest.fn(async () => {
+        seen.push(todayYMD());
+        return { history: [], signal: null };
+      }),
+    };
+    const service = new GemSignalChangeAlertService(
+      {} as never,
+      gem as never,
+      { notify: jest.fn() } as never,
+    );
+
+    await service.run();
+
+    expect(seen).toEqual([expected]);
   });
 });

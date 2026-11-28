@@ -141,6 +141,12 @@ export interface OccurrenceCandidateFilter {
    */
   outflowsOnly?: boolean;
   /**
+   * With `outflowsOnly`, also keep a schedule left at exactly 0 (a reminder: the
+   * amount is not known until it arrives, issue #1124). It is a payment the user
+   * still has to make, though it adds nothing to a total.
+   */
+  includeZeroAmount?: boolean;
+  /**
    * Only occurrences the user has to post themselves: those the auto-post cron
    * will not post (`autoPosts` false), by the schedule's setting or the
    * occurrence's own override. Decided on the resolved occurrence, not the
@@ -148,6 +154,14 @@ export interface OccurrenceCandidateFilter {
    * schedule is kept and one opted into a manual schedule is not.
    */
   manualOnly?: boolean;
+}
+
+/** One transfer line of an occurrence's effective splits (negative: money leaves). */
+export interface OccurrenceTransferLine {
+  transferAccountId: string;
+  amount: number;
+  /** The line's own category, when it carries one. */
+  categoryId?: string | null;
 }
 
 /** An occurrence plus the row it came from, for a server-side consumer. */
@@ -159,7 +173,12 @@ export interface ResolvedScheduledOccurrence extends EffectiveScheduledOccurrenc
    * account by the negated amount, like a plain scheduled transfer
    * (INV-OCCURRENCE-003). Empty for a non-split or a split without such a line.
    */
-  transferLines: { transferAccountId: string; amount: number }[];
+  transferLines: OccurrenceTransferLine[];
+  /**
+   * The category this occurrence would post under: its override's own category
+   * when it states one, else the template's.
+   */
+  categoryId: string | null;
   /**
    * `transferLines` could not be priced for this occurrence (a loan bill whose
    * projection states the amount but not its principal): a consumer withholds
@@ -179,9 +198,12 @@ export interface ResolvedScheduledOccurrence extends EffectiveScheduledOccurrenc
  * The signed sum of an occurrence's transfer lines (negative: money leaves the
  * source account into another of the user's accounts).
  */
-function transferLineTotal(o: ResolvedScheduledOccurrence): number {
+function transferLineTotal(
+  o: ResolvedScheduledOccurrence,
+  lines: readonly OccurrenceTransferLine[],
+): number {
   return sumMoney(
-    o.transferLines.map((l) => l.amount),
+    lines.map((l) => l.amount),
     o.moneyDecimals,
   );
 }
@@ -189,21 +211,34 @@ function transferLineTotal(o: ResolvedScheduledOccurrence): number {
 /**
  * What the occurrence contributes as real income or spending: its amount less
  * the transfer lines, which only move money between the user's own accounts.
- * `null` when the amount is unknown.
+ * `null` when the amount is unknown. `isSpending` names the lines a consumer
+ * counts as spending anyway (a budget's own transfer lines): they stay in.
  */
 export function nonTransferAmount(
   o: ResolvedScheduledOccurrence,
+  isSpending: (line: OccurrenceTransferLine) => boolean = () => false,
 ): number | null {
-  if (o.amount === null || o.transferLinesUnknown) return null;
+  if (o.amount === null) return null;
+  // Unpriced lines are withheld, unless the consumer keeps every one of them
+  // (the loan's own account included) as spending: nothing is netted then.
+  if (o.transferLinesUnknown) {
+    const keepsAll =
+      o.transferLines.every(isSpending) &&
+      (o.loanAccountId === null
+        ? o.transferLines.length > 0
+        : isSpending({ transferAccountId: o.loanAccountId, amount: 0 }));
+    if (!keepsAll) return null;
+  }
   // Exact for a schedule without lines: no rounding of what is already stated.
-  if (o.transferLines.length === 0) return o.amount;
-  return sumMoney([o.amount, -transferLineTotal(o)], o.moneyDecimals);
+  const internal = o.transferLines.filter((l) => !isSpending(l));
+  if (internal.length === 0) return o.amount;
+  return sumMoney([o.amount, -transferLineTotal(o, internal)], o.moneyDecimals);
 }
 
 function effectiveTransferLines(
   row: ScheduledTransaction,
   override: ScheduledTransactionOverride | undefined,
-): { transferAccountId: string; amount: number }[] {
+): OccurrenceTransferLine[] {
   const lines =
     override?.isSplit === true && override.splits?.length
       ? override.splits
@@ -212,7 +247,13 @@ function effectiveTransferLines(
         : (row.splits ?? []);
   return lines.flatMap((l) =>
     l.transferAccountId
-      ? [{ transferAccountId: l.transferAccountId, amount: Number(l.amount) }]
+      ? [
+          {
+            transferAccountId: l.transferAccountId,
+            amount: Number(l.amount),
+            categoryId: l.categoryId ?? null,
+          },
+        ]
       : [],
   );
 }
@@ -299,6 +340,7 @@ export class ScheduledOccurrenceService {
           estimateStatus: null,
           autoPosts: occurrenceAutoPosts(row, slot.override),
           schedule: row,
+          categoryId: slot.override?.categoryId ?? row.categoryId,
           transferLinesUnknown: false,
           loanAccountId: null,
           moneyDecimals: FIAT_MONEY_DECIMALS,
@@ -418,7 +460,7 @@ export class ScheduledOccurrenceService {
       // The direction itself is decided on the resolved occurrence below.
       if (filter.outflowsOnly) {
         qb.andWhere(
-          `(st.amount < 0 OR st.isInvestment = true OR EXISTS (
+          `(st.amount < 0${filter.includeZeroAmount ? " OR st.amount = 0" : ""} OR st.isInvestment = true OR EXISTS (
               SELECT 1 FROM scheduled_transaction_splits s
               WHERE s.scheduled_transaction_id = st.id
                 AND s.kind = :investmentKind
@@ -462,9 +504,13 @@ export class ScheduledOccurrenceService {
     // An unknown direction is KEPT, not dropped: its amount is unknown too, so a
     // consumer's total is withheld either way, and dropping it would hide a
     // possible outflow behind a total that still looked complete.
+    const isOutflow = (o: ResolvedScheduledOccurrence): boolean =>
+      o.directionAmount === null || o.directionAmount < 0;
     const outflows = keepManual(
       occurrences.filter(
-        (o) => o.directionAmount === null || o.directionAmount < 0,
+        (o) =>
+          isOutflow(o) ||
+          (filter.includeZeroAmount === true && o.directionAmount === 0),
       ),
     );
     if (window.maxOccurrences === undefined) return outflows;
@@ -701,6 +747,11 @@ function withLoanAmount(
           ),
           {
             transferAccountId: loanId,
+            // The line it replaces keeps its own category.
+            categoryId:
+              occurrence.transferLines.find(
+                (l) => l.transferAccountId === loanId,
+              )?.categoryId ?? null,
             amount:
               sign *
               sumMoney(

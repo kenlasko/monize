@@ -134,6 +134,7 @@
       "carriedIn": "Traído:",
       "carriedOut": "Llevado:"
     },
+    "noPositiveFunding": "El porcentaje de uso requiere un presupuesto positivo.",
     "overallUsage": "Uso general del presupuesto",
     "expenseCategories": "Categorías de gastos",
     "incomeCategories": "Categorías de ingresos",

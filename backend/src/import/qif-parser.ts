@@ -27,6 +27,7 @@
 
 import { applyQifClearedField } from "./qif-status.util";
 import {
+  isPlainAmount,
   normalizeAmountSeparators,
   parseQifAmount,
 } from "./amount-separators.util";
@@ -1290,12 +1291,18 @@ export function parseQifFull(
       } else if (code === "D") {
         pendingAccountDesc = truncate(value, FIELD_LIMITS.MEMO);
       } else if (code === "L") {
-        // The limit keeps the lenient read it always had (the leading number,
-        // so "5000.00 CAD" is 5000): it is account metadata, not a posted amount.
-        const limit = parseFloat(
-          normalizeAmountSeparators(value.replace(/[$£€\s]/g, "")),
-        );
-        pendingAccountLimit = Number.isNaN(limit) ? null : limit;
+        // The first numeric token is the limit, whatever text surrounds it
+        // ("Fr. 5000", "5000 (2 cards)", "1,000,000 CAD"); it is normalised
+        // like any amount, and a token that is not a plain number is unknown.
+        let token = value.match(/[-+]?\d[\d.,]*/)?.[0] ?? "";
+        // A trailing separator ends the sentence, not the number ("5000.").
+        while (token.endsWith(".") || token.endsWith(",")) {
+          token = token.slice(0, -1);
+        }
+        const limitText = token ? normalizeAmountSeparators(token) : "";
+        pendingAccountLimit = isPlainAmount(limitText)
+          ? parseFloat(limitText)
+          : null;
       }
       continue;
     }

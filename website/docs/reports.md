@@ -57,7 +57,7 @@ Reports that can be limited to some of your accounts have an accounts selector. 
 
 You can click most data points -- a bar, a pie segment, a Sankey flow, or a table row -- to open the Transactions page with filters pre-applied, so you can drill down from a summary to the transactions behind it. A payee opens exactly that payee's transactions.
 
-On the **Income vs Expenses** report, clicking an income or expense bar filters by the corresponding **category type** (income categories or expense categories), so you see exactly the transactions that contributed to that bar.
+On the **Income vs Expenses** report, clicking an income or expense bar filters by the corresponding **category type** (income categories or expense categories) and opens the days of that month included in the report. For example, if the report covers May 1–14, both bars open May 1–14 in Transactions.
 
 ### Partial Figures
 
@@ -85,7 +85,7 @@ In **Monthly & Yearly Breakdown**, the **Transfers** group lists money moved bet
 
 ![The Transfers group of the Monthly & Yearly Breakdown, with a Transfer category's outgoing and incoming rows above the per-account rows](images/report-monthly-breakdown-transfers.png)
 
-In **Spending by Category**, a refund reduces spending in the expense category assigned to it. A purchase of 100 and a refund of 150 show **−50** for that category. A full refund shows **0** and the category stays visible. A refund received this month can therefore give the month negative spending even when the purchase was in an earlier month. Monthly Spending Trend and the assistant’s category breakdown include that credit. Monthly Comparison shows the change in money and leaves percentage growth unavailable when the previous month had a net refund.
+In **Spending by Category**, a refund reduces spending in the expense category assigned to it. A purchase of 100 and a refund of 150 show **−50** for that category. A full refund shows **0** and the category stays visible. A refund received this month can therefore give the month negative spending even when the purchase was in an earlier month. Monthly Spending Trend and the assistant’s category breakdown include that credit. Monthly Comparison shows the change in money and leaves percentage growth unavailable when the previous month had a net refund. The monthly spending trend returned by the assistant and MCP includes up to ten category rows. Its monthly total includes every eligible category.
 
 ![The Spending by Category report](images/report-spending-category.png)
 
@@ -264,7 +264,7 @@ The report then reloads without the deleted transactions. If **Lock reconciled t
 | **Budget Health Score** | Get a 0--100 health score for your budget with detailed per-category impact analysis |
 | **Seasonal Spending Patterns** | Discover seasonal trends and high-spending months across your budget categories |
 | **Budget Trend** | Line chart showing total budgeted vs total actual spending over 6--12 months to track improvement |
-| **Category Performance** | Table showing each category's budget performance over multiple months with trend indicators |
+| **Category Performance** | Table showing each category's budget performance over multiple months. The trend follows the direction of change even when earlier refunds made usage negative |
 | **Savings Rate** | Track your savings rate (income minus expenses divided by income) over time vs your target |
 | **Health Score History** | Line chart of monthly budget health scores showing your financial trajectory over time |
 | **Flex Group Analysis** | Stacked bar chart for each flex group showing component categories with group limit reference |
@@ -394,7 +394,7 @@ A circular chart showing proportional breakdown. Best for understanding the comp
 
 ### Viewing a Custom Report
 
-A saved custom report opens with its saved timeframe. Change the **Timeframe** on the report to look at another period without editing it, and choose **Use saved timeframe** to go back. A report that reaches the row limit says so and asks you to narrow the timeframe or filters.
+A saved custom report opens with its saved timeframe. Monetary totals, table rows, and PDF exports use the currency in which that report was calculated. Change the **Timeframe** on the report to look at another period without editing it, and choose **Use saved timeframe** to go back. A report that reaches the row limit says so and asks you to narrow the timeframe or filters.
 
 Click a row, bar, slice or legend entry to open the Transactions page over the report's date range with the report's own account, category, payee, tag and search filters applied:
 

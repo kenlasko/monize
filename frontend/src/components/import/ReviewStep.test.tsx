@@ -305,7 +305,7 @@ describe('ReviewStep', () => {
   // --- Unreadable CSV amounts ---
 
   describe('unreadable amounts', () => {
-    function csvFile(unreadableAmounts: { count: number; rows: { rowNumber: number; rawAmount: string }[] } | undefined, fileName = 'march.csv') {
+    function csvFile(unreadableAmounts: { count: number; rows: { rowNumber: number; rawAmount: string; field?: 'amount' | 'commission' | 'price' }[] } | undefined, fileName = 'march.csv') {
       return {
         fileName,
         fileContent: '',
@@ -316,12 +316,26 @@ describe('ReviewStep', () => {
       };
     }
 
+    it('names the column of an unreadable investment cell', () => {
+      const unreadable = {
+        count: 2,
+        rows: [
+          { rowNumber: 4, rawAmount: 'N/A', field: 'commission' as const },
+          { rowNumber: 5, rawAmount: '1.2.3', field: 'price' as const },
+        ],
+      };
+      render(<ReviewStep {...defaultProps} importFiles={[csvFile(unreadable)] as any[]} />);
+
+      expect(screen.getByText('Row 4, commission: "N/A"')).toBeInTheDocument();
+      expect(screen.getByText('Row 5, price: "1.2.3"')).toBeInTheDocument();
+    });
+
     it('counts the rows whose amount cannot be read and names each by row and text', () => {
       const unreadable = {
         count: 2,
         rows: [
-          { rowNumber: 4, rawAmount: '12.34 pending' },
-          { rowNumber: 9, rawAmount: 'N/A' },
+          { rowNumber: 4, rawAmount: '12.34 pending', field: 'amount' as const },
+          { rowNumber: 9, rawAmount: 'N/A', field: 'amount' as const },
         ],
       };
       render(<ReviewStep {...defaultProps} importFiles={[csvFile(unreadable)] as any[]} />);
@@ -329,8 +343,8 @@ describe('ReviewStep', () => {
       expect(
         screen.getByText('2 rows have amounts that cannot be read and will not be imported:'),
       ).toBeInTheDocument();
-      expect(screen.getByText('Row 4: "12.34 pending"')).toBeInTheDocument();
-      expect(screen.getByText('Row 9: "N/A"')).toBeInTheDocument();
+      expect(screen.getByText('Row 4, amount: "12.34 pending"')).toBeInTheDocument();
+      expect(screen.getByText('Row 9, amount: "N/A"')).toBeInTheDocument();
       expect(screen.getByText(/Check that the amount columns are mapped correctly/)).toBeInTheDocument();
     });
 

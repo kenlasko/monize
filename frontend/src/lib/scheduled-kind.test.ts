@@ -4,7 +4,16 @@ import {
   occurrenceKind,
   SCHEDULED_KIND_CHIP_CLASSES,
   scheduledKind,
+  upcomingBillKind,
 } from './scheduled-kind';
+
+describe('upcomingBillKind', () => {
+  it('reads a budget row as a reminder, an unknown amount or a bill', () => {
+    expect(upcomingBillKind({ amountDue: 0, isReminder: true })).toBe('reminder');
+    expect(upcomingBillKind({ amountDue: null, isReminder: false })).toBe('unknown');
+    expect(upcomingBillKind({ amountDue: 80, isReminder: false })).toBe('bill');
+  });
+});
 
 describe('scheduledKind', () => {
   it('classifies a negative amount as a bill', () => {

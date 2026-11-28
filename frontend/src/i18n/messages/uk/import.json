@@ -299,6 +299,7 @@
     "unreadableDatesGoBack": "Якщо у файлі дати записано в іншому порядку, поверніться до кроку відображення стовпців і виберіть формат дати, який у ньому використано.",
     "unreadableAmountsNotice": "{count, plural, one {# рядок містить суму, яку} few {# рядки містять суми, які} many {# рядків містять суми, які} other {# рядка містять суми, які}} неможливо прочитати; {count, plural, one {його не буде імпортовано} other {їх не буде імпортовано}}:",
     "unreadableAmountRow": "Рядок {line}: \"{rawAmount}\"",
+    "unreadableAmountRowField": "Рядок {line}, {field, select, quantity {кількість} price {ціна} commission {комісія} other {сума}}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...і ще {count}",
     "unreadableAmountsGoBack": "Перевірте, чи правильно зіставлено стовпці сум, або виправте ці рядки у файлі та імпортуйте його знову.",
     "unreadableAmountLine": "Рядок {line}: \"{rawAmount}\"",
