@@ -134,6 +134,7 @@
       "carriedIn": "繰越入：",
       "carriedOut": "繰越出："
     },
+    "noPositiveFunding": "利用率は予算額が正の場合のみ計算できます。",
     "overallUsage": "予算全体の使用状況",
     "expenseCategories": "支出カテゴリ",
     "incomeCategories": "収入カテゴリ",

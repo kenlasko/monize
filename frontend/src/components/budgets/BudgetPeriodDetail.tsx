@@ -36,6 +36,15 @@ function isIncomeCategory(pc: BudgetPeriodCategory): boolean {
   return false;
 }
 
+function usageRatio(spent: number, funding: number): number | null {
+  return funding > 0 ? spent / funding : null;
+}
+
+function usagePercent(spent: number, funding: number): number | null {
+  const ratio = usageRatio(spent, funding);
+  return ratio === null ? null : Math.round(ratio * 10000) / 100;
+}
+
 export function BudgetPeriodDetail({
   period,
   formatCurrency,
@@ -79,9 +88,7 @@ export function BudgetPeriodDetail({
       ? Number(period.transferFunding)
       : null;
   const remaining = totalBudgeted - totalSpent;
-  const percentUsed = totalBudgeted > 0
-    ? Math.round((totalSpent / totalBudgeted) * 10000) / 100
-    : 0;
+  const percentUsed = usagePercent(totalSpent, totalBudgeted);
   const hasRollover = expenseCategories.some(
     (pc) => Number(pc.rolloverIn) !== 0 || Number(pc.rolloverOut) !== 0,
   );
@@ -128,8 +135,8 @@ export function BudgetPeriodDetail({
         <SummaryCard
           label={t('periodDetail.summaryCards.totalSpent')}
           value={formatCurrency(totalSpent)}
-          sublabel={formatPercentTrimmed(percentUsed)}
-          valueColor={percentUsed > 100 ? 'text-red-600 dark:text-red-400' : undefined}
+          sublabel={percentUsed === null ? t('periodDetail.noPositiveFunding') : formatPercentTrimmed(percentUsed)}
+          valueColor={percentUsed !== null && percentUsed > 100 ? 'text-red-600 dark:text-red-400' : undefined}
         />
         <SummaryCard
           label={remaining >= 0 ? t('periodDetail.summaryCards.underBudget') : t('periodDetail.summaryCards.overBudget')}
@@ -179,7 +186,7 @@ export function BudgetPeriodDetail({
             {formatCurrency(totalSpent)} / {formatCurrency(totalBudgeted)}
           </span>
         </div>
-        <BudgetProgressBar percentUsed={percentUsed} />
+        {percentUsed !== null && <BudgetProgressBar percentUsed={percentUsed} />}
       </div>
 
       {/* Buckets: the figures frozen when the period closed */}
@@ -248,13 +255,12 @@ export function BudgetPeriodDetail({
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {[...expenseCategories]
               .sort((a, b) => {
-                const pctA = Number(a.effectiveBudget) > 0
-                  ? Number(a.actualAmount) / Number(a.effectiveBudget)
-                  : 0;
-                const pctB = Number(b.effectiveBudget) > 0
-                  ? Number(b.actualAmount) / Number(b.effectiveBudget)
-                  : 0;
-                return pctB - pctA;
+                const ratioA = usageRatio(Number(a.actualAmount), Number(a.effectiveBudget));
+                const ratioB = usageRatio(Number(b.actualAmount), Number(b.effectiveBudget));
+                if (ratioA === ratioB) return 0;
+                if (ratioA === null) return 1;
+                if (ratioB === null) return -1;
+                return ratioB - ratioA;
               })
               .map((pc) => (
                 <PeriodCategoryRow
@@ -357,9 +363,7 @@ function PeriodCategoryRow({
   const rolloverIn = Number(periodCategory.rolloverIn);
   const rolloverOut = Number(periodCategory.rolloverOut);
   const remaining = budgeted - spent;
-  const percentUsed = budgeted > 0
-    ? Math.round((spent / budgeted) * 10000) / 100
-    : 0;
+  const percentUsed = usagePercent(spent, budgeted);
 
   return (
     <div className="px-6 py-4">
@@ -378,7 +382,7 @@ function PeriodCategoryRow({
           <span className="text-gray-500 dark:text-gray-400">
             {formatCurrency(spent)} / {formatCurrency(budgeted)}
           </span>
-          {!isIncome && (
+          {!isIncome && percentUsed !== null && (
             <span
               className={`font-medium ${
                 percentUsed > 100
@@ -393,7 +397,9 @@ function PeriodCategoryRow({
           )}
         </div>
       </div>
-      {!isIncome && <BudgetProgressBar percentUsed={percentUsed} />}
+      {!isIncome && (percentUsed === null
+        ? <p className="text-xs text-gray-500 dark:text-gray-400">{t('periodDetail.noPositiveFunding')}</p>
+        : <BudgetProgressBar percentUsed={percentUsed} />)}
       <div className="flex items-center justify-between mt-1">
         <div className="text-xs text-gray-400 dark:text-gray-500">
           {!isIncome && (

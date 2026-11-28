@@ -134,6 +134,7 @@
       "carriedIn": "Chuyển vào:",
       "carriedOut": "Chuyển ra:"
     },
+    "noPositiveFunding": "Chỉ tính được tỷ lệ sử dụng khi ngân sách lớn hơn 0.",
     "overallUsage": "Tổng mức sử dụng ngân sách",
     "expenseCategories": "Danh mục chi tiêu",
     "incomeCategories": "Danh mục thu nhập",

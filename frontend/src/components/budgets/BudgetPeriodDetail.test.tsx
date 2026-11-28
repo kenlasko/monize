@@ -376,6 +376,50 @@ describe('BudgetPeriodDetail', () => {
     expect(screen.getByText('$170.00 carried forward')).toBeInTheDocument();
   });
 
+  it.each([
+    { funding: -18, spent: -55, remaining: 37, percentage: null },
+    { funding: 0, spent: -10, remaining: 10, percentage: null },
+    { funding: 45, spent: 0, remaining: 45, percentage: 0 },
+  ])('shows monetary totals and applicable usage for funding $funding', ({ funding, spent, remaining, percentage }) => {
+    const periodCategory = { ...mockPeriodCategory, effectiveBudget: funding, actualAmount: spent };
+    const period = { ...mockPeriod, periodCategories: [periodCategory] };
+    render(<BudgetPeriodDetail period={period} formatCurrency={mockFormat} />);
+
+    expect(screen.getByText('Total Spent').parentElement).toHaveTextContent(mockFormat(spent));
+    expect(screen.getByText('Under Budget').parentElement).toHaveTextContent(mockFormat(remaining));
+    expect(screen.getAllByText(mockFormat(spent) + ' / ' + mockFormat(funding))).toHaveLength(2);
+    const bars = screen.queryAllByTestId('progress-bar');
+    if (percentage === null) {
+      expect(screen.queryByText('0%')).not.toBeInTheDocument();
+      expect(screen.getAllByText('Usage requires positive funding.')).toHaveLength(2);
+      expect(bars).toHaveLength(0);
+    } else {
+      expect(screen.getAllByText('0%')).toHaveLength(2);
+      expect(bars).toHaveLength(2);
+      for (const bar of bars) expect(bar).toHaveAttribute('data-percent', '0');
+    }
+  });
+
+  it('sorts a known refund rate before a category without positive funding', () => {
+    const unfunded = { ...mockPeriodCategory, effectiveBudget: -18, actualAmount: -55 };
+    const refund = {
+      ...mockPeriodCategory,
+      id: 'refund',
+      category: { ...mockPeriodCategory.category!, name: 'Books' },
+      effectiveBudget: 100,
+      actualAmount: -25,
+    };
+    render(
+      <BudgetPeriodDetail
+        period={{ ...mockPeriod, periodCategories: [unfunded, refund] }}
+        formatCurrency={mockFormat}
+      />,
+    );
+    const headings = screen.getAllByText(/^(Books|Groceries)$/);
+    expect(headings.map(heading => heading.textContent)).toEqual(['Books', 'Groceries']);
+    expect(screen.getByText('-25%')).toBeInTheDocument();
+  });
+
   it('renders progress bars for expense categories', () => {
     render(
       <BudgetPeriodDetail period={mockPeriod} formatCurrency={mockFormat} />,

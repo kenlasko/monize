@@ -134,6 +134,7 @@
       "carriedIn": "[XX-Carried in:-XX]",
       "carriedOut": "[XX-Carried out:-XX]"
     },
+    "noPositiveFunding": "[XX-Usage requires positive funding.-XX]",
     "overallUsage": "[XX-Overall Budget Usage-XX]",
     "expenseCategories": "[XX-Expense Categories-XX]",
     "incomeCategories": "[XX-Income Categories-XX]",

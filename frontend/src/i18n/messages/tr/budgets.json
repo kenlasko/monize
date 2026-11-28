@@ -134,6 +134,7 @@
       "carriedIn": "Devreden:",
       "carriedOut": "Devredilen:"
     },
+    "noPositiveFunding": "Kullanım oranı yalnızca bütçe sıfırdan büyükse hesaplanabilir.",
     "overallUsage": "Genel Bütçe Kullanımı",
     "expenseCategories": "Harcama Kategorileri",
     "incomeCategories": "Gelir Kategorileri",
