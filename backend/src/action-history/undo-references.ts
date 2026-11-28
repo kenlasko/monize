@@ -118,23 +118,35 @@ const BUCKET_FIELDS: [string, string][] = [
   ["sort_order", "sortOrder"],
 ];
 
-/** A numeric column comes back as text and a snapshot holds a number: compare the numbers. */
-const comparable = (v: unknown): unknown =>
+/** Numeric columns come back as text and a snapshot holds numbers: compare the numbers; every other column as it is. */
+const NUMERIC_COLUMNS = new Set([
+  "amount",
+  "rollover_cap",
+  "target_value",
+  "carry_cap",
+  "alert_warn_percent",
+  "alert_critical_percent",
+  "sort_order",
+]);
+const comparable = (column: string, v: unknown): unknown =>
   v === undefined || v === null
     ? null
-    : typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v))
+    : NUMERIC_COLUMNS.has(column)
       ? Number(v)
       : v;
 
 /**
  * How many of `rows` (the table's current rows) the snapshot does not hold
- * or holds with other values: a row added, or edited, after the restore.
+ * or holds with other values: a row added, or edited, after the restore. A
+ * null reference where the snapshot has an id that no longer exists (`gone`)
+ * is the foreign key's SET NULL, not an edit.
  */
 function changedRows(
   rows: Record<string, unknown>[],
   snapshot: unknown,
   key: string,
   fields: [string, string][],
+  gone: Set<string>,
 ): number {
   const held = (snapshot as Record<string, unknown> | null)?.[key];
   const byId = new Map<string, Record<string, unknown>>(
@@ -149,11 +161,40 @@ function changedRows(
     const was = byId.get(row.id as string);
     return (
       !was ||
-      fields.some(
-        ([column, field]) => comparable(row[column]) !== comparable(was[field]),
-      )
+      fields.some(([column, field]) => {
+        const now = comparable(column, row[column]);
+        const before = comparable(column, was[field]);
+        if (now === before) return false;
+        return !(now === null && gone.has(before as string));
+      })
     );
   }).length;
+}
+
+/** The categories and accounts a snapshot's lines name that no longer exist. */
+async function goneReferences(
+  manager: EntityManager,
+  userId: string,
+  snapshot: unknown,
+): Promise<Set<string>> {
+  const held = (snapshot as Record<string, unknown> | null)?.categories;
+  const lines = Array.isArray(held) ? held : [];
+  const named = (field: string): string[] =>
+    lines.map((l) => l?.[field]).filter((v): v is string => !!v);
+  const gone = new Set<string>();
+  for (const [table, ids] of [
+    ["categories", named("categoryId")],
+    ["accounts", named("transferAccountId")],
+  ] as const) {
+    if (ids.length === 0) continue;
+    const alive: { id: string }[] = await manager.query(
+      `SELECT id FROM ${table} WHERE user_id = $1 AND id = ANY($2)`,
+      [userId, ids],
+    );
+    const live = new Set(alive.map((r) => r.id));
+    ids.filter((id) => !live.has(id)).forEach((id) => gone.add(id));
+  }
+  return gone;
 }
 
 /**
@@ -198,10 +239,13 @@ async function assertBudgetRemovable(
   );
   // The undo of a create expects none (the snapshot holds the row alone).
   const snapshot = isRedo ? action.afterData : null;
+  const gone = isRedo
+    ? await goneReferences(manager, action.userId, snapshot)
+    : new Set<string>();
   const added =
     Number(periods) +
-    changedRows(lines, snapshot, "categories", LINE_FIELDS) +
-    changedRows(buckets, snapshot, "buckets", BUCKET_FIELDS);
+    changedRows(lines, snapshot, "categories", LINE_FIELDS, gone) +
+    changedRows(buckets, snapshot, "buckets", BUCKET_FIELDS, gone);
   if (added === 0) return;
   const name = locked[0].name;
   throw new ConflictException(
@@ -209,7 +253,7 @@ async function assertBudgetRemovable(
       ? {
           message: tr(
             "errors.actionHistory.redoBudgetHasHistory",
-            `Cannot redo deleting "${name}": it now has periods, category lines or buckets that were added after it was restored. Delete the budget instead.`,
+            `Cannot redo deleting "${name}": it now has periods, category lines or buckets that were added or changed after it was restored. Delete the budget instead.`,
             { name },
           ),
           errorCode: "REDO_BUDGET_HAS_HISTORY",

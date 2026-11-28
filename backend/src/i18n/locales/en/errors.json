@@ -101,7 +101,7 @@
     "nothingToRedo": "Nothing to redo",
     "undoCreateInUse": "Cannot undo creating \"{{ name }}\": it is now used by {{ summary }}. Remove these first.",
     "undoBudgetHasHistory": "Cannot undo creating \"{{ name }}\": it now has periods, category lines or buckets that were added after it. Delete the budget instead.",
-    "redoBudgetHasHistory": "Cannot redo deleting \"{{ name }}\": it now has periods, category lines or buckets that were added after it was restored. Delete the budget instead.",
+    "redoBudgetHasHistory": "Cannot redo deleting \"{{ name }}\": it now has periods, category lines or buckets that were added or changed after it was restored. Delete the budget instead.",
     "redoDeleteInUse": "Cannot redo deleting \"{{ name }}\": it is now used by {{ summary }}. Remove these first.",
     "redoDeleteTargetGone": "Cannot redo this delete: the category its rows moved to no longer exists.",
     "undoNotSupportedForEntityType": "Undo not supported for entity type: {{ entityType }}",

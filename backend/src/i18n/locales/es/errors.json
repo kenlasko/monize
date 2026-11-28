@@ -101,7 +101,7 @@
     "nothingToRedo": "Nada que rehacer",
     "undoCreateInUse": "No se puede deshacer la creación de \"{{ name }}\": ahora la usan {{ summary }}. Quite primero estos elementos.",
     "undoBudgetHasHistory": "No se puede deshacer la creación de \"{{ name }}\": ahora tiene periodos, líneas de categoría o grupos añadidos después. Elimine el presupuesto en su lugar.",
-    "redoBudgetHasHistory": "No se puede rehacer la eliminación de \"{{ name }}\": ahora tiene periodos, líneas de categoría o grupos añadidos tras restaurarlo. Elimine el presupuesto en su lugar.",
+    "redoBudgetHasHistory": "No se puede rehacer la eliminación de \"{{ name }}\": ahora tiene periodos, líneas de categoría o grupos añadidos o modificados tras restaurarlo. Elimine el presupuesto en su lugar.",
     "redoDeleteInUse": "No se puede rehacer la eliminación de \"{{ name }}\": ahora la usan {{ summary }}. Quite primero estos elementos.",
     "redoDeleteTargetGone": "No se puede rehacer esta eliminación: la categoría a la que se movieron sus filas ya no existe.",
     "undoNotSupportedForEntityType": "Deshacer no es compatible con el tipo de entidad: {{ entityType }}",

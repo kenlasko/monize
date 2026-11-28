@@ -101,7 +101,7 @@
     "nothingToRedo": "Yeniden yapılacak işlem yok",
     "undoCreateInUse": "\"{{ name }}\" oluşturma işlemi geri alınamaz: artık {{ summary }} tarafından kullanılıyor. Önce bunları kaldırın.",
     "undoBudgetHasHistory": "\"{{ name }}\" oluşturma işlemi geri alınamaz: bütçede sonradan eklenen dönemler, kategori satırları veya gruplar var. Bunun yerine bütçeyi silin.",
-    "redoBudgetHasHistory": "\"{{ name }}\" silme işlemi yinelenemez: bütçede geri yüklendikten sonra eklenen dönemler, kategori satırları veya gruplar var. Bunun yerine bütçeyi silin.",
+    "redoBudgetHasHistory": "\"{{ name }}\" silme işlemi yinelenemez: bütçede geri yüklendikten sonra eklenen veya değiştirilen dönemler, kategori satırları veya gruplar var. Bunun yerine bütçeyi silin.",
     "redoDeleteInUse": "\"{{ name }}\" silme işlemi yinelenemez: artık {{ summary }} tarafından kullanılıyor. Önce bunları kaldırın.",
     "redoDeleteTargetGone": "Bu silme işlemi yinelenemez: satırlarının taşındığı kategori artık mevcut değil.",
     "undoNotSupportedForEntityType": "{{ entityType }} varlık türü için geri alma desteklenmiyor",

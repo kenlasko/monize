@@ -262,6 +262,10 @@ describe("Undo of a budget creation (integration)", () => {
       expect(rows.every((r: any) => r.category_id === null)).toBe(true);
       expect(rows.every((r: any) => r.transfer_account_id === null)).toBe(true);
       expect(rows.filter((r: any) => r.bucket_id !== null)).toHaveLength(1);
+
+      // The nulls are the cascade's work, not an edit: the redo goes through.
+      await asUser(() => history.redo(userId));
+      expect(await count("budgets")).toBe(0);
     });
   });
 });

@@ -94,6 +94,7 @@ describe("assertNoReferencesBeforeDelete", () => {
       lines: (string | Record<string, unknown>)[],
       buckets: (string | Record<string, unknown>)[],
       locked = true,
+      aliveCategories: string[] = [],
     ) {
       return {
         query: jest.fn((sql: string) => {
@@ -102,6 +103,12 @@ describe("assertNoReferencesBeforeDelete", () => {
           }
           if (sql.includes("FROM budget_periods")) {
             return Promise.resolve([{ periods }]);
+          }
+          if (sql.includes("FROM categories")) {
+            return Promise.resolve(aliveCategories.map((id) => ({ id })));
+          }
+          if (sql.includes("FROM accounts")) {
+            return Promise.resolve([]);
           }
           if (sql.includes("FROM budget_categories")) {
             return Promise.resolve(
@@ -156,6 +163,32 @@ describe("assertNoReferencesBeforeDelete", () => {
       await expect(
         redoOf(budgetManager(0, ["l"], ["b"]), snapshot),
       ).resolves.toBeUndefined();
+    });
+
+    it("compares text as text: notes '1.0' is not '1'", async () => {
+      const snapshot = { categories: [{ id: "l", notes: "1" }] };
+      expect(
+        await code(
+          redoOf(budgetManager(0, [{ id: "l", notes: "1.0" }], []), snapshot),
+        ),
+      ).toBe("REDO_BUDGET_HAS_HISTORY");
+    });
+
+    it("treats a null reference to a gone category as the foreign key's SET NULL, not an edit", async () => {
+      const snapshot = { categories: [{ id: "l", categoryId: "c1" }] };
+      const gone = budgetManager(0, [{ id: "l", category_id: null }], []);
+      await expect(redoOf(gone, snapshot)).resolves.toBeUndefined();
+      // Still there: the null is somebody's edit.
+      const kept = budgetManager(
+        0,
+        [{ id: "l", category_id: null }],
+        [],
+        true,
+        ["c1"],
+      );
+      expect(await code(redoOf(kept, snapshot))).toBe(
+        "REDO_BUDGET_HAS_HISTORY",
+      );
     });
 
     it("compares numbers by value, text from the database against the snapshot", async () => {
