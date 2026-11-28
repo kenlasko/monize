@@ -660,7 +660,7 @@ describe("ForecastAggregatorService", () => {
       expect(result.scheduledTransactions[0].amount).toBe(0.00012345);
     });
 
-    it("leaves out a split made only of transfer lines", async () => {
+    it("lists a split made only of transfer lines as a transfer", async () => {
       mockScheduledTransactionRepo.find.mockResolvedValue([
         {
           id: "st-xfer",
@@ -677,7 +677,13 @@ describe("ForecastAggregatorService", () => {
 
       const result = await service.computeAggregates(userId, "USD");
 
-      expect(result.scheduledTransactions).toEqual([]);
+      // Kept, marked as a transfer like a plain scheduled one; not spending.
+      expect(result.scheduledTransactions).toHaveLength(1);
+      expect(result.scheduledTransactions[0]).toMatchObject({
+        name: "Move",
+        isTransfer: true,
+        amount: 100,
+      });
     });
 
     it("fetches active scheduled transactions with categories", async () => {

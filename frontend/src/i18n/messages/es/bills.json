@@ -60,7 +60,8 @@
     "tooltipEstimated": "(estimado)",
     "unavailableUnknownEstimates": "Esta previsión aún no se puede mostrar: se desconoce el importe estimado de una factura incluida, y un saldo previsto se basa en cada día anterior. Introduzca el importe de esa ocurrencia o desactive Estimar en la factura.",
     "unknownEstimateItem": "{name}: {reason}",
-    "unavailableUnknownLoanCredits": "Esta previsión aún no se puede mostrar: tras su próxima ocurrencia, la parte de un pago de préstamo que va al préstamo depende del saldo del préstamo, que un saldo proyectado no puede calcular aquí. Afectados: {names}."
+    "unavailableUnknownLoanCredits": "Esta previsión aún no se puede mostrar: tras su próxima ocurrencia, la parte de un pago de préstamo que va al préstamo depende del saldo del préstamo, que un saldo proyectado no puede calcular aquí. Afectados: {names}.",
+    "unavailableCrossCurrencyCredits": "Esta previsión aún no se puede mostrar: una parte de un pago va a una cuenta en otra moneda, y el importe que llega se fija cuando el pago se registra, por lo que no se puede proyectar de antemano. Afectados: {names}."
   },
   "calendar": {
     "days": {

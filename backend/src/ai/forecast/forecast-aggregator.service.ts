@@ -544,12 +544,16 @@ export class ForecastAggregatorService {
         occurrence.transferLines.length > 0
           ? nonTransferAmount(occurrence)
           : null;
-      // A split made only of transfer lines has no income or spending to list.
-      if (spending === 0) return [];
+      // A split made only of transfer lines is listed as a transfer, like a
+      // plain scheduled one: it is no income or spending.
+      const transfersOnly = spending === 0;
       const isIncome =
-        !st.isTransfer && st.category && isIncomeCategory(st.category)
+        !st.isTransfer &&
+        !transfersOnly &&
+        st.category &&
+        isIncomeCategory(st.category)
           ? true
-          : spending !== null
+          : spending !== null && !transfersOnly
             ? spending > 0
             : occurrence.directionAmount === null
               ? null
@@ -561,7 +565,11 @@ export class ForecastAggregatorService {
           amount:
             occurrence.amount === null || occurrence.transferLinesUnknown
               ? null
-              : Math.abs(spending ?? occurrence.amount),
+              : Math.abs(
+                  transfersOnly
+                    ? occurrence.amount
+                    : (spending ?? occurrence.amount),
+                ),
           amountComplete:
             occurrence.amount !== null && !occurrence.transferLinesUnknown,
           amountEstimated: occurrence.estimated,
@@ -575,7 +583,7 @@ export class ForecastAggregatorService {
           nextDueDate: occurrence.dueDate,
           categoryName: st.category?.name || null,
           isIncome,
-          isTransfer: st.isTransfer,
+          isTransfer: st.isTransfer || transfersOnly,
         },
       ];
     });

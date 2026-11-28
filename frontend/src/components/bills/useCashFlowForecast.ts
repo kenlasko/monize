@@ -78,6 +78,8 @@ export interface CashFlowForecast {
   unknownEstimates: string[];
   /** Ids of loan bills whose credit to the loan is unknown after the next occurrence; non-empty means no forecast. */
   unknownLoanCredits: string[];
+  /** Ids of schedules with a line into an account in another currency; non-empty means no forecast. */
+  crossCurrencyCredits: string[];
   summary: ReturnType<typeof getForecastSummary>;
   totalForecastedTransactions: number;
 }
@@ -130,6 +132,7 @@ export function useCashFlowForecast({
     missingCurrencies: string[];
     unknownEstimates?: string[];
     unknownLoanCredits?: string[];
+    crossCurrencyCredits?: string[];
   }>(() => {
     const convert = needsConversion ? convertToDefault : undefined;
     if (isMultiAccount) {
@@ -151,6 +154,7 @@ export function useCashFlowForecast({
       missingCurrencies: single.missingCurrencies,
       unknownEstimates: single.unknownEstimates,
       unknownLoanCredits: single.unknownLoanCredits,
+      crossCurrencyCredits: single.crossCurrencyCredits,
     };
   }, [accounts, scheduledTransactions, period, orderedAccountIds, isMultiAccount, futureTransactions, needsConversion, convertToDefault]);
 
@@ -183,6 +187,7 @@ export function useCashFlowForecast({
     missingCurrencies: forecast.missingCurrencies,
     unknownEstimates: forecast.unknownEstimates ?? [],
     unknownLoanCredits: forecast.unknownLoanCredits ?? [],
+    crossCurrencyCredits: forecast.crossCurrencyCredits ?? [],
     summary,
     totalForecastedTransactions,
   };

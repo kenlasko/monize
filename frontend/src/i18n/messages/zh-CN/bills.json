@@ -60,7 +60,8 @@
     "tooltipEstimated": "（估算）",
     "unavailableUnknownEstimates": "暂时无法显示此预测：其中某张账单的估算金额未知，而预计余额建立在之前的每一天之上。请输入该次发生的金额，或在账单上关闭“估算”。",
     "unknownEstimateItem": "{name}：{reason}",
-    "unavailableUnknownLoanCredits": "暂时无法显示此预测：下一次发生之后，贷款还款中有多少进入贷款取决于贷款余额，而预测余额在此无法得出。受影响：{names}。"
+    "unavailableUnknownLoanCredits": "暂时无法显示此预测：下一次发生之后，贷款还款中有多少进入贷款取决于贷款余额，而预测余额在此无法得出。受影响：{names}。",
+    "unavailableCrossCurrencyCredits": "暂时无法显示此预测：一笔付款的一部分会进入另一种货币的账户，到账金额在付款入账时才确定，因此无法提前预测。受影响：{names}。"
   },
   "calendar": {
     "days": {

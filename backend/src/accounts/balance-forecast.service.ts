@@ -215,16 +215,33 @@ export class BalanceForecastService {
         continue;
       }
 
+      // An account that only RECEIVES a line is charted from the line alone:
+      // the source occurrence's own total being unknown does not touch it.
+      const lineOnly =
+        isLineTarget &&
+        occurrence.settlementAccountId !== accountId &&
+        row.transferAccountId !== accountId;
       // A loan bill whose principal the projection does not state: the credit
-      // to the loan is unknown, so this chart is withheld, never the template's.
+      // to THE LOAN is unknown, so only its chart is withheld, never the
+      // template's figure; another line target (an escrow line) keeps its own.
       const gap =
-        isLineTarget && occurrence.transferLinesUnknown
+        isLineTarget &&
+        occurrence.transferLinesUnknown &&
+        occurrence.loanAccountId === accountId
           ? ({
               reason: "unknownLoanPrincipal",
               from: null,
               to: null,
             } as const)
-          : this.gapFor(occurrence, account, isTransferTarget);
+          : lineOnly
+            ? row.currencyCode !== account.currencyCode
+              ? ({
+                  reason: "crossCurrencyTransfer",
+                  from: row.currencyCode,
+                  to: account.currencyCode,
+                } as const)
+              : null
+            : this.gapFor(occurrence, account, isTransferTarget);
       const landing = forecastLanding(occurrence.dueDate, today);
       inputs.push({
         scheduledTransactionId: occurrence.scheduledTransactionId,
@@ -234,7 +251,7 @@ export class BalanceForecastService {
         transferLines: occurrence.transferLines,
         dueDate: landing.date,
         overdue: landing.overdue,
-        amount: gap ? null : occurrence.amount,
+        amount: gap ? null : lineOnly ? 0 : occurrence.amount,
         gapReason: gap?.reason,
         gapFromCurrency: gap?.from ?? null,
         gapToCurrency: gap?.to ?? null,

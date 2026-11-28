@@ -700,7 +700,9 @@ describe('buildForecast', () => {
         [t], 'month', 'acc-2',
       );
       expect(result.points).toEqual([]);
-      expect(result.missingCurrencies).toEqual(['USD']);
+      // Its own gap: no exchange rate the reader adds makes the arriving amount known.
+      expect(result.crossCurrencyCredits).toEqual(['st-1']);
+      expect(result.missingCurrencies).toEqual([]);
     });
 
     it('is not withheld by an occurrence whose lines no longer reach the account', () => {
@@ -724,6 +726,30 @@ describe('buildForecast', () => {
       );
       expect(result.points.length).toBeGreaterThan(0);
       expect(result.missingCurrencies).toEqual([]);
+    });
+
+    it('credits a receiver whose source total is unknown, since its own line is stated', () => {
+      const t = makeScheduled({
+        ...splitWithTransfer(),
+        splits: [{ transferAccountId: 'acc-2', amount: -70, investmentAction: 'BUY' } as any],
+        investmentForecastAmount: null,
+      });
+      const result = buildForecast(
+        [makeAccount({ id: 'acc-2', currentBalance: 1000 })], [t], 'month', 'acc-2',
+      );
+      expect(result.missingCurrencies).toEqual([]);
+      expect(result.points.find(dp => dp.date === '2025-01-20')?.balance).toBe(1070);
+    });
+
+    it('finds the loan cursor by its slot, not by position, when the cursor is overdue', () => {
+      const loan = makeAccount({ id: 'acc-2', currentBalance: 1000, accountType: 'MORTGAGE' } as any);
+      // Overdue cursor (Jan 10): the carried occurrence is the cursor and keeps its credit.
+      const once = makeScheduled({ ...splitWithTransfer(), nextDueDate: '2025-01-10' });
+      expect(buildForecast([loan], [once], 'month', 'acc-2').points.length).toBeGreaterThan(0);
+      // Without overdue carry the cursor slot is not in the list at all, so the
+      // first listed occurrence (Jan 17) is NOT the cursor and is withheld.
+      const weekly = makeScheduled({ ...splitWithTransfer(), frequency: 'WEEKLY', nextDueDate: '2025-01-10' });
+      expect(getProjectedBalanceAtDate(loan, '2025-01-20', [weekly], [])).toBeNull();
     });
 
     it('credits an inbound line to the projected balance at a date', () => {

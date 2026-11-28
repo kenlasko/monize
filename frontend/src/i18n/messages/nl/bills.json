@@ -60,7 +60,8 @@
     "tooltipEstimated": "(geschat)",
     "unavailableUnknownEstimates": "Deze prognose kan nog niet worden getoond: het geschatte bedrag van een rekening erin is onbekend, en een geprojecteerd saldo bouwt voort op elke dag ervoor. Voer het bedrag van die keer in, of zet Schatten uit bij de rekening.",
     "unknownEstimateItem": "{name}: {reason}",
-    "unavailableUnknownLoanCredits": "Deze prognose kan nog niet worden getoond: na de eerstvolgende keer hangt het af van het saldo van de lening hoeveel van een leningbetaling naar de lening gaat, en dat kan een geprojecteerd saldo hier niet bepalen. Betrokken: {names}."
+    "unavailableUnknownLoanCredits": "Deze prognose kan nog niet worden getoond: na de eerstvolgende keer hangt het af van het saldo van de lening hoeveel van een leningbetaling naar de lening gaat, en dat kan een geprojecteerd saldo hier niet bepalen. Betrokken: {names}.",
+    "unavailableCrossCurrencyCredits": "Deze prognose kan nog niet worden getoond: een deel van een betaling gaat naar een rekening in een andere valuta, en het bedrag dat daar aankomt wordt vastgesteld wanneer de betaling wordt geboekt, dus het kan niet vooraf worden geprojecteerd. Betrokken: {names}."
   },
   "calendar": {
     "days": {

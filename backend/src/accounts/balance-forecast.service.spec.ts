@@ -628,6 +628,40 @@ describe("BalanceForecastService", () => {
         });
       });
 
+      it("withholds only the loan's chart, not another line target's", async () => {
+        arrange(null);
+        accountsRepo.findOne.mockReset();
+        accountsRepo.findOne.mockResolvedValue({
+          ...chequing,
+          id: "acc-3",
+          name: "Savings",
+        });
+        stubBalances("1000");
+        dataSource.query.mockResolvedValueOnce([{ id: "st-split" }]);
+        scheduledRepo.find.mockResolvedValue([
+          {
+            ...splitSchedule,
+            splits: [
+              { transferAccountId: null, amount: -30 },
+              { transferAccountId: "acc-2", amount: -60 },
+              { transferAccountId: "acc-3", amount: -10 },
+            ],
+          },
+        ]);
+        const result = await service.getBalanceForecast("user-1", "acc-3", 60);
+        // The escrow line is stated: its credit stands though the loan's
+        // principal is unknown.
+        expect(result.complete).toBe(true);
+        expect(result.points).toContainEqual({
+          date: "2024-07-20",
+          balance: 1010,
+        });
+        expect(result.points).toContainEqual({
+          date: "2024-08-20",
+          balance: 1020,
+        });
+      });
+
       it("keeps an override's own stated lines, with no gap", async () => {
         arrange(null);
         overridesRepo.find.mockResolvedValue([

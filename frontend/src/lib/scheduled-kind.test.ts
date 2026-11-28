@@ -136,6 +136,38 @@ describe('scheduledKind', () => {
       ).toBe('bill');
     });
 
+    it('reads the occurrence\'s effective lines, not the template alone', () => {
+      const occ = { amount: -100, directionAmount: -100 };
+      const transfersOnly = {
+        amount: -100,
+        isSplit: true,
+        splits: [{ transferAccountId: 'acc-2' }],
+      };
+      // An override that turns a transfers-only template into a bill...
+      expect(
+        occurrenceKind(occ, { ...transfersOnly, nextOverride: { isSplit: false, splits: null } }),
+      ).toBe('bill');
+      expect(
+        occurrenceKind(occ, {
+          ...transfersOnly,
+          nextOverride: { isSplit: true, splits: [{ transferAccountId: null }, { transferAccountId: 'acc-2' }] },
+        }),
+      ).toBe('bill');
+      // ...and the reverse: a template with a category line, restated as transfers only.
+      const mixed = { amount: -100, isSplit: true, splits: [{ transferAccountId: null }, { transferAccountId: 'acc-2' }] };
+      expect(occurrenceKind(occ, mixed)).toBe('bill');
+      expect(
+        occurrenceKind(occ, { ...mixed, nextOverride: { isSplit: true, splits: [{ transferAccountId: 'acc-2' }] } }),
+      ).toBe('transfer');
+      // An occurrence that names its own override wins over the next one's.
+      expect(
+        occurrenceKind(
+          { ...occ, override: { isSplit: true, splits: [{ transferAccountId: 'acc-2' }] } },
+          { ...mixed, nextOverride: null },
+        ),
+      ).toBe('transfer');
+    });
+
     it('still calls a transfer a transfer, whatever the direction says', () => {
       expect(
         occurrenceKind(

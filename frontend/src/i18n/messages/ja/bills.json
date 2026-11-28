@@ -60,7 +60,8 @@
     "tooltipEstimated": "(見積もり)",
     "unavailableUnknownEstimates": "この予測はまだ表示できません。含まれる請求の見積もり金額が不明で、予測残高はそれ以前の毎日の上に積み上がるためです。その回の金額を入力するか、請求の「見積もり」をオフにしてください。",
     "unknownEstimateItem": "{name}: {reason}",
-    "unavailableUnknownLoanCredits": "この予測はまだ表示できません。次回の発生以降、ローン返済のうちローンに充当される額はローン残高によって決まり、予測残高ではここで算出できません。対象: {names}。"
+    "unavailableUnknownLoanCredits": "この予測はまだ表示できません。次回の発生以降、ローン返済のうちローンに充当される額はローン残高によって決まり、予測残高ではここで算出できません。対象: {names}。",
+    "unavailableCrossCurrencyCredits": "この予測はまだ表示できません。支払いの一部が別の通貨の口座に入金され、入金される金額は支払いの記帳時に決まるため、事前に予測できません。対象: {names}。"
   },
   "calendar": {
     "days": {

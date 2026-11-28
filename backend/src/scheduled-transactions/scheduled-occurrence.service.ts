@@ -166,6 +166,8 @@ export interface ResolvedScheduledOccurrence extends EffectiveScheduledOccurrenc
    * what depends on them instead of reading the template's lines.
    */
   transferLinesUnknown: boolean;
+  /** The loan account whose credit `transferLinesUnknown` is about; null otherwise. */
+  loanAccountId: string | null;
   /**
    * The money precision of `currencyCode` (`moneyDecimalsFor`), loaded only
    * when the occurrence has transfer lines to net; four otherwise.
@@ -298,6 +300,7 @@ export class ScheduledOccurrenceService {
           autoPosts: occurrenceAutoPosts(row, slot.override),
           schedule: row,
           transferLinesUnknown: false,
+          loanAccountId: null,
           moneyDecimals: FIAT_MONEY_DECIMALS,
           transferLines: effectiveTransferLines(
             row,
@@ -714,5 +717,6 @@ function withLoanAmount(
     complete: true,
     transferLines,
     transferLinesUnknown: !principalKnown,
+    loanAccountId: loanId ?? null,
   };
 }

@@ -237,7 +237,7 @@ export function CashFlowForecastPlot({
   // A projected balance is cumulative, so one missing rate makes every day after
   // it wrong. The forecast builders return no points in that case and name the
   // currencies; the chart says so instead of drawing a plausible line.
-  if (forecast.missingCurrencies.length > 0 || forecast.unknownEstimates.length > 0 || forecast.unknownLoanCredits.length > 0) {
+  if (forecast.missingCurrencies.length > 0 || forecast.unknownEstimates.length > 0 || forecast.unknownLoanCredits.length > 0 || forecast.crossCurrencyCredits.length > 0) {
     return (
       <div
         role="alert"
@@ -274,6 +274,18 @@ export function CashFlowForecastPlot({
         )}
         {/* A loan bill's principal is priced per occurrence by the server, so
             the credit to the loan after the next occurrence is unknown here. */}
+        {/* The amount that lands in an account of another currency is fixed
+            when the payment posts: no rate the reader adds can make it known. */}
+        {forecast.crossCurrencyCredits.length > 0 && (
+          <p>
+            {t('forecast.unavailableCrossCurrencyCredits', {
+              names: forecast.crossCurrencyCredits
+                .map((id) => scheduledTransactions.find((s) => s.id === id)?.name)
+                .filter((name): name is string => !!name)
+                .join(', '),
+            })}
+          </p>
+        )}
         {forecast.unknownLoanCredits.length > 0 && (
           <p>
             {t('forecast.unavailableUnknownLoanCredits', {
