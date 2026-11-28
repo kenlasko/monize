@@ -269,6 +269,10 @@ export class ImportService {
       }
     }
 
+    const unreadable = result.accountBlocks
+      .flatMap((block) => block.unreadableAmountRows ?? [])
+      .sort((a, b) => a.rowNumber - b.rowNumber);
+
     return {
       isMultiAccount: result.isMultiAccount,
       categoryDefs: result.categoryDefs.map((c) => ({
@@ -286,6 +290,16 @@ export class ImportService {
       securities: Array.from(allSecurities).sort(),
       detectedDateFormat: result.detectedDateFormat,
       sampleDates: result.sampleDates,
+      ...(unreadable.length > 0
+        ? {
+            unreadableAmounts: {
+              count: unreadable.length,
+              rows: unreadable
+                .slice(0, SKIPPED_ROWS_LIMIT)
+                .map(({ rowNumber, rawAmount }) => ({ rowNumber, rawAmount })),
+            },
+          }
+        : {}),
     };
   }
 
@@ -462,10 +476,14 @@ export class ImportService {
         // Step 6: Import transactions per account block
         for (const block of result.accountBlocks) {
           let accountId = accountNameToId.get(block.accountName);
+          // Records the parse left out count with the rest of an unresolved block.
+          const blockRecords =
+            block.transactions.length +
+            (block.unreadableAmountRows?.length ?? 0);
           if (!accountId) {
-            importResult.errors += block.transactions.length;
+            importResult.errors += blockRecords;
             importResult.errorMessages.push(
-              `Skipped ${block.transactions.length} transactions: could not resolve account "${block.accountName}"`,
+              `Skipped ${blockRecords} transactions: could not resolve account "${block.accountName}"`,
             );
             continue;
           }
@@ -474,7 +492,7 @@ export class ImportService {
             where: { id: accountId },
           });
           if (!account) {
-            importResult.errors += block.transactions.length;
+            importResult.errors += blockRecords;
             importResult.errorMessages.push(
               `Account "${block.accountName}" (${accountId}) not found in database`,
             );
@@ -534,6 +552,22 @@ export class ImportService {
             heldExternalIds: new Map(),
             importRules,
           };
+
+          // The parse left these records out; the result names them.
+          for (const row of block.unreadableAmountRows ?? []) {
+            recordSkippedRow(
+              importResult,
+              {
+                date: row.date,
+                amount: 0,
+                payee: row.payee,
+                rowNumber: row.rowNumber,
+                rawAmount: row.rawAmount,
+              },
+              row.isTransfer ? "unreadableAmountTransfer" : "unreadableAmount",
+              account.currencyCode,
+            );
+          }
 
           // Apply opening balance
           if (block.openingBalance !== null) {
@@ -1509,7 +1543,9 @@ export class ImportService {
           rowNumber: row.rowNumber,
           rawAmount: row.rawAmount,
         },
-        reason: "unreadableAmount" as const,
+        reason: row.isTransfer
+          ? ("unreadableAmountTransfer" as const)
+          : ("unreadableAmount" as const),
       })),
       ...(result.rejectedInvestmentRows ?? []).map((row) => ({
         row: {

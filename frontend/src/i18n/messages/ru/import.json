@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Строка {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...и ещё {count}",
     "unreadableAmountsGoBack": "Проверьте, правильно ли сопоставлены столбцы сумм, или исправьте эти строки в файле и импортируйте его снова.",
+    "unreadableAmountLine": "Строка {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Операция {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Исправьте эти суммы в файле и импортируйте его снова.",
     "importButton": "Импортировать проводки"
   },
   "complete": {
@@ -334,6 +337,7 @@
     "skipReasonUnreadableDate": "дату невозможно прочитать",
     "skipReasonNoDate": "нет даты",
     "skipReasonUnreadableAmount": "сумму невозможно прочитать",
+    "skipReasonUnreadableAmountTransfer": "сумму не удалось прочитать; этот перевод мог уже быть создан из записи другого счета, проверьте перед повторным импортом",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "отсутствует ценная бумага",
     "skipReasonMissingQuantity": "отсутствует количество",
@@ -343,6 +347,8 @@
     "skippedRowLineDate": "Строка {line}, \"{rawDate}\"",
     "skippedRowLine": "Строка {line}",
     "skippedRowLineAt": "Строка {line}, {date}",
+    "skippedRowQifLineAt": "Строка {line}, {date}",
+    "skippedRowOfxLineAt": "Операция {line}, {date}",
     "andMoreSkipped": "...и ещё {count} пропущенных строк",
     "loanSetupHeading": "Настройка регулярных платежей",
     "loanSetupDescription": "Следующие счета кредитов/ипотеки были импортированы без запланированных платежей. Настройте регулярные платежи для продолжения отслеживания займа.",

@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Rij {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...en nog {count}",
     "unreadableAmountsGoBack": "Controleer of de bedragkolommen goed zijn toegewezen, of corrigeer deze rijen in het bestand en importeer het opnieuw.",
+    "unreadableAmountLine": "Regel {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Transactie {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Corrigeer deze bedragen in het bestand en importeer het opnieuw.",
     "importButton": "Transacties importeren"
   },
   "complete": {
@@ -334,6 +337,7 @@
     "skipReasonUnreadableDate": "datum onleesbaar",
     "skipReasonNoDate": "geen datum",
     "skipReasonUnreadableAmount": "bedrag onleesbaar",
+    "skipReasonUnreadableAmountTransfer": "bedrag niet leesbaar; deze overboeking bestaat mogelijk al via het record van de andere rekening, controleer dit voordat u opnieuw importeert",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "waardepapier ontbreekt",
     "skipReasonMissingQuantity": "aantal ontbreekt",
@@ -343,6 +347,8 @@
     "skippedRowLineDate": "Rij {line}, \"{rawDate}\"",
     "skippedRowLine": "Rij {line}",
     "skippedRowLineAt": "Rij {line}, {date}",
+    "skippedRowQifLineAt": "Regel {line}, {date}",
+    "skippedRowOfxLineAt": "Transactie {line}, {date}",
     "andMoreSkipped": "...en nog {count} overgeslagen regels",
     "loanSetupHeading": "Terugkerende betalingen instellen",
     "loanSetupDescription": "De volgende lening-/hypotheekrekeningen zijn geïmporteerd zonder geplande betalingen. Stel terugkerende betalingen in om jouw leningvoortgang bij te houden.",

@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Рядок {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...і ще {count}",
     "unreadableAmountsGoBack": "Перевірте, чи правильно зіставлено стовпці сум, або виправте ці рядки у файлі та імпортуйте його знову.",
+    "unreadableAmountLine": "Рядок {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Операція {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Виправте ці суми у файлі та імпортуйте його знову.",
     "importButton": "Імпортувати транзакції"
   },
   "complete": {
@@ -334,6 +337,7 @@
     "skipReasonUnreadableDate": "дату неможливо прочитати",
     "skipReasonNoDate": "немає дати",
     "skipReasonUnreadableAmount": "суму неможливо прочитати",
+    "skipReasonUnreadableAmountTransfer": "суму не вдалося прочитати; цей переказ міг уже бути створений із запису іншого рахунку, перевірте перед повторним імпортом",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "відсутній цінний папір",
     "skipReasonMissingQuantity": "відсутня кількість",
@@ -343,6 +347,8 @@
     "skippedRowLineDate": "Рядок {line}, \"{rawDate}\"",
     "skippedRowLine": "Рядок {line}",
     "skippedRowLineAt": "Рядок {line}, {date}",
+    "skippedRowQifLineAt": "Рядок {line}, {date}",
+    "skippedRowOfxLineAt": "Операція {line}, {date}",
     "andMoreSkipped": "...і ще {count} пропущених рядків",
     "loanSetupHeading": "Налаштувати регулярні платежі",
     "loanSetupDescription": "Наступні кредитні/іпотечні рахунки були імпортовані без запланованих платежів. Налаштуйте регулярні платежі, щоб продовжити відстеження прогресу кредиту.",

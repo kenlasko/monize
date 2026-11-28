@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Riga {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...e altre {count}",
     "unreadableAmountsGoBack": "Verifica che le colonne dell'importo siano mappate correttamente, oppure correggi queste righe nel file e importalo di nuovo.",
+    "unreadableAmountLine": "Riga {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Transazione {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Correggi questi importi nel file e importalo di nuovo.",
     "importButton": "Importa transazioni"
   },
   "complete": {
@@ -334,6 +337,7 @@
     "skipReasonUnreadableDate": "data non leggibile",
     "skipReasonNoDate": "nessuna data",
     "skipReasonUnreadableAmount": "importo non leggibile",
+    "skipReasonUnreadableAmountTransfer": "importo non leggibile; questo trasferimento potrebbe esistere già dal record dell'altro conto, controlla prima di importarlo di nuovo",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "titolo mancante",
     "skipReasonMissingQuantity": "quantità mancante",
@@ -343,6 +347,8 @@
     "skippedRowLineDate": "Riga {line}, \"{rawDate}\"",
     "skippedRowLine": "Riga {line}",
     "skippedRowLineAt": "Riga {line}, {date}",
+    "skippedRowQifLineAt": "Riga {line}, {date}",
+    "skippedRowOfxLineAt": "Transazione {line}, {date}",
     "andMoreSkipped": "...e altre {count} righe saltate",
     "loanSetupHeading": "Configura pagamenti ricorrenti",
     "loanSetupDescription": "I seguenti conti prestito/mutuo sono stati importati senza pagamenti pianificati. Configura i pagamenti ricorrenti per continuare a monitorare il tuo prestito.",

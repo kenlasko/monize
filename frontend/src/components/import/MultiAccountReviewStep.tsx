@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { ParsedQifMultiAccountResponse, DateFormat, DATE_FORMAT_OPTIONS } from '@/lib/import';
 import { ImportStep } from '@/app/import/import-utils';
+import { UnreadableAmountsNotice } from './UnreadableAmountsNotice';
 
 interface MultiAccountReviewStepProps {
   multiAccountData: ParsedQifMultiAccountResponse;
@@ -76,6 +77,15 @@ export function MultiAccountReviewStep({
           tagsCreated: tagDefs.length > 0 ? t('multiAccountReview.tagsCreated') : '',
         })}
       </p>
+
+      {(multiAccountData.unreadableAmounts?.count ?? 0) > 0 && (
+        <div className="mb-6">
+          <UnreadableAmountsNotice
+            importFiles={[{ fileName: '', fileType: 'qif', parsedData: multiAccountData }]}
+            showFileNames={false}
+          />
+        </div>
+      )}
 
       {/* Settings */}
       <div className="mb-6 grid grid-cols-2 gap-4">

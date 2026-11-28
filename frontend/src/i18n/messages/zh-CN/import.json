@@ -301,6 +301,9 @@
     "unreadableAmountRow": "第 {line} 行：“{rawAmount}”",
     "unreadableAmountsMore": "...以及另外 {count} 行",
     "unreadableAmountsGoBack": "请检查金额列是否映射正确，或在文件中更正这些行后重新导入。",
+    "unreadableAmountLine": "第 {line} 行：\"{rawAmount}\"",
+    "unreadableAmountTransaction": "交易 {line}：\"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "请在文件中更正这些金额后重新导入。",
     "importButton": "导入交易"
   },
   "complete": {
@@ -334,6 +337,7 @@
     "skipReasonUnreadableDate": "无法读取日期",
     "skipReasonNoDate": "无日期",
     "skipReasonUnreadableAmount": "无法读取金额",
+    "skipReasonUnreadableAmountTransfer": "无法读取金额；这笔转账可能已由另一账户的记录创建，再次导入前请先检查",
     "skippedRowRawAmount": "“{rawAmount}”",
     "skipReasonMissingSecurity": "缺少证券",
     "skipReasonMissingQuantity": "缺少数量",
@@ -343,6 +347,8 @@
     "skippedRowLineDate": "第 {line} 行，“{rawDate}”",
     "skippedRowLine": "第 {line} 行",
     "skippedRowLineAt": "第 {line} 行，{date}",
+    "skippedRowQifLineAt": "第 {line} 行，{date}",
+    "skippedRowOfxLineAt": "交易 {line}，{date}",
     "andMoreSkipped": "...以及另外 {count} 行已跳过",
     "loanSetupHeading": "设置定期还款",
     "loanSetupDescription": "以下贷款/抵押贷款账户已导入但未配置定期还款。设置定期还款以继续追踪贷款进度。",

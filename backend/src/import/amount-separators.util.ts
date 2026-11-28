@@ -1,4 +1,15 @@
 /**
+ * True when the text is nothing but a number once normalised: an optional
+ * sign, digits and at most one decimal point ("1234.5", "-.5"). A QIF or OFX
+ * amount that fails it is unreadable, never the number its first digits make.
+ */
+export function isPlainAmount(value: string): boolean {
+  // The decimal part is one optional group so the digit runs cannot split
+  // ambiguously (`\d+\.?\d*` backtracks polynomially on a long run of digits).
+  return /^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value);
+}
+
+/**
  * Rewrite an imported amount's grouping and decimal separators to the
  * `parseFloat` form: grouping removed, decimal separator a dot. The input has
  * already had its currency symbols and whitespace stripped.
@@ -45,4 +56,22 @@ export function normalizeAmountSeparators(value: string): string {
 
 function countOf(value: string, separator: string): number {
   return value.split(separator).length - 1;
+}
+
+/**
+ * Read a QIF amount: a number with an optional currency marker before or after
+ * it (any currency symbol, or a 1-4 letter token such as "zł", "kr", "Kč",
+ * "CAD"), whitespace, and the grouping and decimal separators
+ * `normalizeAmountSeparators` reads. Anything else ("abc", "1,2,3.4.5",
+ * "12abc34") is null, never the number its first digits make. QIF takes fewer
+ * forms than CSV: no trailing minus, parentheses or DR/CR markers.
+ */
+export function parseQifAmount(amountStr: string): number | null {
+  const cleaned = normalizeAmountSeparators(
+    amountStr
+      .replace(/\p{Sc}|\s/gu, "")
+      .replace(/^([-+]?)\p{L}{1,4}/u, "$1")
+      .replace(/\p{L}{1,4}$/u, ""),
+  );
+  return isPlainAmount(cleaned) ? parseFloat(cleaned) : null;
 }

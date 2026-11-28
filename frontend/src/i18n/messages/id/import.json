@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Baris {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...dan {count} lainnya",
     "unreadableAmountsGoBack": "Periksa apakah kolom jumlah sudah dipetakan dengan benar, atau perbaiki baris-baris ini di file lalu impor lagi.",
+    "unreadableAmountLine": "Baris {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Transaksi {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Perbaiki jumlah ini di dalam file, lalu impor lagi.",
     "importButton": "Impor Transaksi"
   },
   "complete": {
@@ -334,6 +337,7 @@
     "skipReasonUnreadableDate": "tanggal tidak dapat dibaca",
     "skipReasonNoDate": "tanpa tanggal",
     "skipReasonUnreadableAmount": "jumlah tidak dapat dibaca",
+    "skipReasonUnreadableAmountTransfer": "jumlah tidak dapat dibaca; transfer ini mungkin sudah dibuat dari catatan akun lain, periksa sebelum mengimpornya lagi",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "sekuritas tidak ada",
     "skipReasonMissingQuantity": "kuantitas tidak ada",
@@ -343,6 +347,8 @@
     "skippedRowLineDate": "Baris {line}, \"{rawDate}\"",
     "skippedRowLine": "Baris {line}",
     "skippedRowLineAt": "Baris {line}, {date}",
+    "skippedRowQifLineAt": "Baris {line}, {date}",
+    "skippedRowOfxLineAt": "Transaksi {line}, {date}",
     "andMoreSkipped": "...dan {count} baris lain yang dilewati",
     "loanSetupHeading": "Siapkan Pembayaran Berulang",
     "loanSetupDescription": "Akun pinjaman/KPR berikut diimpor tanpa pembayaran terjadwal. Siapkan pembayaran berulang untuk terus melacak kemajuan pinjaman Anda.",

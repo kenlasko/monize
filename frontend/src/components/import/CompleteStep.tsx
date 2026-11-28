@@ -21,6 +21,8 @@ interface CompleteStepProps {
   importResult: ImportResult | null;
   bulkImportResult: BulkImportResult | null;
   onImportMore: () => void;
+  /** The multi-account QIF import: its file is not in `importFiles`, which can hold a previous one. */
+  isMultiAccountImport?: boolean;
 }
 
 export function CompleteStep({
@@ -32,6 +34,7 @@ export function CompleteStep({
   importResult,
   bulkImportResult,
   onImportMore,
+  isMultiAccountImport = false,
 }: CompleteStepProps) {
   const t = useTranslations('import');
   const router = useRouter();
@@ -206,7 +209,12 @@ export function CompleteStep({
                       {'\u2192'} {result.accountName}: {result.imported} {t('complete.importedSuffix')}, {result.skipped} {t('complete.totalSkippedSuffix')}
                       {result.errors > 0 && <span className="text-red-600 dark:text-red-400">, {result.errors} {t('complete.errorsLabel')}</span>}
                     </p>
-                    <SkippedRowsList rows={result.skippedRows} total={result.skipped} limit={3} />
+                    <SkippedRowsList
+                      rows={result.skippedRows}
+                      total={result.skipped}
+                      limit={3}
+                      fileType={importFiles.find((f) => f.fileName === result.fileName)?.fileType}
+                    />
                     {result.errorMessages.length > 0 && (
                       <ul className="text-xs text-red-500 dark:text-red-400 mt-1">
                         {result.errorMessages.slice(0, 3).map((msg, i) => (
@@ -256,7 +264,11 @@ export function CompleteStep({
                 <strong>{t('complete.securitiesCreated')}</strong> {importResult.securitiesCreated}
               </li>
             </ul>
-            <SkippedRowsList rows={importResult.skippedRows} total={importResult.skipped} />
+            <SkippedRowsList
+              rows={importResult.skippedRows}
+              total={importResult.skipped}
+              fileType={isMultiAccountImport ? 'qif' : importFiles[0]?.fileType}
+            />
             {((importResult.duplicatesMerged ?? 0) > 0 || (importResult.duplicatesReplaced ?? 0) > 0) && (
               <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
                 {t('complete.duplicatesDecided', {

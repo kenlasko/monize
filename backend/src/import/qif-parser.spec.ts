@@ -2543,10 +2543,11 @@ describe("parseQif - field edge cases", () => {
     expect(result.accountType).toBe("CHEQUING");
   });
 
-  it("falls back to zero for an unparseable amount", () => {
+  it("reports an unparseable amount instead of importing it as zero", () => {
     const qif = `!Type:Bank\nD01/15/2026\nTnot-a-number\nPStore\n^\n`;
     const result = parseQif(qif, "MM/DD/YYYY");
-    expect(result.transactions[0].amount).toBe(0);
+    expect(result.transactions).toHaveLength(0);
+    expect(result.unreadableAmountRows).toHaveLength(1);
   });
 
   it("leaves cleared and reconciled false for an unrecognised C value", () => {
@@ -2571,16 +2572,18 @@ describe("parseQif - field edge cases", () => {
     expect(result.securities).toHaveLength(0);
   });
 
-  it("treats a StkSplit ratio with a zero denominator as zero quantity", () => {
+  it("reports a StkSplit ratio with a zero denominator", () => {
     const qif = `!Type:Invst\nD01/15/2026\nNStkSplit\nQ2:0\n^\n`;
     const result = parseQif(qif, "MM/DD/YYYY");
-    expect(result.transactions[0].quantity).toBe(0);
+    expect(result.transactions).toHaveLength(0);
+    expect(result.unreadableAmountRows).toHaveLength(1);
   });
 
-  it("treats a non-numeric StkSplit quantity as zero", () => {
+  it("reports a non-numeric StkSplit quantity", () => {
     const qif = `!Type:Invst\nD01/15/2026\nNStkSplit\nQabc\n^\n`;
     const result = parseQif(qif, "MM/DD/YYYY");
-    expect(result.transactions[0].quantity).toBe(0);
+    expect(result.transactions).toHaveLength(0);
+    expect(result.unreadableAmountRows).toHaveLength(1);
   });
 
   it("disambiguates an ISO date format using a later unambiguous day-first date", () => {
@@ -2757,5 +2760,266 @@ describe("parseQifFull - Quicken for Mac transfer files (.qmtf)", () => {
       date: "2026-03-01",
       amount: -812.4,
     });
+  });
+});
+
+describe("unreadable amounts", () => {
+  const record = (...fields: string[]) => [...fields, "^"].join("\n");
+  const bank = (...records: string[]) => ["!Type:Bank", ...records].join("\n");
+
+  it.each([
+    ["Tabc", "abc"],
+    ["T", ""],
+    ["T1,2,3.4.5", "1,2,3.4.5"],
+  ])("reports %s by its line and does not import it", (tLine, raw) => {
+    const result = parseQif(
+      bank(
+        record("D01/02/2026", "T10.00", "PGood"),
+        record("D01/03/2026", tLine, "PBad"),
+      ),
+    );
+    expect(result.transactions).toHaveLength(1);
+    expect(result.unreadableAmountRows).toEqual([
+      { rowNumber: 6, rawAmount: raw, date: "2026-01-03", payee: "Bad" },
+    ]);
+  });
+
+  it("reports a bad U amount and a bad split amount", () => {
+    const result = parseQif(
+      bank(
+        record("D01/02/2026", "Uxyz"),
+        record("D01/03/2026", "T-5.00", "SFood", "$oops", "SFuel", "$-5.00"),
+      ),
+    );
+    expect(result.transactions).toHaveLength(0);
+    expect(result.unreadableAmountRows?.map((r) => r.rowNumber)).toEqual([
+      2, 5,
+    ]);
+  });
+
+  it("reports a bad price and a bad commission in an investment record", () => {
+    const result = parseQif(
+      [
+        "!Type:Invst",
+        record("D01/02/2026", "NBuy", "YACME", "Ixyz", "Q1", "T10.00"),
+        record("D01/03/2026", "NBuy", "YACME", "I10", "Q1", "Oabc", "T10.00"),
+      ].join("\n"),
+    );
+    expect(result.transactions).toHaveLength(0);
+    expect(result.unreadableAmountRows).toHaveLength(2);
+  });
+
+  it("reports an unreadable amount in the multi-account parser", () => {
+    const result = parseQifFull(
+      [
+        "!Account",
+        "NChecking",
+        "TBank",
+        "^",
+        bank(
+          record("D01/02/2026", "T10.00"),
+          record("D01/03/2026", "T1,2,3.4.5"),
+        ),
+      ].join("\n"),
+    );
+    const block = result.accountBlocks[0];
+    expect(block.transactions).toHaveLength(1);
+    expect(block.unreadableAmountRows).toMatchObject([
+      { rowNumber: 9, rawAmount: "1,2,3.4.5", date: "2026-01-03" },
+    ]);
+  });
+
+  describe("names of a dropped record, T and U, account limit", () => {
+    const rec = (...f: string[]) => [...f, "^"].join("\n");
+
+    it("keeps the category, transfer and security of a dropped record out of the lists", () => {
+      const dropped = rec(
+        "D01/02/2026",
+        "Tabc",
+        "NBuy",
+        "YGHOST",
+        "LFood:Snacks",
+      );
+      const droppedTransfer = rec("D01/02/2026", "Tabc", "L[Ghost Acct]");
+      const kept = rec("D01/03/2026", "T5", "LFood:Meals");
+      const single = parseQif(
+        ["!Type:Bank", dropped, droppedTransfer, kept].join("\n"),
+      );
+      expect(single.categories).toEqual(["Food:Meals"]);
+      expect(single.transferAccounts).toEqual([]);
+      expect(single.securities).toEqual([]);
+      const full = parseQifFull(
+        [
+          "!Account",
+          "NAcct",
+          "TBank",
+          "^",
+          "!Type:Bank",
+          dropped,
+          droppedTransfer,
+          kept,
+        ].join("\n"),
+      );
+      expect(full.accountBlocks[0].categories).toEqual(["Food:Meals"]);
+      expect(full.accountBlocks[0].transferAccounts).toEqual([]);
+      expect(full.accountBlocks[0].securities).toEqual([]);
+    });
+
+    it.each([
+      [["T-45.00", "U"]],
+      [["T-45.00", "Uxyz"]],
+      [["Tabc", "U-45.00"]],
+      [["U", "T-45.00"]],
+    ])("treats T and U as one amount: %j reads -45", (lines) => {
+      const body = ["D01/02/2026", ...lines];
+      const single = parseQif(["!Type:Bank", rec(...body)].join("\n"));
+      expect(single.unreadableAmountRows).toBeUndefined();
+      expect(single.transactions[0].amount).toBe(-45);
+      const full = parseQifFull(
+        ["!Account", "NAcct", "TBank", "^", "!Type:Bank", rec(...body)].join(
+          "\n",
+        ),
+      );
+      expect(full.accountBlocks[0].unreadableAmountRows).toBeUndefined();
+      expect(full.accountBlocks[0].transactions[0].amount).toBe(-45);
+    });
+
+    it("still reports a record whose T and U both fail", () => {
+      const result = parseQif(
+        ["!Type:Bank", rec("D01/02/2026", "Tabc", "Uxyz")].join("\n"),
+      );
+      expect(result.unreadableAmountRows).toHaveLength(1);
+    });
+
+    it("reads an account credit limit with a currency code after it", () => {
+      const full = parseQifFull(
+        [
+          "!Account",
+          "NCard",
+          "TCCard",
+          "L5000.00 CAD",
+          "^",
+          "!Type:CCard",
+          rec("D01/02/2026", "T-5"),
+        ].join("\n"),
+      );
+      expect(full.accountBlocks[0].creditLimit).toBe(5000);
+    });
+  });
+
+  describe("blank T and unreadable Q", () => {
+    const invst = (...fields: string[]) =>
+      ["!Type:Invst", ...fields, "^"].join("\n");
+    const multi = (type: string, ...fields: string[]) =>
+      [
+        "!Account",
+        "NAcct",
+        `T${type}`,
+        "^",
+        `!Type:${type}`,
+        ...fields,
+        "^",
+      ].join("\n");
+
+    it("reads a blank T on an investment record as 0, in both parsers", () => {
+      const fields = ["D01/02/2026", "NStkSplit", "YACME", "Q20", "T"];
+      const single = parseQif(invst(...fields));
+      expect(single.unreadableAmountRows).toBeUndefined();
+      expect(single.transactions[0].amount).toBe(0);
+      const full = parseQifFull(multi("Invst", ...fields));
+      expect(full.accountBlocks[0].unreadableAmountRows).toBeUndefined();
+      expect(full.accountBlocks[0].transactions[0].amount).toBe(0);
+    });
+
+    it("still reports a blank T on a cash record, in both parsers", () => {
+      const fields = ["D01/02/2026", "N1001", "T"];
+      expect(
+        parseQif(["!Type:Bank", ...fields, "^"].join("\n"))
+          .unreadableAmountRows,
+      ).toHaveLength(1);
+      expect(
+        parseQifFull(multi("Bank", ...fields)).accountBlocks[0]
+          .unreadableAmountRows,
+      ).toHaveLength(1);
+    });
+
+    it("reports a Q that is not a quantity, in both parsers", () => {
+      const fields = ["D01/02/2026", "NBuy", "YACME", "Qlots", "T10.00"];
+      const single = parseQif(invst(...fields));
+      expect(single.transactions).toHaveLength(0);
+      expect(single.unreadableAmountRows?.[0].rawAmount).toBe("lots");
+      const full = parseQifFull(multi("Invst", ...fields));
+      expect(full.accountBlocks[0].transactions).toHaveLength(0);
+      expect(full.accountBlocks[0].unreadableAmountRows).toHaveLength(1);
+    });
+
+    it("reports a StkSplit ratio that is no number and keeps a blank Q", () => {
+      const bad = parseQif(invst("D01/02/2026", "NStkSplit", "Qabc"));
+      expect(bad.unreadableAmountRows).toHaveLength(1);
+      const blank = parseQif(invst("D01/02/2026", "NBuy", "YACME", "Q", "T5"));
+      expect(blank.unreadableAmountRows).toBeUndefined();
+      expect(blank.transactions[0].quantity).toBe(0);
+    });
+  });
+
+  it.each([
+    ["T-1 000,00 zł", -1000],
+    ["T-500₽", -500],
+    ["T100 kr", 100],
+    ["T12.34 CAD", 12.34],
+    ["T1 250,00 Kč", 1250],
+    ["T₹500", 500],
+    ["T¥1,000", 1000],
+    ["TPLN -5.5", -5.5],
+  ])("reads a currency marker beside the number: %s", (tLine, amount) => {
+    const result = parseQif(
+      ["!Type:Bank", "D01/02/2026", tLine, "^"].join("\n"),
+    );
+    expect(result.unreadableAmountRows).toBeUndefined();
+    expect(result.transactions[0].amount).toBe(amount);
+  });
+
+  it.each(["Tabc", "T1,2,3.4.5", "T12abc34", "T12.34-", "T(12.34)"])(
+    "still reports %s",
+    (tLine) => {
+      const result = parseQif(
+        ["!Type:Bank", "D01/02/2026", tLine, "^"].join("\n"),
+      );
+      expect(result.transactions).toHaveLength(0);
+      expect(result.unreadableAmountRows).toHaveLength(1);
+    },
+  );
+
+  it("flags a dropped transfer record for the importer", () => {
+    const result = parseQif(
+      [
+        "!Type:Bank",
+        "D01/02/2026",
+        "Tabc",
+        "L[Savings]",
+        "^",
+        "D01/03/2026",
+        "Txyz",
+        "LFood",
+        "^",
+      ].join("\n"),
+    );
+    expect(result.unreadableAmountRows?.map((r) => r.isTransfer)).toEqual([
+      true,
+      undefined,
+    ]);
+  });
+
+  it.each([
+    ["T1,234.56", 1234.56],
+    ["T-1234.5", -1234.5],
+    ["T0.00", 0],
+    ["T1.234,56", 1234.56],
+    ["T-18,36", -18.36],
+    ["T$ 12.50", 12.5],
+  ])("still reads %s", (tLine, amount) => {
+    const result = parseQif(bank(record("D01/02/2026", tLine)));
+    expect(result.unreadableAmountRows).toBeUndefined();
+    expect(result.transactions[0].amount).toBe(amount);
   });
 });

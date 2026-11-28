@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Wiersz {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...i jeszcze {count}",
     "unreadableAmountsGoBack": "Sprawdź, czy kolumny kwot są poprawnie przypisane, albo popraw te wiersze w pliku i zaimportuj go ponownie.",
+    "unreadableAmountLine": "Wiersz {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Transakcja {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Popraw te kwoty w pliku i zaimportuj go ponownie.",
     "importButton": "Import transakcji"
   },
   "complete": {
@@ -334,6 +337,7 @@
     "skipReasonUnreadableDate": "nie można odczytać daty",
     "skipReasonNoDate": "brak daty",
     "skipReasonUnreadableAmount": "nie można odczytać kwoty",
+    "skipReasonUnreadableAmountTransfer": "nie można odczytać kwoty; ten przelew mógł już powstać z zapisu drugiego konta, sprawdź to przed ponownym importem",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "brak papieru wartościowego",
     "skipReasonMissingQuantity": "brak ilości",
@@ -343,6 +347,8 @@
     "skippedRowLineDate": "Wiersz {line}, \"{rawDate}\"",
     "skippedRowLine": "Wiersz {line}",
     "skippedRowLineAt": "Wiersz {line}, {date}",
+    "skippedRowQifLineAt": "Wiersz {line}, {date}",
+    "skippedRowOfxLineAt": "Transakcja {line}, {date}",
     "andMoreSkipped": "...i jeszcze {count} pominiętych wierszy",
     "loanSetupHeading": "Skonfiguruj płatności cykliczne",
     "loanSetupDescription": "Poniższe konta pożyczek/kredytów hipotecznych zostały zaimportowane bez zaplanowanych płatności. Skonfiguruj płatności cykliczne, aby dalej śledzić postęp spłaty pożyczki.",

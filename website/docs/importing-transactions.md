@@ -364,6 +364,14 @@ Key Quicken QIF features supported:
 - **Tags** -- extracted from the `/` separator in category fields
 - **Cleared status** -- Quicken's `*`/`c` (cleared) and `X`/`R` (reconciled) flags
 
+#### Amounts Monize Cannot Read
+
+Monize never imports an amount it cannot read as 0.00, and it never guesses. This applies to the `T` and `U` amount of a QIF record, to its split amounts, price, commission and quantity, and to the `TRNAMT` of an OFX transaction. A record with such an amount is not imported. The review step lists it, and the import result counts it among the skipped rows. A QIF record is named by the line where it starts. An OFX transaction is named by its place in the file.
+
+A QIF or OFX amount has fewer allowed forms than a CSV amount. It may have a sign before the number, a currency symbol (`$`, `₹`, `₽`) or a short currency word of up to four letters (`zł`, `kr`, `Kč`, `CAD`) before or after the number, and thousands or decimal separators (`1,234.56`, `1.234,56`, `-1 000,00 zł`). It may not have a minus sign after the number, parentheses, or a DR/CR marker (`12.34-`, `(12.34)`, `12.34 DR`). Monize reports such an amount, as it does `abc`, `12abc34` or `1,2,3.4.5`.
+
+A blank `T` on an investment record, such as a stock split, is read as 0.00. On a bank, cash or credit card record, a blank `T` is reported. If a record has both `T` and `U`, Monize reports it only when neither one can be read.
+
 For the complete step-by-step guide including exporting from Quicken, import order, and troubleshooting, see **[Importing from Quicken](importing-from-quicken.md)**.
 
 ---

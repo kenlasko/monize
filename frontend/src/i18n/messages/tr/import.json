@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Satır {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...ve {count} tane daha",
     "unreadableAmountsGoBack": "Tutar sütunlarının doğru eşlendiğini kontrol edin ya da bu satırları dosyada düzeltip yeniden içe aktarın.",
+    "unreadableAmountLine": "Satır {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "İşlem {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Bu tutarları dosyada düzeltin ve dosyayı yeniden içe aktarın.",
     "importButton": "İşlemleri İçe Aktar"
   },
   "complete": {
@@ -334,6 +337,7 @@
     "skipReasonUnreadableDate": "tarih okunamadı",
     "skipReasonNoDate": "tarih yok",
     "skipReasonUnreadableAmount": "tutar okunamadı",
+    "skipReasonUnreadableAmountTransfer": "tutar okunamadı; bu transfer diğer hesabın kaydından zaten oluşturulmuş olabilir, yeniden içe aktarmadan önce kontrol edin",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "menkul kıymet eksik",
     "skipReasonMissingQuantity": "adet eksik",
@@ -343,6 +347,8 @@
     "skippedRowLineDate": "Satır {line}, \"{rawDate}\"",
     "skippedRowLine": "Satır {line}",
     "skippedRowLineAt": "Satır {line}, {date}",
+    "skippedRowQifLineAt": "Satır {line}, {date}",
+    "skippedRowOfxLineAt": "İşlem {line}, {date}",
     "andMoreSkipped": "...ve {count} atlanan satır daha",
     "loanSetupHeading": "Yinelenen Ödemeleri Ayarla",
     "loanSetupDescription": "Aşağıdaki kredi/ipotek hesapları zamanlanmış ödemeler olmadan içe aktarıldı. Kredi ilerlemenizi takip etmeye devam etmek için yinelenen ödemeleri ayarlayın.",

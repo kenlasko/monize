@@ -301,6 +301,9 @@
     "unreadableAmountRow": "[XX-Row {line}: \"{rawAmount}\"-XX]",
     "unreadableAmountsMore": "[XX-...and {count} more-XX]",
     "unreadableAmountsGoBack": "[XX-Check that the amount columns are mapped correctly, or correct these rows in the file and import it again.-XX]",
+    "unreadableAmountLine": "[XX-Line {line}: \"{rawAmount}\"-XX]",
+    "unreadableAmountTransaction": "[XX-Transaction {line}: \"{rawAmount}\"-XX]",
+    "unreadableAmountsFileGoBack": "[XX-Correct these amounts in the file and import it again.-XX]",
     "importButton": "[XX-Import Transactions-XX]"
   },
   "complete": {
@@ -334,6 +337,7 @@
     "skipReasonUnreadableDate": "[XX-date could not be read-XX]",
     "skipReasonNoDate": "[XX-no date-XX]",
     "skipReasonUnreadableAmount": "[XX-amount could not be read-XX]",
+    "skipReasonUnreadableAmountTransfer": "[XX-amount could not be read; this transfer may already exist from the other account's record, so check before importing it again-XX]",
     "skippedRowRawAmount": "[XX-\"{rawAmount}\"-XX]",
     "skipReasonMissingSecurity": "[XX-missing security-XX]",
     "skipReasonMissingQuantity": "[XX-missing quantity-XX]",
@@ -343,6 +347,8 @@
     "skippedRowLineDate": "[XX-Row {line}, \"{rawDate}\"-XX]",
     "skippedRowLine": "[XX-Row {line}-XX]",
     "skippedRowLineAt": "[XX-Row {line}, {date}-XX]",
+    "skippedRowQifLineAt": "[XX-Line {line}, {date}-XX]",
+    "skippedRowOfxLineAt": "[XX-Transaction {line}, {date}-XX]",
     "andMoreSkipped": "[XX-...and {count} more skipped rows-XX]",
     "loanSetupHeading": "[XX-Set Up Recurring Payments-XX]",
     "loanSetupDescription": "[XX-The following loan/mortgage accounts were imported without scheduled payments. Set up recurring payments to continue tracking your loan progress.-XX]",

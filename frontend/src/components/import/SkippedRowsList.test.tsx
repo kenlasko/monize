@@ -163,4 +163,23 @@ describe('SkippedRowsList', () => {
     expect(screen.getByText(/Grocery Store \(kept your existing transaction instead\)/i)).toBeInTheDocument();
     expect(screen.getByText(/Hydro \(looks like a transaction already in the account\)/i)).toBeInTheDocument();
   });
+
+  it('names an unreadable QIF record by its line and an OFX transaction by its position', () => {
+    const unreadable = row({ reason: 'unreadableAmount', rowNumber: 9, rawAmount: 'abc', amount: 0 });
+    const { unmount } = render(<SkippedRowsList rows={[unreadable]} fileType="qif" />);
+    expect(screen.getByText(/Line 9, /)).toBeInTheDocument();
+    unmount();
+    render(<SkippedRowsList rows={[unreadable]} fileType="ofx" />);
+    expect(screen.getByText(/Transaction 9, /)).toBeInTheDocument();
+  });
+
+  it('keeps "Row" for a CSV row', () => {
+    render(
+      <SkippedRowsList
+        rows={[row({ reason: 'unreadableAmount', rowNumber: 4, rawAmount: 'N/A', amount: 0 })]}
+        fileType="csv"
+      />,
+    );
+    expect(screen.getByText(/Row 4, /)).toBeInTheDocument();
+  });
 });

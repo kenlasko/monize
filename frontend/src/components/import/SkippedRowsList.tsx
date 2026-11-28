@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { ImportSkippedRow, ImportSkipReason } from '@/lib/import';
+import type { ImportFileType } from '@/app/import/import-utils';
 
 /** How many rows the list shows before it counts the rest. */
 const DEFAULT_LIMIT = 50;
@@ -15,12 +16,16 @@ const REASON_KEYS = {
   possibleDuplicate: 'complete.skipReasonPossibleDuplicate',
   unreadableDate: 'complete.skipReasonUnreadableDate',
   unreadableAmount: 'complete.skipReasonUnreadableAmount',
+  unreadableAmountTransfer: 'complete.skipReasonUnreadableAmountTransfer',
   missingSecurity: 'complete.skipReasonMissingSecurity',
   missingQuantity: 'complete.skipReasonMissingQuantity',
   missingAmount: 'complete.skipReasonMissingAmount',
   missingProceeds: 'complete.skipReasonMissingProceeds',
   missingSplitRatio: 'complete.skipReasonMissingSplitRatio',
 } as const satisfies Record<ImportSkipReason, string>;
+
+const isUnreadableAmount = (row: ImportSkippedRow) =>
+  row.reason === 'unreadableAmount' || row.reason === 'unreadableAmountTransfer';
 
 interface SkippedRowsListProps {
   rows: ImportSkippedRow[] | undefined;
@@ -31,6 +36,11 @@ interface SkippedRowsListProps {
    * the first of them, so the count of the rest comes from here.
    */
   total?: number;
+  /**
+   * The file's format. A QIF record is named by its line and an OFX
+   * transaction by its position; any other file's row by its row.
+   */
+  fileType?: ImportFileType;
 }
 
 /**
@@ -40,7 +50,7 @@ interface SkippedRowsListProps {
  * read, the file's text), payee and why, so a person can check them against
  * the file.
  */
-export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total }: SkippedRowsListProps) {
+export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total, fileType }: SkippedRowsListProps) {
   const t = useTranslations('import');
   const { formatDate } = useDateFormat();
   const { formatCurrency } = useNumberFormat();
@@ -54,8 +64,14 @@ export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total }: SkippedR
   // left out (an investment row missing data) has both its line and its date.
   const describeDate = (row: ImportSkippedRow) => {
     if (row.reason !== 'unreadableDate') {
+      const lineKey =
+        isUnreadableAmount(row) && fileType === 'qif'
+          ? 'complete.skippedRowQifLineAt'
+          : isUnreadableAmount(row) && fileType === 'ofx'
+            ? 'complete.skippedRowOfxLineAt'
+            : 'complete.skippedRowLineAt';
       return row.rowNumber !== undefined
-        ? t('complete.skippedRowLineAt', { line: row.rowNumber, date: formatDate(row.date) })
+        ? t(lineKey, { line: row.rowNumber, date: formatDate(row.date) })
         : formatDate(row.date);
     }
     return row.rawDate
@@ -72,7 +88,7 @@ export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total }: SkippedR
       date: describeDate(row),
       // An unreadable amount has no number to format; the file's text is shown.
       amount:
-        row.reason === 'unreadableAmount' && row.rawAmount !== undefined
+        isUnreadableAmount(row) && row.rawAmount !== undefined
           ? t('complete.skippedRowRawAmount', { rawAmount: row.rawAmount })
           : formatCurrency(row.amount, row.currencyCode),
       reason: describeReason(row),

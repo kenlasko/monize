@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Hàng {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...và {count} hàng khác",
     "unreadableAmountsGoBack": "Hãy kiểm tra xem các cột số tiền đã được ánh xạ đúng chưa, hoặc sửa các hàng này trong tệp rồi nhập lại.",
+    "unreadableAmountLine": "Dòng {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Giao dịch {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Hãy sửa các số tiền này trong tệp rồi nhập lại.",
     "importButton": "Nhập Khẩu Giao Dịch"
   },
   "complete": {
@@ -334,6 +337,7 @@
     "skipReasonUnreadableDate": "không đọc được ngày",
     "skipReasonNoDate": "không có ngày",
     "skipReasonUnreadableAmount": "không đọc được số tiền",
+    "skipReasonUnreadableAmountTransfer": "không đọc được số tiền; khoản chuyển này có thể đã được tạo từ bản ghi của tài khoản kia, hãy kiểm tra trước khi nhập lại",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "thiếu chứng khoán",
     "skipReasonMissingQuantity": "thiếu số lượng",
@@ -343,6 +347,8 @@
     "skippedRowLineDate": "Hàng {line}, \"{rawDate}\"",
     "skippedRowLine": "Hàng {line}",
     "skippedRowLineAt": "Hàng {line}, {date}",
+    "skippedRowQifLineAt": "Dòng {line}, {date}",
+    "skippedRowOfxLineAt": "Giao dịch {line}, {date}",
     "andMoreSkipped": "...và {count} dòng bị bỏ qua khác",
     "loanSetupHeading": "Thiết Lập Thanh Toán Định Kỳ",
     "loanSetupDescription": "Các tài khoản vay/thế chấp sau đây đã được nhập khẩu mà không có thanh toán định kỳ. Thiết lập thanh toán định kỳ để tiếp tục theo dõi tiến trình vay của bạn.",

@@ -116,6 +116,8 @@ export interface CsvUnreadableAmountRow {
   /** The row's date, YYYY-MM-DD. */
   date: string;
   payee: string;
+  /** QIF and OFX: the record is a transfer, whose other leg may exist. */
+  isTransfer?: boolean;
 }
 
 /**

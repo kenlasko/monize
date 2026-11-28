@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Ligne {line} : « {rawAmount} »",
     "unreadableAmountsMore": "...et {count} de plus",
     "unreadableAmountsGoBack": "Vérifiez que les colonnes de montant sont correctement associées, ou corrigez ces lignes dans le fichier et importez-le à nouveau.",
+    "unreadableAmountLine": "Ligne {line} : \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Transaction {line} : \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Corrigez ces montants dans le fichier, puis importez-le de nouveau.",
     "importButton": "Importer les transactions"
   },
   "complete": {
@@ -334,6 +337,7 @@
     "skipReasonUnreadableDate": "date illisible",
     "skipReasonNoDate": "aucune date",
     "skipReasonUnreadableAmount": "montant illisible",
+    "skipReasonUnreadableAmountTransfer": "montant illisible ; ce virement peut déjà exister depuis l'enregistrement de l'autre compte, vérifiez avant de l'importer de nouveau",
     "skippedRowRawAmount": "« {rawAmount} »",
     "skipReasonMissingSecurity": "titre manquant",
     "skipReasonMissingQuantity": "quantité manquante",
@@ -343,6 +347,8 @@
     "skippedRowLineDate": "Ligne {line}, « {rawDate} »",
     "skippedRowLine": "Ligne {line}",
     "skippedRowLineAt": "Ligne {line}, {date}",
+    "skippedRowQifLineAt": "Ligne {line}, {date}",
+    "skippedRowOfxLineAt": "Transaction {line}, {date}",
     "andMoreSkipped": "…et {count} ligne(s) ignorée(s) de plus",
     "loanSetupHeading": "Configurer les paiements récurrents",
     "loanSetupDescription": "Les comptes de prêt/prêt hypothécaire suivants ont été importés sans paiements récurrents. Configurez des paiements récurrents pour continuer à suivre votre remboursement.",

@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Fila {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...y {count} más",
     "unreadableAmountsGoBack": "Compruebe que las columnas de importe estén bien asignadas, o corrija estas filas en el archivo e impórtelo de nuevo.",
+    "unreadableAmountLine": "Línea {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Transacción {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Corrija estos importes en el archivo e impórtelo de nuevo.",
     "importButton": "Importar Transacciones"
   },
   "complete": {
@@ -334,6 +337,7 @@
     "skipReasonUnreadableDate": "no se pudo leer la fecha",
     "skipReasonNoDate": "sin fecha",
     "skipReasonUnreadableAmount": "no se pudo leer el importe",
+    "skipReasonUnreadableAmountTransfer": "no se pudo leer el importe; esta transferencia puede existir ya por el registro de la otra cuenta, compruébelo antes de importarla de nuevo",
     "skippedRowRawAmount": "\"{rawAmount}\"",
     "skipReasonMissingSecurity": "falta el valor",
     "skipReasonMissingQuantity": "falta el número de acciones",
@@ -343,6 +347,8 @@
     "skippedRowLineDate": "Fila {line}, \"{rawDate}\"",
     "skippedRowLine": "Fila {line}",
     "skippedRowLineAt": "Fila {line}, {date}",
+    "skippedRowQifLineAt": "Línea {line}, {date}",
+    "skippedRowOfxLineAt": "Transacción {line}, {date}",
     "andMoreSkipped": "...y {count} filas omitidas más",
     "loanSetupHeading": "Configurar Pagos Recurrentes",
     "loanSetupDescription": "Las siguientes cuentas de préstamo/hipoteca se importaron sin pagos planificados. Configura los pagos recurrentes para continuar el seguimiento de tu préstamo.",

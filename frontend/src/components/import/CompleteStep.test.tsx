@@ -163,6 +163,34 @@ describe('CompleteStep', () => {
     expect(screen.getByText('Row 12: Missing payee')).toBeInTheDocument();
   });
 
+  it('names a multi-account QIF record by its line even when importFiles holds a previous CSV file', () => {
+    const result = {
+      ...defaultProps.importResult!,
+      skipped: 1,
+      skippedRows: [
+        {
+          date: '2026-01-15',
+          amount: 0,
+          currencyCode: 'USD',
+          payee: 'Store',
+          reason: 'unreadableAmountTransfer' as const,
+          rowNumber: 9,
+          rawAmount: 'abc',
+        },
+      ],
+    };
+    render(
+      <CompleteStep
+        {...defaultProps}
+        importFiles={[{ fileType: 'csv', fileName: 'old.csv', parsedData: { accountType: 'CHEQUING' } }] as any[]}
+        isMultiAccountImport
+        importResult={result}
+      />,
+    );
+    expect(screen.getByText(/Line 9, /)).toBeInTheDocument();
+    expect(screen.getByText(/may already exist from the other account's record/)).toBeInTheDocument();
+  });
+
   it('lists the skipped rows of a single import', () => {
     const result = {
       ...defaultProps.importResult!,
