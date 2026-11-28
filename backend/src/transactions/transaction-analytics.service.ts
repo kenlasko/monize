@@ -2445,6 +2445,7 @@ export class TransactionAnalyticsService {
 
       joinSplitsForAnalytics(qb);
       applyInvestmentTransactionFilters(qb, "breakdownAccount", "t");
+      qb.andWhere(investmentLinkedSplitExclusion("ts"));
 
       // Select the posting population before grouping it. In particular, a
       // refund in an expense category keeps its sign even in a later month.

@@ -339,7 +339,7 @@ The approval step is a confirmation dialog that Monize asks your MCP client to s
 
 | Tool | Description | Scope |
 |------|-------------|-------|
-| `list_transactions` | Search and summarize transactions. In grouped results, `expenses` deducts refunds in expense categories and `outgoing` sums debits. A 100 USD purchase and 30 USD refund give 70 USD in expenses and 100 USD outgoing. Individual rows are opt-in. | read |
+| `list_transactions` | Search and summarize transactions. In grouped results, `expenses` deducts refunds in expense categories and `outgoing` sums debits. A 100 USD purchase and 30 USD refund give 70 USD in expenses and 100 USD outgoing. A security purchase on a split line is excluded from the breakdown just like a standalone trade. Ordinary payments on the same transaction are included. Individual rows are opt-in. | read |
 | `list_accounts` | List accounts with balances and net worth | read |
 | `list_categories` | Browse the category tree | read |
 | `list_payees` | List payees | read |
