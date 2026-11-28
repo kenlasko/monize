@@ -174,9 +174,10 @@ vi.mock('@/components/dashboard/DashboardHero', () => ({
 }));
 
 vi.mock('@/components/dashboard/FavouriteAccounts', () => ({
-  FavouriteAccounts: ({ isLoading, institutions, accounts, brokerageMarketValues }: any) => (
+  FavouriteAccounts: ({ isLoading, institutions, accounts, brokerageMarketValues, error }: any) => (
     <div
       data-testid="favourite-accounts"
+      data-error={String(!!error)}
       data-institutions={institutions?.length}
       data-account-ids={(accounts ?? []).map((a: any) => a.id).join(',')}
       data-market-values={JSON.stringify([...(brokerageMarketValues ?? new Map()).entries()])}
@@ -187,7 +188,7 @@ vi.mock('@/components/dashboard/FavouriteAccounts', () => ({
 }));
 
 vi.mock('@/components/dashboard/UpcomingBills', () => ({
-  UpcomingBills: ({ isLoading }: any) => <div data-testid="upcoming-bills">{isLoading ? 'loading' : 'loaded'}</div>,
+  UpcomingBills: ({ isLoading, error }: any) => <div data-testid="upcoming-bills" data-error={String(!!error)}>{isLoading ? 'loading' : 'loaded'}</div>,
 }));
 
 vi.mock('@/components/dashboard/ExpensesPieChart', () => ({
@@ -628,6 +629,28 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('assets-vs-liabilities')).toHaveAttribute('data-error', 'true');
     });
+  });
+
+  it('flags only the accounts panels when /accounts fails, and keeps the bills it loaded', async () => {
+    prefsState.current.dashboardWidgets = ['favourite-accounts', 'upcoming-bills'];
+    mockGetAccounts.mockRejectedValue(new Error('500'));
+    mockGetScheduled.mockResolvedValue([]);
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('favourite-accounts')).toHaveAttribute('data-error', 'true');
+    });
+    // Bills read accounts too, so they cannot claim "nothing due" either.
+    expect(screen.getByTestId('upcoming-bills')).toHaveAttribute('data-error', 'true');
+  });
+
+  it('flags the bills, not the accounts, when /scheduled-transactions fails', async () => {
+    prefsState.current.dashboardWidgets = ['favourite-accounts', 'upcoming-bills'];
+    mockGetScheduled.mockRejectedValue(new Error('500'));
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('upcoming-bills')).toHaveAttribute('data-error', 'true');
+    });
+    expect(screen.getByTestId('favourite-accounts')).toHaveAttribute('data-error', 'false');
   });
 
   it('does not flag the assets widget when the net worth answer is a successful empty one', async () => {

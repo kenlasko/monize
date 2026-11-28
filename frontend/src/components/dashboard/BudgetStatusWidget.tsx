@@ -61,7 +61,20 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
     );
   }
 
-  if (hasError || !summary) {
+  if (hasError) {
+    return (
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
+        <WidgetHeading id="budget-status" href="/budgets" className="mb-4">
+          {sectionTitle}
+        </WidgetHeading>
+        <p role="alert" className="text-gray-500 dark:text-gray-400 text-sm">
+          {t('budgetStatus.loadFailed')}
+        </p>
+      </div>
+    );
+  }
+
+  if (!summary) {
     return (
       <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <WidgetHeading id="budget-status" href="/budgets" className="mb-4">

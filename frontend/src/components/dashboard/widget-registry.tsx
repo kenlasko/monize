@@ -103,6 +103,10 @@ export interface DashboardWidgetContext {
   netWorthData: MonthlyNetWorth[];
   /** The net worth request failed; `netWorthData` is then empty, not "no history". */
   netWorthFailed: boolean;
+  /** The accounts request failed; `accounts` is then empty, not "no accounts". */
+  accountsFailed: boolean;
+  /** The scheduled transactions request failed; the list is then empty, not "nothing due". */
+  scheduledFailed: boolean;
   brokerageMarketValues: Map<string, number>;
   /** Holdings account id -> how many of its holdings have no price. */
   unpricedHoldingCounts: Map<string, number>;
@@ -167,6 +171,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
         incompleteHoldingAccountIds={ctx.incompleteHoldingAccountIds}
         institutions={ctx.institutions}
         isLoading={ctx.isLoading}
+        error={ctx.accountsFailed}
         onAccountsChanged={ctx.onAccountsChanged}
       />
     ),
@@ -185,6 +190,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
         accounts={ctx.accounts}
         isLoading={ctx.isLoading}
         maxItems={upcomingBillsMaxItems(ctx.accounts)}
+        error={ctx.accountsFailed || ctx.scheduledFailed}
       />
     ),
   },

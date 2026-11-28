@@ -371,7 +371,8 @@
     "settlement": "Hesap kesimi: {ordinal}",
     "settlementTooltip": "Fatura döneminin son günü. Bu tarihte veya öncesinde gerçekleştirilen işlemler mevcut ekstrede görünür.",
     "dueShort": "son ödeme {ordinal}",
-    "metaWithDue": "{institution} · {due}"
+    "metaWithDue": "{institution} · {due}",
+    "loadFailed": "Hesaplarınız yüklenemedi. Yeniden denemek için panoyu yeniden yükleyin."
   },
   "upcomingBills": {
     "title": "Yaklaşan Faturalar ve Ödemeler",
@@ -407,7 +408,8 @@
     "dayEmpty": "Bu gün için planlanmış fatura veya para yatırma yok.",
     "metaPayee": "· {payee}",
     "metaManual": "· elle ödenir",
-    "metaWhen": "· {when}"
+    "metaWhen": "· {when}",
+    "loadFailed": "Yaklaşan faturalarınız yüklenemedi. Yeniden denemek için panoyu yeniden yükleyin."
   },
   "cashFlowForecast": {
     "title": "Nakit Akışı Tahmini",
@@ -444,7 +446,8 @@
     "viewFullBudget": "Tam bütçeyi görüntüle",
     "daysLeft": "{count} gün kaldı",
     "safeToSpend": "Bugün harcayabileceğiniz güvenli tutar",
-    "topCategories": "En Yüksek Kategoriler"
+    "topCategories": "En Yüksek Kategoriler",
+    "loadFailed": "Bütçe durumunuz yüklenemedi. Yeniden denemek için panoyu yeniden yükleyin."
   },
   "insights": {
     "title": "Harcama Analizleri",
@@ -520,13 +523,15 @@
     "topLevelOnly": "Üst düzey kategoriler",
     "topLevelOnlyHint": "Alt kategorileri üst kategorisinde say",
     "viewCallouts": "Etiketler",
-    "viewLegend": "Gösterge"
+    "viewLegend": "Gösterge",
+    "loadFailed": "Kategoriye göre harcamalarınız yüklenemedi. Yeniden denemek için panoyu yeniden yükleyin."
   },
   "incomeExpenses": {
     "title": "Gelir ve Giderler",
     "income": "Gelir",
     "expenses": "Giderler",
-    "net": "Net"
+    "net": "Net",
+    "loadFailed": "Gelir ve giderleriniz yüklenemedi. Yeniden denemek için panoyu yeniden yükleyin."
   },
   "customize": {
     "button": "Özelleştir",

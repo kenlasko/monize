@@ -371,7 +371,8 @@
     "settlement": "Liquidación: {ordinal}",
     "settlementTooltip": "El último día del ciclo de facturación. Las transacciones registradas ese día o antes aparecen en el estado de cuenta actual.",
     "dueShort": "vence {ordinal}",
-    "metaWithDue": "{institution} · {due}"
+    "metaWithDue": "{institution} · {due}",
+    "loadFailed": "No se pudieron cargar tus cuentas. Recarga el panel para intentarlo de nuevo."
   },
   "upcomingBills": {
     "title": "Facturas y depósitos próximos",
@@ -407,7 +408,8 @@
     "dayEmpty": "No hay facturas ni depósitos programados para este día.",
     "metaPayee": "· {payee}",
     "metaManual": "· se paga a mano",
-    "metaWhen": "· {when}"
+    "metaWhen": "· {when}",
+    "loadFailed": "No se pudieron cargar tus próximos pagos. Recarga el panel para intentarlo de nuevo."
   },
   "cashFlowForecast": {
     "title": "Pronóstico de flujo de caja",
@@ -444,7 +446,8 @@
     "viewFullBudget": "Ver presupuesto completo",
     "daysLeft": "{count} días restantes",
     "safeToSpend": "Disponible para gastar hoy",
-    "topCategories": "Principales categorías"
+    "topCategories": "Principales categorías",
+    "loadFailed": "No se pudo cargar el estado de tu presupuesto. Recarga el panel para intentarlo de nuevo."
   },
   "insights": {
     "title": "Análisis de gastos",
@@ -520,13 +523,15 @@
     "topLevelOnly": "Categorías principales",
     "topLevelOnlyHint": "Contar las subcategorías en su categoría principal",
     "viewCallouts": "Etiquetas",
-    "viewLegend": "Leyenda"
+    "viewLegend": "Leyenda",
+    "loadFailed": "No se pudieron cargar tus gastos por categoría. Recarga el panel para intentarlo de nuevo."
   },
   "incomeExpenses": {
     "title": "Ingresos vs Gastos",
     "income": "Ingresos",
     "expenses": "Gastos",
-    "net": "Neto"
+    "net": "Neto",
+    "loadFailed": "No se pudieron cargar tus ingresos y gastos. Recarga el panel para intentarlo de nuevo."
   },
   "customize": {
     "button": "Personalizar",

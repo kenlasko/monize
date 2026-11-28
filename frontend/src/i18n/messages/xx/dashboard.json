@@ -371,7 +371,8 @@
     "settlement": "[XX-Settlement: {ordinal}-XX]",
     "settlementTooltip": "[XX-The last day of the billing cycle. Transactions posted on or before this day appear on the current statement.-XX]",
     "dueShort": "[XX-due {ordinal}-XX]",
-    "metaWithDue": "[XX-{institution} · {due}-XX]"
+    "metaWithDue": "[XX-{institution} · {due}-XX]",
+    "loadFailed": "[XX-Couldn't load your accounts. Reload the dashboard to try again.-XX]"
   },
   "upcomingBills": {
     "title": "[XX-Upcoming Bills & Deposits-XX]",
@@ -407,7 +408,8 @@
     "dayEmpty": "[XX-No bills or deposits are scheduled for this day.-XX]",
     "metaPayee": "[XX-· {payee}-XX]",
     "metaManual": "[XX-· paid by hand-XX]",
-    "metaWhen": "[XX-· {when}-XX]"
+    "metaWhen": "[XX-· {when}-XX]",
+    "loadFailed": "[XX-Couldn't load your upcoming bills. Reload the dashboard to try again.-XX]"
   },
   "cashFlowForecast": {
     "title": "[XX-Cash Flow Forecast-XX]",
@@ -444,7 +446,8 @@
     "viewFullBudget": "[XX-View full budget-XX]",
     "daysLeft": "[XX-{count} days left-XX]",
     "safeToSpend": "[XX-Safe to spend today-XX]",
-    "topCategories": "[XX-Top Categories-XX]"
+    "topCategories": "[XX-Top Categories-XX]",
+    "loadFailed": "[XX-Couldn't load your budget status. Reload the dashboard to try again.-XX]"
   },
   "insights": {
     "title": "[XX-Spending Insights-XX]",
@@ -520,13 +523,15 @@
     "topLevelOnly": "[XX-Top level categories-XX]",
     "topLevelOnlyHint": "[XX-Count subcategories against their parent-XX]",
     "viewCallouts": "[XX-Labels-XX]",
-    "viewLegend": "[XX-Legend-XX]"
+    "viewLegend": "[XX-Legend-XX]",
+    "loadFailed": "[XX-Couldn't load your spending by category. Reload the dashboard to try again.-XX]"
   },
   "incomeExpenses": {
     "title": "[XX-Income vs Expenses-XX]",
     "income": "[XX-Income-XX]",
     "expenses": "[XX-Expenses-XX]",
-    "net": "[XX-Net-XX]"
+    "net": "[XX-Net-XX]",
+    "loadFailed": "[XX-Couldn't load your income and expenses. Reload the dashboard to try again.-XX]"
   },
   "customize": {
     "button": "[XX-Customize-XX]",

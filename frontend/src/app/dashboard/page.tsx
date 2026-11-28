@@ -140,6 +140,8 @@ function DashboardContent() {
   // The net worth request failed: `netWorthData` is then empty, which is not
   // the answer "no history yet" and must not be shown as one.
   const [netWorthFailed, setNetWorthFailed] = useState(false);
+  const [accountsFailed, setAccountsFailed] = useState(false);
+  const [scheduledFailed, setScheduledFailed] = useState(false);
   const [favouriteSecurities, setFavouriteSecurities] = useState<FavouriteSecurityQuote[]>([]);
   const [hasSecurities, setHasSecurities] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -274,8 +276,10 @@ function DashboardContent() {
             try {
               const sched = await scheduledTransactionsApi.getAll();
               setScheduledTransactions(sched);
+              setScheduledFailed(false);
             } catch (error) {
               logger.error('Failed to load delegate scheduled data:', error);
+              setScheduledFailed(true);
             }
           }
           setIsLoading(false);
@@ -288,8 +292,16 @@ function DashboardContent() {
         const twelveMonthsAgo = format(subMonths(new Date(), 12), 'yyyy-MM-dd');
 
         const [accountsData, scheduledData, netWorth, favouriteSecs, securitiesList, institutionsData] = await Promise.all([
-          accountsApi.getAll(true),
-          scheduledTransactionsApi.getAll(),
+          // Each source fails on its own: a lost accounts call must not blank
+          // the bills, and neither may read as "none yet".
+          accountsApi.getAll(true).catch((error) => {
+            logger.error('Failed to load accounts:', error);
+            return null;
+          }),
+          scheduledTransactionsApi.getAll().catch((error) => {
+            logger.error('Failed to load scheduled transactions:', error);
+            return null;
+          }),
           netWorthApi.getMonthly({ startDate: twelveMonthsAgo, endDate: today }).catch((error) => {
             logger.error('Failed to load net worth history:', error);
             return null;
@@ -302,16 +314,18 @@ function DashboardContent() {
           }),
         ]);
 
-        setAccountsWithClosed(accountsData);
-        setAccounts(accountsData.filter((a: Account) => !a.isClosed));
+        setAccountsFailed(accountsData === null);
+        setScheduledFailed(scheduledData === null);
+        setAccountsWithClosed(accountsData ?? []);
+        setAccounts((accountsData ?? []).filter((a: Account) => !a.isClosed));
         setInstitutions(institutionsData);
-        setScheduledTransactions(scheduledData);
+        setScheduledTransactions(scheduledData ?? []);
         setNetWorthData(netWorth ?? []);
         setNetWorthFailed(netWorth === null);
         setFavouriteSecurities(favouriteSecs);
         setHasSecurities(securitiesList.length > 0);
 
-        const investmentAccounts = accountsData.filter(
+        const investmentAccounts = (accountsData ?? []).filter(
           (a: Account) => a.accountType === 'INVESTMENT' && !a.isClosed,
         );
         // A linked pair is one investment account, not two.
@@ -379,6 +393,8 @@ function DashboardContent() {
     favouriteSecurities,
     netWorthData,
     netWorthFailed,
+    accountsFailed,
+    scheduledFailed,
     brokerageMarketValues,
     unpricedHoldingCounts,
     incompleteHoldingAccountIds,

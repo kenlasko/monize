@@ -92,16 +92,14 @@ describe('BudgetStatusWidget', () => {
     });
   });
 
-  it('shows "No active budget found" on API error', async () => {
+  it('says the summary failed to load, not that there is no budget, on API error', async () => {
     mockGetDashboardSummary.mockRejectedValue(new Error('Network error'));
 
     render(<BudgetStatusWidget isLoading={false} />);
 
-    await waitFor(() => {
-      expect(
-        screen.getByText('No active budget found. Create a budget to track your spending.'),
-      ).toBeInTheDocument();
-    });
+    expect(await screen.findByText(/Couldn't load your budget status/)).toBeInTheDocument();
+    expect(screen.queryByText(/No active budget found/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Create Budget')).not.toBeInTheDocument();
   });
 
   it('renders budget summary with correct percentages', async () => {

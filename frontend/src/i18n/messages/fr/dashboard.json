@@ -371,7 +371,8 @@
     "settlement": "Règlement : {ordinal}",
     "settlementTooltip": "Le dernier jour du cycle de facturation. Les transactions enregistrées ce jour ou avant apparaissent sur le relevé en cours.",
     "dueShort": "échéance {ordinal}",
-    "metaWithDue": "{institution} · {due}"
+    "metaWithDue": "{institution} · {due}",
+    "loadFailed": "Impossible de charger vos comptes. Rechargez le tableau de bord pour réessayer."
   },
   "upcomingBills": {
     "title": "Factures et dépôts à venir",
@@ -407,7 +408,8 @@
     "dayEmpty": "Aucune facture ni aucun dépôt n'est prévu pour ce jour.",
     "metaPayee": "· {payee}",
     "metaManual": "· payé à la main",
-    "metaWhen": "· {when}"
+    "metaWhen": "· {when}",
+    "loadFailed": "Impossible de charger vos prochaines échéances. Rechargez le tableau de bord pour réessayer."
   },
   "cashFlowForecast": {
     "title": "Prévision de trésorerie",
@@ -444,7 +446,8 @@
     "viewFullBudget": "Voir le budget complet",
     "daysLeft": "{count} jours restants",
     "safeToSpend": "Montant disponible aujourd'hui",
-    "topCategories": "Principales catégories"
+    "topCategories": "Principales catégories",
+    "loadFailed": "Impossible de charger l'état de votre budget. Rechargez le tableau de bord pour réessayer."
   },
   "insights": {
     "title": "Analyse des dépenses",
@@ -520,13 +523,15 @@
     "topLevelOnly": "Catégories de premier niveau",
     "topLevelOnlyHint": "Compter les sous-catégories dans leur catégorie parente",
     "viewCallouts": "Étiquettes",
-    "viewLegend": "Légende"
+    "viewLegend": "Légende",
+    "loadFailed": "Impossible de charger vos dépenses par catégorie. Rechargez le tableau de bord pour réessayer."
   },
   "incomeExpenses": {
     "title": "Revenus et dépenses",
     "income": "Revenus",
     "expenses": "Dépenses",
-    "net": "Net"
+    "net": "Net",
+    "loadFailed": "Impossible de charger vos revenus et dépenses. Rechargez le tableau de bord pour réessayer."
   },
   "customize": {
     "button": "Personnaliser",
