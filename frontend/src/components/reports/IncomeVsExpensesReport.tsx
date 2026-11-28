@@ -427,10 +427,12 @@ export function IncomeVsExpensesReport() {
     barClickedRef.current = true;
     const monthStart = data.payload?.monthStart;
     const monthEnd = data.payload?.monthEnd;
-    if (monthStart && monthEnd) {
-      router.push(
-        `/transactions?startDate=${monthStart}&endDate=${monthEnd}&categoryType=${categoryType}`,
-      );
+    if (!monthStart || !monthEnd) return;
+    // The API labels a partial month with its full calendar boundaries.
+    const from = rangeStart > monthStart ? rangeStart : monthStart;
+    const to = rangeEnd && rangeEnd < monthEnd ? rangeEnd : monthEnd;
+    if (from <= to) {
+      router.push(`/transactions?startDate=${from}&endDate=${to}&categoryType=${categoryType}`);
     }
   };
 

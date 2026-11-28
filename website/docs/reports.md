@@ -57,7 +57,7 @@ Reports that can be limited to some of your accounts have an accounts selector. 
 
 You can click most data points -- a bar, a pie segment, a Sankey flow, or a table row -- to open the Transactions page with filters pre-applied, so you can drill down from a summary to the transactions behind it. A payee opens exactly that payee's transactions.
 
-On the **Income vs Expenses** report, clicking an income or expense bar filters by the corresponding **category type** (income categories or expense categories), so you see exactly the transactions that contributed to that bar.
+On the **Income vs Expenses** report, clicking an income or expense bar filters by the corresponding **category type** (income categories or expense categories) and opens the days of that month included in the report. For example, if the report covers May 1–14, both bars open May 1–14 in Transactions.
 
 ### Partial Figures
 

@@ -22,9 +22,9 @@ vi.mock('@/hooks/useNumberFormat', async () => {
 };
 });
 // The selection the mocked range hook reports; a test moves it and re-renders.
-const mockRange = { end: "2025-01-01" };
+const mockRange = { start: "2024-01-01", end: "2025-01-01" };
 const STABLE_RANGE = {
-  start: "2024-01-01",
+  get start() { return mockRange.start; },
   get end() { return mockRange.end; },
 };
 vi.mock("@/hooks/useDateRange", () => ({
@@ -100,7 +100,7 @@ vi.mock("recharts", () => ({
       data-stack-id={stackId}
       onClick={() =>
         onClick?.(
-          { payload: { monthStart: "2024-01-01", monthEnd: "2024-01-31" } },
+          { payload: lastChartData[0] },
           0,
           new MouseEvent("click"),
         )
@@ -174,6 +174,7 @@ describe("IncomeVsExpensesReport", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPush.mockClear();
+    mockRange.start = "2024-01-01";
     mockRange.end = "2025-01-01";
     mockGetAllAccounts.mockResolvedValue([]);
     window.localStorage.clear();
@@ -275,34 +276,33 @@ describe("IncomeVsExpensesReport", () => {
     );
   });
 
-  it("navigates with income categoryType when clicking Income bar", async () => {
+  it.each([
+    ["2025-05-01", "2025-05-14", "2025-05-01", "2025-05-14", 68, 22],
+    ["2025-05-01", "2025-05-31", "2025-05-01", "2025-05-31", -45, -28],
+    ["2025-05-15", "2025-06-14", "2025-05-15", "2025-05-31", -113, -50],
+  ] as const)("keeps both May bars within the report range %s to %s", async (
+    start, end, expectedStart, expectedEnd, income, expenses,
+  ) => {
+    mockRange.start = start;
+    mockRange.end = end;
+    const net = income - expenses;
     mockGetIncomeVsExpenses.mockResolvedValue({
-      data: [{ period: "2024-01", periodStart: "2024-01-01", periodEnd: "2024-01-31", income: 5000, expenses: 3000, net: 2000 }],
-      totals: { income: 5000, expenses: 3000, net: 2000, knownIncome: 5000, knownExpenses: 3000, knownNet: 2000 },
+      data: [{ period: "2025-05", periodStart: "2025-05-01", periodEnd: "2025-05-31", income, expenses, net }],
+      totals: { income, expenses, net, knownIncome: income, knownExpenses: expenses, knownNet: net },
     });
-    render(<IncomeVsExpensesReport />);
-    await waitFor(() => {
-      expect(screen.getByTestId("bar-Income")).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByTestId("bar-Income"));
-    expect(mockPush).toHaveBeenCalledWith(
-      "/transactions?startDate=2024-01-01&endDate=2024-01-31&categoryType=income",
-    );
-  });
 
-  it("navigates with expense categoryType when clicking Expenses bar", async () => {
-    mockGetIncomeVsExpenses.mockResolvedValue({
-      data: [{ period: "2024-01", periodStart: "2024-01-01", periodEnd: "2024-01-31", income: 5000, expenses: 3000, net: 2000 }],
-      totals: { income: 5000, expenses: 3000, net: 2000, knownIncome: 5000, knownExpenses: 3000, knownNet: 2000 },
-    });
     render(<IncomeVsExpensesReport />);
-    await waitFor(() => {
-      expect(screen.getByTestId("bar-Expenses")).toBeInTheDocument();
-    });
+    await screen.findByTestId("bar-Income");
+    expect(mockGetIncomeVsExpenses).toHaveBeenCalledWith({ startDate: start, endDate: end });
+    expect(lastChartData[0]).toMatchObject({ name: "2025-05", Income: income, Expenses: expenses });
+
+    fireEvent.click(screen.getByTestId("bar-Income"));
     fireEvent.click(screen.getByTestId("bar-Expenses"));
-    expect(mockPush).toHaveBeenCalledWith(
-      "/transactions?startDate=2024-01-01&endDate=2024-01-31&categoryType=expense",
-    );
+    const register = `/transactions?startDate=${expectedStart}&endDate=${expectedEnd}`;
+    expect(mockPush.mock.calls).toEqual([
+      [`${register}&categoryType=income`],
+      [`${register}&categoryType=expense`],
+    ]);
   });
 
   it("does not include categoryType when clicking Savings bar", async () => {
