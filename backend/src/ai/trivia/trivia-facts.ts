@@ -273,6 +273,7 @@ function investmentFacts(input: TriviaFactsInput): TriviaFact[] {
   if (
     !portfolio ||
     portfolio.valuationComplete === false ||
+    portfolio.totalPortfolioValue === null ||
     portfolio.totalPortfolioValue <= 0
   ) {
     return [];
@@ -296,7 +297,12 @@ function investmentFacts(input: TriviaFactsInput): TriviaFact[] {
     );
   }
 
-  if (portfolio.gainCostBasis > 0 && portfolio.totalGainLoss !== 0) {
+  if (
+    portfolio.totalGainLoss !== null &&
+    portfolio.totalGainLossPercent !== null &&
+    portfolio.gainCostBasis > 0 &&
+    portfolio.totalGainLoss !== 0
+  ) {
     const gained = portfolio.totalGainLoss > 0;
     facts.push(
       fact(gained ? "investmentsGain" : "investmentsLoss", "investments", {
@@ -326,7 +332,11 @@ function investmentFacts(input: TriviaFactsInput): TriviaFact[] {
     );
 
   const biggest = largestPosition(positions);
-  if (biggest && portfolio.totalHoldingsValue > 0) {
+  if (
+    biggest &&
+    portfolio.totalHoldingsValue !== null &&
+    portfolio.totalHoldingsValue > 0
+  ) {
     facts.push(
       fact("investmentsBiggestHolding", "investments", {
         holdingSymbol: text(biggest.position.symbol),

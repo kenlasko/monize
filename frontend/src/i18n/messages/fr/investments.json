@@ -75,6 +75,8 @@
     "title": "Répartition des actifs",
     "noData": "Aucune donnée de répartition disponible.",
     "knownValueOnly": "Les pourcentages ne couvrent que la valeur connue ; certaines positions n'ont pas pu être valorisées.",
+    "knownValueOnlyMissing": "Les pourcentages ne couvrent que la valeur connue ; certaines positions n'ont pas pu être valorisées. Non valorisé : {items}. Ajoutez les cours manquants dans l'historique des cours de chaque titre et les taux manquants sur la page Devises.",
+    "loadFailed": "La répartition n'a pas pu être chargée. Rechargez la page pour réessayer.",
     "cash": "Trésorerie",
     "untagged": "Sans étiquette",
     "noTagData": "Aucune position étiquetée à afficher. Ajoutez des étiquettes à vos titres pour voir la répartition par étiquette.",

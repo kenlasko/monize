@@ -100,6 +100,7 @@ export function buildEquivalenceTriviaFacts(
     if (
       portfolio &&
       portfolio.valuationComplete !== false &&
+      portfolio.totalGainLoss !== null &&
       portfolio.totalGainLoss > 0 &&
       portfolio.gainCostBasis > 0
     ) {

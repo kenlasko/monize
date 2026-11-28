@@ -87,6 +87,8 @@ The **Asset Allocation** donut chart has a grouping toggle:
 
 Each view shows the top 10 slices plus an **Other** band that groups the remaining smaller holdings. Allocation percentages always reconcile against the drawn slices, so the legend and the chart agree exactly.
 
+When a holding has no price, or no exchange rate into your reporting currency, it cannot be valued and is left out of every grouping. The chart then says that the percentages cover the known value only and names what is missing (the securities with no price and the currency pairs with no rate), so a share of 100% is never a share of the whole portfolio. Add the missing price on the security's price history, or the missing rate on the Currencies page.
+
 - **By key** charts your portfolio's value-weighted split across the values of a chosen [tag key](tags.md#portfolio-allocation-by-key) (for example, splitting by a `country` or `strategy` key).
 - **By country** performs a **geographic look-through**: rather than grouping by an ETF's listing exchange, it looks *through* your funds to their underlying holdings and reports true country-level exposure -- the top 10 countries individually, with the rest collapsed into an **Other Countries** band.
 - **By asset class** splits funds into their stock, bond and cash components, with the rest collapsed into an **Other Asset Classes** band. A security's country and asset-class split come from its price provider where available, or from the **Geographical Allocation** and **Asset Allocation** sections of the security's form.

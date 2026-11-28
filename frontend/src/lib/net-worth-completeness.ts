@@ -76,6 +76,47 @@ export function liabilitiesFxComplete(month: {
 }
 
 /**
+ * A summary figure to print: the server's total, or its known subtotal when the
+ * server withheld the total (`null`). `null` when both are absent, which is
+ * unknown and renders as such (`UnknownAmount`), never 0. The caller labels a
+ * withheld total partial with `summaryTotal`.
+ */
+export function totalOrSubtotal(
+  total: number | null | undefined,
+  knownSubtotal: number | undefined,
+): number | null {
+  return total ?? knownSubtotal ?? null;
+}
+
+/**
+ * One summary figure as a `ConvertedTotal`, partial from whether ITS OWN total
+ * was withheld (`null`), never from the summary-wide flags: a missing cost rate
+ * must not mark a market value that is fully known. An older backend sends no
+ * `known*Subtotal` and a numeric total, so there the summary's flags are all
+ * there is to read. `null` when the figure is unknown outright.
+ */
+export function summaryTotal(
+  total: number | null | undefined,
+  knownSubtotal: number | undefined,
+  source: PortfolioCompleteness | null | undefined,
+  /** The figure's own causes, when the server names them apart from the summary's. */
+  causes?: { pairs: readonly string[]; unpriced: number },
+): ConvertedTotal | null {
+  const value = totalOrSubtotal(total, knownSubtotal);
+  if (value === null) return null;
+  const withheld = total === null || (knownSubtotal === undefined && isPortfolioPartial(source));
+  if (!withheld) return { value, missingCurrencies: [], excludedCount: 0 };
+  const pairs = causes?.pairs ?? source?.missingRatePairs ?? [];
+  const unpriced =
+    causes?.unpriced ?? source?.unpricedHoldingsCount ?? source?.unpricedSecurityIds?.length ?? 0;
+  return {
+    value,
+    missingCurrencies: missingCurrenciesFromPairs(pairs),
+    excludedCount: Math.max(pairs.length + unpriced, 1),
+  };
+}
+
+/**
  * The completeness a portfolio figure carries, from whichever aggregate it was
  * read off: the summary (`unpricedSecurityIds`), one account of it
  * (`unpricedHoldingsCount`), or an intraday response. Every field is optional

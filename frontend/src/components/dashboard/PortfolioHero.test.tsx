@@ -218,6 +218,24 @@ describe('PortfolioHero', () => {
     expect(within(screen.getByTestId('dashboard-hero-headline')).getByTestId('partial-total-marker')).toBeInTheDocument();
   });
 
+  it('names one withheld figure as withheld and keeps the rest of the hero', async () => {
+    // The cash has no rate: only that figure is unknown, the value and holdings
+    // are known and their partial marks follow their own totals.
+    getPortfolioValuation.mockResolvedValue(
+      summary({
+        totalCashValue: null,
+        knownCashValueSubtotal: undefined,
+        valuationComplete: false,
+        fxComplete: false,
+        missingRatePairs: ['CHF->CAD'],
+      }),
+    );
+    await renderHero();
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/154,523\.85/);
+    expect(screen.getByTestId('unknown-amount')).toBeInTheDocument();
+    expect(screen.queryByText(/Couldn't load your portfolio/)).not.toBeInTheDocument();
+  });
+
   it('says a failed change request failed, and holds nothing for one still in flight', async () => {
     period.current = { periodResult: null, failed: true };
     await renderHero();

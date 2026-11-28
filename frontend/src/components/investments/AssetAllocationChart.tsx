@@ -3,7 +3,7 @@
 import { CARD_CLASS } from '@/components/ui/Card';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { useMemo, useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import {
   AssetAllocation,
@@ -144,13 +144,6 @@ interface AssetAllocationChartProps {
    * tagged holdings.
    */
   enableTagGrouping?: boolean;
-  /**
-   * False when the portfolio valuation is incomplete (a missing price or FX
-   * rate). The percentages here are then shares of the known subtotal, not of the
-   * whole portfolio, so the chart says so rather than presenting them as
-   * definitive (recheck RR5-005). Absent reads as complete.
-   */
-  valuationComplete?: boolean;
 }
 
 export function AssetAllocationChart({
@@ -161,9 +154,9 @@ export function AssetAllocationChart({
   titleSuffix,
   accountIds,
   enableTagGrouping = true,
-  valuationComplete,
 }: AssetAllocationChartProps) {
   const t = useTranslations('investments');
+  const format = useFormatter();
   const { formatCurrencyCompact: formatCurrency, formatPercent } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
 
@@ -190,6 +183,19 @@ export function AssetAllocationChart({
     Record<string, PortfolioTagSummary>
   >({});
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  // A request that failed is a failure, not "no tagged holdings": its key is
+  // remembered here (and not cached as an empty allocation) so the view says so.
+  const [tagFailed, setTagFailed] = useState<Record<string, true>>({});
+  const [tagKeyFailed, setTagKeyFailed] = useState<Record<string, true>>({});
+  // A failed by-tag / by-tag-key load is forgotten on leaving the view, so the next
+  // visit asks again instead of showing the old failure for good.
+  const selectGroup = (next: GroupBy) => {
+    if (next !== groupBy) {
+      setTagFailed({});
+      setTagKeyFailed({});
+    }
+    setGroupBy(next);
+  };
   const [tagKeyCache, setTagKeyCache] = useState<Record<string, AssetAllocation>>(
     {},
   );
@@ -300,7 +306,7 @@ export function AssetAllocationChart({
   // never opens the tag view never pays for one.
   useEffect(() => {
     if (!enableTagGrouping || groupBy !== 'tag') return;
-    if (tagCache[accountKey]) return;
+    if (tagCache[accountKey] || tagFailed[accountKey]) return;
     let cancelled = false;
     const ids = accountKey === 'all' ? undefined : accountKey.split(',');
     investmentsApi
@@ -309,21 +315,17 @@ export function AssetAllocationChart({
         if (!cancelled) setTagCache((prev) => ({ ...prev, [accountKey]: res }));
       })
       .catch(() => {
-        if (!cancelled)
-          setTagCache((prev) => ({
-            ...prev,
-            [accountKey]: { allocation: [], totalValue: 0 },
-          }));
+        if (!cancelled) setTagFailed((prev) => ({ ...prev, [accountKey]: true }));
       });
     return () => {
       cancelled = true;
     };
-  }, [enableTagGrouping, groupBy, accountKey, tagCache]);
+  }, [enableTagGrouping, groupBy, accountKey, tagCache, tagFailed]);
 
   // Fetch the by-key allocation lazily, only while the key view is active.
   useEffect(() => {
     if (groupBy !== 'tagKey' || !resolvedKey || !tagKeyCacheKey) return;
-    if (tagKeyCache[tagKeyCacheKey]) return;
+    if (tagKeyCache[tagKeyCacheKey] || tagKeyFailed[tagKeyCacheKey]) return;
     let cancelled = false;
     const ids = accountKey === 'all' ? undefined : accountKey.split(',');
     investmentsApi
@@ -333,16 +335,12 @@ export function AssetAllocationChart({
           setTagKeyCache((prev) => ({ ...prev, [tagKeyCacheKey]: res }));
       })
       .catch(() => {
-        if (!cancelled)
-          setTagKeyCache((prev) => ({
-            ...prev,
-            [tagKeyCacheKey]: { allocation: [], totalValue: 0 },
-          }));
+        if (!cancelled) setTagKeyFailed((prev) => ({ ...prev, [tagKeyCacheKey]: true }));
       });
     return () => {
       cancelled = true;
     };
-  }, [groupBy, resolvedKey, tagKeyCacheKey, accountKey, tagKeyCache]);
+  }, [groupBy, resolvedKey, tagKeyCacheKey, accountKey, tagKeyCache, tagKeyFailed]);
 
   // If the active grouping is no longer available (e.g. the account filter
   // changed to a set without tags or country data), fall back to "By security"
@@ -371,10 +369,13 @@ export function AssetAllocationChart({
         : isAssetClassView
           ? assetClassAllocation
           : allocation;
+  const activeFailed =
+    (isTagView && tagFailed[accountKey] === true) ||
+    (isTagKeyView && tagKeyCacheKey !== null && tagKeyFailed[tagKeyCacheKey] === true);
   const activeLoading = isTagView
-    ? !tagCache[accountKey]
+    ? !tagCache[accountKey] && !tagFailed[accountKey]
     : isTagKeyView
-      ? !tagKeyCacheKey || !tagKeyCache[tagKeyCacheKey]
+      ? !tagKeyCacheKey || (!tagKeyCache[tagKeyCacheKey] && !tagKeyFailed[tagKeyCacheKey])
       : isCountryView
         ? !countryResult
         : isAssetClassView
@@ -438,7 +439,7 @@ export function AssetAllocationChart({
     <div role="group" aria-label={t('assetAllocation.title')} className={SEGMENTED_GROUP_CLASS}>
       <button
         type="button"
-        onClick={() => setGroupBy('security')}
+        onClick={() => selectGroup('security')}
         className={`${segmentClass(effectiveGroupBy === 'security')} !px-2 !py-1 !text-xs`}
         aria-pressed={effectiveGroupBy === 'security'}
       >
@@ -447,7 +448,7 @@ export function AssetAllocationChart({
       {tagsAvailable && (
         <button
           type="button"
-          onClick={() => setGroupBy('tag')}
+          onClick={() => selectGroup('tag')}
           className={`${segmentClass(isTagView)} !px-2 !py-1 !text-xs`}
           aria-pressed={isTagView}
         >
@@ -457,7 +458,7 @@ export function AssetAllocationChart({
       {keysAvailable && (
         <button
           type="button"
-          onClick={() => setGroupBy('tagKey')}
+          onClick={() => selectGroup('tagKey')}
           className={`${segmentClass(isTagKeyView)} !px-2 !py-1 !text-xs`}
           aria-pressed={isTagKeyView}
         >
@@ -467,7 +468,7 @@ export function AssetAllocationChart({
       {countryAvailable && (
         <button
           type="button"
-          onClick={() => setGroupBy('country')}
+          onClick={() => selectGroup('country')}
           className={`${segmentClass(isCountryView)} !px-2 !py-1 !text-xs`}
           aria-pressed={isCountryView}
         >
@@ -477,7 +478,7 @@ export function AssetAllocationChart({
       {assetClassAvailable && (
         <button
           type="button"
-          onClick={() => setGroupBy('assetClass')}
+          onClick={() => selectGroup('assetClass')}
           className={`${segmentClass(isAssetClassView)} !px-2 !py-1 !text-xs`}
           aria-pressed={isAssetClassView}
         >
@@ -527,6 +528,17 @@ export function AssetAllocationChart({
     );
   }
 
+  if (activeFailed) {
+    return (
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[420px]`}>
+        {heading}
+        <p role="alert" className="text-gray-500 dark:text-gray-400">
+          {t('assetAllocation.loadFailed')}
+        </p>
+      </div>
+    );
+  }
+
   if (!activeAllocation || activeAllocation.allocation.length === 0) {
     return (
       <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[420px]`}>
@@ -559,16 +571,29 @@ export function AssetAllocationChart({
   const foreignAggregateIncomplete =
     foreignCurrency !== null &&
     (holdingsByAccount ?? []).some((a) => a.valuationComplete === false);
+  // The by-tag and by-tag-key views are regrouped from the same valuation, so
+  // each carries its own flag; absent (an older backend) reads as complete.
   const knownValueOnly =
-    effectiveGroupBy === 'security' &&
-    (valuationComplete === false || foreignAggregateIncomplete);
+    (effectiveGroupBy === 'security' &&
+      (activeAllocation?.valuationComplete === false || foreignAggregateIncomplete)) ||
+    ((isTagView || isTagKeyView) && activeAllocation?.valuationComplete === false);
+  // What is missing, by name: the server's symbols for holdings with no price
+  // (never an id) and the pairs with no rate.
+  const notValued = [
+    ...(activeAllocation?.unpricedSymbols ?? []),
+    ...(activeAllocation?.missingRatePairs ?? []),
+  ];
 
   return (
     <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[420px]`}>
       {heading}
       {knownValueOnly && (
         <p className="text-xs text-amber-700 dark:text-amber-300 mb-2">
-          {t('assetAllocation.knownValueOnly')}
+          {notValued.length > 0
+            ? t('assetAllocation.knownValueOnlyMissing', {
+                items: format.list(notValued, { type: 'conjunction' }),
+              })
+            : t('assetAllocation.knownValueOnly')}
         </p>
       )}
       <div className="h-64">

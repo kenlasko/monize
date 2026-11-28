@@ -275,16 +275,21 @@ export const getPortfolioSummaryOutput = toolOutput({
   pricesComplete: bool,
   unpricedSymbols: z.array(str),
   valuationComplete: bool,
-  totalCashValue: num,
-  totalHoldingsValue: num,
-  totalCostBasis: num,
-  totalPortfolioValue: num,
+  // Each total is null unless every component is known; the matching
+  // `known*Subtotal` (undeclared, for the budget reason below) carries the
+  // partial sum.
+  totalCashValue: numNull,
+  totalHoldingsValue: numNull,
+  totalCostBasis: numNull,
+  totalPortfolioValue: numNull,
+  knownPortfolioValueSubtotal: num.optional(),
   // `totalGainLoss` is over the holdings that have a value (value less THEIR
   // cost), a partial figure while `valuationComplete` is false. `gainCostBasis`
   // (the cost it is over) and `unpricedCostBasis` (the cost it leaves out)
   // reach the caller through the loose object rather than the schema, for the
   // same budget reason as the fields below (A26-M38).
-  totalGainLoss: num,
+  totalGainLoss: numNull,
+  knownGainLossSubtotal: num.optional(),
   totalGainLossPercent: numNull,
   // `timeWeightedReturn` is the invested part's TWR since the first
   // transaction; `null` is withheld, never zero. It travels with

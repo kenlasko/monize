@@ -23,6 +23,7 @@ export function PortfolioHeroPebble({
   change,
   holdings,
   cash,
+  unknown,
   metric,
   chart,
 }: PortfolioHeroViewProps) {
@@ -38,9 +39,13 @@ export function PortfolioHeroPebble({
             collapsed={collapsed}
             sizeClass="text-6xl sm:text-7xl xl:text-[92px] font-bold text-gray-900 dark:text-gray-50"
           >
-            <PartialTotal total={total} displayCurrency={currency}>
-              <MoneyFigure amount={total.value} currencyCode={currency} display />
-            </PartialTotal>
+            {total === null ? (
+              unknown.total
+            ) : (
+              <PartialTotal total={total} displayCurrency={currency}>
+                <MoneyFigure amount={total.value} currencyCode={currency} display />
+              </PartialTotal>
+            )}
           </HeroHeadline>
         </div>
         {change !== null &&
@@ -55,14 +60,22 @@ export function PortfolioHeroPebble({
           ))}
         <dl className="mt-auto flex flex-wrap gap-x-9 gap-y-3 pt-7">
           <BlockFigure label={t('hero.holdingsLabel')}>
-            <PartialTotal total={holdings} displayCurrency={currency}>
-              {formatCurrency(holdings.value, currency)}
-            </PartialTotal>
+            {holdings === null ? (
+              unknown.holdings
+            ) : (
+              <PartialTotal total={holdings} displayCurrency={currency}>
+                {formatCurrency(holdings.value, currency)}
+              </PartialTotal>
+            )}
           </BlockFigure>
           <BlockFigure label={t('hero.cashLabel')}>
-            <PartialTotal total={cash} displayCurrency={currency}>
-              {formatCurrency(cash.value, currency)}
-            </PartialTotal>
+            {cash === null ? (
+              unknown.cash
+            ) : (
+              <PartialTotal total={cash} displayCurrency={currency}>
+                {formatCurrency(cash.value, currency)}
+              </PartialTotal>
+            )}
           </BlockFigure>
           <BlockFigure label={metric.label} testId="dashboard-hero-metric">
             {metric.value}

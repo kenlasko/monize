@@ -359,26 +359,42 @@ export interface ReturnDiagnostics {
   truncated: { prices: boolean; rates: boolean; cash: boolean };
 }
 
+/**
+ * Each `total*` is `null` unless every component of it is known; the sum of
+ * what is known is the `known*Subtotal` beside it. The subtotals are optional:
+ * an older backend mid-deploy sends neither them nor a null total, and absent
+ * is no information. Read a figure with `totalOrSubtotal` and label it partial.
+ */
 export interface PortfolioSummary {
-  totalCashValue: number;
-  totalHoldingsValue: number;
-  totalCostBasis: number;
-  totalNetInvested: number;
-  totalPortfolioValue: number;
+  totalCashValue: number | null;
+  knownCashValueSubtotal?: number;
+  totalHoldingsValue: number | null;
+  knownHoldingsValueSubtotal?: number;
+  totalCostBasis: number | null;
+  knownCostBasisSubtotal?: number;
+  totalNetInvested: number | null;
+  knownNetInvestedSubtotal?: number;
+  totalPortfolioValue: number | null;
+  knownPortfolioValueSubtotal?: number;
   /**
    * `totalPortfolioValue` less `totalNetInvested`, the Total Gain, worked out
    * on the server before either is rounded, so it is one rounding rather than
    * a difference of two. Optional: an older backend mid-deploy sends none, and
    * the card then takes the difference itself.
    */
-  totalGainOverNetInvested?: number;
+  totalGainOverNetInvested?: number | null;
+  knownGainOverNetInvestedSubtotal?: number;
   /**
-   * Value less cost over the holdings that have a value; a partial figure while
-   * `valuationComplete` is `false`, which `PartialTotal` marks.
+   * Value less cost over the holdings that have a value; `null` while
+   * `valuationComplete` is `false`, when `knownGainLossSubtotal` is the partial
+   * figure `PartialTotal` marks.
    */
-  totalGainLoss: number;
+  totalGainLoss: number | null;
+  knownGainLossSubtotal?: number;
   /** Over `gainCostBasis`; 0 when that is 0. */
-  totalGainLossPercent: number;
+  totalGainLossPercent: number | null;
+  /** The percent over the known holdings while `totalGainLossPercent` is null. */
+  knownGainLossPercentSubtotal?: number;
   /** Cost of the holdings `totalGainLoss` is over. Optional: absent is no information. */
   gainCostBasis?: number;
   /** Cost of the holdings the gain leaves out because they have no value. */
@@ -426,8 +442,9 @@ export interface PortfolioSummary {
   returnDiagnostics?: ReturnDiagnostics;
   cagr: number | null;
   /**
-   * Whether every currency conversion behind the `total*` fields succeeded.
-   * False makes each of them a subtotal of what could be converted.
+   * Whether every currency conversion behind the summary succeeded. Summary-wide:
+   * a gap in one aggregate (a cost rate) makes it false while the other figures
+   * stay known, so read a figure's own `total*` for null, not this flag.
    *
    * Optional for the same rolling-deploy reason as on `AccountHoldings`: an
    * older backend's payload has none of these, absent means "no information",
@@ -437,6 +454,13 @@ export interface PortfolioSummary {
   fxComplete?: boolean;
   /** `"EUR->USD"` for each pair with no available rate; empty when complete. */
   missingRatePairs?: string[];
+  /** The pairs behind `totalPortfolioValue` alone (cash and holdings value), i.e. what the allocation misses. */
+  portfolioValueMissingRatePairs?: string[];
+  /** The pairs behind each other total alone: what a figure marked partial should name. */
+  cashMissingRatePairs?: string[];
+  holdingsValueMissingRatePairs?: string[];
+  costBasisMissingRatePairs?: string[];
+  netInvestedMissingRatePairs?: string[];
   /** False when a held position has no current price. */
   pricesComplete?: boolean;
   /** Securities held in a non-zero quantity with no current price. */
@@ -483,7 +507,18 @@ export interface AllocationItem {
 
 export interface AssetAllocation {
   allocation: AllocationItem[];
-  totalValue: number;
+  /** null while `valuationComplete` is false; percentages are then over `knownSubtotal`. */
+  totalValue: number | null;
+  /** What could be valued: the base the percentages are measured against. */
+  knownSubtotal?: number;
+  /** Flags are optional: absent (an older backend) is no information, read as `=== false`. */
+  valuationComplete?: boolean;
+  fxComplete?: boolean;
+  pricesComplete?: boolean;
+  missingRatePairs?: string[];
+  unpricedSecurityIds?: string[];
+  /** The symbols of `unpricedSecurityIds`, from the server: what to name, never an id. */
+  unpricedSymbols?: string[];
 }
 
 /**
