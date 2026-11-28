@@ -1,3 +1,4 @@
+import { requestContextStorage } from "../request-context";
 import { FX_MAX_RATE_AGE_DAYS } from "./fx-rate-resolver";
 import {
   RateIndexRow,
@@ -60,7 +61,32 @@ describe("rate-index.util", () => {
         "CAD",
         "2026-06-01",
         "2026-06-30",
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       ]);
+    });
+
+    it("anchors the window on the user's day, not the database server's CURRENT_DATE", async () => {
+      jest.useFakeTimers().setSystemTime(new Date("2026-06-10T11:00:00Z"));
+      try {
+        const query = jest.fn().mockResolvedValue([]);
+        // 11:00Z is already 06-11 in Kiritimati (UTC+14).
+        await requestContextStorage.run(
+          { timezone: "Pacific/Kiritimati" },
+          () =>
+            buildRateIndex(
+              query,
+              new Set(["USD"]),
+              "CAD",
+              "2026-06-20",
+              "2026-06-30",
+            ),
+        );
+        const [sql, params] = query.mock.calls[0];
+        expect(sql).not.toContain("CURRENT_DATE");
+        expect(params).toContain("2026-06-11");
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("loads the window plus the one preceding observation per pair, and nothing ahead of it", async () => {
@@ -153,6 +179,7 @@ describe("rate-index.util", () => {
         "USD",
         "2024-06-01",
         "2024-06-30",
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       ]);
     });
 

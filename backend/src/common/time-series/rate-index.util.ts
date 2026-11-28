@@ -20,6 +20,7 @@
  * on how wide the chart was, and the forward margin let a date be priced by an
  * observation from its future (issue #1390).
  */
+import { todayYMD } from "../date-utils";
 import {
   FX_MAX_RATE_AGE_DAYS,
   FxRateResolution,
@@ -95,7 +96,7 @@ export async function buildRateIndex(
          SELECT $2::TEXT AS from_currency, c AS to_currency
            FROM unnest($1::TEXT[]) AS c
        ),
-       anchor AS (SELECT LEAST($3::DATE, CURRENT_DATE) AS d)
+       anchor AS (SELECT LEAST($3::DATE, $5::DATE) AS d)
        SELECT from_currency, to_currency, rate, rate_date
          FROM (
            SELECT er.from_currency, er.to_currency, er.rate, er.rate_date
@@ -120,7 +121,8 @@ export async function buildRateIndex(
              ) pre
          ) loaded
         ORDER BY rate_date`,
-    [currArr, defaultCurrency, startDate, loadTo],
+    // The user's day (todayYMD), not the database server's CURRENT_DATE (#2365).
+    [currArr, defaultCurrency, startDate, loadTo, todayYMD()],
   );
 
   return indexRateRows(rates);
