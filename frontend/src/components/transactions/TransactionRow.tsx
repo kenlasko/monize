@@ -2,6 +2,8 @@
 
 import { memo, useState, useRef, useEffect, useCallback, type JSX } from 'react';
 import { useTranslations } from 'next-intl';
+import { figuresUnknown, unknownPairs } from '@/components/budgets/utils/line-completeness';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { createPortal } from 'react-dom';
 import { getIconComponent } from '@/components/ui/IconPicker';
@@ -354,6 +356,7 @@ export const TransactionRow = memo(function TransactionRow({
   const payeeLayout = registerPayeeLayout(density);
   const t = useTranslations('transactions');
   const tc = useTranslations('common');
+  const partialReasonOf = useBudgetPartialReason();
   const { formatCurrency, formatPercent } = useNumberFormat();
   // Read-only amounts, grouped in the user's number locale (en-US unchanged).
   const formatAmountLocal = useLocalizedAmount();
@@ -866,7 +869,14 @@ export const TransactionRow = memo(function TransactionRow({
         ) : transaction.category ? (
           (() => {
             const budgetStatus = budgetStatusMap?.[transaction.category!.id];
-            const budgetIndicator = budgetStatus && budgetStatus.budgeted > 0 ? (
+            // A partial figure (a row with no exchange rate) must not light an
+            // over-budget or approaching-limit dot: a neutral dot says why.
+            const budgetIndicator = budgetStatus && figuresUnknown(budgetStatus) && budgetStatus.budgeted > 0 ? (
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full ml-1 flex-shrink-0 bg-gray-400"
+                title={partialReasonOf(unknownPairs(budgetStatus))}
+              />
+            ) : budgetStatus && budgetStatus.budgeted > 0 ? (
               <span
                 className={`inline-block w-1.5 h-1.5 rounded-full ml-1 flex-shrink-0 ${
                   budgetStatus.percentUsed > 100

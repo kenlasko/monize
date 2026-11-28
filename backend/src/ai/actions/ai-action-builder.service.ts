@@ -744,6 +744,7 @@ export class AiActionBuilderService {
         description: preview.description,
         isReconciled: preview.isReconciled,
         ...(preview.splitLine ? { splitLine: preview.splitLine } : {}),
+        ...(preview.transferPair ? { transferPair: true as const } : {}),
       },
     };
   }

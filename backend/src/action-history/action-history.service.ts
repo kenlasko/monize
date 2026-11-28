@@ -22,6 +22,11 @@ import { ActionHistory } from "./entities/action-history.entity";
 import { assertUndoCurrencyKind } from "./undo-currency-kind";
 import { assertNoReferencesBeforeDelete } from "./undo-references";
 import {
+  BUDGET_BUCKET_COLUMNS,
+  BUDGET_LINE_COLUMNS,
+  restoreBudgetChildren,
+} from "./budget-undo";
+import {
   moveListedRows,
   movedRowsOf,
   redoMovedRows,
@@ -64,14 +69,19 @@ import { Budget } from "../budgets/entities/budget.entity";
 import { CustomReport } from "../reports/entities/custom-report.entity";
 import { acquireAdvisoryLock, LockScope } from "../common/db/locks";
 import { withSystemContext } from "../common/db/with-context";
-import { withScopedDb } from "../common/db/scoped-db";
+import {
+  runOutsideActiveScopedManager,
+  withScopedDb,
+} from "../common/db/scoped-db";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
 import {
   LockedTransactionRow,
   lockAccountsForBalanceWrite,
   lockCategoryOwnerShared,
+  lockHoldingScope,
   lockTransactionRows,
 } from "../common/db/locks";
+import { lockUnchangedInvestmentRow } from "../securities/investment-row-lock.util";
 import { LEDGER_MOVEMENT_PREDICATE } from "../common/ledger-balance.sql";
 import {
   MONEY_SCALE,
@@ -106,6 +116,23 @@ function assertTransactionCreateRedoable(action: ActionHistory): void {
       "This transaction created entries in other accounts, so it cannot be redone. Create it again instead",
     ),
     errorCode: "REDO_CREATE_WITH_LEGS",
+  });
+}
+
+/**
+ * Refuses, before anything is written, the undo of a transfer edit, status
+ * change or delete. Those are recorded so that Undo stops at them instead of
+ * reaching the transfer's creation and deleting both legs, but the entry holds
+ * no snapshot of the two legs, their statuses, balances and FX, so it cannot
+ * be reversed. The user edits the transfer back.
+ */
+function throwTransferChangeNotUndoable(): never {
+  throw new ConflictException({
+    message: tr(
+      "errors.actionHistory.undoTransferChangeNotSupported",
+      "This change to a transfer (an edit, a status change or a delete) cannot be undone automatically. Edit the transfer to change it back, or enter it again if it was deleted.",
+    ),
+    errorCode: "UNDO_TRANSFER_CHANGE_NOT_SUPPORTED",
   });
 }
 
@@ -622,6 +649,8 @@ const ALLOWED_COLUMNS: Record<string, Set<string>> = {
     "created_at",
     "updated_at",
   ]),
+  budget_buckets: BUDGET_BUCKET_COLUMNS,
+  budget_categories: BUDGET_LINE_COLUMNS,
   custom_reports: new Set([
     "id",
     "user_id",
@@ -645,11 +674,18 @@ const MAX_HISTORY_AGE_DAYS = 30;
 /**
  * History writes that were started without anybody waiting for them.
  *
- * Every one of the ~20 `actionHistoryService.record(...)` call sites invokes it
+ * Most of the ~20 `actionHistoryService.record(...)` call sites invoke it
  * without `await` -- deliberately, because a missing undo entry must never fail
  * the operation the user actually asked for. The write that lands afterwards is
  * still a write, and it arrives with no relationship to the request that caused
  * it.
+ *
+ * The transfer entries (the create and the edit, status change and delete
+ * recorded by `TransactionTransferService`) are awaited. They order the
+ * history: Undo takes the newest entry, so an Undo pressed right after an edit
+ * must find the edit's entry, not the create's, or it would delete the
+ * transfer. An await orders the entries; it does not make a failed write fail
+ * the request, since `recordNow` catches its own errors.
  *
  * Harmless in a running server. Not harmless against a database being torn
  * down: an integration suite that truncates `users ... CASCADE` while one of
@@ -661,8 +697,10 @@ const MAX_HISTORY_AGE_DAYS = 30;
  * Module scope rather than instance state, for the same reason
  * `pendingPriceWrites` is (`securities/security-price.service.ts`): the thing
  * that needs to wait is a test helper holding a `DataSource`, not a consumer of
- * this service. Nothing in `src/` waits on this; production keeps exactly the
- * fire-and-forget behaviour it had.
+ * this service. Nothing in `src/` waits on this set. The callers that await
+ * their own write (the transfer entries and the bulk update's entry) do so to
+ * order the history, not to drain the set; every other caller keeps the
+ * fire-and-forget behaviour.
  */
 const pendingHistoryWrites = new Set<Promise<unknown>>();
 
@@ -719,9 +757,11 @@ export class ActionHistoryService {
   }
 
   /**
-   * Record an undo entry. Callers do not await this -- see `pendingHistoryWrites`
-   * above -- so the promise is registered before it is handed back, which is the
-   * only way a teardown can tell the write is still running.
+   * Record an undo entry. Most callers do not await this -- see
+   * `pendingHistoryWrites` above -- so the promise is registered before it is
+   * handed back, which is the only way a teardown can tell the write is still
+   * running. The transfer create and change entries and the bulk update's entry
+   * are awaited, so Undo, which takes the newest entry, cannot run before them.
    */
   record(
     userId: string,
@@ -1009,6 +1049,17 @@ export class ActionHistoryService {
     if (action.entityType === "transaction" && action.action === "create") {
       assertTransactionCreateRedoable(action);
     }
+    // A transfer create's snapshot holds leg ids only, so its redo would
+    // re-create nothing yet report success: refused like a create with legs.
+    if (action.entityType === "transfer" && action.action === "create") {
+      throw new ConflictException({
+        message: tr(
+          "errors.actionHistory.redoTransferCreateNotSupported",
+          "This transfer created entries in two accounts, so it cannot be redone. Create it again instead",
+        ),
+        errorCode: "REDO_TRANSFER_CREATE_NOT_SUPPORTED",
+      });
+    }
     // A delete that moved rows into another category: the undo moved them back,
     // so the redo moves them again before the delete's reference check.
     const moved =
@@ -1048,21 +1099,14 @@ export class ActionHistoryService {
   /**
    * The rows a scheduled posting wrote are removed exactly as the undo of the
    * create that wrote them would remove them (`scheduled-posting-undo.ts`),
-   * after the strict reconciled lock (INV-RECONCILE-001): the transaction
-   * create's undo takes it itself; a transfer's two legs and an investment
-   * row's cash transaction are locked and checked here first, so a
-   * reconciled row refuses the undo before anything is written.
+   * under the strict reconciled lock (INV-RECONCILE-001): each create-undo
+   * handler locks and checks its own rows before its first write, so a
+   * reconciled row refuses the undo and nothing is written.
    */
   private scheduledPostingRemover(
     action: ActionHistory,
     manager: EntityManager,
   ): ScheduledPostingMoneyRemover {
-    const assertMutable = async (ids: string[]): Promise<void> => {
-      const rows = await lockTransactionRows(manager, ids, action.userId);
-      await assertReconciledRowsMutable(manager, action.userId, [
-        ...rows.values(),
-      ]);
-    };
     return async (money) => {
       switch (money.kind) {
         case "transaction":
@@ -1072,7 +1116,6 @@ export class ActionHistoryService {
           );
           return;
         case "transfer":
-          await assertMutable([money.fromTransactionId, money.toTransactionId]);
           await this.undoTransferCreate(
             {
               ...action,
@@ -1086,20 +1129,12 @@ export class ActionHistoryService {
             manager,
           );
           return;
-        case "investment": {
-          const row = await manager.findOne(InvestmentTransaction, {
-            where: {
-              id: money.investmentTransactionId,
-              userId: action.userId,
-            },
-          });
-          if (row?.transactionId) await assertMutable([row.transactionId]);
+        case "investment":
           await this.undoInvestmentCreate(
             { ...action, entityId: money.investmentTransactionId },
             manager,
           );
           return;
-        }
       }
     };
   }
@@ -1647,6 +1682,9 @@ export class ActionHistoryService {
       case "delete":
         await this.undoTransferDelete(action, manager);
         break;
+      case "update":
+        throwTransferChangeNotUndoable();
+        break;
       default:
         throw new ConflictException(
           tr(
@@ -1658,18 +1696,64 @@ export class ActionHistoryService {
     }
   }
 
+  /**
+   * Row-lock the caller's own legs of a transfer. RLS hides another owner's
+   * row from the lock, so which legs exist is read first, on its own short
+   * connection under the system context and before any row lock is held. An id
+   * that existed but the lock did not return now belongs to another owner (a
+   * cross-owner transfer, or a leg moved into another owner's account): the
+   * undo is refused with 409. An id absent from the read is gone and skipped.
+   */
+  private async lockOwnTransferLegs(
+    manager: EntityManager,
+    userId: string,
+    ids: string[],
+  ): Promise<Map<string, LockedTransactionRow>> {
+    const existing: { id: string }[] = await runOutsideActiveScopedManager(() =>
+      withSystemContext(() =>
+        withScopedDb(this.dataSource, (m) =>
+          m.query(`SELECT id FROM transactions WHERE id = ANY($1)`, [ids]),
+        ),
+      ),
+    );
+    const locked = await lockTransactionRows(manager, ids, userId);
+    if (existing.some((row) => !locked.has(row.id))) {
+      throw new ConflictException({
+        message: tr(
+          "errors.actionHistory.undoCrossOwnerTransferNotSupported",
+          "This transfer has a side in an account of another owner, so it cannot be undone. Delete the transfer instead.",
+        ),
+        errorCode: "UNDO_CROSS_OWNER_TRANSFER_NOT_SUPPORTED",
+      });
+    }
+    return locked;
+  }
+
   private async undoTransferCreate(
     action: ActionHistory,
     manager: EntityManager,
   ): Promise<void> {
     if (!action.afterData) return;
 
-    const { fromTransactionId, toTransactionId, fromAccountId, toAccountId } =
-      action.afterData;
+    const { fromTransactionId, toTransactionId } = action.afterData;
+
+    // INV-RECONCILE-001: the caller's own legs are locked and held to the
+    // reconciled lock before the first write. A leg that no longer exists is
+    // skipped; one that belongs to another owner refuses the undo.
+    const lockedLegs = await this.lockOwnTransferLegs(
+      manager,
+      action.userId,
+      [fromTransactionId, toTransactionId].filter((id): id is string => !!id),
+    );
+    const legIds = [fromTransactionId, toTransactionId].filter(
+      (id): id is string => !!id && lockedLegs.has(id),
+    );
+    await assertReconciledRowsMutable(manager, action.userId, [
+      ...lockedLegs.values(),
+    ]);
 
     // Delete both linked transactions
-    for (const txId of [fromTransactionId, toTransactionId]) {
-      if (!txId) continue;
+    for (const txId of legIds) {
       const tx = await manager.findOne(Transaction, {
         where: { id: txId, userId: action.userId },
       });
@@ -1685,16 +1769,15 @@ export class ActionHistoryService {
       }
     }
 
-    for (const txId of [fromTransactionId, toTransactionId]) {
-      if (!txId) continue;
-      await manager.delete(Transaction, { id: txId });
+    for (const txId of legIds) {
+      await manager.delete(Transaction, { id: txId, userId: action.userId });
     }
 
-    if (fromAccountId) {
-      await this.recalculateBalance(action.userId, fromAccountId, manager);
-    }
-    if (toAccountId) {
-      await this.recalculateBalance(action.userId, toAccountId, manager);
+    // The accounts the locked legs sit in now, not the creation snapshot's.
+    for (const accountId of new Set(
+      [...lockedLegs.values()].map((leg) => leg.accountId),
+    )) {
+      await this.recalculateBalance(action.userId, accountId, manager);
     }
   }
 
@@ -1702,10 +1785,10 @@ export class ActionHistoryService {
     action: ActionHistory,
     manager: EntityManager,
   ): Promise<void> {
-    if (!action.beforeData) return;
-
-    const { fromTransaction, toTransaction } = action.beforeData;
-    if (!fromTransaction || !toTransaction) return;
+    // A delete recorded without the two legs (every transfer delete today):
+    // nothing to restore, so refuse rather than report success.
+    const { fromTransaction, toTransaction } = action.beforeData ?? {};
+    if (!fromTransaction || !toTransaction) throwTransferChangeNotUndoable();
     await this.assertSnapshotAmountsFit(manager, [
       fromTransaction,
       toTransaction,
@@ -1905,10 +1988,31 @@ export class ActionHistoryService {
     const legs = linkedTx ? [invTx, linkedTx] : [invTx];
     const accountIds = new Set<string>();
 
+    // Lock order (docs/concurrency-and-idempotency.md section 5), as
+    // InvestmentTransactionsService.remove: the holdings advisory lock first,
+    // then the investment rows, then the cash rows. A row another request
+    // changed since the read (an account move included) is refused with the
+    // changed-row error; the rest of the undo works from the locked rows.
+    await lockHoldingScope(
+      manager,
+      legs.map((leg) => leg.accountId),
+    );
+    const lockedLegs = new Map<
+      string,
+      Awaited<ReturnType<typeof lockUnchangedInvestmentRow>>
+    >();
+    for (const leg of [...legs].sort((a, b) => a.id.localeCompare(b.id))) {
+      lockedLegs.set(
+        leg.id,
+        await lockUnchangedInvestmentRow(manager, action.userId, leg),
+      );
+    }
+    const lockedRows = [...lockedLegs.values()];
+
     await assertSecuritiesActiveIn(
       manager,
       action.userId,
-      legs.map((leg) => leg.securityId),
+      lockedRows.map((leg) => leg.securityId),
     );
 
     // Undoing a create deletes the rows: refused when that leaves a removal of
@@ -1916,16 +2020,35 @@ export class ActionHistoryService {
     const bondGuard = await beginBondWriteGuard(
       manager,
       action.userId,
-      legs.map((leg) => leg.securityId),
+      lockedRows.map((leg) => leg.securityId),
     );
 
+    // INV-RECONCILE-001: the cash rows go with the create, so a reconciled one
+    // refuses the undo before anything is written. The ids come from the
+    // locked rows. A cash row the lock did not return is gone (it is the same
+    // owner's row as the investment row), so it is skipped below as before,
+    // never deleted unchecked.
+    const cashIds = lockedRows.flatMap((leg) =>
+      leg.transactionId ? [leg.transactionId] : [],
+    );
+    const lockedCash = await lockTransactionRows(
+      manager,
+      cashIds,
+      action.userId,
+    );
+    await assertReconciledRowsMutable(manager, action.userId, [
+      ...lockedCash.values(),
+    ]);
+
     for (const leg of legs) {
-      accountIds.add(leg.accountId);
+      const locked = lockedLegs.get(leg.id)!;
+      accountIds.add(locked.accountId);
 
       // Delete linked cash transaction
-      if (leg.transactionId) {
+      const cashId = locked.transactionId;
+      if (cashId && lockedCash.has(cashId)) {
         const cashTx = await manager.findOne(Transaction, {
-          where: { id: leg.transactionId },
+          where: { id: cashId, userId: action.userId },
         });
         if (cashTx) {
           await manager.query(
@@ -1945,7 +2068,7 @@ export class ActionHistoryService {
     // Break the mutual link before deleting so neither row's self-FK points at
     // a row that is about to disappear.
     for (const leg of legs) {
-      if (leg.linkedTransactionId) {
+      if (lockedLegs.get(leg.id)!.linkedTransactionId) {
         await manager.update(InvestmentTransaction, leg.id, {
           linkedTransactionId: null,
         });
@@ -2624,6 +2747,11 @@ export class ActionHistoryService {
           // Ensure userId is set from the action
           data.userId = action.userId;
           await this.reinsertEntity(manager, tableName, data);
+          if (tableName === "budgets") {
+            await restoreBudgetChildren(manager, action, (table, row) =>
+              this.reinsertEntity(manager, table, row),
+            );
+          }
         }
         break;
       default:

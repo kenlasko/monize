@@ -272,6 +272,9 @@ export class ImportService {
     const unreadable = result.accountBlocks
       .flatMap((block) => block.unreadableAmountRows ?? [])
       .sort((a, b) => a.rowNumber - b.rowNumber);
+    const unreadableDates = result.accountBlocks
+      .flatMap((block) => block.unreadableDateRows ?? [])
+      .sort((a, b) => a.rowNumber - b.rowNumber);
 
     return {
       isMultiAccount: result.isMultiAccount,
@@ -290,13 +293,27 @@ export class ImportService {
       securities: Array.from(allSecurities).sort(),
       detectedDateFormat: result.detectedDateFormat,
       sampleDates: result.sampleDates,
+      ...(unreadableDates.length > 0
+        ? {
+            unreadableDates: {
+              count: unreadableDates.length,
+              rows: unreadableDates
+                .slice(0, SKIPPED_ROWS_LIMIT)
+                .map(({ rowNumber, rawDate }) => ({ rowNumber, rawDate })),
+            },
+          }
+        : {}),
       ...(unreadable.length > 0
         ? {
             unreadableAmounts: {
               count: unreadable.length,
               rows: unreadable
                 .slice(0, SKIPPED_ROWS_LIMIT)
-                .map(({ rowNumber, rawAmount }) => ({ rowNumber, rawAmount })),
+                .map(({ rowNumber, rawAmount, field }) => ({
+                  rowNumber,
+                  rawAmount,
+                  ...(field !== undefined ? { field } : {}),
+                })),
             },
           }
         : {}),
@@ -479,7 +496,8 @@ export class ImportService {
           // Records the parse left out count with the rest of an unresolved block.
           const blockRecords =
             block.transactions.length +
-            (block.unreadableAmountRows?.length ?? 0);
+            (block.unreadableAmountRows?.length ?? 0) +
+            (block.unreadableDateRows?.length ?? 0);
           if (!accountId) {
             importResult.errors += blockRecords;
             importResult.errorMessages.push(
@@ -554,19 +572,39 @@ export class ImportService {
           };
 
           // The parse left these records out; the result names them.
-          for (const row of block.unreadableAmountRows ?? []) {
-            recordSkippedRow(
-              importResult,
-              {
+          // In file order, as the single-account path lists them.
+          const leftOut = [
+            ...(block.unreadableDateRows ?? []).map((row) => ({
+              row: {
+                date: "",
+                amount: row.amount,
+                payee: row.payee,
+                rowNumber: row.rowNumber,
+                rawDate: row.rawDate,
+                ...(row.rawAmount !== undefined
+                  ? { rawAmount: row.rawAmount }
+                  : {}),
+              },
+              reason: row.isTransfer
+                ? ("unreadableDateTransfer" as const)
+                : ("unreadableDate" as const),
+            })),
+            ...(block.unreadableAmountRows ?? []).map((row) => ({
+              row: {
                 date: row.date,
                 amount: 0,
                 payee: row.payee,
                 rowNumber: row.rowNumber,
                 rawAmount: row.rawAmount,
+                field: row.field,
               },
-              row.isTransfer ? "unreadableAmountTransfer" : "unreadableAmount",
-              account.currencyCode,
-            );
+              reason: row.isTransfer
+                ? ("unreadableAmountTransfer" as const)
+                : ("unreadableAmount" as const),
+            })),
+          ].sort((x, y) => x.row.rowNumber - y.row.rowNumber);
+          for (const { row, reason } of leftOut) {
+            recordSkippedRow(importResult, row, reason, account.currencyCode);
           }
 
           // Apply opening balance
@@ -1387,6 +1425,9 @@ export class ImportService {
         end: endDate,
       },
       detectedDateFormat: result.detectedDateFormat,
+      ...(result.dateFormatConclusive !== undefined
+        ? { dateFormatConclusive: result.dateFormatConclusive }
+        : {}),
       sampleDates: result.sampleDates,
       openingBalance: result.openingBalance,
       openingBalanceDate: result.openingBalanceDate,
@@ -1407,7 +1448,11 @@ export class ImportService {
               count: result.unreadableAmountRows.length,
               rows: result.unreadableAmountRows
                 .slice(0, SKIPPED_ROWS_LIMIT)
-                .map(({ rowNumber, rawAmount }) => ({ rowNumber, rawAmount })),
+                .map(({ rowNumber, rawAmount, field }) => ({
+                  rowNumber,
+                  rawAmount,
+                  ...(field !== undefined ? { field } : {}),
+                })),
             },
           }
         : {}),
@@ -1532,8 +1577,11 @@ export class ImportService {
           payee: row.payee,
           rowNumber: row.rowNumber,
           rawDate: row.rawDate,
+          ...(row.rawAmount !== undefined ? { rawAmount: row.rawAmount } : {}),
         },
-        reason: "unreadableDate" as const,
+        reason: row.isTransfer
+          ? ("unreadableDateTransfer" as const)
+          : ("unreadableDate" as const),
       })),
       ...(result.unreadableAmountRows ?? []).map((row) => ({
         row: {
@@ -1542,6 +1590,7 @@ export class ImportService {
           payee: row.payee,
           rowNumber: row.rowNumber,
           rawAmount: row.rawAmount,
+          field: row.field,
         },
         reason: row.isTransfer
           ? ("unreadableAmountTransfer" as const)

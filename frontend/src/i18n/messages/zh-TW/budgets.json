@@ -134,6 +134,7 @@
       "carriedIn": "帶入：",
       "carriedOut": "帶出："
     },
+    "noPositiveFunding": "預算大於零時才能計算使用率。",
     "overallUsage": "整體預算使用狀況",
     "expenseCategories": "支出類別",
     "incomeCategories": "收入類別",
@@ -164,6 +165,10 @@
     "projectedSavings": "預計儲蓄",
     "savingsChange": "儲蓄變化",
     "original": "原始：{amount}"
+  },
+  "partialSpent": {
+    "reason": "{pairs} 沒有匯率，因此這些貨幣的支出未計入。請在「貨幣」頁面新增匯率。",
+    "known": "目前已換算的支出：{amount}。"
   },
   "summaryCards": {
     "ariaLabel": "預算合計",

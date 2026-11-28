@@ -150,11 +150,25 @@ visible:
   nullable.
 - Every such aggregation logs at warn level with the pair and the date.
 
-**Stage 2 (follow-up).** `total*` fields become `number | null`, frontend charts
-render an explicit "incomplete" state, and the copy is translated. The
-`FxAggregate.total` getter already implements the nullable semantics and is
-covered by tests, so stage 2 is a matter of changing the field each call site
-reads (`knownSubtotal` -> `total`) plus the consumer work.
+**Stage 2 (in effect for the portfolio summary).** The portfolio summary's
+`total*` fields (`totalCashValue`, `totalHoldingsValue`, `totalCostBasis`,
+`totalNetInvested`, `totalPortfolioValue`, `totalGainOverNetInvested`,
+`totalGainLoss`, `totalGainLossPercent`) are `number | null`. Each is `null`
+unless every component of that one figure is known, and the sum of what is
+known is in the `known*Subtotal` field beside it (`knownPortfolioValueSubtotal`,
+and so on). Each total reads its own aggregate: a missing dated cost rate nulls
+`totalCostBasis` and the gain, never a market value that converted. The
+allocation endpoints (`/portfolio/allocation`, `/by-tag`, `/by-tag-key`) carry
+`totalValue` (null while incomplete), `knownSubtotal`, `valuationComplete`,
+`missingRatePairs`, `unpricedSecurityIds` and `unpricedSymbols`, derived from
+the cash and holdings-value aggregates only. The shared AI/MCP shape has the
+same nulls. Each figure's own causes travel with it (`cashMissingRatePairs`,
+`holdingsValueMissingRatePairs`, `costBasisMissingRatePairs`,
+`netInvestedMissingRatePairs`, `portfolioValueMissingRatePairs`), so a surface
+names the cash gap on the cash and the unpriced holding on the value. Clients
+print the subtotal under a partial marker from whether the figure's own total is
+null, never from the summary-wide `valuationComplete`. The net-worth `assets` / `liabilities` / `netWorth`
+fields remain stage 1.
 
 Stage 1 is therefore strictly better than the previous behaviour and does not
 pretend to be stage 2. `fxComplete: false` with a numeric subtotal is a known,

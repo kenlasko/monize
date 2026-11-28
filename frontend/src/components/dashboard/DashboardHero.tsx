@@ -37,6 +37,11 @@ interface DashboardHeroProps {
   /** The dashboard's portfolio valuation; `null` until loaded or when it failed. */
   portfolioValuation: PortfolioValuation | null;
   hasInvestments: boolean;
+  /**
+   * The accounts request failed, so `hasInvestments` is unknown rather than
+   * false: the portfolio set stays in the cycle and says it could not load.
+   */
+  accountsFailed?: boolean;
   /** The dashboard's own first load, before which no figure is known. */
   isLoading: boolean;
   /**
@@ -73,6 +78,7 @@ interface DashboardHeroProps {
 export function DashboardHero({
   portfolioValuation,
   hasInvestments,
+  accountsFailed = false,
   isLoading,
   investmentSummaryLoading,
   investmentAccounts,
@@ -89,7 +95,7 @@ export function DashboardHero({
   const [headRef, head] = useElementSize<HTMLDivElement>();
   const { sets, active, mounted, animate, goTo } = useHeroCycle({
     choice: config.set,
-    hasInvestments,
+    hasInvestments: hasInvestments || accountsFailed,
     settled: !isLoading && !investmentSummaryLoading,
   });
   const nextUp = useMemo(
@@ -144,6 +150,7 @@ export function DashboardHero({
                     config={config}
                     investmentAccounts={investmentAccounts}
                     hasInvestments={hasInvestments}
+                    accountsFailed={accountsFailed}
                     isLoading={isLoading}
                     refreshKey={priceRefreshKey}
                   />

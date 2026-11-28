@@ -134,6 +134,7 @@
       "carriedIn": "आगे लाया:",
       "carriedOut": "आगे ले जाया:"
     },
+    "noPositiveFunding": "उपयोग का प्रतिशत निकालने के लिए बजट शून्य से अधिक होना चाहिए।",
     "overallUsage": "समग्र बजट उपयोग",
     "expenseCategories": "व्यय श्रेणियां",
     "incomeCategories": "आय श्रेणियां",
@@ -164,6 +165,10 @@
     "projectedSavings": "अनुमानित बचत",
     "savingsChange": "बचत परिवर्तन",
     "original": "मूल: {amount}"
+  },
+  "partialSpent": {
+    "reason": "{pairs} के लिए कोई विनिमय दर उपलब्ध नहीं है, इसलिए उन मुद्राओं में खर्च नहीं गिना गया है। मुद्राएँ पृष्ठ पर दर जोड़ें।",
+    "known": "अब तक परिवर्तित खर्च: {amount}।"
   },
   "summaryCards": {
     "ariaLabel": "बजट का कुल योग",

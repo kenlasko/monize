@@ -590,6 +590,7 @@ export function useImportWizard() {
         const allTransferAccounts: Set<string> = new Set();
         const allSecs: Set<string> = new Set();
         let detectedFormat: DateFormat | null = null;
+        let detectedConclusive = false;
 
         for (const file of fileArray) {
           const content = await file.text();
@@ -597,8 +598,11 @@ export function useImportWizard() {
             ? await importApi.parseOfx(content)
             : await importApi.parseQif(content);
 
-          if (!detectedFormat && parsed.detectedDateFormat) {
+          // The batch's order is the first file's, unless a later file's dates prove one
+          // (a file of only ambiguous dates says nothing).
+          if (parsed.detectedDateFormat && (!detectedFormat || (!detectedConclusive && parsed.dateFormatConclusive))) {
             detectedFormat = parsed.detectedDateFormat;
+            detectedConclusive = parsed.dateFormatConclusive === true;
           }
 
           parsed.categories.forEach((cat) => allCats.add(cat));
@@ -1073,7 +1077,9 @@ export function useImportWizard() {
       categoryMappings: catMappings,
       accountMappings: accMappings,
       securityMappings: secMappings,
-      dateFormat,
+      // A QIF file is read under its own order when its dates prove one, else under the batch's.
+      dateFormat:
+        fileData.parsedData?.dateFormatConclusive === true ? fileData.parsedData.detectedDateFormat : dateFormat,
       ...decisions,
     };
   };

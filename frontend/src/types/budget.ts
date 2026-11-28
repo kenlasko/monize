@@ -369,15 +369,50 @@ export interface CategoryBreakdown {
    * category line. Absent is no information.
    */
   provisionalCount?: number;
+  /**
+   * `false`: a row had no exchange rate to the budget currency, so `spent` is
+   * the converted part only. Read as `=== false`; absent is no information.
+   */
+  valuationComplete?: boolean;
+  /**
+   * `false` on a percentage line of an income-linked budget whose income had a
+   * row with no rate: `budgeted` derives from the converted part of that income.
+   */
+  budgetedComplete?: boolean;
+  /** `"JPY->CAD"` for each pair with no rate behind this line's own `spent`. */
+  missingRatePairs?: string[];
+  /** The income's pairs behind an unknown `budgeted` (`budgetedComplete === false`). */
+  budgetedMissingRatePairs?: string[];
 }
 
 export interface BudgetSummary {
   budget: Budget;
   totalBudgeted: number;
-  totalSpent: number;
-  totalIncome: number;
-  remaining: number;
-  percentUsed: number;
+  /** `null` while `valuationComplete` is `false`: the figure is unknown, not small. */
+  totalSpent: number | null;
+  /** The converted part of the spending; the total only when `valuationComplete`. */
+  knownTotalSpent?: number;
+  /** Read as `=== false`; absent is no information. */
+  valuationComplete?: boolean;
+  /** `"JPY->CAD"` for each pair with no rate behind the withheld totals. */
+  missingRatePairs?: string[];
+  /**
+   * `false` when an income-linked budget's income had a row with no rate:
+   * `totalBudgeted` derives from its converted part. Read as `=== false`.
+   */
+  budgetedComplete?: boolean;
+  budgetedMissingRatePairs?: string[];
+  /** The pairs behind an unknown income total or an unknown budget. */
+  incomeMissingRatePairs?: string[];
+  /**
+   * Total Budget Funding; `null` while an income row had no exchange rate
+   * (`knownTotalIncome` is the converted part). `categoryIncome` and
+   * `transferFunding` are `null` on the same ground.
+   */
+  totalIncome: number | null;
+  knownTotalIncome?: number;
+  remaining: number | null;
+  percentUsed: number | null;
   incomeLinked: boolean;
   actualIncome: number | null;
   /**
@@ -385,12 +420,14 @@ export interface BudgetSummary {
    * `transferFunding` it makes `totalIncome`, Total Budget Funding
    * (docs/specs/transfer-categories.md section 6.2).
    */
-  categoryIncome: number;
+  categoryIncome: number | null;
+  knownCategoryIncome?: number;
   /**
    * Transfer Funding: transfer income lines, income lines on a Transfer
    * category and `outsideTransferIncome`. Never income.
    */
-  transferFunding: number;
+  transferFunding: number | null;
+  knownTransferFunding?: number;
   /**
    * Income from transfers in from the excluded accounts (`transfersInAsIncome`),
    * included in `totalIncome`; `0` with the option off.
@@ -414,9 +451,18 @@ export interface UpcomingBill {
   /**
    * What this occurrence would cost today, as a positive magnitude, from the
    * server's effective-amount contract. `null` when it cannot be determined --
-   * never the persisted snapshot (issue #1247).
+   * never the persisted snapshot (issue #1247). This is the part that counts
+   * toward the budget; a row prints `amountDue`.
    */
   amount: number | null;
+  /**
+   * The whole occurrence, as a positive magnitude: what is DUE, as the bills
+   * page prints it. `null` when unknown. A split's untracked transfer lines are
+   * in it and not in `amount`.
+   */
+  amountDue: number | null;
+  /** A schedule left at 0 because the amount is not known until it arrives (issue #1124). */
+  isReminder: boolean;
   /**
    * The currency `amount` is in -- the occurrence's own settlement currency,
    * which need not be the budget's. Half of what the amount means: formatting a
@@ -457,8 +503,24 @@ export interface BudgetVelocity {
    * resolvable amount at all -- that one has no pair to name.
    */
   upcomingBillsMissingRates: string[];
-  /** `null` when the upcoming-bills total is unknown. */
+  /** `null` when the upcoming-bills total or the period's spending is unknown. */
   trulyAvailable: number | null;
+  /**
+   * `false` when a row had no exchange rate to the budget currency, so the
+   * spending is unknown and `trulyAvailable` / `safeDailySpend` are `null`.
+   * Read as `=== false`; absent is no information.
+   */
+  spendingComplete?: boolean;
+  /** The pairs with no rate behind unknown spending. */
+  spendingMissingRatePairs?: string[];
+  /**
+   * `false` when the budget derives from income with no exchange rate:
+   * `budgetTotal` is unknown, so `trulyAvailable`, `safeDailySpend`,
+   * `projectedVariance` and `paceStatus` are `null`. Read as `=== false`.
+   */
+  budgetedComplete?: boolean;
+  /** The income's pairs behind an unknown budget. */
+  budgetedMissingRatePairs?: string[];
 }
 
 // --- Report Types ---
@@ -521,8 +583,11 @@ export interface HealthScoreCategoryDetail {
 }
 
 export interface HealthScoreResult {
-  score: number;
-  label: string;
+  /** `null` while spending is partial (a row had no exchange rate). */
+  score: number | null;
+  label: string | null;
+  valuationComplete?: boolean;
+  missingRatePairs?: string[];
   breakdown: HealthScoreBreakdown;
   categoryScores: HealthScoreCategoryDetail[];
 }
@@ -547,14 +612,24 @@ export interface FlexGroupCategory {
   budgeted: number;
   spent: number;
   percentUsed: number;
+  valuationComplete?: boolean;
+  budgetedComplete?: boolean;
+  missingRatePairs?: string[];
 }
 
 export interface FlexGroupStatus {
   groupName: string;
   totalBudgeted: number;
-  totalSpent: number;
-  remaining: number;
-  percentUsed: number;
+  /** `null` when a member line had a row with no exchange rate. */
+  totalSpent: number | null;
+  knownTotalSpent?: number;
+  /** `null` while `totalSpent` is unknown or the budget derives from income with no rate. */
+  remaining: number | null;
+  percentUsed: number | null;
+  valuationComplete?: boolean;
+  budgetedComplete?: boolean;
+  /** `"JPY->CAD"` for each pair behind the withheld figures. */
+  missingRatePairs?: string[];
   categories: FlexGroupCategory[];
 }
 
@@ -563,17 +638,34 @@ export interface DashboardBudgetSummary {
   budgetId: string;
   budgetName: string;
   totalBudgeted: number;
-  totalSpent: number;
-  remaining: number;
-  percentUsed: number;
-  safeDailySpend: number;
+  /** `null` while `valuationComplete` is `false`: the figure is unknown, not small. */
+  totalSpent: number | null;
+  knownTotalSpent?: number;
+  remaining: number | null;
+  percentUsed: number | null;
+  valuationComplete?: boolean;
+  missingRatePairs?: string[];
+  /** `false`: `totalBudgeted` derives from income with no rate. Read as `=== false`. */
+  budgetedComplete?: boolean;
+  budgetedMissingRatePairs?: string[];
+  /** `null` when `remaining` is unknown. */
+  safeDailySpend: number | null;
   daysRemaining: number;
+  /** Complete lines only; an incomplete line cannot be ranked. */
   topCategories: Array<{
     categoryName: string;
     budgeted: number;
     spent: number;
     remaining: number;
     percentUsed: number;
+  }>;
+  /** Lines with a row that had no rate; `knownSpent` is their converted part. */
+  incompleteCategories?: Array<{
+    budgetCategoryId: string;
+    categoryName: string;
+    budgeted: number;
+    knownSpent: number;
+    missingRatePairs: string[];
   }>;
 }
 
@@ -583,6 +675,10 @@ export interface CategoryBudgetStatus {
   spent: number;
   remaining: number;
   percentUsed: number;
+  valuationComplete?: boolean;
+  budgetedComplete?: boolean;
+  missingRatePairs?: string[];
+  budgetedMissingRatePairs?: string[];
 }
 
 // Savings Rate report types

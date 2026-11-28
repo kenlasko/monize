@@ -134,6 +134,7 @@
       "carriedIn": "繰越入：",
       "carriedOut": "繰越出："
     },
+    "noPositiveFunding": "利用率は予算額が正の場合のみ計算できます。",
     "overallUsage": "予算全体の使用状況",
     "expenseCategories": "支出カテゴリ",
     "incomeCategories": "収入カテゴリ",
@@ -164,6 +165,10 @@
     "projectedSavings": "予測貯蓄",
     "savingsChange": "貯蓄変化",
     "original": "元の値：{amount}"
+  },
+  "partialSpent": {
+    "reason": "{pairs} の為替レートがないため、これらの通貨での支出は集計されていません。通貨ページでレートを追加してください。",
+    "known": "これまでに換算できた支出: {amount}。"
   },
   "summaryCards": {
     "ariaLabel": "予算合計",

@@ -1123,6 +1123,8 @@ export interface AiActionPreview extends ForeignEntryFields {
   isReconciled?: boolean;
   /** A delete of a split-transfer leg removes only that line from this split. */
   splitLine?: { payeeName: string | null; transactionDate: string };
+  /** A delete of one leg of a plain transfer removes the other leg too. */
+  transferPair?: true;
   /**
    * Resolved category-split lines for a split create/update. Display-only --
    * shown on the confirmation card in place of the single category row.
@@ -1248,6 +1250,8 @@ export interface AiActionPreviewRow extends ForeignEntryFields {
    * from the split on this payee and date, so the card says so.
    */
   splitLine?: { payeeName: string | null; transactionDate: string };
+  /** A delete of one leg of a plain transfer removes the other leg too. */
+  transferPair?: true;
   // Investment-transaction display fields.
   investmentAction?: InvestmentAction;
   symbol?: string | null;

@@ -153,8 +153,18 @@ export function toolError(message: string) {
  * all other errors return a generic message to avoid leaking internals.
  */
 export function safeToolError(err: unknown) {
+  return toolError(safeErrorMessage(err));
+}
+
+/**
+ * The message of an error that is safe to hand to the model: a shared-ledger
+ * refusal, a confirmation refusal or a 4xx keeps its own message, anything else
+ * becomes a generic one so an internal error never leaks. `safeToolError` and a
+ * per-row `skipped` reason share it.
+ */
+export function safeErrorMessage(err: unknown): string {
   const sharedRefusal = sharedLedgerRefusal(err);
-  if (sharedRefusal) return toolError(sharedRefusal);
+  if (sharedRefusal) return sharedRefusal;
   // A confirmation that no longer matches the change, or a deletion nobody
   // confirmed, is not an internal failure: it is a refusal the caller can act
   // on, and the model needs to be told what to do rather than to retry.
@@ -163,7 +173,7 @@ export function safeToolError(err: unknown) {
     err instanceof ConfirmNotAnsweredError ||
     err instanceof ConfirmRequiredError
   ) {
-    return toolError(err.message);
+    return err.message;
   }
   if (
     err &&
@@ -178,12 +188,10 @@ export function safeToolError(err: unknown) {
         typeof response === "string"
           ? response
           : (response?.message ?? "Request failed");
-      return toolError(
-        typeof message === "string" ? message : "Request failed",
-      );
+      return typeof message === "string" ? message : "Request failed";
     }
   }
-  return toolError("An error occurred while processing your request");
+  return "An error occurred while processing your request";
 }
 
 /**

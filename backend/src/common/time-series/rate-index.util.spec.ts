@@ -1,3 +1,4 @@
+import { requestContextStorage } from "../request-context";
 import { FX_MAX_RATE_AGE_DAYS } from "./fx-rate-resolver";
 import {
   RateIndexRow,
@@ -60,7 +61,63 @@ describe("rate-index.util", () => {
         "CAD",
         "2026-06-01",
         "2026-06-30",
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       ]);
+    });
+
+    it("anchors the window on the user's day, not the database server's CURRENT_DATE", async () => {
+      jest.useFakeTimers().setSystemTime(new Date("2026-06-10T11:00:00Z"));
+      try {
+        const query = jest.fn().mockResolvedValue([]);
+        // 11:00Z is already 06-11 in Kiritimati (UTC+14).
+        await requestContextStorage.run(
+          { timezone: "Pacific/Kiritimati" },
+          () =>
+            buildRateIndex(
+              query,
+              new Set(["USD"]),
+              "CAD",
+              "2026-06-20",
+              "2026-06-30",
+            ),
+        );
+        const [sql, params] = query.mock.calls[0];
+        expect(sql).not.toContain("CURRENT_DATE");
+        expect(params).toContain("2026-06-11");
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("uses the day the caller gives, not the request's zone", async () => {
+      jest.useFakeTimers().setSystemTime(new Date("2026-06-10T11:00:00Z"));
+      try {
+        const query = jest
+          .fn()
+          .mockResolvedValue([row("USD", "CAD", 1.3, "2026-04-26")]);
+        // Request zone says 06-10 (Los Angeles); the owner's day is 06-11.
+        const index = await requestContextStorage.run(
+          { timezone: "America/Los_Angeles" },
+          () =>
+            buildRateIndex(
+              query,
+              new Set(["USD"]),
+              "CAD",
+              "2026-06-20",
+              "2026-06-30",
+              undefined,
+              "2026-06-11",
+            ),
+        );
+        expect(query.mock.calls[0][1]).toContain("2026-06-11");
+        expect(query.mock.calls[0][1]).not.toContain("2026-06-10");
+        // 46 days old on the owner's 06-11 (45 on the request's 06-10).
+        expect(
+          resolveIndexedRate(index, "USD", "CAD", "2026-07-01").rate,
+        ).toBeNull();
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("loads the window plus the one preceding observation per pair, and nothing ahead of it", async () => {
@@ -153,6 +210,7 @@ describe("rate-index.util", () => {
         "USD",
         "2024-06-01",
         "2024-06-30",
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       ]);
     });
 
@@ -316,6 +374,34 @@ describe("rate-index.util", () => {
       expect(
         resolveIndexedRate(after, "USD", "CAD", "2026-06-17"),
       ).toMatchObject({ rate: 1.5 });
+    });
+
+    describe("the user's day caps a future date and bounds the age", () => {
+      // 11:00Z is 2026-06-11 in Kiritimati and 2026-06-10 in Los Angeles. The
+      // row dated 2026-04-26 is 46 days old on the 11th and 45 on the 10th.
+      const at = (timezone: string) => {
+        jest.useFakeTimers().setSystemTime(new Date("2026-06-10T11:00:00Z"));
+        return requestContextStorage.run({ timezone }, () =>
+          indexRateRows([row("USD", "CAD", 1.3, "2026-04-26")]),
+        );
+      };
+      afterEach(() => jest.useRealTimers());
+
+      it("refuses the 46-day-old row on the user's day (Kiritimati)", () => {
+        const index = at("Pacific/Kiritimati");
+        expect(
+          resolveIndexedRate(index, "USD", "CAD", "2026-07-01").rate,
+        ).toBeNull();
+        expect(convertAtDate(10, "USD", "CAD", "2026-07-01", index)).toBeNull();
+      });
+
+      it("accepts the 45-day-old row on the user's day (Los Angeles)", () => {
+        const index = at("America/Los_Angeles");
+        expect(resolveIndexedRate(index, "USD", "CAD", "2026-07-01").rate).toBe(
+          1.3,
+        );
+        expect(convertAtDate(10, "USD", "CAD", "2026-07-01", index)).toBe(13);
+      });
     });
   });
 

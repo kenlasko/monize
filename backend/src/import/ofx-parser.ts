@@ -18,9 +18,13 @@
  * - TRNTYPE = transaction type (DEBIT, CREDIT, CHECK, DEP, ATM, POS, XFER, etc.)
  */
 
+import { isCalendarDate } from "../common/validators/is-calendar-date.validator";
 import type { QifTransaction, QifParseResult } from "./qif-parser";
 import { isPlainAmount } from "./amount-separators.util";
-import type { CsvUnreadableAmountRow } from "./csv-parser";
+import type {
+  CsvUnreadableAmountRow,
+  CsvUnreadableDateRow,
+} from "./csv-parser";
 import { MONEY_SCALE, roundMoney } from "../common/round.util";
 
 // Strip HTML angle brackets to prevent stored XSS.
@@ -62,14 +66,8 @@ function parseOfxDate(dateStr: string): string {
   const month = cleaned.substring(4, 6);
   const day = cleaned.substring(6, 8);
 
-  const y = parseInt(year, 10);
-  const m = parseInt(month, 10);
-  const d = parseInt(day, 10);
-
-  if (isNaN(y) || isNaN(m) || isNaN(d)) return "";
-  if (m < 1 || m > 12 || d < 1 || d > 31) return "";
-
-  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  const date = `${year}-${month}-${day}`;
+  return Number(year) >= 1 && isCalendarDate(date) ? date : "";
 }
 
 /**
@@ -200,6 +198,7 @@ export function parseOfx(content: string): QifParseResult {
   const transferAccountNames = new Set<string>();
   const sampleDates: string[] = [];
   const unreadableAmountRows: CsvUnreadableAmountRow[] = [];
+  const unreadableDateRows: CsvUnreadableDateRow[] = [];
 
   // Determine if this is a credit card statement
   const upper = content.toUpperCase();
@@ -218,11 +217,6 @@ export function parseOfx(content: string): QifParseResult {
   for (const [blockIndex, block] of txBlocks.entries()) {
     const dateStr = getTagValue(block, "DTPOSTED");
     const date = parseOfxDate(dateStr);
-    if (!date) continue;
-
-    if (sampleDates.length < 3) {
-      sampleDates.push(dateStr.substring(0, 8));
-    }
 
     // The OFX specification lets an amount use a comma as its decimal
     // separator and allows no digit grouping, so "-18,36" is -18.36; a bare
@@ -230,6 +224,26 @@ export function parseOfx(content: string): QifParseResult {
     const amountStr = getTagValue(block, "TRNAMT");
     const amountText = amountStr.replace(",", ".");
     const amount = isPlainAmount(amountText) ? parseFloat(amountText) : NaN;
+    if (!date) {
+      // Never dropped silently, never given a date the file does not hold.
+      unreadableDateRows.push({
+        rowNumber: blockIndex + 1,
+        rawDate: truncate(dateStr, 50),
+        amount: isNaN(amount) ? 0 : roundMoney(amount, MONEY_SCALE),
+        ...(isNaN(amount) ? { rawAmount: truncate(amountStr, 50) } : {}),
+        payee: truncate(
+          getTagValue(block, "NAME") || getTagValue(block, "MEMO"),
+          255,
+        ),
+        ...(getTagValue(block, "TRNTYPE").toUpperCase() === "XFER"
+          ? { isTransfer: true }
+          : {}),
+      });
+      continue;
+    }
+    if (sampleDates.length < 3) {
+      sampleDates.push(dateStr.substring(0, 8));
+    }
     if (isNaN(amount)) {
       // Never dropped silently: the preview counts it and the import lists it.
       unreadableAmountRows.push({
@@ -303,6 +317,7 @@ export function parseOfx(content: string): QifParseResult {
     sampleDates,
     openingBalance: null,
     openingBalanceDate: null,
+    ...(unreadableDateRows.length > 0 ? { unreadableDateRows } : {}),
     ...(unreadableAmountRows.length > 0 ? { unreadableAmountRows } : {}),
   };
 }

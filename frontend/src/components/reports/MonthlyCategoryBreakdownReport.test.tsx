@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@/test/render';
+import { render, screen, waitFor, fireEvent, act, within } from '@/test/render';
 import { MonthlyCategoryBreakdownReport } from './MonthlyCategoryBreakdownReport';
 
 const mockPush = vi.fn();
@@ -385,6 +385,47 @@ describe('MonthlyCategoryBreakdownReport', () => {
     await waitFor(() => {
       expect(screen.getAllByText('-100.0%').length).toBeGreaterThan(0);
     });
+  });
+
+  it('opens the register for an active zero month and leaves an empty month without a link', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue({
+      ...sampleResponse,
+      data: [{ ...sampleResponse.data[0], valuesByMonth: { '2025-01': 10, '2025-02': 0 },
+        depositTotal: 11.25, withdrawalTotal: 21.25 }],
+    });
+    await act(async () => { render(<MonthlyCategoryBreakdownReport />); });
+    const row = screen.getByText('Groceries').closest('tr')!;
+    const zero = within(row).getByRole('button', { name: '$0.00' });
+    expect(row.cells[3].textContent).toBe('—');
+    expect(row.cells[3].querySelector('button')).toBeNull();
+    fireEvent.click(zero);
+    const query = new URL(mockPush.mock.lastCall![0], 'https://example.test').searchParams;
+    expect(query.get('categoryIds')).toBe('cat-groceries');
+    expect(query.get('startDate')).toBe('2025-02-01');
+    expect(query.get('endDate')).toBe('2025-02-28');
+  });
+
+  it.each([
+    { missingCurrencies: ['JPY'], excludedCount: 1, total: 0.01 },
+    { missingCurrencies: [], excludedCount: 0, total: 0.03 },
+  ])('preserves FX completeness beside the CSV figures for $total', async ({ missingCurrencies, excludedCount, total }) => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue({
+      ...sampleResponse, missingCurrencies, excludedCount,
+      data: [{ ...sampleResponse.data[0], valuesByMonth: { '2025-01': total },
+        depositTotal: 0, withdrawalTotal: total }],
+    });
+    await act(async () => { render(<MonthlyCategoryBreakdownReport />); });
+    fireEvent.click(screen.getByText('Export CSV'));
+    const rows = mockExportToCsv.mock.calls[0][2] as (string | number)[][];
+    expect(rows.find(row => row[1] === 'Total expenses')?.at(-2)).toBe(-total);
+    const note = screen.queryByTestId('partial-data-notice');
+    if (excludedCount) {
+      expect(note).toHaveTextContent('JPY');
+      expect(rows.at(-1)).toEqual([note!.textContent]);
+    } else {
+      expect(note).toBeNull();
+      expect(rows.at(-1)?.[1]).toBe('Balance');
+    }
   });
 
   it('exports the breakdown as a CSV when the export button is clicked', async () => {

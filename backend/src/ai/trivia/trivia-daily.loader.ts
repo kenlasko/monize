@@ -1,6 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
+import {
+  loadCurrencyPlacesForRead,
+  moneyDecimalsForCode,
+} from "../../common/currency-places.util";
 import { addDaysYMD, getMonthEndYMD } from "../../common/date-utils";
 import {
   convertingTotal,
@@ -300,6 +304,13 @@ export class TriviaDailyLoader {
       { from: today, through: addDaysYMD(today, BILL_DAYS_AHEAD) },
       { outflowsOnly: true },
     );
+    // No occurrence, nothing to total: skip the places read.
+    const places =
+      occurrences.length === 0
+        ? new Map<string, number>()
+        : await withScopedDb(this.dataSource, (m) =>
+            loadCurrencyPlacesForRead(m, [currency]),
+          );
     const { total } = await convertingTotal(
       occurrences.map((o) => ({
         amount: o.amount === null ? null : Math.abs(o.amount),
@@ -307,6 +318,8 @@ export class TriviaDailyLoader {
       })),
       currency,
       memoizedRateResolver(this.exchangeRates, currency, today),
+      undefined,
+      moneyDecimalsForCode(places, currency),
     );
     return { occurrences, total };
   }

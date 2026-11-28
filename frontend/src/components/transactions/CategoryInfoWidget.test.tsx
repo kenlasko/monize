@@ -231,6 +231,25 @@ describe('CategoryInfoWidget', () => {
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '80');
   });
 
+  it('draws a partial budget as unknown, with no progress bar (audit #2365 p)', async () => {
+    mockedBudgets.getCategoryBudgetStatus.mockResolvedValue({
+      'c-1': {
+        budgeted: 1000,
+        spent: 20,
+        remaining: 980,
+        percentUsed: 2,
+        valuationComplete: false,
+        missingRatePairs: ['QQQ->USD'],
+      },
+    });
+    await renderWidget();
+
+    expect(screen.getByText("This Month's Budget")).toBeInTheDocument();
+    expect(screen.queryByText('CAD 20.00 of CAD 1000.00')).not.toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('unknown-amount').length).toBeGreaterThanOrEqual(1);
+  });
+
   it('hides the budget section when the category has no active budget', async () => {
     mockedBudgets.getCategoryBudgetStatus.mockResolvedValue({});
     await renderWidget();

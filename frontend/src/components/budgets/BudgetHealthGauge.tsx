@@ -2,9 +2,13 @@
 
 import { useTranslations } from 'next-intl';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
 
 interface BudgetHealthGaugeProps {
-  score: number;
+  /** `null` while spending is partial (a row had no exchange rate): the score is unknown. */
+  score: number | null;
+  /** The translated cause shown when the score is unknown. */
+  partialReason?: string;
 }
 
 function getScoreStatus(score: number): 'excellent' | 'good' | 'needsAttention' | 'offTrack' {
@@ -41,8 +45,23 @@ function getScoreColor(score: number): {
   };
 }
 
-export function BudgetHealthGauge({ score }: BudgetHealthGaugeProps) {
+export function BudgetHealthGauge({ score, partialReason }: BudgetHealthGaugeProps) {
   const t = useTranslations('budgets');
+  if (score === null) {
+    return (
+      <div className={`${CARD_CLASS} p-4 sm:p-6`}>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          {t('healthGauge.title')}
+        </h2>
+        <div className="flex flex-col items-center gap-2 text-3xl" data-testid="score-unknown">
+          <UnknownAmount reasonText={partialReason} />
+          {partialReason && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">{partialReason}</p>
+          )}
+        </div>
+      </div>
+    );
+  }
   const clampedScore = Math.min(Math.max(Math.round(score), 0), 100);
   const status = getScoreStatus(clampedScore);
   const label = t(`healthGauge.labels.${status}`);

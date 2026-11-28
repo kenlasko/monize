@@ -1614,6 +1614,34 @@ describe('useImportWizard - import handlers', () => {
     ]);
   });
 
+  it("imports a bulk QIF file under its own format only when its dates prove it", async () => {
+    mockGetAllAccounts.mockResolvedValue([baseAccount()]);
+    mockParseQif
+      .mockResolvedValueOnce(baseParsedQif({ categories: [], detectedDateFormat: 'DD/MM/YYYY', dateFormatConclusive: true }))
+      .mockResolvedValueOnce(baseParsedQif({ categories: [], detectedDateFormat: 'MM/DD/YYYY', dateFormatConclusive: false }))
+      .mockResolvedValueOnce(baseParsedQif({ categories: [], detectedDateFormat: 'MM/DD/YYYY', dateFormatConclusive: true }));
+    mockImportQif.mockResolvedValue(importResult({ imported: 1 }));
+
+    const { result } = renderHook(() => useImportWizard());
+    await waitFor(() => expect(result.current.accounts).toHaveLength(1));
+    await act(async () => {
+      await result.current.handleFileSelect(
+        fileEvent([makeFile('a.qif', '1'), makeFile('b.qif', '2'), makeFile('c.qif', '3')]),
+      );
+    });
+    act(() => {
+      [0, 1, 2].forEach((i) => result.current.setFileAccountId(i, 'acc-1'));
+    });
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    expect(mockImportQif.mock.calls.map((c) => c[0].dateFormat)).toEqual([
+      'DD/MM/YYYY',
+      'DD/MM/YYYY',
+      'MM/DD/YYYY',
+    ]);
+  });
+
   it("sums each file's rows left without a Transfer category in a bulk import", async () => {
     mockGetAllAccounts.mockResolvedValue([baseAccount()]);
     mockParseQif.mockResolvedValue(baseParsedQif({ categories: [] }));

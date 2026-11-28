@@ -134,6 +134,7 @@
       "carriedIn": "Przeniesione z poprzedniego okresu:",
       "carriedOut": "Przeniesione na następny okres:"
     },
+    "noPositiveFunding": "Procent wykorzystania można obliczyć tylko przy dodatnim budżecie.",
     "overallUsage": "Całkowite wykorzystanie budżetu",
     "expenseCategories": "Kategorie wydatków",
     "incomeCategories": "Kategorie przychodów",
@@ -164,6 +165,10 @@
     "projectedSavings": "Prognozowane oszczędności",
     "savingsChange": "Zmiana oszczędności",
     "original": "Oryginalnie: {amount}"
+  },
+  "partialSpent": {
+    "reason": "Brak kursu wymiany dla {pairs}. Wydatki w tych walutach nie są liczone. Dodaj kurs na stronie Waluty.",
+    "known": "Wydatki przeliczone do tej pory: {amount}."
   },
   "summaryCards": {
     "ariaLabel": "Sumy budżetu",
