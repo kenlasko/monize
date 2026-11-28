@@ -111,6 +111,8 @@
     "undoSplitLineGone": "元に戻せません：この変更でタグを変えた分割行がすでに取引にありません",
     "undoTagGone": "元に戻せません：この変更に関わるタグがその後削除されました",
     "redoCreateWithLegs": "この取引は他の口座に明細を作成したため、やり直しはできません。代わりに取引をもう一度作成してください",
+    "undoCrossOwnerTransferNotSupported": "この振替は別の所有者の口座に片側があるため、元に戻せません。代わりに振替を削除してください。",
+    "redoTransferCreateNotSupported": "この振替は2つの口座に明細を作成したため、やり直しはできません。代わりに振替をもう一度作成してください",
     "undoAccountGone": "元に戻せません：口座がすでに存在しません",
     "unsupportedTransferAction": "サポートされていない振替アクション：{{ action }}",
     "unsupportedInvestmentAction": "サポートされていない投資アクション：{{ action }}",

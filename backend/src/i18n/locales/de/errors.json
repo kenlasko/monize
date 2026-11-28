@@ -111,6 +111,8 @@
     "undoSplitLineGone": "Rückgängig machen nicht möglich: Eine Aufteilungszeile, deren Etiketten diese Änderung geändert hat, gehört nicht mehr zur Buchung",
     "undoTagGone": "Rückgängig machen nicht möglich: Ein Etikett dieser Änderung wurde inzwischen gelöscht",
     "redoCreateWithLegs": "Diese Transaktion hat Einträge in anderen Konten angelegt und kann daher nicht wiederholt werden. Legen Sie sie stattdessen neu an",
+    "undoCrossOwnerTransferNotSupported": "Diese Überweisung hat eine Seite in einem Konto eines anderen Eigentümers und kann daher nicht rückgängig gemacht werden. Löschen Sie die Überweisung stattdessen.",
+    "redoTransferCreateNotSupported": "Diese Überweisung hat Einträge in zwei Konten angelegt und kann daher nicht wiederholt werden. Legen Sie sie stattdessen neu an",
     "undoAccountGone": "Rückgängig machen nicht möglich: Das Konto existiert nicht mehr",
     "unsupportedTransferAction": "Nicht unterstützte Überweisungsaktion: {{ action }}",
     "unsupportedInvestmentAction": "Nicht unterstützte Investmentaktion: {{ action }}",

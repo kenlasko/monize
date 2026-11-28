@@ -111,6 +111,8 @@
     "undoSplitLineGone": "無法復原：此變更修改過標籤的拆分行已不在該交易上",
     "undoTagGone": "無法復原：此變更涉及的標籤之後已被刪除",
     "redoCreateWithLegs": "此交易在其他帳戶中建立了項目,因此無法重做。請改為重新建立該交易",
+    "undoCrossOwnerTransferNotSupported": "這筆轉帳的一方在其他擁有者的帳戶中，因此無法復原。請改為刪除這筆轉帳。",
+    "redoTransferCreateNotSupported": "這筆轉帳在兩個帳戶中建立了項目，因此無法重做。請改為重新建立",
     "undoAccountGone": "無法復原：科目已不存在",
     "unsupportedTransferAction": "不支援的轉帳操作：{{ action }}",
     "unsupportedInvestmentAction": "不支援的投資操作：{{ action }}",

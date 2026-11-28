@@ -111,6 +111,8 @@
     "undoSplitLineGone": "Nie można cofnąć: linii podziału, której tagi zmieniła ta zmiana, nie ma już w transakcji",
     "undoTagGone": "Nie można cofnąć: tag z tej zmiany został od tego czasu usunięty",
     "redoCreateWithLegs": "Ta transakcja utworzyła wpisy na innych kontach, więc nie można jej ponowić. Utwórz ją ponownie",
+    "undoCrossOwnerTransferNotSupported": "Ten przelew ma stronę na koncie innego właściciela, więc nie można go cofnąć. Usuń przelew.",
+    "redoTransferCreateNotSupported": "Ten przelew utworzył wpisy na dwóch kontach, więc nie można go ponowić. Utwórz go ponownie",
     "undoAccountGone": "Nie można cofnąć: konto już nie istnieje",
     "unsupportedTransferAction": "Nieobsługiwana operacja przelewu: {{ action }}",
     "unsupportedInvestmentAction": "Nieobsługiwana operacja inwestycyjna: {{ action }}",

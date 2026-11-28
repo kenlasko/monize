@@ -111,6 +111,8 @@
     "undoSplitLineGone": "Não é possível desfazer: uma linha de divisão cujas etiquetas esta alteração mudou já não está na transação",
     "undoTagGone": "Não é possível desfazer: uma etiqueta desta alteração foi eliminada entretanto",
     "redoCreateWithLegs": "Esta transação criou lançamentos noutras contas, pelo que não pode ser refeita. Crie-a novamente",
+    "undoCrossOwnerTransferNotSupported": "Esta transferência tem um lado numa conta de outro titular, pelo que não pode ser anulada. Elimine antes a transferência.",
+    "redoTransferCreateNotSupported": "Esta transferência criou lançamentos em duas contas, pelo que não pode ser refeita. Crie-a novamente",
     "undoAccountGone": "Não é possível desfazer: a conta já não existe",
     "unsupportedTransferAction": "Ação de transferência não suportada: {{ action }}",
     "unsupportedInvestmentAction": "Ação de investimento não suportada: {{ action }}",

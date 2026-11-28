@@ -111,6 +111,8 @@
     "undoSplitLineGone": "Tidak dapat membatalkan: baris pemisahan yang tagnya diubah oleh perubahan ini tidak lagi ada di transaksi",
     "undoTagGone": "Tidak dapat membatalkan: tag dari perubahan ini telah dihapus sejak saat itu",
     "redoCreateWithLegs": "Transaksi ini membuat entri di akun lain, sehingga tidak dapat diulang. Buat ulang transaksi ini",
+    "undoCrossOwnerTransferNotSupported": "Transfer ini memiliki satu sisi di akun milik pemilik lain, sehingga tidak dapat dibatalkan. Hapus transfer ini sebagai gantinya.",
+    "redoTransferCreateNotSupported": "Transfer ini membuat entri di dua akun, sehingga tidak dapat diulang. Buat ulang transfer ini",
     "undoAccountGone": "Tidak dapat membatalkan: akun tidak ada lagi",
     "unsupportedTransferAction": "Tindakan transfer tidak didukung: {{ action }}",
     "unsupportedInvestmentAction": "Tindakan investasi tidak didukung: {{ action }}",

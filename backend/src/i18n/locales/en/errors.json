@@ -111,6 +111,8 @@
     "undoSplitLineGone": "Cannot undo: a split line this change tagged is no longer on the transaction",
     "undoTagGone": "Cannot undo: a tag this change involved has been deleted since",
     "redoCreateWithLegs": "This transaction created entries in other accounts, so it cannot be redone. Create it again instead",
+    "undoCrossOwnerTransferNotSupported": "This transfer has a side in an account of another owner, so it cannot be undone. Delete the transfer instead.",
+    "redoTransferCreateNotSupported": "This transfer created entries in two accounts, so it cannot be redone. Create it again instead",
     "undoAccountGone": "Cannot undo: the account no longer exists",
     "unsupportedTransferAction": "Unsupported transfer action: {{ action }}",
     "unsupportedInvestmentAction": "Unsupported investment action: {{ action }}",

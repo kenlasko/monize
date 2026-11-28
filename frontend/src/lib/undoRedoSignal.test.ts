@@ -58,6 +58,7 @@ describe('undoRedoSignal', () => {
     for (const code of [
       'UNDO_DELETED_SPLIT_HAS_TRANSFER_LINE',
       'UNDO_TRANSFER_LEG_DELETED',
+      'UNDO_CROSS_OWNER_TRANSFER_NOT_SUPPORTED',
       'UNDO_TRANSFER_CHANGE_NOT_SUPPORTED',
       'UNDO_BULK_DELETED_SPLIT',
     ]) {
