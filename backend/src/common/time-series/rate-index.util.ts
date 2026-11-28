@@ -80,6 +80,7 @@ export async function buildRateIndex(
   startDate: string,
   endDate: string,
   conversionHorizon?: string,
+  today: string = todayYMD(),
 ): Promise<RateIndex> {
   if (currencies.size === 0) return new Map();
 
@@ -88,10 +89,9 @@ export async function buildRateIndex(
       ? conversionHorizon
       : endDate;
   const currArr = Array.from(currencies);
-  // One "today" for the SQL anchor and the resolver: the user's day inside a
-  // request; outside one it is Node's local clock (its TZ), never Postgres'
-  // CURRENT_DATE.
-  const today = todayYMD();
+  // One "today" for the SQL anchor and the resolver: the day the caller gives
+  // (an owner's day from userTodayYMD), by default the request's day; with
+  // neither it is Node's local clock (its TZ), never Postgres' CURRENT_DATE.
   const rates = await query(
     `WITH pairs AS (
          SELECT c AS from_currency, $2::TEXT AS to_currency

@@ -89,6 +89,37 @@ describe("rate-index.util", () => {
       }
     });
 
+    it("uses the day the caller gives, not the request's zone", async () => {
+      jest.useFakeTimers().setSystemTime(new Date("2026-06-10T11:00:00Z"));
+      try {
+        const query = jest
+          .fn()
+          .mockResolvedValue([row("USD", "CAD", 1.3, "2026-04-26")]);
+        // Request zone says 06-10 (Los Angeles); the owner's day is 06-11.
+        const index = await requestContextStorage.run(
+          { timezone: "America/Los_Angeles" },
+          () =>
+            buildRateIndex(
+              query,
+              new Set(["USD"]),
+              "CAD",
+              "2026-06-20",
+              "2026-06-30",
+              undefined,
+              "2026-06-11",
+            ),
+        );
+        expect(query.mock.calls[0][1]).toContain("2026-06-11");
+        expect(query.mock.calls[0][1]).not.toContain("2026-06-10");
+        // 46 days old on the owner's 06-11 (45 on the request's 06-10).
+        expect(
+          resolveIndexedRate(index, "USD", "CAD", "2026-07-01").rate,
+        ).toBeNull();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it("loads the window plus the one preceding observation per pair, and nothing ahead of it", async () => {
       const query = jest.fn().mockResolvedValue([]);
       await buildRateIndex(

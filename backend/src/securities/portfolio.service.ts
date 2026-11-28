@@ -3149,6 +3149,8 @@ export class PortfolioService {
             displayCurrency,
             indexStart,
             indexEnd,
+            // The bars are dated by their UTC day, so the index is too.
+            indexEnd,
           )
         : (new Map() as DailyRateIndex);
 
