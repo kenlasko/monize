@@ -1847,6 +1847,26 @@ describe("BudgetsService", () => {
       splits: [],
     });
 
+    it("rounds the converted bills once, not each bill", async () => {
+      stubVelocityBudget(
+        [1, 2, 3].map((n) => ({
+          ...staleInvestmentBill(),
+          id: `st-cad-${n}`,
+          name: `Bill ${n}`,
+          amount: -1,
+          currencyCode: "CAD",
+          isInvestment: false,
+          investmentAction: null,
+        })),
+      );
+      // Each 1 CAD is 1.25005 USD; rounded alone 1.2501, three of them 3.7503.
+      exchangeRateService.getRateForDate.mockResolvedValue(1.25005);
+
+      const result = await service.getVelocity("user-1", "budget-1");
+
+      expect(result.totalUpcomingBills).toBe(3.7502);
+    });
+
     it("does not count a split's transfer lines as upcoming spending", async () => {
       const splitBill = (id: string, lines: [number, number]) => ({
         ...staleInvestmentBill(),

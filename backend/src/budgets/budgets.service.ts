@@ -894,6 +894,7 @@ export class BudgetsService {
     // owns the memoized per-pair lookup, the rejecting rate resolver, and both
     // ways a component goes missing. This block used to be written out here and
     // again in the AI/MCP rollup, comments included.
+    // shortcut: budget figures are read at 4 places on every budget surface; coin-precise budgets need getSummary, dashboard-summary and projectBudgetSpending together.
     const billsTotal = await convertingTotal(
       upcomingBills.map((bill) => ({
         amount: bill.amount,
