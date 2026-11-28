@@ -2212,8 +2212,17 @@ export class AccountsService {
       this.dataSource,
       userId,
     );
+    // A summary read is not a licence to wait on a provider fetch: a missing
+    // rate is a null total naming its pair (`fetchMissing: false`).
     const rateFor = memoizedRateResolver(
-      this.exchangeRateService,
+      {
+        getRateForDate: (from, to, date) =>
+          this.exchangeRateService.getRateForDate(from, to, date, {
+            fetchMissing: false,
+          }),
+        getLatestRate: (from, to) =>
+          this.exchangeRateService.getLatestRate(from, to),
+      },
       defaultCurrency,
       todayYMD(),
     );

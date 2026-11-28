@@ -258,6 +258,24 @@ describe('summarizeInDisplayCurrency', () => {
     expect(result.excludedTransactionCount).toBe(1);
   });
 
+  it('never reads a withheld (null) native total as zero: one bucket, no conversion', () => {
+    const result = summarizeInDisplayCurrency(
+      {
+        totalIncome: null,
+        totalExpenses: null,
+        netCashFlow: null,
+        transactionCount: 3,
+        byCurrency: {
+          USD: { totalIncome: 10, totalExpenses: 5, netCashFlow: 5, transactionCount: 3 },
+        },
+      } as TransactionSummary,
+      native('USD'),
+    );
+    expect(result.missingCurrencies).toEqual(['USD']);
+    expect(result.excludedTransactionCount).toBe(3);
+    expect(result.includedTransactionCount).toBe(0);
+  });
+
   it('reports every bucket unknown when the server sent no conversion', () => {
     const result = summarizeInDisplayCurrency(
       summary({

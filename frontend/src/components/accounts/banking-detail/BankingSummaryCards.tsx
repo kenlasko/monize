@@ -29,8 +29,6 @@ interface BankingSummaryCardsProps {
   /** `null` is unknown (a failed read, a withheld total), not zero. */
   moneyIn: number | null;
   moneyOut: number | null;
-  /** The summary request failed: said to be a failure, not a missing rate. */
-  moneyFailed?: boolean;
   interestEarnedYtd: number;
   averageBalance: number;
   onMoneyInClick?: () => void;
@@ -45,7 +43,6 @@ export function BankingSummaryCards({
   overdue = null,
   moneyIn,
   moneyOut,
-  moneyFailed = false,
   interestEarnedYtd,
   averageBalance,
   onMoneyInClick,
@@ -58,9 +55,9 @@ export function BankingSummaryCards({
   const currency = account.currencyCode;
   const currentBalance = Number(account.currentBalance) || 0;
 
-  const unknownProps = moneyFailed
-    ? { reasonText: t('summary.loadFailed') }
-    : { reason: 'displayFx' as const };
+  // One account is one currency, so no rate is missing here: a null figure is
+  // one that could not be loaded, whatever the cause (never an FX reason).
+  const unavailable = <UnknownAmount reasonText={t('summary.loadFailed')} />;
 
   const cards: SummaryCardItem[] = [
     {
@@ -91,14 +88,14 @@ export function BankingSummaryCards({
     },
     {
       label: t('summary.moneyIn'),
-      value: moneyIn === null ? <UnknownAmount {...unknownProps} /> : formatCurrency(Math.abs(moneyIn), currency),
+      value: moneyIn === null ? unavailable : formatCurrency(Math.abs(moneyIn), currency),
       valueClass: 'text-green-600 dark:text-green-400',
       note: t('summary.thisMonth'),
       onClick: onMoneyInClick,
     },
     {
       label: t('summary.moneyOut'),
-      value: moneyOut === null ? <UnknownAmount {...unknownProps} /> : formatCurrency(Math.abs(moneyOut), currency),
+      value: moneyOut === null ? unavailable : formatCurrency(Math.abs(moneyOut), currency),
       valueClass: 'text-red-600 dark:text-red-400',
       note: t('summary.thisMonth'),
       onClick: onMoneyOutClick,

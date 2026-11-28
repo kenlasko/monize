@@ -83,8 +83,6 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
   );
   const [moneyIn, setMoneyIn] = useState<number | null>(0);
   const [moneyOut, setMoneyOut] = useState<number | null>(0);
-  // A failed summary request, kept apart from a total the server withheld.
-  const [summaryFailed, setSummaryFailed] = useState(false);
   const [monthly, setMonthly] = useState<MonthlyTotal[]>([]);
   const [topCategories, setTopCategories] = useState<GroupedTotal[]>([]);
   const [topPayees, setTopPayees] = useState<GroupedTotal[]>([]);
@@ -155,7 +153,6 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
       // two different fields).
       setForecast(readBalanceForecast(forecastResponse));
       // A failed read or a withheld (null) total is unknown, never 0.
-      setSummaryFailed(summary === null);
       setMoneyIn(summary?.totalIncome ?? null);
       setMoneyOut(summary?.totalExpenses ?? null);
       setMonthly(monthlyTotals);
@@ -207,7 +204,6 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
         overdue={forecast.overdue}
         moneyIn={moneyIn}
         moneyOut={moneyOut}
-        moneyFailed={summaryFailed}
         interestEarnedYtd={interestEarnedYtd}
         averageBalance={averageBalance}
         onMoneyInClick={() =>

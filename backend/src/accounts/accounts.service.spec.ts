@@ -4533,6 +4533,13 @@ describe("AccountsService", () => {
       });
 
       findAll.mockResolvedValue([usd, eur, gbp] as never);
+      // A summary read never waits on a provider fetch.
+      expect(exchangeRateService.getRateForDate).toHaveBeenCalledWith(
+        "EUR",
+        "USD",
+        expect.any(String),
+        { fetchMissing: false },
+      );
       const partial = await service.getSummary("user-1");
       expect(partial).toMatchObject({
         totalBalance: null,
