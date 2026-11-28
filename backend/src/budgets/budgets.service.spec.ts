@@ -2142,6 +2142,103 @@ describe("BudgetsService", () => {
         ).toEqual([["st-2", 15.99, true]]);
       });
 
+      // The cash leg of an investment schedule settles in its funding account,
+      // which is what the budget's actuals filter on, not in the brokerage.
+      it("filters an investment schedule by its settlement account", async () => {
+        const buy = {
+          ...staleInvestmentBill(),
+          accountId: "acc-brokerage",
+          investmentFundingAccountId: "acc-fund",
+        };
+        const ids = async (excludedAccountIds: string[]) =>
+          (
+            await upcoming([buy], {
+              ...mockBudget,
+              config: { excludedAccountIds },
+              categories: [],
+            })
+          ).map((b) => b[0]);
+
+        expect(await ids(["acc-fund"])).toEqual([]);
+        expect(await ids(["acc-brokerage"])).toEqual(["st-inv"]);
+      });
+
+      describe("per-occurrence overrides", () => {
+        const override = (over: Record<string, unknown>) =>
+          overridesRepository.find.mockResolvedValue([
+            {
+              id: "ovr-1",
+              scheduledTransactionId: "st-t",
+              originalDate: tomorrow(),
+              overrideDate: tomorrow(),
+              amount: null,
+              categoryId: null,
+              isSplit: null,
+              splits: null,
+              ...over,
+            },
+          ]);
+        const budgeted = {
+          ...mockBudget,
+          categories: [line({ categoryId: "cat-sav" })],
+        };
+
+        it("counts a transfer an override moves onto a budgeted category", async () => {
+          override({ categoryId: "cat-sav" });
+
+          expect(await upcoming([schedule({})], budgeted)).toEqual([
+            ["st-t", 70, true],
+          ]);
+        });
+
+        it("leaves a transfer out when an override moves it off the budgeted category", async () => {
+          override({ categoryId: "cat-other" });
+
+          expect(
+            await upcoming([schedule({ categoryId: "cat-sav" })], budgeted),
+          ).toEqual([]);
+        });
+      });
+
+      // A split's transfer line is spending where the budget tracks its
+      // destination account, as the posted line would be.
+      it("counts a split's transfer line to an account the budget has a transfer line for", async () => {
+        const split = {
+          ...staleInvestmentBill(),
+          id: "st-split",
+          amount: -100,
+          currencyCode: "USD",
+          isInvestment: false,
+          investmentAction: null,
+          isSplit: true,
+          accountId: "acc-1",
+          splits: [
+            { id: "s1", kind: "category", amount: -30 },
+            {
+              id: "s2",
+              kind: "category",
+              amount: -70,
+              transferAccountId: "acc-2",
+            },
+          ],
+        };
+        const transferLine = line({
+          categoryId: null,
+          isTransfer: true,
+          transferAccountId: "acc-2",
+        });
+
+        expect(
+          await upcoming([split], { ...mockBudget, categories: [] }),
+        ).toEqual([["st-split", 30, true]]);
+        expect(
+          await upcoming([split], {
+            ...mockBudget,
+            categories: [transferLine],
+          }),
+        ).toEqual([["st-split", 100, true]]);
+      });
+
       it("keeps a plain transfer out of the velocity totals", async () => {
         stubVelocityBudget([schedule({}), netflix]);
 

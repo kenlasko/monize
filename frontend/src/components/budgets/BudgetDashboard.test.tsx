@@ -4,7 +4,7 @@ import { BudgetDashboard } from './BudgetDashboard';
 import type { BudgetSummary, BudgetVelocity, Budget } from '@/types/budget';
 
 // Mock child components
-const capturedPeriod: { bills?: string; heatmap?: string } = {};
+const capturedPeriod: { bills?: number | null; heatmap?: string } = {};
 
 vi.mock('./BudgetSummaryCards', () => ({
   BudgetSummaryCards: (props: any) => (
@@ -37,8 +37,8 @@ vi.mock('./BudgetFlexGroupCard', () => ({
 }));
 
 vi.mock('./BudgetUpcomingBills', () => ({
-  BudgetUpcomingBills: (props: { periodEnd: string }) => {
-    capturedPeriod.bills = props.periodEnd;
+  BudgetUpcomingBills: (props: { velocity: BudgetVelocity }) => {
+    capturedPeriod.bills = props.velocity.totalUpcomingBills;
     return <div data-testid="upcoming-bills" />;
   },
 }));
@@ -146,7 +146,6 @@ describe('BudgetDashboard', () => {
       <BudgetDashboard
         summary={mockSummary}
         velocity={mockVelocity}
-        scheduledTransactions={[]}
         dailySpending={[]}
         trendData={[]}
         healthScore={85}
@@ -155,7 +154,21 @@ describe('BudgetDashboard', () => {
       />,
     );
     expect(capturedPeriod.heatmap).toBe('2026-02-01..2026-02-28');
-    expect(capturedPeriod.bills).toBe('2026-02-28');
+  });
+
+  it("hands the server's velocity to the upcoming-bills panel", () => {
+    render(
+      <BudgetDashboard
+        summary={mockSummary}
+        velocity={{ ...mockVelocity, totalUpcomingBills: 42 }}
+        dailySpending={[]}
+        trendData={[]}
+        healthScore={85}
+        displayCurrency="USD"
+        formatCurrency={mockFormat}
+      />,
+    );
+    expect(capturedPeriod.bills).toBe(42);
   });
 
   it('renders all dashboard widgets', () => {
@@ -163,7 +176,6 @@ describe('BudgetDashboard', () => {
       <BudgetDashboard
         summary={mockSummary}
         velocity={mockVelocity}
-        scheduledTransactions={[]}
         dailySpending={[]}
         trendData={[]}
         healthScore={85}
@@ -187,7 +199,6 @@ describe('BudgetDashboard', () => {
       <BudgetDashboard
         summary={mockSummary}
         velocity={mockVelocity}
-        scheduledTransactions={[]}
         dailySpending={[]}
         trendData={[]}
         healthScore={85}
@@ -204,7 +215,6 @@ describe('BudgetDashboard', () => {
       <BudgetDashboard
         summary={{ ...mockSummary, provisionalCount: 1 }}
         velocity={mockVelocity}
-        scheduledTransactions={[]}
         dailySpending={[]}
         trendData={[]}
         healthScore={85}
@@ -222,7 +232,6 @@ describe('BudgetDashboard', () => {
       <BudgetDashboard
         summary={{ ...mockSummary, provisionalCount }}
         velocity={mockVelocity}
-        scheduledTransactions={[]}
         dailySpending={[]}
         trendData={[]}
         healthScore={85}
@@ -238,7 +247,6 @@ describe('BudgetDashboard', () => {
       <BudgetDashboard
         summary={mockSummary}
         velocity={mockVelocity}
-        scheduledTransactions={[]}
         dailySpending={[]}
         trendData={[]}
         healthScore={92}
@@ -257,7 +265,6 @@ describe('BudgetDashboard', () => {
       <BudgetDashboard
         summary={mockSummary}
         velocity={mockVelocity}
-        scheduledTransactions={[]}
         dailySpending={[]}
         trendData={[]}
         healthScore={85}
@@ -275,7 +282,6 @@ describe('BudgetDashboard', () => {
       <BudgetDashboard
         summary={mockSummary}
         velocity={mockVelocity}
-        scheduledTransactions={[]}
         dailySpending={[]}
         trendData={[]}
         healthScore={85}
@@ -290,7 +296,6 @@ describe('BudgetDashboard', () => {
   it('renders the bucket card only for a Bucket budget', () => {
     const props = {
       velocity: mockVelocity,
-      scheduledTransactions: [],
       dailySpending: [],
       trendData: [],
       healthScore: 85,

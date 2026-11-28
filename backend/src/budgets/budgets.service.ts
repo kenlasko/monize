@@ -738,22 +738,34 @@ export class BudgetsService {
       { outflowsOnly: true },
     );
 
-    // Only what the budget tracks is a bill: an occurrence out of an excluded
-    // account is not, and a plain scheduled transfer is spending only where it
-    // would count against this budget once posted (a line for its destination
-    // account or its category). The bills page and calendar still list it.
+    // Only what the budget tracks is a bill: an occurrence settling out of an
+    // excluded account is not (the cash leg's account, which the actuals filter
+    // on), and a transfer is spending only where it would count against this
+    // budget once posted: a line for its destination account or its effective
+    // category. The bills page and calendar still list every transfer.
     const excluded = new Set(budgetExcludedAccountIds(budget.config));
+    const counts = (
+      transferAccountId: string | null,
+      categoryId: string | null,
+    ) =>
+      transferCountsAgainstBudget(budget.categories ?? [], {
+        transferAccountId,
+        categoryId,
+      });
     return occurrences.flatMap((occurrence) => {
       const { schedule } = occurrence;
-      if (excluded.has(schedule.accountId)) return [];
+      if (excluded.has(occurrence.settlementAccountId)) return [];
       if (
         schedule.isTransfer &&
-        !transferCountsAgainstBudget(budget.categories ?? [], schedule)
+        !counts(schedule.transferAccountId, occurrence.categoryId)
       ) {
         return [];
       }
-      // A split's transfer lines are not spending: the amount is the part that is.
-      const spending = nonTransferAmount(occurrence);
+      // A split's transfer lines are not spending, unless the budget tracks
+      // where they go: the amount is the part that is.
+      const spending = nonTransferAmount(occurrence, (line) =>
+        counts(line.transferAccountId, line.categoryId ?? null),
+      );
       return [
         {
           id: occurrence.scheduledTransactionId,
@@ -764,7 +776,7 @@ export class BudgetsService {
           currencyCode: occurrence.currencyCode,
           amountComplete: spending !== null,
           dueDate: occurrence.dueDate,
-          categoryId: schedule.categoryId,
+          categoryId: occurrence.categoryId,
         },
       ];
     });
