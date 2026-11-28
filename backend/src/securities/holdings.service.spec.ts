@@ -1,3 +1,4 @@
+import { LessThanOrEqual } from "typeorm";
 import { NotFoundException, ForbiddenException } from "@nestjs/common";
 import { HoldingsService } from "./holdings.service";
 import { Holding } from "./entities/holding.entity";
@@ -1075,7 +1076,9 @@ describe("HoldingsService", () => {
         const call = ledgerRead.calls.find(
           (c: unknown[]) => c[0] === InvestmentTransaction,
         );
-        expect(call![1].where.transactionDate._value).toBe("2026-11-28");
+        expect(call![1].where.transactionDate).toEqual(
+          LessThanOrEqual("2026-11-28"),
+        );
       } finally {
         jest.useRealTimers();
       }

@@ -6,7 +6,9 @@ import { CurrenciesService } from "../../currencies/currencies.service";
 import { UsersService } from "../../users/users.service";
 import { ImportPostProcessingService } from "../import-post-processing.service";
 import { MnyStagedFileMissingError } from "./mny-errors";
+import { requestContextStorage } from "../../common/request-context";
 import {
+  JOB_FAILED_ERROR_KEY,
   JobRunContext,
   MnyImportJobService,
   importAlreadyRunningException,
@@ -666,6 +668,53 @@ describe("MnyImportService", () => {
         );
       },
     );
+
+    it("uses the request's timezone without reading the stored one", async () => {
+      (mockManager.query as jest.Mock).mockClear();
+      (withUserContext as jest.Mock).mockClear();
+
+      await requestContextStorage.run(
+        { userId: "user-1", timezone: "Pacific/Kiritimati" },
+        () => service.start("user-1", { stagedFileId: "staged-1" }),
+      );
+      await flushBackground();
+
+      expect(withUserContext).toHaveBeenCalledWith(
+        "user-1",
+        expect.any(Function),
+        "Pacific/Kiritimati",
+      );
+      expect(mockManager.query).not.toHaveBeenCalled();
+    });
+
+    it("leaves the zone unset for a user with no timezone, as REST does", async () => {
+      (mockManager.query as jest.Mock).mockResolvedValue([]);
+      (withUserContext as jest.Mock).mockClear();
+
+      await service.start("user-1", { stagedFileId: "staged-1" });
+      await flushBackground();
+
+      expect(withUserContext).toHaveBeenCalledWith(
+        "user-1",
+        expect.any(Function),
+        undefined,
+      );
+    });
+
+    it("fails the job and never starts it when the timezone read rejects", async () => {
+      mockedScopedDb.mockRejectedValueOnce(new Error("pool exhausted"));
+
+      await service.start("user-1", { stagedFileId: "staged-1" });
+      await flushBackground();
+
+      expect(jobs.runClaimed).not.toHaveBeenCalled();
+      expect(jobs.fail).toHaveBeenCalledWith(
+        "job-1",
+        JOB_FAILED_ERROR_KEY,
+        "pool exhausted",
+        true,
+      );
+    });
 
     it("runs the import as the job body", async () => {
       const runImport = jest
