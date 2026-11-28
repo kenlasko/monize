@@ -642,6 +642,7 @@ function DashboardContent() {
             <DashboardHero
               portfolioValuation={portfolioValuation}
               hasInvestments={hasInvestments}
+              accountsFailed={accountsFailed}
               isLoading={isLoading}
               investmentSummaryLoading={investmentSummaryLoading}
               investmentAccounts={portfolioAccounts}

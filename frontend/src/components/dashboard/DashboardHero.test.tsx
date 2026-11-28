@@ -36,12 +36,13 @@ function GreetingProbe() {
   return <span data-testid="greeting-collapses">{String(useContext(CollapsingTitleContext))}</span>;
 }
 
-const renderHero = (over: { hasInvestments?: boolean } = {}) =>
+const renderHero = (over: { hasInvestments?: boolean; accountsFailed?: boolean } = {}) =>
   render(
     <DashboardHero
       portfolioValuation={null}
       investmentAccounts={[]}
       hasInvestments={over.hasInvestments ?? true}
+      accountsFailed={over.accountsFailed}
       isLoading={false}
       investmentSummaryLoading={false}
       header={<h1>Good evening, Ken</h1>}
@@ -138,6 +139,11 @@ describe('DashboardHero', () => {
     await advance(HERO_CYCLE_MS);
     expect(onPortfolio()).toBe(false);
     hidden.mockRestore();
+  });
+
+  it('keeps the portfolio set in the cycle when the accounts request failed', () => {
+    renderHero({ hasInvestments: false, accountsFailed: true });
+    expect(screen.getByRole('group', { name: 'Choose what the hero shows' })).toBeInTheDocument();
   });
 
   it('has nothing to cycle without investments', async () => {

@@ -88,13 +88,14 @@ const config = (overrides: Partial<DashboardHeroConfig> = {}): DashboardHeroConf
   ...overrides,
 });
 
-async function renderHero(cfg: DashboardHeroConfig = config(), props: { hasInvestments?: boolean } = {}) {
+async function renderHero(cfg: DashboardHeroConfig = config(), props: { hasInvestments?: boolean; accountsFailed?: boolean } = {}) {
   await act(async () => {
     render(
       <PortfolioHero
         config={cfg}
         investmentAccounts={ACCOUNTS}
         hasInvestments={props.hasInvestments ?? true}
+        accountsFailed={props.accountsFailed}
         isLoading={false}
       />,
     );
@@ -240,6 +241,12 @@ describe('PortfolioHero', () => {
     await renderHero();
     expect(chartState.data.map((p) => p.value)).toEqual([140000, 150000.4]);
     expect(within(screen.getByTestId('area')).getAllByRole('button', { name: 'Hide this value' })).toHaveLength(2);
+  });
+
+  it('says the accounts failed to load, not that there are no investment accounts', async () => {
+    await renderHero(config(), { hasInvestments: false, accountsFailed: true });
+    expect(screen.getByText(/Couldn't load your portfolio/)).toBeInTheDocument();
+    expect(screen.queryByText(/No investment accounts yet/)).not.toBeInTheDocument();
   });
 
   it('says there is nothing to show without investment accounts, and asks for nothing', async () => {

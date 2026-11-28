@@ -64,9 +64,11 @@ interface UpcomingBillsProps {
   maxItems: number;
   /** The scheduled transactions request failed; the list is then unknown, not empty. */
   error?: boolean;
+  /** The accounts request failed: a different request, so a different message. */
+  accountsError?: boolean;
 }
 
-export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxItems, error = false }: UpcomingBillsProps) {
+export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxItems, error = false, accountsError = false }: UpcomingBillsProps) {
   const t = useTranslations('dashboard');
   const uiStyle = useUiStyle();
   const router = useRouter();
@@ -304,14 +306,14 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
     );
   }
 
-  if (error) {
+  if (error || accountsError) {
     return (
       <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <WidgetHeading id="upcoming-bills" href="/bills" className="mb-4">
           {sectionTitle}
         </WidgetHeading>
         <p role="alert" className="text-gray-500 dark:text-gray-400 text-sm">
-          {t('upcomingBills.loadFailed')}
+          {accountsError ? t('accountsLoadFailed') : t('upcomingBills.loadFailed')}
         </p>
       </div>
     );

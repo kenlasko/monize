@@ -58,6 +58,8 @@ In either set the highest and lowest points on the chart carry a green and a red
 
 The hero is on by default. With it off, the dashboard opens with just the greeting and today's date.
 
+When the data behind a widget could not be loaded, the widget says so (for example "Couldn't load your accounts") and tells you to reload the dashboard. It does not show its empty message, such as "No upcoming bills" or "No active budget", because that would claim there is nothing to show. The other widgets keep working.
+
 ---
 
 ## Customizing Your Dashboard

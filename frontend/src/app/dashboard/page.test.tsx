@@ -188,7 +188,7 @@ vi.mock('@/components/dashboard/FavouriteAccounts', () => ({
 }));
 
 vi.mock('@/components/dashboard/UpcomingBills', () => ({
-  UpcomingBills: ({ isLoading, error }: any) => <div data-testid="upcoming-bills" data-error={String(!!error)}>{isLoading ? 'loading' : 'loaded'}</div>,
+  UpcomingBills: ({ isLoading, error, accountsError }: any) => <div data-testid="upcoming-bills" data-error={String(!!(error || accountsError))}>{isLoading ? 'loading' : 'loaded'}</div>,
 }));
 
 vi.mock('@/components/dashboard/ExpensesPieChart', () => ({

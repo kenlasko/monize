@@ -48,6 +48,8 @@ interface PortfolioHeroProps {
   /** The investment accounts, for naming the ones the set covers. */
   investmentAccounts: Account[];
   hasInvestments: boolean;
+  /** The accounts request failed: "no investment accounts" is unknown, not known. */
+  accountsFailed?: boolean;
   isLoading: boolean;
   /**
    * Bumped by the dashboard when a price refresh wrote new prices: every figure
@@ -73,6 +75,7 @@ export function PortfolioHero({
   config,
   investmentAccounts,
   hasInvestments,
+  accountsFailed = false,
   isLoading,
   refreshKey = 0,
 }: PortfolioHeroProps) {
@@ -185,6 +188,9 @@ export function PortfolioHero({
   const sampled = !intraday && !PORTFOLIO_DAILY_RANGES.has(range);
 
   const label = t('hero.portfolioLabel');
+  if (accountsFailed && !hasInvestments && !isLoading) {
+    return <HeroMessage>{t('hero.portfolioLoadFailed')}</HeroMessage>;
+  }
   if (!hasInvestments && !isLoading) {
     return <HeroMessage>{t('hero.portfolioEmpty')}</HeroMessage>;
   }

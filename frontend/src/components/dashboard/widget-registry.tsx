@@ -157,11 +157,11 @@ const upcomingBillsMaxItems = (accounts: Account[]) =>
  * wide, so in the default layout consecutive visible widgets pair up into rows.
  */
 /** What a widget that reads the accounts shows when that request failed. */
-function AccountsUnavailable({ id, titleSection }: { id: DashboardWidgetId; titleSection: string }) {
+function AccountsUnavailable({ id, titleSection, href }: { id: DashboardWidgetId; titleSection: string; href?: string }) {
   const t = useTranslations('dashboard');
   return (
     <Card padding="md">
-      <WidgetHeading id={id} className="mb-4">
+      <WidgetHeading id={id} href={href} className="mb-4">
         {t(`${titleSection}.title` as Parameters<typeof t>[0])}
       </WidgetHeading>
       <p role="alert" className="text-gray-500 dark:text-gray-400 text-sm">
@@ -177,11 +177,24 @@ function AccountsUnavailable({ id, titleSection }: { id: DashboardWidgetId; titl
  * and the Cash flow forecast take the flags themselves; the report widgets
  * (Expenses, Income vs expenses, Sankey) load their own data.
  */
-const NEEDS_ACCOUNTS: ReadonlySet<DashboardWidgetId> = new Set([
-  'top-movers',
+const NEEDS_ACCOUNTS: ReadonlyMap<DashboardWidgetId, string | undefined> = new Map([
+  // Each widget's own title link, kept on the card that replaces it.
+  ['top-movers', '/investments'],
+  ['portfolio-value', '/reports/portfolio-value'],
+  ['credit-utilization-accounts', undefined],
+  ['credit-utilization-total', undefined],
+  ['sector-weightings', undefined],
+  ['security-type-allocation', '/investments'],
+  ['geographic-allocation', '/investments'],
+]);
+
+/**
+ * Gated on `hasInvestments`, which a failed accounts call leaves unknown: the
+ * card must show instead of the widget vanishing. Top Movers is gated on
+ * `hasSecurities`, which does not depend on accounts, so its gate stays.
+ */
+const GATED_ON_INVESTMENTS: ReadonlySet<DashboardWidgetId> = new Set([
   'portfolio-value',
-  'credit-utilization-accounts',
-  'credit-utilization-total',
   'sector-weightings',
   'security-type-allocation',
   'geographic-allocation',
@@ -190,12 +203,16 @@ const NEEDS_ACCOUNTS: ReadonlySet<DashboardWidgetId> = new Set([
 /** A failed accounts call must show the failure, never the empty state or a hidden widget. */
 function withAccountsFailure(def: DashboardWidgetDefinition): DashboardWidgetDefinition {
   if (!NEEDS_ACCOUNTS.has(def.id)) return def;
+  const href = NEEDS_ACCOUNTS.get(def.id);
   return {
     ...def,
-    shouldRender: def.shouldRender ? (ctx) => ctx.accountsFailed || def.shouldRender!(ctx) : undefined,
+    shouldRender:
+      def.shouldRender && GATED_ON_INVESTMENTS.has(def.id)
+        ? (ctx) => ctx.accountsFailed || def.shouldRender!(ctx)
+        : def.shouldRender,
     render: (ctx) =>
       ctx.accountsFailed && !ctx.isLoading ? (
-        <AccountsUnavailable id={def.id} titleSection={def.titleSection} />
+        <AccountsUnavailable id={def.id} titleSection={def.titleSection} href={href} />
       ) : (
         def.render(ctx)
       ),
@@ -238,7 +255,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = ([
         accounts={ctx.accounts}
         isLoading={ctx.isLoading}
         maxItems={upcomingBillsMaxItems(ctx.accounts)}
-        error={ctx.accountsFailed || ctx.scheduledFailed}
+        accountsError={ctx.accountsFailed}
+        error={ctx.scheduledFailed}
       />
     ),
   },
@@ -256,7 +274,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = ([
         scheduledTransactions={ctx.scheduledTransactions}
         accounts={ctx.accounts}
         isLoading={ctx.isLoading}
-        error={ctx.accountsFailed || ctx.scheduledFailed}
+        accountsError={ctx.accountsFailed}
+        scheduledError={ctx.scheduledFailed}
       />
     ),
   },

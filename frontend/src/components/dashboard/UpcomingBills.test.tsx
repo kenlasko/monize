@@ -88,6 +88,12 @@ describe('UpcomingBills', () => {
     expect(screen.queryByText(/No overdue or upcoming bills/)).not.toBeInTheDocument();
   });
 
+  it('names the accounts, not the bills, when only the accounts request failed', () => {
+    render(<UpcomingBills accounts={[]} scheduledTransactions={[]} isLoading={false} maxItems={defaultMaxItems} accountsError />);
+    expect(screen.getByRole('alert')).toHaveTextContent(/Couldn't load your accounts/);
+    expect(screen.queryByText(/Couldn't load your upcoming bills/)).not.toBeInTheDocument();
+  });
+
   it('renders empty state when no upcoming items', () => {
     render(<UpcomingBills accounts={[]} scheduledTransactions={[]} isLoading={false} maxItems={defaultMaxItems} />);
     expect(screen.getByText('No overdue or upcoming bills, deposits, or transfers within their reminder windows.')).toBeInTheDocument();
