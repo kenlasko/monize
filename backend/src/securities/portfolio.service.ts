@@ -274,8 +274,12 @@ export interface PortfolioSummary {
    */
   totalGainLoss: number | null;
   knownGainLossSubtotal: number;
-  /** Over `gainCostBasis`; 0 when that is 0. */
-  totalGainLossPercent: number;
+  /**
+   * Over `gainCostBasis`; 0 when that is 0. null whenever `totalGainLoss` is: a
+   * percentage of a partial gain is `knownGainLossPercentSubtotal`.
+   */
+  totalGainLossPercent: number | null;
+  knownGainLossPercentSubtotal: number;
   /** Cost of the holdings `totalGainLoss` is over. */
   gainCostBasis: number;
   /**
@@ -332,6 +336,11 @@ export interface PortfolioSummary {
   fxComplete: boolean;
   /** `"EUR->USD"` for each pair with no available rate; empty when complete. */
   missingRatePairs: string[];
+  /**
+   * The pairs behind `totalPortfolioValue` alone (cash and holdings value, not
+   * a cost or a net-invested flow): what the allocation is missing.
+   */
+  portfolioValueMissingRatePairs: string[];
   /**
    * False when a held position has no current price, which also makes every
    * `total*` field above a subtotal.
@@ -414,6 +423,8 @@ export interface AssetAllocation {
   pricesComplete: boolean;
   /** Securities held in a non-zero quantity with no current price. */
   unpricedSecurityIds: string[];
+  /** The symbols of `unpricedSecurityIds`, for a message: an id means nothing to a reader. */
+  unpricedSymbols: string[];
   /** `fxComplete && pricesComplete`; read as `=== false`. */
   valuationComplete: boolean;
 }
@@ -426,11 +437,23 @@ function allocationOf(
     allocation,
     totalValue: summary.totalPortfolioValue,
     knownSubtotal: summary.knownPortfolioValueSubtotal,
-    fxComplete: summary.fxComplete,
-    missingRatePairs: summary.missingRatePairs,
+    // Only the value aggregates feed an allocation: a missing dated cost rate
+    // or net-invested flow leaves every slice valued.
+    fxComplete: summary.portfolioValueMissingRatePairs.length === 0,
+    missingRatePairs: summary.portfolioValueMissingRatePairs,
     pricesComplete: summary.pricesComplete,
     unpricedSecurityIds: summary.unpricedSecurityIds,
-    valuationComplete: summary.valuationComplete,
+    // A held position is always among the summary's holdings; one that is not
+    // is left out rather than named by its id.
+    unpricedSymbols: summary.unpricedSecurityIds
+      .flatMap((id) => {
+        const symbol = summary.holdings.find(
+          (h) => h.securityId === id,
+        )?.symbol;
+        return symbol ? [symbol] : [];
+      })
+      .sort(),
+    valuationComplete: summary.totalPortfolioValue !== null,
   };
 }
 
@@ -535,7 +558,9 @@ export interface LlmPortfolioSummary {
   /** Over the holdings that have a value (`gainCostBasis`); null when a holding has no value. */
   totalGainLoss: number | null;
   knownGainLossSubtotal: number;
-  totalGainLossPercent: number;
+  /** null whenever `totalGainLoss` is; the percent over the known holdings is `knownGainLossPercentSubtotal`. */
+  totalGainLossPercent: number | null;
+  knownGainLossPercentSubtotal: number;
   gainCostBasis: number;
   /** Cost the gain leaves out: holdings with no value. */
   unpricedCostBasis: number;
@@ -1339,9 +1364,22 @@ export class PortfolioService {
 
     // A total is known only when every component of it is. Cash, holdings and
     // net invested are three different questions, so each total reads its own.
+    // The holdings value and the cost basis are separate aggregates with
+    // separate rates (a dated cost rate can be missing while today's value
+    // converts), so each total reads its own.
     const holdingsValueComplete =
-      holdingsResult.fxComplete && holdingsResult.pricesComplete;
+      holdingsAggregates.holdingsValue.isComplete &&
+      holdingsResult.pricesComplete;
+    const costBasisComplete = holdingsAggregates.costBasis.isComplete;
     const portfolioComplete = cashResult.fxComplete && holdingsValueComplete;
+    // The gain pairs each value with its own cost, so it needs both sides.
+    const gainComplete = holdingsValueComplete && costBasisComplete;
+    const portfolioValueMissingRatePairs = [
+      ...new Set([
+        ...cashResult.missingRatePairs,
+        ...holdingsAggregates.holdingsValue.missingPairs,
+      ]),
+    ].sort();
     const gainOverNetInvested = FxAggregate.difference(
       portfolioValue,
       netInvestedAgg,
@@ -1355,7 +1393,7 @@ export class PortfolioService {
           ? holdingsResult.totalHoldingsValue
           : null,
         knownHoldingsValueSubtotal: holdingsResult.totalHoldingsValue,
-        totalCostBasis: holdingsResult.fxComplete
+        totalCostBasis: costBasisComplete
           ? holdingsResult.totalCostBasis
           : null,
         knownCostBasisSubtotal: holdingsResult.totalCostBasis,
@@ -1368,13 +1406,15 @@ export class PortfolioService {
             ? gainOverNetInvested
             : null,
         knownGainOverNetInvestedSubtotal: gainOverNetInvested,
-        totalGainLoss: holdingsValueComplete ? totalGainLoss : null,
+        totalGainLoss: gainComplete ? totalGainLoss : null,
         knownGainLossSubtotal: totalGainLoss,
-        totalGainLossPercent,
+        totalGainLossPercent: gainComplete ? totalGainLossPercent : null,
+        knownGainLossPercentSubtotal: totalGainLossPercent,
         gainCostBasis: holdingsResult.gainCostBasis,
         unpricedCostBasis: holdingsResult.unpricedCostBasis,
         fxComplete: missingRatePairs.length === 0,
         missingRatePairs,
+        portfolioValueMissingRatePairs,
         pricesComplete: holdingsResult.pricesComplete,
         unpricedSecurityIds: holdingsResult.unpricedSecurityIds,
         valuationComplete:
@@ -1553,7 +1593,9 @@ export class PortfolioService {
       knownPortfolioValueSubtotal: asShown(summary.knownPortfolioValueSubtotal),
       totalGainLoss: shownOrNull(summary.totalGainLoss),
       knownGainLossSubtotal: asShown(summary.knownGainLossSubtotal),
-      totalGainLossPercent: roundPct(summary.totalGainLossPercent) ?? 0,
+      totalGainLossPercent: roundPct(summary.totalGainLossPercent),
+      knownGainLossPercentSubtotal:
+        roundPct(summary.knownGainLossPercentSubtotal) ?? 0,
       gainCostBasis: asShown(summary.gainCostBasis),
       unpricedCostBasis: asShown(summary.unpricedCostBasis),
       timeWeightedReturn: roundPct(summary.timeWeightedReturn),

@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { netWorthApi } from '@/lib/net-worth';
 import { resolveRangePreset } from '@/lib/date-range';
 import { useFinancialToday } from '@/hooks/useFinancialToday';
-import { partialTotalFor, totalOrSubtotal } from '@/lib/net-worth-completeness';
+import { summaryTotal } from '@/lib/net-worth-completeness';
 import { isComplete } from '@/lib/currency-total';
 import { moneyDecimalsForCurrency } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -101,21 +101,19 @@ export function NetWorthHero({
   if (!snapshot) return null;
 
   // The securities alone: the cash beside them is not invested.
-  const invested =
+  const heldTotal =
     hasInvestments && portfolioValuation
+      ? summaryTotal(
+          portfolioValuation.totalHoldingsValue,
+          portfolioValuation.knownHoldingsValueSubtotal,
+          portfolioValuation,
+        )
+      : null;
+  const invested =
+    hasInvestments && portfolioValuation && heldTotal
       ? {
-          value: totalOrSubtotal(
-            portfolioValuation.totalHoldingsValue,
-            portfolioValuation.knownHoldingsValueSubtotal,
-          ),
-          total: partialTotalFor(
-            totalOrSubtotal(
-              portfolioValuation.totalHoldingsValue,
-              portfolioValuation.knownHoldingsValueSubtotal,
-            ),
-            portfolioValuation.valuationComplete,
-            portfolioValuation.missingRatePairs,
-          ),
+          value: heldTotal.value,
+          total: heldTotal,
           // A gap from an unpriced holding is not a missing rate, so it says so
           // and names the holdings, with where a price comes from.
           explanation:

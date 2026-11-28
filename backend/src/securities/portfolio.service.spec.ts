@@ -1621,6 +1621,78 @@ describe("PortfolioService", () => {
       expect(result.fxComplete).toBe(false);
       // Growth over an unknown amount invested is not a growth rate.
       expect(result.cagr).toBeNull();
+      // Net invested is the only withheld total: each total reads its own
+      // aggregate, and the allocation (a value) is untouched by it.
+      expect(result.totalNetInvested).toBeNull();
+      expect(result.totalCashValue).toBe(0);
+      expect(result.totalHoldingsValue).toBe(0);
+      expect(result.totalCostBasis).toBe(0);
+      expect(result.totalPortfolioValue).toBe(0);
+      expect(result.totalGainOverNetInvested).toBeNull();
+      const allocation = await service.getAssetAllocation(userId);
+      expect(allocation.valuationComplete).toBe(true);
+      expect(allocation.fxComplete).toBe(true);
+      expect(allocation.missingRatePairs).toEqual([]);
+      expect(allocation.totalValue).toBe(0);
+    });
+
+    it("withholds only the cash total when only the cash cannot convert", async () => {
+      prefRepository.findOne.mockResolvedValue(mockPref);
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        { ...mockCashAccount, currencyCode: "EUR" },
+      ]);
+      holdingsRepository.find.mockResolvedValue([mockHoldingVFV]);
+      securityPriceRepository.query.mockResolvedValue([
+        { security_id: "sec-2", close_price: "100", price_date: "2026-02-07" },
+      ]);
+      exchangeRateService.getLatestRate.mockResolvedValue(null);
+
+      const result = await service.getPortfolioSummary(userId);
+
+      expect(result.totalCashValue).toBeNull();
+      expect(result.totalPortfolioValue).toBeNull();
+      expect(result.totalHoldingsValue).toBe(5000);
+      expect(result.totalCostBasis).toBe(4000);
+      expect(result.totalGainLoss).toBe(1000);
+      const allocation = await service.getAssetAllocation(userId);
+      expect(allocation.valuationComplete).toBe(false);
+      expect(allocation.missingRatePairs).toEqual(["EUR->CAD"]);
+      expect(allocation.pricesComplete).toBe(true);
+    });
+
+    it("withholds only the cost basis when only the cost cannot convert", async () => {
+      // A USD holding in a CAD account, reported in EUR: today's USD->EUR
+      // converts the value, but the cost is read through the account currency
+      // (USD->CAD), which has no rate. The known market value must not go null.
+      prefRepository.findOne.mockResolvedValue({
+        ...mockPref,
+        defaultCurrency: "EUR",
+      });
+      accountsRepository.find.mockResolvedValue([
+        { ...mockBrokerageAccount, linkedAccountId: null },
+      ]);
+      holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);
+      securityPriceRepository.query.mockResolvedValue([
+        { security_id: "sec-1", close_price: "100", price_date: "2026-02-07" },
+      ]);
+      exchangeRateService.getLatestRate.mockImplementation(
+        (from: string, to: string) =>
+          Promise.resolve(from === "USD" && to === "EUR" ? 0.9 : null),
+      );
+
+      const result = await service.getPortfolioSummary(userId);
+
+      expect(result.totalHoldingsValue).toBe(900);
+      expect(result.totalPortfolioValue).toBe(900);
+      expect(result.totalCostBasis).toBeNull();
+      // The gain needs both sides, so it is withheld with its percent.
+      expect(result.totalGainLoss).toBeNull();
+      expect(result.totalGainLossPercent).toBeNull();
+      const allocation = await service.getAssetAllocation(userId);
+      expect(allocation.valuationComplete).toBe(true);
+      expect(allocation.missingRatePairs).toEqual([]);
+      expect(allocation.totalValue).toBe(900);
     });
 
     it("converts net invested flows at each row's own date (issue #2106)", async () => {
@@ -1736,6 +1808,12 @@ describe("PortfolioService", () => {
       expect(result.totalGainOverNetInvested).toBeNull();
       expect(result.totalCashValue).toBe(result.knownCashValueSubtotal);
       expect(result.totalCashValue).not.toBeNull();
+      // The value gap leaves the cost and net invested known, and a gain's
+      // percent goes with the gain.
+      expect(result.totalCostBasis).not.toBeNull();
+      expect(result.totalNetInvested).not.toBeNull();
+      expect(result.totalGainLossPercent).toBeNull();
+      expect(result.knownGainLossPercentSubtotal).toBeGreaterThan(0);
     });
 
     it("stays complete when every held position is priced", async () => {
@@ -1791,7 +1869,7 @@ describe("PortfolioService", () => {
       // The gain over the valued holdings is a subtotal while one is unpriced.
       expect(result.totalGainLoss).toBeNull();
       expect(result.knownGainLossSubtotal).toBeCloseTo(337.5, 4);
-      expect(result.totalGainLossPercent).toBeCloseTo(16.6667, 3);
+      expect(result.knownGainLossPercentSubtotal).toBeCloseTo(16.6667, 3);
       expect(result.gainCostBasis).toBe(2025);
       expect(result.unpricedCostBasis).toBe(4000);
       expect(result.totalCostBasis).toBe(6025);
@@ -1996,6 +2074,8 @@ describe("PortfolioService", () => {
           knownPortfolioValueSubtotal: 10000.69,
           knownGainOverNetInvestedSubtotal: 1000.69,
           knownGainLossSubtotal: 900.55,
+          knownGainLossPercentSubtotal: 0,
+          portfolioValueMissingRatePairs: [],
           totalGainLossPercent: 10.123456,
           gainCostBasis: 9000.1234,
           unpricedCostBasis: 0,
@@ -2158,6 +2238,8 @@ describe("PortfolioService", () => {
         knownPortfolioValueSubtotal: 0,
         knownGainOverNetInvestedSubtotal: 0,
         knownGainLossSubtotal: 0,
+        knownGainLossPercentSubtotal: 0,
+        portfolioValueMissingRatePairs: [],
         totalGainLossPercent: 0,
         gainCostBasis: 0,
         unpricedCostBasis: 0,
@@ -2204,6 +2286,8 @@ describe("PortfolioService", () => {
         knownPortfolioValueSubtotal: 100,
         knownGainOverNetInvestedSubtotal: 100,
         knownGainLossSubtotal: 0,
+        knownGainLossPercentSubtotal: 0,
+        portfolioValueMissingRatePairs: [],
         totalGainLossPercent: 0,
         gainCostBasis: 0,
         unpricedCostBasis: 0,
@@ -2246,6 +2330,8 @@ describe("PortfolioService", () => {
         knownPortfolioValueSubtotal: 100,
         knownGainOverNetInvestedSubtotal: 100,
         knownGainLossSubtotal: 0,
+        knownGainLossPercentSubtotal: 0,
+        portfolioValueMissingRatePairs: [],
         totalGainLossPercent: 0,
         gainCostBasis: 0,
         unpricedCostBasis: 0,
@@ -2309,6 +2395,8 @@ describe("PortfolioService", () => {
         knownPortfolioValueSubtotal: 1800,
         knownGainOverNetInvestedSubtotal: 300,
         knownGainLossSubtotal: 300,
+        knownGainLossPercentSubtotal: 0,
+        portfolioValueMissingRatePairs: [],
         totalGainLossPercent: 20,
         gainCostBasis: 1500,
         unpricedCostBasis: 0,
@@ -5449,6 +5537,8 @@ describe("PortfolioService", () => {
         knownPortfolioValueSubtotal: 200,
         knownGainOverNetInvestedSubtotal: 200,
         knownGainLossSubtotal: 0,
+        knownGainLossPercentSubtotal: 0,
+        portfolioValueMissingRatePairs: [],
         totalGainLossPercent: 0,
         gainCostBasis: 0,
         unpricedCostBasis: 0,

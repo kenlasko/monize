@@ -6,7 +6,7 @@ import { parseISO } from 'date-fns';
 import { investmentsApi } from '@/lib/investments';
 import { resolveRangePreset } from '@/lib/date-range';
 import { useFinancialToday } from '@/hooks/useFinancialToday';
-import { partialTotalFor, portfolioPartialTotal, totalOrSubtotal } from '@/lib/net-worth-completeness';
+import { summaryTotal } from '@/lib/net-worth-completeness';
 import { isComplete } from '@/lib/currency-total';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
@@ -227,13 +227,16 @@ export function PortfolioHero({
 
   const metricValue = (): ReactNode => {
     if (config.portfolioMetric === 'simpleReturn') {
-      // Over the holdings that have a value: partial while the valuation is.
+      // Over the holdings that have a value: partial while the server withholds it.
+      const pct = summaryTotal(
+        summary.totalGainLossPercent,
+        summary.knownGainLossPercentSubtotal,
+        summary,
+      );
+      if (pct === null) return <UnknownAmount reasonText={t('hero.portfolioLoadFailed')} />;
       return (
-        <PartialTotal
-          total={partialTotalFor(0, summary.valuationComplete, summary.missingRatePairs)}
-          displayCurrency={defaultCurrency}
-        >
-          {formatSignedPercent(summary.totalGainLossPercent, 2)}
+        <PartialTotal total={pct} displayCurrency={defaultCurrency}>
+          {formatSignedPercent(pct.value, 2)}
         </PartialTotal>
       );
     }
@@ -266,7 +269,22 @@ export function PortfolioHero({
 
   const metricName = t(`hero.metricNames.${config.portfolioMetric}`);
 
-  const cashTotal = partialTotalFor(totalOrSubtotal(summary.totalCashValue, summary.knownCashValueSubtotal), summary.fxComplete, summary.missingRatePairs);
+  // Each figure is partial from whether ITS OWN total was withheld, not from the
+  // summary-wide flags.
+  const cashTotal = summaryTotal(summary.totalCashValue, summary.knownCashValueSubtotal, summary);
+  const total = summaryTotal(summary.totalPortfolioValue, summary.knownPortfolioValueSubtotal, summary);
+  const holdingsTotal = summaryTotal(
+    summary.totalHoldingsValue,
+    summary.knownHoldingsValueSubtotal,
+    summary,
+  );
+  if (cashTotal === null || total === null || holdingsTotal === null) {
+    return (
+      <HeroMessage>
+        <UnknownAmount reasonText={t('hero.portfolioLoadFailed')} />
+      </HeroMessage>
+    );
+  }
 
   const chartNode = seriesError ? (
     <p className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
@@ -298,11 +316,6 @@ export function PortfolioHero({
     />
   );
 
-  const portfolioValue = totalOrSubtotal(
-    summary.totalPortfolioValue,
-    summary.knownPortfolioValueSubtotal,
-  );
-  const total = portfolioPartialTotal(portfolioValue, summary);
 
   return renderForStyle(uiStyle, PORTFOLIO_HERO_VARIANTS, {
     label,
@@ -315,7 +328,7 @@ export function PortfolioHero({
     total,
     collapsed: {
       title: t('customize.hero.sets.portfolio'),
-      figure: formatCurrency(portfolioValue, defaultCurrency),
+      figure: formatCurrency(total.value, defaultCurrency),
       figurePartial: !isComplete(total),
       change:
         totalChange === null
@@ -326,10 +339,7 @@ export function PortfolioHero({
             },
     },
     change,
-    holdings: portfolioPartialTotal(
-      totalOrSubtotal(summary.totalHoldingsValue, summary.knownHoldingsValueSubtotal),
-      summary,
-    ),
+    holdings: holdingsTotal,
     cash: cashTotal,
     metric: {
       name: metricName,

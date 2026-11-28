@@ -2746,9 +2746,26 @@ export class ToolExecutorService {
     ];
     // A missing price and a missing rate are different causes with the same
     // consequence, and the price half was not covered (recheck RR3-004).
+    // Each total is null on its own gap, so name the ones that are.
+    const withheldTotals = (
+      [
+        ["totalCashValue", data.totalCashValue],
+        ["totalHoldingsValue", data.totalHoldingsValue],
+        ["totalCostBasis", data.totalCostBasis],
+        ["totalPortfolioValue", data.totalPortfolioValue],
+        ["totalGainLoss", data.totalGainLoss],
+        ["totalGainLossPercent", data.totalGainLossPercent],
+      ] as const
+    )
+      .filter(([, value]) => value === null)
+      .map(([name]) => name);
     const incompleteNote = data.valuationComplete
       ? ""
-      : ` INCOMPLETE: ${incompleteReasons.join("; ")}, so every total above is a subtotal of what could be worked out. Say so rather than quoting these figures as complete.`;
+      : ` INCOMPLETE: ${incompleteReasons.join("; ")}. ${
+          withheldTotals.length > 0
+            ? `${withheldTotals.join(", ")} ${withheldTotals.length === 1 ? "is" : "are"} null (unknown); the matching known...Subtotal fields hold only what could be worked out.`
+            : "Every total above is known; the gap affects only net invested and the returns."
+        } Say so rather than quoting an unknown figure as complete.`;
     // The gain is over the holdings that have a value, so say which cost it
     // leaves out; "every total above is a subtotal" does not tell a model that
     // the percentage is over a smaller base (A26-M38).
@@ -2760,11 +2777,14 @@ export class ToolExecutorService {
         ? [`holdings needing ${data.missingRatePairs.join(", ")} (no rate)`]
         : []),
     ];
-    const gainNote = data.valuationComplete
-      ? ""
-      : ` The unrealized gain/loss is over the priced holdings only; it leaves out ${
-          gainLeftOut.length > 0 ? gainLeftOut.join("; ") : "unvalued holdings"
-        }, and the cost of the unpriced holdings excluded from it is ${fig(data.unpricedCostBasis)} ${cur}.`;
+    const gainNote =
+      data.totalGainLoss !== null
+        ? ""
+        : ` The unrealized gain/loss is over the priced holdings only; it leaves out ${
+            gainLeftOut.length > 0
+              ? gainLeftOut.join("; ")
+              : "unvalued holdings"
+          }, and the cost of the unpriced holdings excluded from it is ${fig(data.unpricedCostBasis)} ${cur}.`;
     // An account whose own totals could not be worked out is separately worth
     // saying: its figures are in its own currency, so the flags above do not
     // cover it (recheck RR3-005).
@@ -2777,7 +2797,11 @@ export class ToolExecutorService {
         : "";
     return {
       data,
-      summary: `${data.holdingCount} holding${data.holdingCount === 1 ? "" : "s"}, ${data.totalPortfolioValue === null ? `known portfolio value (a subtotal, the total is unknown) ${fig(data.knownPortfolioValueSubtotal)}` : `total portfolio value ${fig(data.totalPortfolioValue)}`} ${cur}, unrealized gain/loss ${data.totalGainLoss === null ? "over the valued holdings only " : ""}${sign}${fig(gainLoss)} ${cur} (${sign}${data.totalGainLossPercent.toFixed(2)}%).${lookThroughNote}${incompleteNote}${gainNote}${incompleteAccountsNote}`,
+      summary: `${data.holdingCount} holding${data.holdingCount === 1 ? "" : "s"}, ${data.totalPortfolioValue === null ? `known portfolio value (a subtotal, the total is unknown) ${fig(data.knownPortfolioValueSubtotal)}` : `total portfolio value ${fig(data.totalPortfolioValue)}`} ${cur}, unrealized gain/loss ${data.totalGainLoss === null ? "over the valued holdings only " : ""}${sign}${fig(gainLoss)} ${cur} ${
+        data.totalGainLossPercent === null
+          ? ` (${sign}${data.knownGainLossPercentSubtotal.toFixed(2)}% over the valued holdings)`
+          : ` (${sign}${data.totalGainLossPercent.toFixed(2)}%)`
+      }.${lookThroughNote}${incompleteNote}${gainNote}${incompleteAccountsNote}`,
       sources: [
         {
           type: "portfolio",

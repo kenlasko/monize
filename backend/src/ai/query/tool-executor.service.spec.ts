@@ -1630,13 +1630,17 @@ describe("ToolExecutorService", () => {
         unpricedSymbols: ["XYZ"],
         valuationComplete: false,
         totalCashValue: 0,
-        totalHoldingsValue: 100000,
+        totalHoldingsValue: null,
+        knownHoldingsValueSubtotal: 100000,
         totalCostBasis: 130000,
         gainCostBasis: 80000,
         unpricedCostBasis: 50000,
-        totalPortfolioValue: 100000,
-        totalGainLoss: 20000,
-        totalGainLossPercent: 25,
+        totalPortfolioValue: null,
+        knownPortfolioValueSubtotal: 100000,
+        totalGainLoss: null,
+        knownGainLossSubtotal: 20000,
+        totalGainLossPercent: null,
+        knownGainLossPercentSubtotal: 25,
         timeWeightedReturn: null,
         cagr: null,
         holdings: [],
@@ -1649,6 +1653,13 @@ describe("ToolExecutorService", () => {
       expect(result.summary).toContain("priced holdings only");
       expect(result.summary).toContain("XYZ");
       expect(result.summary).toContain("50000.00");
+      // The null totals are named, and the partial is not quoted as a total.
+      expect(result.summary).toContain(
+        "totalHoldingsValue, totalPortfolioValue, totalGainLoss, totalGainLossPercent are null",
+      );
+      expect(result.summary).not.toContain("every total above");
+      expect(result.summary).toContain("known portfolio value (a subtotal");
+      expect(result.summary).toContain("25.00% over the valued holdings");
     });
 
     it("list_investment_transactions delegates to investmentTransactions.getLlmInvestmentTransactions", async () => {

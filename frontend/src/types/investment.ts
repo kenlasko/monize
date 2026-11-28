@@ -392,7 +392,9 @@ export interface PortfolioSummary {
   totalGainLoss: number | null;
   knownGainLossSubtotal?: number;
   /** Over `gainCostBasis`; 0 when that is 0. */
-  totalGainLossPercent: number;
+  totalGainLossPercent: number | null;
+  /** The percent over the known holdings while `totalGainLossPercent` is null. */
+  knownGainLossPercentSubtotal?: number;
   /** Cost of the holdings `totalGainLoss` is over. Optional: absent is no information. */
   gainCostBasis?: number;
   /** Cost of the holdings the gain leaves out because they have no value. */
@@ -451,6 +453,8 @@ export interface PortfolioSummary {
   fxComplete?: boolean;
   /** `"EUR->USD"` for each pair with no available rate; empty when complete. */
   missingRatePairs?: string[];
+  /** The pairs behind `totalPortfolioValue` alone (cash and holdings value), i.e. what the allocation misses. */
+  portfolioValueMissingRatePairs?: string[];
   /** False when a held position has no current price. */
   pricesComplete?: boolean;
   /** Securities held in a non-zero quantity with no current price. */
@@ -507,6 +511,8 @@ export interface AssetAllocation {
   pricesComplete?: boolean;
   missingRatePairs?: string[];
   unpricedSecurityIds?: string[];
+  /** The symbols of `unpricedSecurityIds`, from the server: what to name, never an id. */
+  unpricedSymbols?: string[];
 }
 
 /**

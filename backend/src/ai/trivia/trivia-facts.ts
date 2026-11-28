@@ -299,6 +299,7 @@ function investmentFacts(input: TriviaFactsInput): TriviaFact[] {
 
   if (
     portfolio.totalGainLoss !== null &&
+    portfolio.totalGainLossPercent !== null &&
     portfolio.gainCostBasis > 0 &&
     portfolio.totalGainLoss !== 0
   ) {

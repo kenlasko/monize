@@ -124,19 +124,19 @@ describe('AssetAllocationChart', () => {
       pricesComplete: false,
       fxComplete: false,
       unpricedSecurityIds: ['sec-vfv'],
+      unpricedSymbols: ['VFV.TO'],
       missingRatePairs: ['EUR->CAD'],
       allocation: [
         { symbol: 'VTI', name: 'Vanguard Total', type: 'security' as const, value: 10000, percentage: 100, color: '#22c55e', currencyCode: 'CAD' },
       ],
     };
-    const holdingsByAccount = [
-      { holdings: [{ securityId: 'sec-vfv', symbol: 'VFV.TO' }] },
-    ] as any;
 
-    await renderChart({ allocation, isLoading: false, holdingsByAccount });
+    await renderChart({ allocation, isLoading: false });
 
     expect(screen.getByText(/Percentages cover known value only/)).toBeInTheDocument();
-    expect(screen.getByText(/Not valued: VFV\.TO, EUR->CAD\./)).toBeInTheDocument();
+    // A locale-formatted list of the server's symbols and pairs, never an id.
+    expect(screen.getByText(/Not valued: VFV\.TO and EUR->CAD\./)).toBeInTheDocument();
+    expect(screen.queryByText(/sec-vfv/)).not.toBeInTheDocument();
   });
 
   it('labels the by-tag view partial from the by-tag response (audit #2365 l)', async () => {
@@ -149,6 +149,7 @@ describe('AssetAllocationChart', () => {
       knownSubtotal: 10000,
       valuationComplete: false,
       unpricedSecurityIds: ['sec-x'],
+      unpricedSymbols: ['XYZ'],
       missingRatePairs: [],
       allocation: [
         { symbol: null, name: 'Growth', type: 'tag' as const, value: 10000, percentage: 100, color: '#22c55e', currencyCode: 'CAD' },
@@ -163,7 +164,27 @@ describe('AssetAllocationChart', () => {
     });
 
     expect(screen.getByText(/Percentages cover known value only/)).toBeInTheDocument();
-    expect(screen.getByText(/Not valued: sec-x\./)).toBeInTheDocument();
+    expect(screen.getByText(/Not valued: XYZ\./)).toBeInTheDocument();
+  });
+
+  it('says the by-tag allocation failed to load instead of "no tagged holdings"', async () => {
+    (investmentsApi.getPortfolioTagSummary as any).mockResolvedValue({
+      keys: [],
+      hasTaggedHoldings: true,
+    });
+    (investmentsApi.getAllocationByTag as any).mockRejectedValue(new Error('boom'));
+    const allocation = { totalValue: 10000, allocation: [] };
+
+    await renderChart({ allocation, isLoading: false, accountIds: [] });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('By tag'));
+    });
+    await act(async () => {});
+
+    expect(screen.getByRole('alert')).toHaveTextContent('The allocation could not be loaded.');
+    expect(screen.queryByText(/No tagged holdings/)).not.toBeInTheDocument();
+    // One failed request is not retried in a loop.
+    expect(investmentsApi.getAllocationByTag).toHaveBeenCalledTimes(1);
   });
 
   it('says nothing when the valuation is complete', async () => {

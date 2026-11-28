@@ -16,15 +16,26 @@ export interface PortfolioHeadline {
 
 /** The summary's by-security allocation, with the completeness it was valued under. */
 export function summaryAllocation(summary: PortfolioSummary): AssetAllocation {
+  // Only the value aggregates feed an allocation: a withheld cost basis or net
+  // invested does not make a slice partial. An older backend sends no known
+  // subtotal, and its summary-wide flag is all there is to read.
+  const valuationComplete =
+    summary.knownPortfolioValueSubtotal === undefined
+      ? summary.valuationComplete
+      : summary.totalPortfolioValue !== null;
+  const pairs = summary.portfolioValueMissingRatePairs ?? summary.missingRatePairs;
   return {
     allocation: summary.allocation,
     totalValue: summary.totalPortfolioValue,
     knownSubtotal: summary.knownPortfolioValueSubtotal,
-    valuationComplete: summary.valuationComplete,
-    fxComplete: summary.fxComplete,
+    valuationComplete,
+    fxComplete: pairs === undefined ? summary.fxComplete : pairs.length === 0,
     pricesComplete: summary.pricesComplete,
-    missingRatePairs: summary.missingRatePairs,
+    missingRatePairs: pairs,
     unpricedSecurityIds: summary.unpricedSecurityIds,
+    unpricedSymbols: summary.unpricedSecurityIds?.map(
+      (id) => summary.holdings.find((h) => h.securityId === id)?.symbol,
+    ).filter((s): s is string => Boolean(s)),
   };
 }
 
@@ -42,7 +53,7 @@ export function summaryAllocation(summary: PortfolioSummary): AssetAllocation {
 export function portfolioHeadline(
   summary: PortfolioSummary,
   foreignCurrency: string | null,
-): PortfolioHeadline {
+): PortfolioHeadline | null {
   if (foreignCurrency) {
     const accounts = summary.holdingsByAccount;
     return {
@@ -60,9 +71,16 @@ export function portfolioHeadline(
       },
     };
   }
-  return {
-    value: totalOrSubtotal(summary.totalPortfolioValue, summary.knownPortfolioValueSubtotal),
-    currencyCode: null,
-    completeness: summary,
-  };
+  const value = totalOrSubtotal(summary.totalPortfolioValue, summary.knownPortfolioValueSubtotal);
+  // Unknown outright (neither the total nor its subtotal): no figure, never 0.
+  if (value === null) return null;
+  // A withheld total is partial whatever the other flags say, and a complete
+  // one is not made partial by a gap in an unrelated aggregate.
+  const completeness: PortfolioCompleteness =
+    summary.totalPortfolioValue === null
+      ? { ...summary, valuationComplete: false }
+      : summary.knownPortfolioValueSubtotal === undefined
+        ? summary
+        : { ...summary, valuationComplete: true, fxComplete: true, pricesComplete: true };
+  return { value, currencyCode: null, completeness };
 }
