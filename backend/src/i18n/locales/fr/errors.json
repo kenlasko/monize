@@ -101,6 +101,7 @@
     "nothingToRedo": "Rien à rétablir",
     "undoCreateInUse": "Impossible d'annuler la création de \"{{ name }}\" : il est maintenant utilisé par {{ summary }}. Supprimez-les d'abord.",
     "undoBudgetHasHistory": "Impossible d'annuler la création de \"{{ name }}\" : il comporte maintenant des périodes, des lignes de catégorie ou des groupes ajoutés après coup. Supprimez plutôt le budget.",
+    "redoBudgetHasHistory": "Impossible de rétablir la suppression de \"{{ name }}\" : il comporte maintenant des périodes, des lignes de catégorie ou des groupes ajoutés après sa restauration. Supprimez plutôt le budget.",
     "redoDeleteInUse": "Impossible de rétablir la suppression de \"{{ name }}\" : il est maintenant utilisé par {{ summary }}. Supprimez-les d'abord.",
     "redoDeleteTargetGone": "Impossible de rétablir cette suppression : la catégorie vers laquelle ses lignes ont été déplacées n'existe plus.",
     "undoNotSupportedForEntityType": "Annulation non prise en charge pour le type d'entité : {{ entityType }}",

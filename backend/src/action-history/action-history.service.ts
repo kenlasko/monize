@@ -622,6 +622,39 @@ const ALLOWED_COLUMNS: Record<string, Set<string>> = {
     "created_at",
     "updated_at",
   ]),
+  budget_buckets: new Set([
+    "id",
+    "budget_id",
+    "name",
+    "target_type",
+    "target_value",
+    "carry_over",
+    "carry_cap",
+    "sort_order",
+    "created_at",
+    "updated_at",
+  ]),
+  budget_categories: new Set([
+    "id",
+    "budget_id",
+    "category_id",
+    "transfer_account_id",
+    "is_transfer",
+    "category_group",
+    "amount",
+    // income-flag-ok: the budget line's own direction column, not a category type
+    "is_income",
+    "rollover_type",
+    "rollover_cap",
+    "flex_group",
+    "alert_warn_percent",
+    "alert_critical_percent",
+    "notes",
+    "sort_order",
+    "created_at",
+    "updated_at",
+    "bucket_id",
+  ]),
   custom_reports: new Set([
     "id",
     "user_id",
@@ -2624,6 +2657,9 @@ export class ActionHistoryService {
           // Ensure userId is set from the action
           data.userId = action.userId;
           await this.reinsertEntity(manager, tableName, data);
+          if (tableName === "budgets") {
+            await this.restoreBudgetChildren(manager, action);
+          }
         }
         break;
       default:
@@ -2819,6 +2855,62 @@ export class ActionHistoryService {
     await (
       await this.holdings()
     ).rebuildAccountsFromTransactions(userId, [accountId], manager);
+  }
+
+  /**
+   * The snapshot of a deleted budget holds its buckets and lines (the periods
+   * cascaded away and are not recorded). Buckets go first: a line points at
+   * one. A category or account deleted since is cleared on the line, as the
+   * foreign key's SET NULL would have done had the budget stayed.
+   */
+  private async restoreBudgetChildren(
+    manager: EntityManager,
+    action: ActionHistory,
+  ): Promise<void> {
+    const snapshot = action.beforeData as Record<string, any>;
+    const buckets: Record<string, any>[] = snapshot?.buckets ?? [];
+    const lines: Record<string, any>[] = snapshot?.categories ?? [];
+    const alive = async (table: string, ids: string[]): Promise<Set<string>> =>
+      new Set(
+        ids.length === 0
+          ? []
+          : (
+              await manager.query(
+                `SELECT id FROM ${table} WHERE user_id = $1 AND id = ANY($2)`,
+                [action.userId, ids],
+              )
+            ).map((r: { id: string }) => r.id),
+      );
+    const pick = (row: Record<string, any>, table: string) =>
+      Object.fromEntries(
+        Object.entries(row).filter(([k]) =>
+          ALLOWED_COLUMNS[table].has(this.toSnakeCase(k)),
+        ),
+      );
+    for (const bucket of buckets) {
+      await this.reinsertEntity(manager, "budget_buckets", {
+        ...pick(bucket, "budget_buckets"),
+        budgetId: action.entityId,
+      });
+    }
+    const categories = await alive(
+      "categories",
+      lines.map((l) => l.categoryId).filter(Boolean),
+    );
+    const accounts = await alive(
+      "accounts",
+      lines.map((l) => l.transferAccountId).filter(Boolean),
+    );
+    for (const line of lines) {
+      await this.reinsertEntity(manager, "budget_categories", {
+        ...pick(line, "budget_categories"),
+        budgetId: action.entityId,
+        categoryId: categories.has(line.categoryId) ? line.categoryId : null,
+        transferAccountId: accounts.has(line.transferAccountId)
+          ? line.transferAccountId
+          : null,
+      });
+    }
   }
 
   private async reinsertEntity(

@@ -101,6 +101,7 @@
     "nothingToRedo": "Niente da ripristinare",
     "undoCreateInUse": "Impossibile annullare la creazione di \"{{ name }}\": ora è usato da {{ summary }}. Rimuovi prima questi elementi.",
     "undoBudgetHasHistory": "Impossibile annullare la creazione di \"{{ name }}\": ora ha periodi, righe di categoria o gruppi aggiunti dopo. Elimina invece il budget.",
+    "redoBudgetHasHistory": "Impossibile ripristinare l'eliminazione di \"{{ name }}\": ora ha periodi, righe di categoria o gruppi aggiunti dopo il ripristino. Elimina invece il budget.",
     "redoDeleteInUse": "Impossibile ripetere l'eliminazione di \"{{ name }}\": ora è usato da {{ summary }}. Rimuovi prima questi elementi.",
     "redoDeleteTargetGone": "Impossibile ripetere questa eliminazione: la categoria in cui sono state spostate le sue righe non esiste più.",
     "undoNotSupportedForEntityType": "Annullamento non supportato per il tipo di entità: {{ entityType }}",

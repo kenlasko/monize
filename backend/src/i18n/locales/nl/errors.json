@@ -101,6 +101,7 @@
     "nothingToRedo": "Niets om opnieuw te doen",
     "undoCreateInUse": "Het aanmaken van \"{{ name }}\" kan niet ongedaan worden gemaakt: het wordt nu gebruikt door {{ summary }}. Verwijder deze eerst.",
     "undoBudgetHasHistory": "Het aanmaken van \"{{ name }}\" kan niet ongedaan worden gemaakt: het heeft nu perioden, categorieregels of buckets die daarna zijn toegevoegd. Verwijder in plaats daarvan het budget.",
+    "redoBudgetHasHistory": "Het verwijderen van \"{{ name }}\" kan niet opnieuw worden uitgevoerd: het heeft nu perioden, categorieregels of buckets die na het herstel zijn toegevoegd. Verwijder in plaats daarvan het budget.",
     "redoDeleteInUse": "Het verwijderen van \"{{ name }}\" kan niet opnieuw worden uitgevoerd: het wordt nu gebruikt door {{ summary }}. Verwijder deze eerst.",
     "redoDeleteTargetGone": "Dit verwijderen kan niet opnieuw worden uitgevoerd: de categorie waarnaar de rijen zijn verplaatst bestaat niet meer.",
     "undoNotSupportedForEntityType": "Ongedaan maken niet ondersteund voor entiteitstype: {{ entityType }}",

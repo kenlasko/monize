@@ -46,8 +46,25 @@ describe("Undo of a budget creation (integration)", () => {
     await module.close();
   });
 
+  beforeAll(async () => {
+    // The suite's schema is synchronized from the entities, whose relations
+    // carry no onDelete, so the budget's children block a delete here. The
+    // real schema (database/schema.sql) cascades; match it so a delete
+    // behaves as in production.
+    await db.query(`
+      DO $$ DECLARE r record; BEGIN
+        FOR r IN SELECT conrelid::regclass AS t, conname FROM pg_constraint
+                  WHERE contype = 'f' AND confrelid = 'budgets'::regclass AND confdeltype <> 'c'
+        LOOP
+          EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', r.t, r.conname);
+          EXECUTE format('ALTER TABLE %s ADD FOREIGN KEY (budget_id) REFERENCES budgets(id) ON DELETE CASCADE', r.t);
+        END LOOP;
+      END $$`);
+  });
+
   beforeEach(async () => {
     await cleanTables(db, [
+      "budget_buckets",
       "action_history",
       "budget_period_categories",
       "budget_periods",
@@ -116,6 +133,20 @@ describe("Undo of a budget creation (integration)", () => {
     await expectRefusedAndIntact({ lines: 1, periods: 0 });
   });
 
+  const addBucket = (budgetId: string) =>
+    db.query(
+      `INSERT INTO budget_buckets (budget_id, name, target_type, target_value)
+       VALUES ($1, 'Needs', 'PERCENT', 50)`,
+      [budgetId],
+    );
+
+  it("refuses after a bucket was added later, and writes nothing", async () => {
+    const budget = await createBudget();
+    await addBucket(budget.id);
+    await expectRefusedAndIntact({ lines: 0, periods: 0 });
+    expect(await count("budget_buckets")).toBe(1);
+  });
+
   it("refuses with both a line and a closed period, and writes nothing", async () => {
     const budget = await createBudget();
     await addLine(budget.id);
@@ -132,5 +163,57 @@ describe("Undo of a budget creation (integration)", () => {
     await asUser(() => history.redo(userId));
     const rows = await db.query(`SELECT id, name FROM budgets`);
     expect(rows).toEqual([{ id: budget.id, name: "Household" }]);
+  });
+
+  describe("a deleted budget", () => {
+    async function deleteBudgetWithLinesAndBucket() {
+      const budget = await createBudget();
+      await addLine(budget.id);
+      await addBucket(budget.id);
+      await asUser(() => budgets.remove(userId, budget.id));
+      await settlePendingHistoryWrites();
+      expect(await count("budgets")).toBe(0);
+      return budget;
+    }
+
+    it("is restored by the undo with its lines and buckets", async () => {
+      const budget = await deleteBudgetWithLinesAndBucket();
+
+      await asUser(() => history.undo(userId));
+
+      const [row] = await db.query(
+        `SELECT (SELECT count(*)::int FROM budget_categories WHERE budget_id = b.id) AS lines,
+                (SELECT count(*)::int FROM budget_buckets WHERE budget_id = b.id) AS buckets
+           FROM budgets b WHERE b.id = $1`,
+        [budget.id],
+      );
+      expect(row).toEqual({ lines: 1, buckets: 1 });
+    });
+
+    it("is removed again by the redo, with the lines it restored", async () => {
+      await deleteBudgetWithLinesAndBucket();
+      await asUser(() => history.undo(userId));
+
+      await asUser(() => history.redo(userId));
+
+      expect(await count("budgets")).toBe(0);
+      expect(await count("budget_categories")).toBe(0);
+    });
+
+    it("refuses the redo once a line or a period was added after the restore", async () => {
+      const budget = await deleteBudgetWithLinesAndBucket();
+      await asUser(() => history.undo(userId));
+      await addPeriod(budget.id, "CLOSED");
+
+      const refusal = await asUser(() => history.redo(userId)).catch((e) => e);
+
+      expect(refusal).toBeInstanceOf(ConflictException);
+      expect((refusal as ConflictException).getResponse()).toMatchObject({
+        errorCode: "REDO_BUDGET_HAS_HISTORY",
+      });
+      expect(await count("budgets")).toBe(1);
+      expect(await count("budget_categories")).toBe(1);
+      expect(await count("budget_periods")).toBe(1);
+    });
   });
 });

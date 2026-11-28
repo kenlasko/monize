@@ -101,6 +101,7 @@
     "nothingToRedo": "Tidak ada yang dapat diulang",
     "undoCreateInUse": "Pembuatan \"{{ name }}\" tidak dapat dibatalkan: kini digunakan oleh {{ summary }}. Hapus semuanya terlebih dahulu.",
     "undoBudgetHasHistory": "Pembuatan \"{{ name }}\" tidak dapat dibatalkan: kini anggaran ini memiliki periode, baris kategori, atau bucket yang ditambahkan setelahnya. Hapus anggaran tersebut sebagai gantinya.",
+    "redoBudgetHasHistory": "Penghapusan \"{{ name }}\" tidak dapat diulang: kini anggaran ini memiliki periode, baris kategori, atau bucket yang ditambahkan setelah dipulihkan. Hapus anggaran tersebut sebagai gantinya.",
     "redoDeleteInUse": "Penghapusan \"{{ name }}\" tidak dapat diulang: kini digunakan oleh {{ summary }}. Hapus semuanya terlebih dahulu.",
     "redoDeleteTargetGone": "Penghapusan ini tidak dapat diulang: kategori tujuan pemindahan barisnya sudah tidak ada.",
     "undoNotSupportedForEntityType": "Pembatalan tidak didukung untuk jenis entitas: {{ entityType }}",

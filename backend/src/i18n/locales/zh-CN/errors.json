@@ -101,6 +101,7 @@
     "nothingToRedo": "没有可重做的操作",
     "undoCreateInUse": "无法撤销创建“{{ name }}”：它现在被 {{ summary }} 使用。请先移除这些项目。",
     "undoBudgetHasHistory": "无法撤销创建“{{ name }}”：该预算现在有之后添加的周期、类别行或分组。请改为删除该预算。",
+    "redoBudgetHasHistory": "无法重做删除“{{ name }}”：该预算在恢复后新增了周期、类别行或分组。请改为删除该预算。",
     "redoDeleteInUse": "无法重做删除“{{ name }}”：它现在被 {{ summary }} 使用。请先移除这些项目。",
     "redoDeleteTargetGone": "无法重做此删除：其条目被移入的类别已不存在。",
     "undoNotSupportedForEntityType": "不支持对实体类型撤销：{{ entityType }}",

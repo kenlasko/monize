@@ -22,7 +22,7 @@ type Finder = (
 /**
  * Entities whose row removal would clear or destroy rows that point at it.
  * `custom_report` is absent: its children are part of it. A budget has its own
- * check (`assertBudgetCreateUndoable`).
+ * check (`assertBudgetRemovable`).
  * The account's finder counts the loan's own schedule too, so an account undo
  * never drops a schedule that still pays into it. (Loan and mortgage creation
  * records only the schedule's entry today, so this guards a future one.)
@@ -60,8 +60,8 @@ export async function assertNoReferencesBeforeDelete(
   manager: EntityManager,
   isRedo: boolean,
 ): Promise<void> {
-  if (action.entityType === "budget" && !isRedo && action.entityId) {
-    await assertBudgetCreateUndoable(action, manager);
+  if (action.entityType === "budget" && action.entityId) {
+    await assertBudgetRemovable(action, manager, isRedo);
     return;
   }
   const check = REFERENCE_CHECKS[action.entityType];
@@ -92,31 +92,80 @@ export async function assertNoReferencesBeforeDelete(
   );
 }
 
+/** Ids of the child rows a budget snapshot holds. */
+function snapshotIds(snapshot: unknown, key: string): Set<string> {
+  const rows = (snapshot as Record<string, unknown> | null)?.[key];
+  return new Set(
+    Array.isArray(rows) ? rows.map((r) => (r as { id: string }).id) : [],
+  );
+}
+
 /**
- * Creating a budget makes the budget row alone. Its closed periods and lines
- * come later, so removing the budget would take rows the create never made
- * (and a redo cannot bring them back): the undo is refused before any write.
+ * Removing a budget cascades to its periods, lines and buckets, so the undo of
+ * its create (which made the budget row alone) and the redo of its delete are
+ * refused, before any write, while rows the action did not account for exist.
+ * The lock is its own statement and the counts a second one: under READ
+ * COMMITTED a count in the locking statement would miss a line or a close that
+ * committed while the lock waited (CONC-011). Every period counts, open ones
+ * too: it keeps the cascade out of the picture and the message true. Budget
+ * notifications (`notifications.budget_id` cascades) are not counted: they are
+ * alerts the alert service derives again from the budget, not a record the
+ * user made.
+ *
+ * A redo of a delete expects the lines and buckets its snapshot restored
+ * (`afterData` once inverted); periods are never restored, so any is new.
  */
-async function assertBudgetCreateUndoable(
+async function assertBudgetRemovable(
   action: ActionHistory,
   manager: EntityManager,
+  isRedo: boolean,
 ): Promise<void> {
-  const rows = await manager.query(
-    `SELECT b.name,
-            (SELECT count(*)::int FROM budget_periods WHERE budget_id = b.id) AS periods,
-            (SELECT count(*)::int FROM budget_categories WHERE budget_id = b.id) AS lines,
-            (SELECT count(*)::int FROM budget_buckets WHERE budget_id = b.id) AS buckets
-       FROM budgets b WHERE b.id = $1 AND b.user_id = $2 FOR UPDATE`,
+  const locked: { name: string }[] = await manager.query(
+    `SELECT name FROM budgets WHERE id = $1 AND user_id = $2 FOR UPDATE`,
     [action.entityId, action.userId],
   );
-  const row = rows?.[0];
-  if (!row || row.periods + row.lines + row.buckets === 0) return;
-  throw new ConflictException({
-    message: tr(
-      "errors.actionHistory.undoBudgetHasHistory",
-      `Cannot undo creating "${row.name}": it now has periods, category lines or buckets that were added after it. Delete the budget instead.`,
-      { name: row.name },
-    ),
-    errorCode: "UNDO_BUDGET_HAS_HISTORY",
-  });
+  if (!locked?.length) return;
+  const [{ periods }] = await manager.query(
+    `SELECT count(*)::int AS periods FROM budget_periods WHERE budget_id = $1`,
+    [action.entityId],
+  );
+  const lines: { id: string }[] = await manager.query(
+    `SELECT id FROM budget_categories WHERE budget_id = $1`,
+    [action.entityId],
+  );
+  const buckets: { id: string }[] = await manager.query(
+    `SELECT id FROM budget_buckets WHERE budget_id = $1`,
+    [action.entityId],
+  );
+  const knownLines = isRedo
+    ? snapshotIds(action.afterData, "categories")
+    : new Set<string>();
+  const knownBuckets = isRedo
+    ? snapshotIds(action.afterData, "buckets")
+    : new Set<string>();
+  const added =
+    Number(periods) +
+    lines.filter((r) => !knownLines.has(r.id)).length +
+    buckets.filter((r) => !knownBuckets.has(r.id)).length;
+  if (added === 0) return;
+  const name = locked[0].name;
+  throw new ConflictException(
+    isRedo
+      ? {
+          message: tr(
+            "errors.actionHistory.redoBudgetHasHistory",
+            `Cannot redo deleting "${name}": it now has periods, category lines or buckets that were added after it was restored. Delete the budget instead.`,
+            { name },
+          ),
+          errorCode: "REDO_BUDGET_HAS_HISTORY",
+        }
+      : {
+          message: tr(
+            "errors.actionHistory.undoBudgetHasHistory",
+            `Cannot undo creating "${name}": it now has periods, category lines or buckets that were added after it. Delete the budget instead.`,
+            { name },
+          ),
+          errorCode: "UNDO_BUDGET_HAS_HISTORY",
+        },
+  );
 }
