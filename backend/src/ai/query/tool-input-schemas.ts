@@ -412,15 +412,20 @@ export const renderChartSchema = z
       .min(1)
       .max(20),
   })
-  .refine(
-    (chart) =>
-      chart.type !== "pie" || chart.data.every((point) => point.value >= 0),
-    {
-      message:
-        "Pie slices require non-negative values; use a bar chart for signed amounts.",
-      path: ["data"],
-    },
-  );
+  .superRefine((chart, ctx) => {
+    if (chart.type !== "pie") return;
+    chart.data.forEach(({ value }, index) => {
+      if (value < 0) {
+        ctx.addIssue({
+          code: "too_small",
+          origin: "number",
+          minimum: 0,
+          inclusive: true,
+          path: ["data", index, "value"],
+        });
+      }
+    });
+  });
 
 /**
  * Money amount matching CreateTransactionDto: bounded and at most `MONEY_SCALE`

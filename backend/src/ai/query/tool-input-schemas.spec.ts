@@ -913,7 +913,12 @@ describe("tool-input-schemas", () => {
         type: "pie",
         data: [{ label: "Groceries", value: -10 }],
       });
-      expect(result.success).toBe(false);
+      expect(result.error?.issues).toEqual([
+        expect.objectContaining({
+          code: "too_small",
+          path: ["data", 0, "value"],
+        }),
+      ]);
     });
 
     it("rejects NaN values", () => {
