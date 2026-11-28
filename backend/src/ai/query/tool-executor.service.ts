@@ -1,5 +1,4 @@
 import { DataSource } from "typeorm";
-import { todayYMD } from "../../common/date-utils";
 import { withScopedDb } from "../../common/db/scoped-db";
 import { userTodayYMD } from "../../common/users-by-timezone.util";
 import { sharedLedgerRefusal } from "../../common/db/shared-ledger-refusal";
@@ -66,7 +65,10 @@ import {
   type LlmQueryDirection,
   TransactionAnalyticsService,
 } from "../../transactions/transaction-analytics.service";
-import { NetWorthService } from "../../net-worth/net-worth.service";
+import {
+  NetWorthService,
+  defaultNetWorthHistoryStart,
+} from "../../net-worth/net-worth.service";
 import { BudgetReportsService } from "../../budgets/budget-reports.service";
 import { PortfolioService } from "../../securities/portfolio.service";
 import { SecuritiesService } from "../../securities/securities.service";
@@ -244,6 +246,14 @@ function tagSummarySuffix(change: {
 export class ToolExecutorService {
   private readonly logger = new Logger(ToolExecutorService.name);
 
+  /**
+   * The user's day, by the one rule the prompt, forecast and insights use. A
+   * tool resolves it once per call and passes it to every default it applies.
+   */
+  private userToday(userId: string): Promise<string> {
+    return withScopedDb(this.dataSource, (m) => userTodayYMD(m, userId));
+  }
+
   constructor(
     @Inject(forwardRef(() => AccountsService))
     private readonly accountsService: AccountsService,
@@ -358,7 +368,7 @@ export class ToolExecutorService {
           result = await this.getUpcomingBills(userId, validatedInput);
           break;
         case "calculate":
-          result = await this.calculate(validatedInput);
+          result = await this.calculate(userId, validatedInput);
           break;
         case "render_chart":
           result = this.renderChart(validatedInput);
@@ -509,7 +519,7 @@ export class ToolExecutorService {
     userId: string,
     input: Record<string, unknown>,
   ): Promise<ToolResult> {
-    const defaults = getDefaultDateRange(todayYMD());
+    const defaults = getDefaultDateRange(await this.userToday(userId));
     const startDate = (input.startDate as string) ?? defaults.startDate;
     const endDate = (input.endDate as string) ?? defaults.endDate;
     const accountNames = input.accountNames as string[] | undefined;
@@ -2651,7 +2661,7 @@ export class ToolExecutorService {
           period2Start: input.period2Start as string | undefined,
           period2End: input.period2End as string | undefined,
         },
-        todayYMD(),
+        await this.userToday(userId),
       );
     const groupBy = (input.groupBy as "category" | "payee") || "category";
     const direction =
@@ -3285,6 +3295,7 @@ export class ToolExecutorService {
     userId: string,
     input: Record<string, unknown>,
   ): Promise<ToolResult> {
+    const today = await this.userToday(userId);
     const type = input.type as
       | "spending_by_category"
       | "spending_by_payee"
@@ -3305,14 +3316,11 @@ export class ToolExecutorService {
         endDate,
       );
 
-      // An empty history is dated by the user's day, resolved once, as
-      // getLlmHistory resolves it for the same call.
-      const emptyDay =
-        history.length === 0
-          ? await withScopedDb(this.dataSource, (m) => userTodayYMD(m, userId))
-          : undefined;
-      const start = startDate || history[0]?.month || emptyDay;
-      const end = endDate || history[history.length - 1]?.month || emptyDay;
+      // With no rows the range shown is the one getLlmHistory searched: its
+      // default start (twelve months back) and the user's day.
+      const start =
+        startDate || history[0]?.month || defaultNetWorthHistoryStart(today);
+      const end = endDate || history[history.length - 1]?.month || today;
 
       return {
         // Bare array, matching the MCP generate_report net_worth_history payload
@@ -3354,8 +3362,7 @@ export class ToolExecutorService {
     }
 
     if (type === "month_comparison") {
-      const month =
-        (input.month as string) ?? getDefaultPreviousMonth(todayYMD());
+      const month = (input.month as string) ?? getDefaultPreviousMonth(today);
       const data = await this.builtInReportsService.getMonthlyComparison(
         userId,
         month,
@@ -3382,7 +3389,7 @@ export class ToolExecutorService {
       };
     }
 
-    const defaults = getDefaultDateRange(todayYMD());
+    const defaults = getDefaultDateRange(today);
     const startDate = (input.startDate as string) ?? defaults.startDate;
     const endDate = (input.endDate as string) ?? defaults.endDate;
 
@@ -3462,7 +3469,10 @@ export class ToolExecutorService {
     return ` ${consequence}: no exchange rate for ${pairs.join(", ")}; add it under Currencies.`;
   }
 
-  private async calculate(input: Record<string, unknown>): Promise<ToolResult> {
+  private async calculate(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
     // A currency conversion is the one calculation that needs the database:
     // the rate is the server's, on the date asked for, through the same
     // resolver the MCP `calculate` tool uses.
@@ -3471,6 +3481,7 @@ export class ToolExecutorService {
         ? await executeConversion(
             input as unknown as ConvertInput,
             this.exchangeRateService,
+            await this.userToday(userId),
           )
         : executeCalculation(input as unknown as CalculateInput);
 

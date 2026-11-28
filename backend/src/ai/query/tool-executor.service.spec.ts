@@ -804,11 +804,15 @@ describe("ToolExecutorService", () => {
       releaseForPrompt: jest.fn(),
     };
 
+    // The user's timezone lookup behind "today": no row, so UTC.
+    const scopedDb = createScopedDbMocks();
+    scopedDb.manager.query.mockResolvedValue([]);
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         sharedReviewProvider(),
         ToolExecutorService,
-        { provide: DataSource, useValue: createScopedDbMocks().dataSource },
+        { provide: DataSource, useValue: scopedDb.dataSource },
         { provide: AttachmentToolPrepService, useValue: attachmentPrep },
         { provide: RelayAttachmentStore, useValue: attachmentStore },
         { provide: AccountsService, useValue: accounts },
@@ -881,6 +885,26 @@ describe("ToolExecutorService", () => {
   );
 
   describe("tool routing", () => {
+    it("list_transactions defaults its range to the user's day (#2365)", async () => {
+      // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
+      jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+      try {
+        await requestContextStorage.run(
+          { userId, timezone: "Pacific/Kiritimati" },
+          () => service.execute(userId, "list_transactions", {}),
+        );
+        expect(analytics.getLlmListTransactions).toHaveBeenCalledWith(
+          userId,
+          expect.objectContaining({
+            startDate: "2026-10-29",
+            endDate: "2026-11-28",
+          }),
+        );
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it("list_transactions delegates to analytics.getLlmListTransactions", async () => {
       const result = await service.execute(userId, "list_transactions", {
         startDate: "2026-01-01",
@@ -1283,7 +1307,8 @@ describe("ToolExecutorService", () => {
               type: "net_worth_history",
             }),
         );
-        expect(result.sources[0].dateRange).toBe("2026-11-28 to 2026-11-28");
+        // The range getLlmHistory searched: twelve months back to the user's day.
+        expect(result.sources[0].dateRange).toBe("2025-11-01 to 2026-11-28");
       } finally {
         jest.useRealTimers();
       }

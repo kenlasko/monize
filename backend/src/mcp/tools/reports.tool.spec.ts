@@ -1,6 +1,7 @@
 import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { sharedReviewMock } from "../../shared-expenses/__fixtures__/shared-review";
 import { McpReportsTools } from "./reports.tool";
+import { requestContextStorage } from "../../common/request-context";
 import { mcpTestCtx, McpTestContext } from "../testing/mcp-test-context";
 
 describe("McpReportsTools", () => {
@@ -91,6 +92,27 @@ describe("McpReportsTools", () => {
       );
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("read");
+    });
+
+    it("defaults the range to the user's day (#2365)", async () => {
+      // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
+      jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+      try {
+        ctx.setUser({ userId: "u1", scopes: "read" });
+        reportsService.getSpendingByCategory.mockResolvedValue({ data: [] });
+        await requestContextStorage.run(
+          { userId: "u1", timezone: "Pacific/Kiritimati" },
+          () =>
+            handlers["generate_report"]({ type: "spending_by_category" }, ctx),
+        );
+        expect(reportsService.getSpendingByCategory).toHaveBeenCalledWith(
+          "u1",
+          "2026-10-29",
+          "2026-11-28",
+        );
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("should run spending_by_category report", async () => {

@@ -105,6 +105,7 @@ export class InsightsAggregatorService {
   ): Promise<SpendingAggregates> {
     // The user's financial today (A26-L29), never a local-midnight Date read
     // back in UTC: the month a person is in follows their own zone.
+    // A cron has no request zone, so it uses the stored one; a request's zone wins.
     const today = await withScopedDb(this.dataSource, (manager) =>
       userTodayYMD(manager, userId),
     );
