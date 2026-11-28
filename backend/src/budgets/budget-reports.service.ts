@@ -132,7 +132,16 @@ export interface LlmBudgetStatusResult {
   strategy: string;
   period: { start: string; end: string };
   totalBudgeted: number;
-  totalSpent: number;
+  /**
+   * `null` when a row had no rate to the budget currency (`valuationComplete`
+   * is `false`); `knownTotalSpent` is then the converted part, and
+   * `remaining` and `percentUsed` are `null` too.
+   */
+  totalSpent: number | null;
+  knownTotalSpent: number;
+  valuationComplete: boolean;
+  /** `"JPY->CAD"` for each pair with no rate behind the withheld totals. */
+  missingRatePairs: string[];
   /** Total Budget Funding: `categoryIncome` plus `transferFunding`. */
   totalIncome: number;
   /**
@@ -145,13 +154,15 @@ export interface LlmBudgetStatusResult {
    * category and the transfers in from outside the budget. Not income.
    */
   transferFunding: number;
-  remaining: number;
-  percentUsed: number;
+  remaining: number | null;
+  percentUsed: number | null;
   overBudgetCategories: Array<{
     category: string;
     budgeted: number;
     spent: number;
     percentUsed: number;
+    /** `false`: `spent` is the converted part only. */
+    valuationComplete: boolean;
   }>;
   nearLimitCategories: Array<{
     category: string;
@@ -159,6 +170,7 @@ export interface LlmBudgetStatusResult {
     spent: number;
     remaining: number;
     percentUsed: number;
+    valuationComplete: boolean;
   }>;
   categoryCount: number;
   velocity?: {
@@ -374,6 +386,7 @@ export class BudgetReportsService {
         budgeted: c.budgeted,
         spent: c.spent,
         percentUsed: c.percentUsed,
+        valuationComplete: c.valuationComplete,
       }));
 
     const nearLimitCategories = summary.categoryBreakdown
@@ -390,6 +403,7 @@ export class BudgetReportsService {
         spent: c.spent,
         remaining: c.remaining,
         percentUsed: c.percentUsed,
+        valuationComplete: c.valuationComplete,
       }));
 
     const result: LlmBudgetStatusResult = {
@@ -398,6 +412,9 @@ export class BudgetReportsService {
       period: { start: periodStart, end: periodEnd },
       totalBudgeted: summary.totalBudgeted,
       totalSpent: summary.totalSpent,
+      knownTotalSpent: summary.knownTotalSpent,
+      valuationComplete: summary.valuationComplete,
+      missingRatePairs: summary.missingRatePairs,
       totalIncome: summary.totalIncome,
       categoryIncome: summary.categoryIncome,
       transferFunding: summary.transferFunding,

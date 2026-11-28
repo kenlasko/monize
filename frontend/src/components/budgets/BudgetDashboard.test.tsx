@@ -199,6 +199,34 @@ describe('BudgetDashboard', () => {
     expect(screen.getByTestId('total-budgeted')).toHaveTextContent('5200');
   });
 
+  it('shows the totals as partial and names the missing pair, never as a complete figure', () => {
+    render(
+      <BudgetDashboard
+        summary={{
+          ...mockSummary,
+          totalSpent: null,
+          remaining: null,
+          percentUsed: null,
+          knownTotalSpent: 20,
+          valuationComplete: false,
+          missingRatePairs: ['QQQ->USD'],
+        }}
+        velocity={mockVelocity}
+        scheduledTransactions={[]}
+        dailySpending={[]}
+        trendData={[]}
+        healthScore={85}
+        displayCurrency="USD"
+        formatCurrency={mockFormat}
+      />,
+    );
+    expect(screen.queryByTestId('summary-cards')).not.toBeInTheDocument();
+    const note = screen.getByTestId('budget-partial-spent');
+    expect(note).toHaveTextContent('QQQ->USD');
+    expect(note).toHaveTextContent('$20.00');
+    expect(screen.getByTestId('unknown-amount')).toBeInTheDocument();
+  });
+
   it('notes the estimated amounts the transfer actuals include', () => {
     render(
       <BudgetDashboard

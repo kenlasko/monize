@@ -1828,6 +1828,27 @@ describe("ToolExecutorService", () => {
       expect(result.sources[0].type).toBe("budget");
     });
 
+    it("get_budget_status says the total is unknown when a rate is missing", async () => {
+      budgetReports.getLlmBudgetStatus.mockResolvedValueOnce({
+        budgetName: "Home",
+        period: { start: "2026-02-01", end: "2026-02-28" },
+        totalBudgeted: 1000,
+        totalSpent: null,
+        knownTotalSpent: 20,
+        percentUsed: null,
+        remaining: null,
+        valuationComplete: false,
+        missingRatePairs: ["QQQ->USD"],
+        overBudgetCategories: [],
+      } as never);
+
+      const result = await service.execute(userId, "get_budget_status", {});
+
+      expect(result.summary).toContain("total spent unknown");
+      expect(result.summary).toContain("QQQ->USD");
+      expect(result.summary).not.toContain("% used");
+    });
+
     it("list_upcoming_bills delegates to scheduledTransactions.getLlmUpcomingBillsAndDeposits", async () => {
       const result = await service.execute(userId, "list_upcoming_bills", {});
 

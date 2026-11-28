@@ -165,6 +165,10 @@
     "savingsChange": "儲蓄變化",
     "original": "原始：{amount}"
   },
+  "partialSpent": {
+    "reason": "{pairs} 沒有匯率，因此這些貨幣的支出未計入。請在「貨幣」頁面新增匯率。",
+    "known": "目前已換算的支出：{amount}。"
+  },
   "summaryCards": {
     "ariaLabel": "預算合計",
     "totalBudget": "總預算",

@@ -2947,7 +2947,9 @@ export class ToolExecutorService {
     }
 
     const summaryParts = [
-      `Budget "${data.budgetName}": ${data.percentUsed.toFixed(1)}% used ($${data.totalSpent.toFixed(2)} of $${data.totalBudgeted.toFixed(2)})`,
+      data.totalSpent === null || data.percentUsed === null
+        ? `Budget "${data.budgetName}": total spent unknown (no exchange rate for ${data.missingRatePairs.join(", ")}); $${data.knownTotalSpent.toFixed(2)} of $${data.totalBudgeted.toFixed(2)} converted so far`
+        : `Budget "${data.budgetName}": ${data.percentUsed.toFixed(1)}% used ($${data.totalSpent.toFixed(2)} of $${data.totalBudgeted.toFixed(2)})`,
     ];
 
     if (data.velocity) {

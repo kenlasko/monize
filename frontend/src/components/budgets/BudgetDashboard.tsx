@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { BudgetSummaryCards } from './BudgetSummaryCards';
 import { BudgetHealthGauge } from './BudgetHealthGauge';
 import { BudgetVelocityWidget } from './BudgetVelocityWidget';
@@ -13,6 +14,7 @@ import { Budget503020Summary } from './Budget503020Summary';
 import { BudgetBucketSummary, type BudgetBucketStatusState } from './BudgetBucketSummary';
 import { BudgetScenarioPlanner } from './BudgetScenarioPlanner';
 import { STRATEGY_LABELS, STRATEGY_DESCRIPTIONS } from './utils/budget-labels';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import type { BudgetSummary, BudgetTrendPoint, BudgetVelocity } from '@/types/budget';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
@@ -52,6 +54,7 @@ export function BudgetDashboard({
   formatCurrency,
   onCategoryClick,
 }: BudgetDashboardProps) {
+  const tp = useTranslations('budgets');
   const { periodStart, periodEnd } = summary;
 
   // Compute pace percent: what % of the period has elapsed
@@ -61,6 +64,7 @@ export function BudgetDashboard({
       : 0;
 
   const strategy = summary.budget.strategy;
+  const missingPairs = (summary.missingRatePairs ?? []).join(', ');
 
   return (
     <div className="space-y-6">
@@ -75,16 +79,32 @@ export function BudgetDashboard({
       </div>
 
       {/* Summary Cards */}
-      <BudgetSummaryCards
-        totalBudgeted={summary.totalBudgeted}
-        totalSpent={summary.totalSpent}
-        remaining={summary.remaining}
-        totalIncome={summary.totalIncome}
-        percentUsed={summary.percentUsed}
-        daysRemaining={velocity.daysRemaining}
-        displayCurrency={displayCurrency}
-        formatCurrency={formatCurrency}
-      />
+      {summary.totalSpent === null || summary.remaining === null || summary.percentUsed === null ? (
+        // A row with no exchange rate makes the totals unknown, not small: the
+        // cards would print the converted part as the whole.
+        <div
+          className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-800 dark:text-amber-200"
+          data-testid="budget-partial-spent"
+          role="note"
+        >
+          <div className="flex items-center gap-2 font-medium">
+            <UnknownAmount reasonText={tp('partialSpent.reason', { pairs: missingPairs })} />
+            {tp('partialSpent.known', { amount: formatCurrency(summary.knownTotalSpent ?? 0) })}
+          </div>
+          <p className="mt-1">{tp('partialSpent.reason', { pairs: missingPairs })}</p>
+        </div>
+      ) : (
+        <BudgetSummaryCards
+          totalBudgeted={summary.totalBudgeted}
+          totalSpent={summary.totalSpent}
+          remaining={summary.remaining}
+          totalIncome={summary.totalIncome}
+          percentUsed={summary.percentUsed}
+          daysRemaining={velocity.daysRemaining}
+          displayCurrency={displayCurrency}
+          formatCurrency={formatCurrency}
+        />
+      )}
       {/* A transfer line's actual can hold an imported estimate of a
           cross-currency leg; the figures include it and the note says so. */}
       <ProvisionalDataNotice count={summary.provisionalCount} />

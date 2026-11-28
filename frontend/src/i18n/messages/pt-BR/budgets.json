@@ -165,6 +165,10 @@
     "savingsChange": "Variação nas Poupanças",
     "original": "Original: {amount}"
   },
+  "partialSpent": {
+    "reason": "Não há taxa de câmbio para {pairs}, então os gastos nessas moedas não são contabilizados. Adicione a taxa na página Moedas.",
+    "known": "Gasto convertido até agora: {amount}."
+  },
   "summaryCards": {
     "ariaLabel": "Totais do orçamento",
     "totalBudget": "Total do Orçamento",

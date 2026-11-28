@@ -24,7 +24,8 @@ import { CARD_CLASS } from '@/components/ui/Card';
 
 interface BudgetUpcomingBillsProps {
   scheduledTransactions: ScheduledTransaction[];
-  currentSpent: number;
+  /** `null` when the period's spending is unknown (a row had no rate). */
+  currentSpent: number | null;
   totalBudgeted: number;
   periodEnd: string;
   /**
@@ -131,7 +132,7 @@ export function BudgetUpcomingBills({
   // Incomplete for either reason -- an occurrence nobody can price, or one in a
   // currency with no rate into the budget's -- leaves this unknown rather than
   // larger. `isComplete` is the one definition of "nothing left out".
-  const trulyAvailable = isComplete(upcomingTotal)
+  const trulyAvailable = isComplete(upcomingTotal) && currentSpent !== null
     ? totalBudgeted - currentSpent - upcomingTotal.value
     : null;
 

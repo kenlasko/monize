@@ -8,6 +8,7 @@ import { DashboardBudgetSummary } from '@/types/budget';
 import { clamp } from '@/lib/clamp';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { WidgetHeading } from './widget-meta';
 import {
   budgetPercentColor,
@@ -21,6 +22,7 @@ interface BudgetStatusWidgetProps {
 
 export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWidgetProps) {
   const t = useTranslations('dashboard');
+  const tb = useTranslations('budgets');
   const router = useRouter();
   const { formatCurrency, formatPercent } = useNumberFormat();
   const [summary, setSummary] = useState<DashboardBudgetSummary | null>(null);
@@ -80,6 +82,14 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
     );
   }
 
+  // A row with no exchange rate is left out of the converted figure, so the
+  // total is unknown rather than small (read as `=== false`: absent is no
+  // information).
+  const partialReason = (pairs?: string[]) =>
+    tb('partialSpent.reason', { pairs: (pairs ?? []).join(', ') });
+  const totalUnknown =
+    summary.valuationComplete === false || summary.percentUsed === null || summary.totalSpent === null;
+
   return (
     <div className={`${CARD_CLASS} p-3 sm:p-6`}>
       <div className="ui-widget-head flex items-center justify-between mb-3">
@@ -94,19 +104,39 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
       {/* Overall progress */}
       <div className="mb-3">
         <div className="flex items-baseline justify-between mb-1">
-          <span className={`text-xl font-bold ${budgetPercentColor(summary.percentUsed)}`}>
-            {formatPercent(summary.percentUsed, 0)}
-          </span>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            {formatCurrency(summary.totalSpent)} / {formatCurrency(summary.totalBudgeted)}
-          </span>
+          {totalUnknown ? (
+            <>
+              <span className="text-xl font-bold text-gray-500 dark:text-gray-400">
+                <UnknownAmount reasonText={partialReason(summary.missingRatePairs)} />
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {formatCurrency(summary.totalBudgeted)}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className={`text-xl font-bold ${budgetPercentColor(summary.percentUsed ?? 0)}`}>
+                {formatPercent(summary.percentUsed ?? 0, 0)}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {formatCurrency(summary.totalSpent ?? 0)} / {formatCurrency(summary.totalBudgeted)}
+              </span>
+            </>
+          )}
         </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-          <div
-            className={`h-2 rounded-full transition-all ${budgetProgressBarColor(summary.percentUsed)}`}
-            style={{ width: `${clamp(summary.percentUsed, 0, 100)}%` }}
-          />
-        </div>
+        {totalUnknown ? (
+          <p className="text-xs text-gray-500 dark:text-gray-400" data-testid="budget-partial-note" role="note">
+            {partialReason(summary.missingRatePairs)}{' '}
+            {tb('partialSpent.known', { amount: formatCurrency(summary.knownTotalSpent ?? 0) })}
+          </p>
+        ) : (
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div
+              className={`h-2 rounded-full transition-all ${budgetProgressBarColor(summary.percentUsed ?? 0)}`}
+              style={{ width: `${clamp(summary.percentUsed ?? 0, 0, 100)}%` }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Safe daily spend */}
@@ -115,7 +145,11 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
           {t('budgetStatus.safeToSpend')}
         </div>
         <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
-          {formatCurrency(summary.safeDailySpend)}
+          {summary.safeDailySpend === null ? (
+            <UnknownAmount reasonText={partialReason(summary.missingRatePairs)} />
+          ) : (
+            formatCurrency(summary.safeDailySpend)
+          )}
         </div>
       </div>
 
@@ -132,16 +166,25 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
                   <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
                     {cat.categoryName}
                   </span>
-                  <span className={`text-xs font-medium ${budgetPercentColor(cat.percentUsed)}`}>
-                    {formatPercent(cat.percentUsed, 0)}
-                  </span>
+                  {cat.valuationComplete === false ? (
+                    <UnknownAmount
+                      className="text-xs font-medium"
+                      reasonText={partialReason(cat.missingRatePairs)}
+                    />
+                  ) : (
+                    <span className={`text-xs font-medium ${budgetPercentColor(cat.percentUsed)}`}>
+                      {formatPercent(cat.percentUsed, 0)}
+                    </span>
+                  )}
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                  <div
-                    className={`h-1.5 rounded-full ${budgetCategoryBarColor(cat.percentUsed)}`}
-                    style={{ width: `${clamp(cat.percentUsed, 0, 100)}%` }}
-                  />
-                </div>
+                {cat.valuationComplete !== false && (
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                    <div
+                      className={`h-1.5 rounded-full ${budgetCategoryBarColor(cat.percentUsed)}`}
+                      style={{ width: `${clamp(cat.percentUsed, 0, 100)}%` }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           ))}

@@ -1516,6 +1516,71 @@ describe("BudgetsService", () => {
       expect(spending.missingRatePairs).toEqual(["JPY->USD"]);
     });
 
+    it("withholds the totals and flags the line when a foreign row has no rate (audit #2365 p)", async () => {
+      const category = {
+        ...mockBudgetCategory,
+        id: "bc-1",
+        categoryId: "cat-1",
+        amount: 1000,
+        isIncome: false,
+        category: { name: "Groceries" },
+      };
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [category],
+      });
+      const rows = [
+        spendingRow("cat-1", "-20"),
+        { ...spendingRow("cat-1", "-1000"), currencyCode: "QQQ" },
+      ];
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue(rows),
+        }),
+      );
+
+      const result = await service.getSummary("user-1", "budget-1");
+      const line = result.categoryBreakdown[0];
+      expect(line.spent).toBe(20);
+      expect(line.valuationComplete).toBe(false);
+      expect(line.missingRatePairs).toEqual(["QQQ->USD"]);
+      expect(result.totalSpent).toBeNull();
+      expect(result.remaining).toBeNull();
+      expect(result.percentUsed).toBeNull();
+      expect(result.knownTotalSpent).toBe(20);
+      expect(result.valuationComplete).toBe(false);
+      expect(result.missingRatePairs).toEqual(["QQQ->USD"]);
+    });
+
+    it("reports a complete summary when every row converts", async () => {
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 1000,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+        ],
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest
+            .fn()
+            .mockResolvedValue([spendingRow("cat-1", "-20")]),
+        }),
+      );
+      const result = await service.getSummary("user-1", "budget-1");
+      expect(result.totalSpent).toBe(20);
+      expect(result.knownTotalSpent).toBe(20);
+      expect(result.valuationComplete).toBe(true);
+      expect(result.missingRatePairs).toEqual([]);
+      expect(result.categoryBreakdown[0].valuationComplete).toBe(true);
+    });
+
     it("counts transfers in as income: a line's and the toggle's (issue #2141)", async () => {
       budgetsRepository.findOne.mockResolvedValue({
         ...mockBudget,
@@ -2499,6 +2564,49 @@ describe("BudgetsService", () => {
           "categories.transferAccount",
         ],
         order: { createdAt: "DESC" },
+      });
+    });
+
+    it("withholds the totals and safe daily spend when a row has no rate (audit #2365 p)", async () => {
+      budgetsRepository.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [
+          {
+            ...mockBudgetCategory,
+            id: "bc-1",
+            categoryId: "cat-1",
+            amount: 1000,
+            isIncome: false,
+            category: { name: "Groceries" },
+          },
+        ],
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest
+            .fn()
+            .mockResolvedValue([
+              spendingRow("cat-1", "-20"),
+              { ...spendingRow("cat-1", "-1000"), currencyCode: "QQQ" },
+            ]),
+        }),
+      );
+
+      const result = await service.getDashboardSummary("user-1");
+
+      expect(result).toMatchObject({
+        totalSpent: null,
+        knownTotalSpent: 20,
+        remaining: null,
+        percentUsed: null,
+        safeDailySpend: null,
+        valuationComplete: false,
+        missingRatePairs: ["QQQ->USD"],
+      });
+      expect(result!.topCategories[0]).toMatchObject({
+        spent: 20,
+        valuationComplete: false,
+        missingRatePairs: ["QQQ->USD"],
       });
     });
 

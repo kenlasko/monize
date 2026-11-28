@@ -165,6 +165,10 @@
     "savingsChange": "貯蓄変化",
     "original": "元の値：{amount}"
   },
+  "partialSpent": {
+    "reason": "{pairs} の為替レートがないため、これらの通貨での支出は集計されていません。通貨ページでレートを追加してください。",
+    "known": "これまでに換算できた支出: {amount}。"
+  },
   "summaryCards": {
     "ariaLabel": "予算合計",
     "totalBudget": "予算合計",

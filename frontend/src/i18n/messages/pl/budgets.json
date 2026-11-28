@@ -165,6 +165,10 @@
     "savingsChange": "Zmiana oszczędności",
     "original": "Oryginalnie: {amount}"
   },
+  "partialSpent": {
+    "reason": "Brak kursu wymiany dla {pairs}. Wydatki w tych walutach nie są liczone. Dodaj kurs na stronie Waluty.",
+    "known": "Wydatki przeliczone do tej pory: {amount}."
+  },
   "summaryCards": {
     "ariaLabel": "Sumy budżetu",
     "totalBudget": "Budżet całkowity",

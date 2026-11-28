@@ -165,6 +165,10 @@
     "savingsChange": "저축 변동",
     "original": "원래: {amount}"
   },
+  "partialSpent": {
+    "reason": "{pairs}의 환율이 없어 해당 통화의 지출은 집계되지 않습니다. 통화 페이지에서 환율을 추가하세요.",
+    "known": "지금까지 환산된 지출: {amount}."
+  },
   "summaryCards": {
     "ariaLabel": "예산 합계",
     "totalBudget": "총 예산",

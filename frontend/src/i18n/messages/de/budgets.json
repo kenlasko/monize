@@ -165,6 +165,10 @@
     "savingsChange": "Änderung der Ersparnisse",
     "original": "Original: {amount}"
   },
+  "partialSpent": {
+    "reason": "Für {pairs} liegt kein Wechselkurs vor, daher werden Ausgaben in diesen Währungen nicht mitgezählt. Fügen Sie den Kurs auf der Seite Währungen hinzu.",
+    "known": "Bisher umgerechnete Ausgaben: {amount}."
+  },
   "summaryCards": {
     "ariaLabel": "Budgetsummen",
     "totalBudget": "Gesamt-Budget",

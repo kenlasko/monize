@@ -2356,6 +2356,30 @@ describe("BudgetReportsService", () => {
       expect(result.healthScore?.score).toBe(82);
     });
 
+    it("carries the withheld totals, known subtotal and missing pair through (audit #2365 p)", async () => {
+      budgetsService.getSummary.mockResolvedValue({
+        ...summary,
+        totalSpent: null,
+        knownTotalSpent: 20,
+        remaining: null,
+        percentUsed: null,
+        valuationComplete: false,
+        missingRatePairs: ["QQQ->USD"],
+      });
+
+      const result = await service.getLlmBudgetStatus("user-1");
+
+      if ("error" in result) throw new Error("unexpected error payload");
+      expect(result).toMatchObject({
+        totalSpent: null,
+        knownTotalSpent: 20,
+        remaining: null,
+        percentUsed: null,
+        valuationComplete: false,
+        missingRatePairs: ["QQQ->USD"],
+      });
+    });
+
     it("names Actual Income and Transfer Funding beside Total Budget Funding", async () => {
       budgetsService.getSummary.mockResolvedValue({
         ...summary,

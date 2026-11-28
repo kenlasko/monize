@@ -56,7 +56,7 @@ function computeHealthScore(summary: BudgetSummary): number {
     }
   }
 
-  if (summary.percentUsed > 100) {
+  if (summary.percentUsed !== null && summary.percentUsed > 100) {
     score -= (summary.percentUsed - 100) * 0.8;
   }
 

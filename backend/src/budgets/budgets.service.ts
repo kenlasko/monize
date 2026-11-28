@@ -54,6 +54,7 @@ import {
   resolveBudgetLineBudgeted,
   resolveCategoryName,
   resolveCategorySpent,
+  resolveCategorySpentOrNull,
   resolveOutsideTransferIncome,
 } from "./budget-spending.util";
 import {
@@ -127,6 +128,14 @@ export interface CategoryActualRow {
    * category line, whose rows are never transfer legs.
    */
   provisionalCount: number;
+  /**
+   * `false` when a row of this line had no rate to the budget currency:
+   * `spent` is then the converted part only, and `remaining` and
+   * `percentUsed` are computed over it (audit #2365 p).
+   */
+  valuationComplete: boolean;
+  /** `"JPY->CAD"` for each pair with no rate behind the line; empty while complete. */
+  missingRatePairs: string[];
 }
 
 /** The current period's line figures and the income no line carries. */
@@ -143,6 +152,44 @@ interface CategoryActuals {
    * `outsideTransferIncome` (`CategorySpending.provisionalCount`).
    */
   provisionalCount: number;
+  /** The pairs with no rate behind any incomplete line (`CategorySpending.missingRatePairs`). */
+  missingRatePairs: string[];
+}
+
+/**
+ * The budget-level spent figures over the expense lines. A line with an
+ * unconverted row makes the total unknown: `totalSpent`, `remaining` and
+ * `percentUsed` are `null` and the converted part is `knownTotalSpent`
+ * ("A subtotal is not a total").
+ */
+function expenseSpentTotals(
+  expenseCategories: CategoryActualRow[],
+  totalBudgeted: number,
+  missingRatePairs: string[],
+): {
+  totalSpent: number | null;
+  knownTotalSpent: number;
+  remaining: number | null;
+  percentUsed: number | null;
+  valuationComplete: boolean;
+  missingRatePairs: string[];
+} {
+  const knownTotalSpent = sumMoney(expenseCategories.map((c) => c.spent));
+  const valuationComplete = expenseCategories.every((c) => c.valuationComplete);
+  return {
+    totalSpent: valuationComplete ? knownTotalSpent : null,
+    knownTotalSpent,
+    remaining: valuationComplete
+      ? roundMoney(totalBudgeted - knownTotalSpent)
+      : null,
+    percentUsed: valuationComplete
+      ? totalBudgeted > 0
+        ? Math.round((knownTotalSpent / totalBudgeted) * 10000) / 100
+        : 0
+      : null,
+    valuationComplete,
+    missingRatePairs: valuationComplete ? [] : missingRatePairs,
+  };
 }
 
 @Injectable()
@@ -622,10 +669,16 @@ export class BudgetsService {
     periodStart: string;
     periodEnd: string;
     totalBudgeted: number;
-    totalSpent: number;
+    /** `null` while `valuationComplete` is `false`; `knownTotalSpent` is then the converted part. */
+    totalSpent: number | null;
+    knownTotalSpent: number;
     totalIncome: number;
-    remaining: number;
-    percentUsed: number;
+    remaining: number | null;
+    percentUsed: number | null;
+    /** `false` when an expense line had a row with no rate to the budget currency. */
+    valuationComplete: boolean;
+    /** `"JPY->CAD"` for each pair with no rate behind the withheld totals. */
+    missingRatePairs: string[];
     incomeLinked: boolean;
     actualIncome: number | null;
     /**
@@ -657,6 +710,7 @@ export class BudgetsService {
       lines: categoryBreakdown,
       outsideTransferIncome,
       provisionalCount,
+      missingRatePairs: actualsMissingPairs,
     } = await this.getCachedCategoryActuals(
       userId,
       budget,
@@ -668,7 +722,11 @@ export class BudgetsService {
     const incomeCategories = categoryBreakdown.filter((c) => c.isIncome);
 
     const totalBudgeted = sumMoney(expenseCategories.map((c) => c.budgeted));
-    const totalSpent = sumMoney(expenseCategories.map((c) => c.spent));
+    const spentTotals = expenseSpentTotals(
+      expenseCategories,
+      totalBudgeted,
+      actualsMissingPairs,
+    );
     const { totalIncome, categoryIncome, transferFunding } = budgetFunding(
       incomeCategories.map((c) => ({
         actual: c.spent,
@@ -676,11 +734,6 @@ export class BudgetsService {
       })),
       outsideTransferIncome,
     );
-    const remaining = roundMoney(totalBudgeted - totalSpent);
-    const percentUsed =
-      totalBudgeted > 0
-        ? Math.round((totalSpent / totalBudgeted) * 10000) / 100
-        : 0;
 
     let actualIncome: number | null = null;
     if (budget.incomeLinked) {
@@ -692,10 +745,8 @@ export class BudgetsService {
       periodStart,
       periodEnd,
       totalBudgeted,
-      totalSpent,
+      ...spentTotals,
       totalIncome,
-      remaining,
-      percentUsed,
       incomeLinked: budget.incomeLinked,
       actualIncome,
       categoryIncome,
@@ -1092,10 +1143,15 @@ export class BudgetsService {
     budgetId: string;
     budgetName: string;
     totalBudgeted: number;
-    totalSpent: number;
-    remaining: number;
-    percentUsed: number;
-    safeDailySpend: number;
+    /** `null` while `valuationComplete` is `false`; `knownTotalSpent` is then the converted part. */
+    totalSpent: number | null;
+    knownTotalSpent: number;
+    remaining: number | null;
+    percentUsed: number | null;
+    valuationComplete: boolean;
+    missingRatePairs: string[];
+    /** `null` when `remaining` is unknown. */
+    safeDailySpend: number | null;
     daysRemaining: number;
     topCategories: Array<{
       categoryName: string;
@@ -1103,6 +1159,8 @@ export class BudgetsService {
       spent: number;
       remaining: number;
       percentUsed: number;
+      valuationComplete: boolean;
+      missingRatePairs: string[];
     }>;
   } | null> {
     const budget = await this.findNewestActiveBudget(userId);
@@ -1110,22 +1168,23 @@ export class BudgetsService {
 
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
 
-    const { lines: categoryBreakdown } = await this.getCachedCategoryActuals(
-      userId,
-      budget,
-      periodStart,
-      periodEnd,
-    );
+    const { lines: categoryBreakdown, missingRatePairs } =
+      await this.getCachedCategoryActuals(
+        userId,
+        budget,
+        periodStart,
+        periodEnd,
+      );
 
     const expenseCategories = categoryBreakdown.filter((c) => !c.isIncome);
 
     const totalBudgeted = sumMoney(expenseCategories.map((c) => c.budgeted));
-    const totalSpent = sumMoney(expenseCategories.map((c) => c.spent));
-    const remaining = roundMoney(totalBudgeted - totalSpent);
-    const percentUsed =
-      totalBudgeted > 0
-        ? Math.round((totalSpent / totalBudgeted) * 10000) / 100
-        : 0;
+    const spentTotals = expenseSpentTotals(
+      expenseCategories,
+      totalBudgeted,
+      missingRatePairs,
+    );
+    const { remaining } = spentTotals;
 
     const today = new Date();
     const startDate = new Date(periodStart);
@@ -1143,7 +1202,11 @@ export class BudgetsService {
     );
     const daysRemaining = Math.max(0, totalDays - daysElapsed);
     const safeDailySpend =
-      daysRemaining > 0 ? Math.max(0, remaining / daysRemaining) : 0;
+      remaining === null
+        ? null
+        : daysRemaining > 0
+          ? Math.max(0, remaining / daysRemaining)
+          : 0;
 
     const topCategories = [...expenseCategories]
       .sort((a, b) => b.percentUsed - a.percentUsed)
@@ -1154,16 +1217,17 @@ export class BudgetsService {
         spent: c.spent,
         remaining: c.remaining,
         percentUsed: c.percentUsed,
+        valuationComplete: c.valuationComplete,
+        missingRatePairs: c.missingRatePairs,
       }));
 
     return {
       budgetId: budget.id,
       budgetName: budget.name,
       totalBudgeted,
-      totalSpent,
-      remaining,
-      percentUsed,
-      safeDailySpend: roundMoney(safeDailySpend),
+      ...spentTotals,
+      safeDailySpend:
+        safeDailySpend === null ? null : roundMoney(safeDailySpend),
       daysRemaining,
       topCategories,
     };
@@ -1180,6 +1244,9 @@ export class BudgetsService {
         spent: number;
         remaining: number;
         percentUsed: number;
+        /** `false`: `spent` is the converted part (a row had no rate). */
+        valuationComplete: boolean;
+        missingRatePairs: string[];
       }
     >
   > {
@@ -1190,6 +1257,8 @@ export class BudgetsService {
         spent: number;
         remaining: number;
         percentUsed: number;
+        valuationComplete: boolean;
+        missingRatePairs: string[];
       }
     >();
 
@@ -1217,6 +1286,8 @@ export class BudgetsService {
           spent: breakdown.spent,
           remaining: breakdown.remaining,
           percentUsed: breakdown.percentUsed,
+          valuationComplete: breakdown.valuationComplete,
+          missingRatePairs: breakdown.missingRatePairs,
         });
       }
     }
@@ -1305,7 +1376,12 @@ export class BudgetsService {
       budgetCategories.length === 0 &&
       !budgetTransfersInAsIncome(budget.config)
     ) {
-      return { lines: [], outsideTransferIncome: 0, provisionalCount: 0 };
+      return {
+        lines: [],
+        outsideTransferIncome: 0,
+        provisionalCount: 0,
+        missingRatePairs: [],
+      };
     }
 
     // The two spending queries share one scoped transaction so the direct and
@@ -1352,6 +1428,8 @@ export class BudgetsService {
         spending.transferIncomeMap,
       );
       const categoryName = resolveCategoryName(bc);
+      const valuationComplete =
+        resolveCategorySpentOrNull(bc, spending) !== null;
       const remaining = roundMoney(budgeted - spent);
       const percentUsed =
         budgeted > 0 ? Math.round((spent / budgeted) * 10000) / 100 : 0;
@@ -1370,6 +1448,8 @@ export class BudgetsService {
         isTransferFunding: isTransferFundingLine(bc),
         percentage,
         provisionalCount: resolveCategoryProvisionalCount(bc, spending),
+        valuationComplete,
+        missingRatePairs: valuationComplete ? [] : spending.missingRatePairs,
       };
     });
 
@@ -1378,6 +1458,7 @@ export class BudgetsService {
       paceByLine: spending.paceByLine,
       outsideTransferIncome: resolveOutsideTransferIncome(spending),
       provisionalCount: spending.provisionalCount,
+      missingRatePairs: spending.missingRatePairs,
     };
   }
 }

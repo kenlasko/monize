@@ -369,15 +369,29 @@ export interface CategoryBreakdown {
    * category line. Absent is no information.
    */
   provisionalCount?: number;
+  /**
+   * `false`: a row had no exchange rate to the budget currency, so `spent` is
+   * the converted part only. Read as `=== false`; absent is no information.
+   */
+  valuationComplete?: boolean;
+  /** `"JPY->CAD"` for each pair with no rate behind a partial `spent`. */
+  missingRatePairs?: string[];
 }
 
 export interface BudgetSummary {
   budget: Budget;
   totalBudgeted: number;
-  totalSpent: number;
+  /** `null` while `valuationComplete` is `false`: the figure is unknown, not small. */
+  totalSpent: number | null;
+  /** The converted part of the spending; the total only when `valuationComplete`. */
+  knownTotalSpent?: number;
+  /** Read as `=== false`; absent is no information. */
+  valuationComplete?: boolean;
+  /** `"JPY->CAD"` for each pair with no rate behind the withheld totals. */
+  missingRatePairs?: string[];
   totalIncome: number;
-  remaining: number;
-  percentUsed: number;
+  remaining: number | null;
+  percentUsed: number | null;
   incomeLinked: boolean;
   actualIncome: number | null;
   /**
@@ -563,10 +577,15 @@ export interface DashboardBudgetSummary {
   budgetId: string;
   budgetName: string;
   totalBudgeted: number;
-  totalSpent: number;
-  remaining: number;
-  percentUsed: number;
-  safeDailySpend: number;
+  /** `null` while `valuationComplete` is `false`: the figure is unknown, not small. */
+  totalSpent: number | null;
+  knownTotalSpent?: number;
+  remaining: number | null;
+  percentUsed: number | null;
+  valuationComplete?: boolean;
+  missingRatePairs?: string[];
+  /** `null` when `remaining` is unknown. */
+  safeDailySpend: number | null;
   daysRemaining: number;
   topCategories: Array<{
     categoryName: string;
@@ -574,6 +593,8 @@ export interface DashboardBudgetSummary {
     spent: number;
     remaining: number;
     percentUsed: number;
+    valuationComplete?: boolean;
+    missingRatePairs?: string[];
   }>;
 }
 
@@ -583,6 +604,8 @@ export interface CategoryBudgetStatus {
   spent: number;
   remaining: number;
   percentUsed: number;
+  valuationComplete?: boolean;
+  missingRatePairs?: string[];
 }
 
 // Savings Rate report types

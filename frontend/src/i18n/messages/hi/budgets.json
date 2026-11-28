@@ -165,6 +165,10 @@
     "savingsChange": "बचत परिवर्तन",
     "original": "मूल: {amount}"
   },
+  "partialSpent": {
+    "reason": "{pairs} के लिए कोई विनिमय दर उपलब्ध नहीं है, इसलिए उन मुद्राओं में खर्च नहीं गिना गया है। मुद्राएँ पृष्ठ पर दर जोड़ें।",
+    "known": "अब तक परिवर्तित खर्च: {amount}।"
+  },
   "summaryCards": {
     "ariaLabel": "बजट का कुल योग",
     "totalBudget": "कुल बजट",

@@ -165,6 +165,10 @@
     "savingsChange": "Cambio en ahorros",
     "original": "Original: {amount}"
   },
+  "partialSpent": {
+    "reason": "No hay tipo de cambio para {pairs}, por lo que no se cuentan los gastos en esas monedas. Añada el tipo en la página Monedas.",
+    "known": "Gasto convertido hasta ahora: {amount}."
+  },
   "summaryCards": {
     "ariaLabel": "Totales del presupuesto",
     "totalBudget": "Presupuesto total",

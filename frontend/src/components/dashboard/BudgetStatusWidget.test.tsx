@@ -58,6 +58,34 @@ describe('BudgetStatusWidget', () => {
     expect(Array.from(bars, (bar) => bar.style.width)).toEqual([width, width]);
   });
 
+  it('shows an unknown total, the missing pair and the known part, never a complete percent', async () => {
+    mockGetDashboardSummary.mockResolvedValue({
+      ...mockSummary,
+      totalSpent: null,
+      remaining: null,
+      percentUsed: null,
+      safeDailySpend: null,
+      knownTotalSpent: 20,
+      valuationComplete: false,
+      missingRatePairs: ['QQQ->USD'],
+      topCategories: [
+        {
+          ...mockSummary.topCategories[0],
+          spent: 20,
+          percentUsed: 2,
+          valuationComplete: false,
+          missingRatePairs: ['QQQ->USD'],
+        },
+      ],
+    });
+    render(<BudgetStatusWidget isLoading={false} />);
+    const note = await screen.findByTestId('budget-partial-note');
+    expect(note).toHaveTextContent('QQQ->USD');
+    expect(note).toHaveTextContent('$20.00');
+    expect(screen.queryByText('2%')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('unknown-amount').length).toBeGreaterThanOrEqual(3);
+  });
+
   it('shows loading skeleton when parent is loading', () => {
     render(<BudgetStatusWidget isLoading={true} />);
 

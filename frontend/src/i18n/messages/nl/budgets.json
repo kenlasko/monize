@@ -165,6 +165,10 @@
     "savingsChange": "Bespaarwijziging",
     "original": "Origineel: {amount}"
   },
+  "partialSpent": {
+    "reason": "Er is geen wisselkoers voor {pairs}, dus uitgaven in die valuta's worden niet meegeteld. Voeg de koers toe op de pagina Valuta's.",
+    "known": "Tot nu toe omgerekende uitgaven: {amount}."
+  },
   "summaryCards": {
     "ariaLabel": "Budgettotalen",
     "totalBudget": "Totaal budget",

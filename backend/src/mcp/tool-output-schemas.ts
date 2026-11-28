@@ -459,14 +459,17 @@ export const getBudgetStatusOutput = toolOutput({
   strategy: str.optional(),
   period: looseObject({ start: str, end: str }).optional(),
   totalBudgeted: num.optional(),
-  totalSpent: num.optional(),
+  // Null when a row had no rate to the budget currency; knownTotalSpent,
+  // valuationComplete and missingRatePairs ride in the loose result
+  // undeclared (tools-list-budget.spec.ts), as does the per-row flag.
+  totalSpent: num.nullable().optional(),
   // Total Budget Funding. Its two parts, categoryIncome (Actual Income) and
   // transferFunding (transfers that fund the budget, never income), ride in
   // the loose result unenumerated: tools/list is held to its byte budget
   // (tools-list-budget.spec.ts), and the names say what they are.
   totalIncome: num.optional(),
-  remaining: num.optional(),
-  percentUsed: num.optional(),
+  remaining: num.nullable().optional(),
+  percentUsed: num.nullable().optional(),
   overBudgetCategories: rows().optional(),
   nearLimitCategories: rows().optional(),
   categoryCount: num.optional(),

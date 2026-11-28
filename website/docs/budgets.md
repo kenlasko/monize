@@ -121,6 +121,8 @@ Four cards at the top provide an at-a-glance overview:
 
 Purchases add to **Spent** and refunds in the same expense category reduce it. For a budget of 100, a purchase of 100 and a refund of 150 show **Spent −50** and **Remaining 150**. An ordinary income line likewise shows negative income if reversals exceed receipts. Open periods use these signed figures, and closing a period records them. Previously closed periods keep their saved figures.
 
+If a transaction is in a currency with no exchange rate to the budget currency, Monize cannot work out the **Spent**, **Remaining** and percentage figures. The summary cards are replaced by a note that names the missing currency pair and shows the spending that could be converted so far. The dashboard widget shows the same note. Add the rate on the Currencies page to see the figures again.
+
 ### Health Score
 
 A circular gauge from 0 to 100 summarizing how well you are sticking to your budget.

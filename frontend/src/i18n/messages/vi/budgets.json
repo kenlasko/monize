@@ -165,6 +165,10 @@
     "savingsChange": "Thay đổi tiết kiệm",
     "original": "Gốc: {amount}"
   },
+  "partialSpent": {
+    "reason": "Không có tỷ giá cho {pairs}, nên chi tiêu bằng các loại tiền đó không được tính. Hãy thêm tỷ giá ở trang Tiền tệ.",
+    "known": "Chi tiêu đã quy đổi đến nay: {amount}."
+  },
   "summaryCards": {
     "ariaLabel": "Tổng ngân sách",
     "totalBudget": "Tổng ngân sách",
