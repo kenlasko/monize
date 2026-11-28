@@ -104,6 +104,20 @@ describe("FinancialContextBuilder", () => {
   });
 
   describe("buildQueryContext()", () => {
+    it("uses the stored timezone of the loaded preference outside a request (#2365)", async () => {
+      jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+      try {
+        mockPrefRepo.findOne.mockResolvedValue({
+          defaultCurrency: "USD",
+          timezone: "Pacific/Kiritimati",
+        });
+        const result = await builder.buildQueryContext(userId);
+        expect(result).toContain("TODAY'S DATE: 2026-11-28");
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it("states today in the user's day, not the server's (#2365)", async () => {
       // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
       jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });

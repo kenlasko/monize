@@ -1,4 +1,6 @@
-import { todayYMD } from "../../common/date-utils";
+import { DataSource } from "typeorm";
+import { withScopedDb } from "../../common/db/scoped-db";
+import { userTodayYMD } from "../../common/users-by-timezone.util";
 import { sharedLedgerRefusal } from "../../common/db/shared-ledger-refusal";
 import {
   SharedReviewService,
@@ -292,6 +294,7 @@ export class ToolExecutorService {
     // `list_tags` and `manage_tags`.
     private readonly tagsService: TagsService,
     private readonly tagPrep: TagToolPrepService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async execute(
@@ -3298,11 +3301,17 @@ export class ToolExecutorService {
         endDate,
       );
 
+      // The user's day, as getLlmHistory resolves it for the same call.
+      const userToday = () =>
+        withScopedDb(this.dataSource, (m) => userTodayYMD(m, userId));
       const start =
-        startDate ?? (history.length > 0 ? history[0].month : todayYMD());
+        startDate ||
+        (history.length > 0 ? history[0].month : await userToday());
       const end =
-        endDate ??
-        (history.length > 0 ? history[history.length - 1].month : todayYMD());
+        endDate ||
+        (history.length > 0
+          ? history[history.length - 1].month
+          : await userToday());
 
       return {
         // Bare array, matching the MCP generate_report net_worth_history payload

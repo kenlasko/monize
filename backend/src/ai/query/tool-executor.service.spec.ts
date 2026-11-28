@@ -1,3 +1,6 @@
+import { DataSource } from "typeorm";
+import { requestContextStorage } from "../../common/request-context";
+import { createScopedDbMocks } from "../../test-helpers/scoped-db-testing";
 import {
   SharedReviewService,
   SHARED_LEDGER_TOOLS,
@@ -43,6 +46,12 @@ import { TagsService } from "../../tags/tags.service";
 import { TagToolPrepService } from "../../tags/tag-tool-prep.service";
 import { LlmWarrantyList } from "../../warranties/warranty-llm-shape";
 import { TransactionRuleToolPrepService } from "../../transaction-rules/rule-tool-prep.service";
+
+jest.mock("../../common/db/scoped-db", () =>
+  jest
+    .requireActual("../../test-helpers/scoped-db-testing")
+    .scopedDbMockModule(),
+);
 
 describe("ToolExecutorService", () => {
   let service: ToolExecutorService;
@@ -799,6 +808,7 @@ describe("ToolExecutorService", () => {
       providers: [
         sharedReviewProvider(),
         ToolExecutorService,
+        { provide: DataSource, useValue: createScopedDbMocks().dataSource },
         { provide: AttachmentToolPrepService, useValue: attachmentPrep },
         { provide: RelayAttachmentStore, useValue: attachmentStore },
         { provide: AccountsService, useValue: accounts },
@@ -1259,6 +1269,24 @@ describe("ToolExecutorService", () => {
         type: "expense",
         search: "groc",
       });
+    });
+
+    it("dates an empty net worth history by the user's day (#2365)", async () => {
+      // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
+      jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+      try {
+        netWorth.getLlmHistory.mockResolvedValue([]);
+        const result = await requestContextStorage.run(
+          { userId, timezone: "Pacific/Kiritimati" },
+          () =>
+            service.execute(userId, "generate_report", {
+              type: "net_worth_history",
+            }),
+        );
+        expect(result.sources[0].dateRange).toBe("2026-11-28 to 2026-11-28");
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("generate_report type net_worth_history delegates to netWorthService.getLlmHistory", async () => {

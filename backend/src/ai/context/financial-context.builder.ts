@@ -5,7 +5,7 @@ import {
 } from "../../categories/category-type.util";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
-import { userTodayYMD } from "../../common/users-by-timezone.util";
+import { userTodayFromPreference } from "../../common/users-by-timezone.util";
 import { AccountsService } from "../../accounts/accounts.service";
 import { CategoriesService } from "../../categories/categories.service";
 import { UserPreference } from "../../users/entities/user-preference.entity";
@@ -43,16 +43,16 @@ export class FinancialContextBuilder {
   ) {}
 
   async buildQueryContext(userId: string): Promise<string> {
-    const [accounts, categoryTree, preferences, today] = await Promise.all([
+    const [accounts, categoryTree, preferences] = await Promise.all([
       this.accountsService.findAll(userId, false),
       this.categoriesService.getTree(userId),
       withScopedDb(this.dataSource, (manager) =>
         manager.getRepository(UserPreference).findOne({ where: { userId } }),
       ),
-      withScopedDb(this.dataSource, (manager) => userTodayYMD(manager, userId)),
     ]);
 
     const currency = preferredCurrency(preferences);
+    const today = userTodayFromPreference(userId, preferences);
 
     // LLM06-F1: Only include account names and types, not balances.
     // Balances are available through the list_accounts tool.
