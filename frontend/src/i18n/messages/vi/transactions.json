@@ -212,6 +212,11 @@
       "inspectorLabel": "Giao dịch đã chọn",
       "balanceAfter": "Số dư sau đó",
       "yesterday": "Hôm qua"
+    },
+    "dayHeading": {
+      "closingBalance": "Số dư cuối ngày",
+      "continuedPrevious": "Tiếp tục ở trang trước",
+      "continuedNext": "Tiếp tục ở trang sau"
     }
   },
   "row": {

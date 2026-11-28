@@ -212,6 +212,11 @@
       "inspectorLabel": "선택한 거래",
       "balanceAfter": "거래 후 잔액",
       "yesterday": "어제"
+    },
+    "dayHeading": {
+      "closingBalance": "일말 잔액",
+      "continuedPrevious": "이전 페이지에 이어집니다",
+      "continuedNext": "다음 페이지에 이어집니다"
     }
   },
   "row": {

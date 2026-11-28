@@ -28,8 +28,11 @@ vi.mock('@/components/ui/MoneyFigure', async (orig) => {
   };
 });
 vi.mock('@/hooks/useUiStyle', () => ({ useUiStyle: () => style.value }));
+// A phone width, for the wrapped Folio card; the inspector stays lg-up.
+const phone = vi.hoisted(() => ({ value: false }));
 vi.mock('@/hooks/useIsMobile', async (orig) => ({
   ...(await orig<typeof import('@/hooks/useIsMobile')>()),
+  useIsMobile: () => phone.value,
   useIsLgUp: () => true,
 }));
 vi.mock('@/lib/transactions', () => ({
@@ -248,6 +251,92 @@ describe('Folio register', () => {
     }
   });
 
+  describe('on a phone, where the rows draw no balance column', () => {
+    beforeEach(() => {
+      phone.value = true;
+      return () => {
+        phone.value = false;
+      };
+    });
+
+    // Rows a (+200, Jan 16), b (-50) and c (-25, Jan 15) under a balance of
+    // 1000 after the newest: Jan 16 closed at 1000 and Jan 15 at 800, the
+    // balance beside its newest row b, never c's 850 (issue #2486).
+    const figures = (container: HTMLElement) =>
+      Array.from(container.querySelectorAll('[data-testid="day-closing-balance-figure"]')).map(
+        (el) => el.textContent,
+      );
+
+    it('prints the balance each day closed on beside its date, in place of the day net', () => {
+      const { container } = renderList();
+      const groups = Array.from(container.querySelectorAll('th[scope="colgroup"]'));
+      expect(groups).toHaveLength(2);
+      expect(figures(container)).toEqual(['$1000.00', '$800.00']);
+      expect(groups[1].textContent).not.toMatch(/75\.00/);
+      // Named for a screen reader: the same place holds the day net elsewhere.
+      expect(within(groups[0] as HTMLElement).getByText('Balance at end of day').className).toBe('sr-only');
+    });
+
+    it('reads the closing balance from the newest row when the page runs oldest first', () => {
+      const asc = { field: 'date', direction: 'asc' } as const;
+      // Oldest first, the seed is still the balance after the newest row.
+      const { container } = renderList({ sort: asc, rowsSort: asc, transactions: [...rows].reverse() });
+      // c (Jan 15) is drawn first; b, Jan 15's newest row, closed it at 800.
+      expect(figures(container)).toEqual(['$800.00', '$1000.00']);
+    });
+
+    it('withholds the close of a day whose newer rows are on the previous page', () => {
+      // Page 2, newest first: Jan 16 may have later rows on page 1, so 1000
+      // is only the balance after the newest Jan 16 row on this page.
+      const { container } = renderList({ currentPage: 2, totalPages: 3 });
+      expect(figures(container)).toEqual(['Continues on the previous page', '$800.00']);
+    });
+
+    it('withholds the close of a day whose newer rows are on the next page, oldest first', () => {
+      const asc = { field: 'date', direction: 'asc' } as const;
+      const { container, unmount } = renderList({
+        sort: asc,
+        rowsSort: asc,
+        transactions: [...rows].reverse(),
+        currentPage: 1,
+        totalPages: 2,
+      });
+      expect(figures(container)).toEqual(['$800.00', 'Continues on the next page']);
+      unmount();
+      // The last page has nothing newer: every day closes.
+      const last = renderList({
+        sort: asc,
+        rowsSort: asc,
+        transactions: [...rows].reverse(),
+        currentPage: 2,
+        totalPages: 2,
+      });
+      expect(figures(last.container)).toEqual(['$800.00', '$1000.00']);
+    });
+
+    it('signs and colours a negative close as the balance column does', () => {
+      const { container } = renderList({ startingBalance: -10 });
+      const figure = container.querySelector('[data-testid="day-closing-balance-figure"] > span') as HTMLElement;
+      expect(figure.textContent).toBe('-$10.00');
+      expect(figure.className).toMatch(/text-red-600/);
+    });
+
+    it('keeps the day net on one account while there is no balance to walk from', () => {
+      const { container } = renderList({ startingBalance: undefined });
+      expect(container.querySelector('[data-testid="day-closing-balance"]')).toBeNull();
+      const groups = container.querySelectorAll('th[scope="colgroup"]');
+      expect(groups[1].querySelector('.ui-register-group-net')?.textContent).toBe('$-75.00');
+    });
+
+    it('keeps the day net across accounts, where there is no running balance', () => {
+      const { container } = renderList({ isSingleAccountView: false, startingBalance: undefined });
+      expect(container.querySelector('[data-testid="day-closing-balance"]')).toBeNull();
+      const groups = container.querySelectorAll('th[scope="colgroup"]');
+      expect(groups[0].querySelector('.ui-register-group-net')?.textContent).toBe('$200.00');
+      expect(groups[1].querySelector('.ui-register-group-net')?.textContent).toBe('$-75.00');
+    });
+  });
+
   it('keeps the Date column when the register is not in date order', () => {
     const payeeSort = { field: 'payee', direction: 'asc' } as const;
     const { container } = renderList({ sort: payeeSort, rowsSort: payeeSort });
@@ -314,6 +403,38 @@ describe('Pebble register', () => {
     const { container } = renderList();
     expect(container.querySelectorAll('[data-testid="pebble-row"]')).toHaveLength(3);
     expect(container.querySelector('tbody')).toBeNull();
+  });
+
+  it('heads each day with its closing balance below md, where the rows draw none, and its net from md (issue #2486)', () => {
+    const { container } = renderList();
+    const sections = Array.from(container.querySelectorAll('section'));
+    expect(sections).toHaveLength(2);
+    const balances = sections.map((section) => section.querySelector('[data-testid="day-closing-balance"]'));
+    // Jan 15 closed at 800, the balance beside its newest row, never 850.
+    expect(
+      balances.map((el) => el?.querySelector('[data-testid="day-closing-balance-figure"]')?.textContent),
+    ).toEqual(['$1000.00', '$800.00']);
+    balances.forEach((el) => expect(el?.className).toMatch(/(^|\s)md:hidden(\s|$)/));
+    const net = within(sections[1].querySelector('div') as HTMLElement).getByText('$-75.00');
+    expect(net.closest('.md\\:inline')).toBeTruthy();
+    // The rows' own balance column is the one hidden below md.
+    expect(sections[1].querySelector('[data-testid="pebble-row"] .md\\:block')?.textContent).toBe('$800.00');
+  });
+
+  it('withholds the close of a day continued on the previous page', () => {
+    const { container } = renderList({ currentPage: 2, totalPages: 2 });
+    const first = container.querySelector('section [data-testid="day-closing-balance-figure"]');
+    expect(first?.textContent).toBe('Continues on the previous page');
+  });
+
+  it.each([
+    ['across accounts', { isSingleAccountView: false, startingBalance: undefined }],
+    ['on one account with no balance to walk from', { startingBalance: undefined }],
+  ])('heads each day with its net alone where there is no running balance (%s)', (_label, extra) => {
+    const { container } = renderList(extra);
+    expect(container.querySelector('[data-testid="day-closing-balance"]')).toBeNull();
+    const heading = container.querySelectorAll('section')[1].querySelector('div') as HTMLElement;
+    expect(within(heading).getByText('$-75.00').className).not.toMatch(/hidden/);
   });
 
   it('labels the inspector region and shows the first row until another is clicked', () => {

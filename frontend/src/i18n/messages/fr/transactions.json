@@ -212,6 +212,11 @@
       "inspectorLabel": "Transaction sélectionnée",
       "balanceAfter": "Solde après",
       "yesterday": "Hier"
+    },
+    "dayHeading": {
+      "closingBalance": "Solde en fin de journée",
+      "continuedPrevious": "Suite à la page précédente",
+      "continuedNext": "Suite à la page suivante"
     }
   },
   "row": {

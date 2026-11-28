@@ -212,6 +212,11 @@
       "inspectorLabel": "Geselecteerde transactie",
       "balanceAfter": "Saldo erna",
       "yesterday": "Gisteren"
+    },
+    "dayHeading": {
+      "closingBalance": "Saldo aan het einde van de dag",
+      "continuedPrevious": "Gaat verder op de vorige pagina",
+      "continuedNext": "Gaat verder op de volgende pagina"
     }
   },
   "row": {

@@ -212,6 +212,11 @@
       "inspectorLabel": "Выбранная транзакция",
       "balanceAfter": "Остаток после",
       "yesterday": "Вчера"
+    },
+    "dayHeading": {
+      "closingBalance": "Остаток на конец дня",
+      "continuedPrevious": "Продолжение на предыдущей странице",
+      "continuedNext": "Продолжение на следующей странице"
     }
   },
   "row": {

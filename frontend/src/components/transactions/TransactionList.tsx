@@ -62,6 +62,8 @@ import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { useUiStyle } from '@/hooks/useUiStyle';
 import {
   balanceRulePercents,
+  balanceByDate,
+  hasNewerPage,
   netByDate,
   pageReportingCurrency,
   pageTotals,
@@ -69,6 +71,7 @@ import {
   type RegisterFigure,
 } from './register-style-data';
 import { PebbleRegister } from './variants/PebbleRegister';
+import { DayClosingBalance } from './variants/DayClosingBalance';
 import { isProvisionalAmount } from '@/lib/provisional-amount';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { FolioRegisterFoot } from './variants/FolioRegisterFoot';
@@ -793,18 +796,32 @@ export function TransactionList({
   // more than one currency sums in the reporting currency, each row at the
   // factor the server stamped on it (`reportingRate`), never at a rate the
   // client looked up.
+  const registerDirection = dataSort?.direction ?? 'desc';
   const styleData = useMemo(
     () => {
       if (uiStyle === 'standard') return null;
       const reporting = pageReportingCurrency(transactions, defaultCurrency);
       return {
         dayNet: netByDate(transactions, displayAmounts, reporting),
+        // A phone's day heading prints the balance the day ended on where the
+        // register has one; the rows' own balance column is not drawn there.
+        // An empty walk (no seed yet, or one withheld) has no balance to
+        // print, so the heading keeps the net rather than a row of dashes.
+        dayBalance:
+          showRunningBalance && runningBalances.size > 0
+            ? balanceByDate(
+                transactions,
+                runningBalances,
+                registerDirection,
+                hasNewerPage(registerDirection, currentPage, totalPages),
+              )
+            : null,
         totals: pageTotals(transactions, displayAmounts, reporting),
         rulePct: balanceRulePercents(runningBalances),
       };
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-reads each currency's precision
-    [uiStyle, transactions, displayAmounts, defaultCurrency, runningBalances, registryVersion],
+    [uiStyle, transactions, displayAmounts, defaultCurrency, runningBalances, showRunningBalance, registerDirection, currentPage, totalPages, registryVersion],
   );
 
   const formatAmount = useCallback((amount: number, currencyCode?: string) => {
@@ -948,6 +965,8 @@ export function TransactionList({
           runningBalances={runningBalances}
           displayAmounts={displayAmounts}
           dayNet={styleData?.dayNet ?? NO_DAY_NET}
+          dayBalance={styleData?.dayBalance ?? null}
+          registerDirection={registerDirection}
           inspectorVisible={inspectorVisible}
           inspectedId={inspectedId}
           deletingId={deletingId}
@@ -1262,6 +1281,17 @@ export function TransactionList({
                         <span>{registerGroupLabel(transaction.transactionDate, locale, today)}</span>
                         <span className="ui-register-group-tools">
                           {wrapped && styleData && (() => {
+                            if (styleData.dayBalance) {
+                              return (
+                                <DayClosingBalance
+                                  className="ui-register-group-net"
+                                  date={transaction.transactionDate}
+                                  closing={styleData.dayBalance}
+                                  currencyCode={transaction.currencyCode}
+                                  direction={registerDirection}
+                                />
+                              );
+                            }
                             const dayNet = styleData.dayNet.get(transaction.transactionDate);
                             return (
                               <span className="ui-register-group-net">

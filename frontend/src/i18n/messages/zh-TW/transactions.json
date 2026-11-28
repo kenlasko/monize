@@ -212,6 +212,11 @@
       "inspectorLabel": "所選交易",
       "balanceAfter": "交易後結餘",
       "yesterday": "昨天"
+    },
+    "dayHeading": {
+      "closingBalance": "日終餘額",
+      "continuedPrevious": "接上一頁",
+      "continuedNext": "接下一頁"
     }
   },
   "row": {
