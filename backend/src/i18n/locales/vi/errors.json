@@ -94,6 +94,7 @@
     "undoSplitLegsChanged": "Chỉnh sửa này đã thay đổi các dòng chia nhỏ chuyển tiền sang tài khoản khác, nên không thể tự động hoàn tác. Hãy chỉnh sửa giao dịch để đổi lại.",
     "undoDeletedSplitHasTransferLine": "Khoản chia này có một dòng chuyển tiền ở tài khoản khác (chuyển khoản hoặc dòng đầu tư), và hoàn tác không thể khôi phục phía của tài khoản kia. Hãy nhập lại khoản chia.",
     "undoTransferLegDeleted": "Dòng này là một phía của giao dịch chuyển khoản hoặc khoản chia nhỏ. Hoàn tác không thể khôi phục riêng dòng này. Hãy kiểm tra tài khoản kia: chỉnh sửa phía còn lại, hoặc nhập lại giao dịch nếu không còn gì.",
+    "undoTransferChangeNotSupported": "Thay đổi này đối với một khoản chuyển tiền (chỉnh sửa, đổi trạng thái hoặc xóa) không thể được hoàn tác tự động. Hãy chỉnh sửa khoản chuyển tiền để đổi lại, hoặc nhập lại nếu nó đã bị xóa.",
     "undoBulkDeletedSplit": "Lần xóa này gồm một giao dịch chia nhỏ, và hoàn tác xóa hàng loạt không thể khôi phục các dòng chia nhỏ. Hãy nhập lại khoản chia.",
     "undoVoidWithLegs": "Thay đổi này đã hủy hoặc khôi phục các mục ở tài khoản khác, nên không thể tự động hoàn tác. Hãy đổi lại trạng thái.",
     "loanEditNotUndoable": "Không thể tự động hoàn tác thay đổi khoản vay này. Hãy chỉnh sửa khoản vay để đổi lại.",
