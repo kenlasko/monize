@@ -399,8 +399,10 @@ export interface ScheduledOccurrenceReadModel {
    * The signed sum of the occurrence's EFFECTIVE split transfer lines, in
    * `currencyCode` (an override's own lines when it restates them). A client
    * counts `amount - transferLineTotal` as spending; 0 without such a line.
+   * `null` when the lines could not be priced (a loan bill with no stated
+   * principal): the spending is unknown.
    */
-  transferLineTotal: number;
+  transferLineTotal: number | null;
 }
 
 const INVESTMENT_RELATIONS = [
@@ -2748,7 +2750,9 @@ export class ScheduledTransactionsService {
       accountId: occurrence.schedule.accountId,
       transferAccountId: occurrence.schedule.transferAccountId ?? null,
       isTransfer: !!occurrence.schedule.isTransfer,
-      transferLineTotal: transferLineTotal(occurrence),
+      transferLineTotal: occurrence.transferLinesUnknown
+        ? null
+        : transferLineTotal(occurrence),
     }));
   }
 
@@ -5864,8 +5868,12 @@ function toLlmScheduledItem(
     accountName: row.account?.name ?? "",
     payeeName: row.payee?.name ?? row.payeeName ?? null,
     categoryName: row.category?.name ?? null,
-    // Without the split's transfer lines: the rollups sum this.
-    amount: nonTransferAmount(occurrence),
+    // Without the split's transfer lines: the rollups sum this. A split made
+    // only of transfer lines is a transfer and publishes what it moves.
+    amount:
+      occurrence.transferLines.length > 0 && nonTransferAmount(occurrence) === 0
+        ? occurrence.amount
+        : nonTransferAmount(occurrence),
     amountComplete: occurrence.complete && !occurrence.transferLinesUnknown,
     amountEstimated: occurrence.estimated,
     estimateStatus: occurrence.estimateStatus,

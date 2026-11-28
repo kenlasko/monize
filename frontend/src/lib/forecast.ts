@@ -2,6 +2,7 @@ import { anniversaryInYear } from '@/lib/payroll-period';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
+import { LOAN_LIKE_ACCOUNT_TYPES } from '@/lib/minor-unit-booking';
 import { advanceSchedule, isOneTime } from '@/lib/frequency';
 import {
   estimatedOccurrenceAmount,
@@ -719,6 +720,26 @@ function isTransfer(transaction: ScheduledTransaction): boolean {
   return !!(transaction.isTransfer && transaction.transferAccountId);
 }
 
+/**
+ * A line credit the client cannot price is withheld, as the backend reports it.
+ * It is in the SOURCE's currency and arrives in the target's at a rate fixed
+ * when it posts (`crossCurrencyTransfer`). Into a loan the server prices each
+ * occurrence's principal itself and the client has no per-occurrence principal:
+ * only the next occurrence (index 0) carries the template's or the override's
+ * line; every later one is unknown. The series is withheld through the file's
+ * missing-rate mechanism.
+ */
+function withholdUnpricedLineCredit(
+  tx: ScheduledTransaction,
+  target: Account,
+  occIndex: number,
+  missing: Set<string>,
+): void {
+  const crossCurrency = !!tx.currencyCode && tx.currencyCode !== target.currencyCode;
+  const laterLoanBill = occIndex > 0 && LOAN_LIKE_ACCOUNT_TYPES.has(target.accountType);
+  if (crossCurrency || laterLoanBill) missing.add(tx.currencyCode);
+}
+
 /** Whether a split schedule's template or any override sends a transfer line to `accountId`. */
 function hasLineInto(transaction: ScheduledTransaction, accountId: string): boolean {
   const into = (lines: { transferAccountId?: string | null; amount: number | string }[] | null | undefined) =>
@@ -1101,7 +1122,7 @@ export function buildForecast(
     // still owed (discussion #1784).
     const occurrences = occurrencesById.get(tx.id) ?? [];
     const txAccountId = isInbound ? (tx.transferAccountId ?? tx.accountId) : tx.accountId;
-    for (const occ of occurrences) {
+    for (const [occIndex, occ] of occurrences.entries()) {
       // Split transfer lines: the target gets the negated line amount; in the
       // all-accounts view the lines are internal and cancel, so only the rest counts.
       const lines = occ.transferLines ?? [];
@@ -1130,9 +1151,9 @@ export function buildForecast(
       // A line is in the SOURCE's currency and arrives in the target's at a
       // rate fixed when it posts, which is not known here (the backend reports
       // the same case as `crossCurrencyTransfer`): withhold, never relabel it.
-      const targetCurrency = accountCurrencyMap.get(accountId as string);
-      if (lineInbound && targetCurrency && tx.currencyCode && tx.currencyCode !== targetCurrency) {
-        missingRateCurrencies.add(tx.currencyCode);
+      const targetAccount = accountsById.get(accountId as string);
+      if (lineInbound && targetAccount) {
+        withholdUnpricedLineCredit(tx, targetAccount, occIndex, missingRateCurrencies);
       }
       const signed = lineInbound
         ? -lineSum(accountId as string)
@@ -1305,8 +1326,17 @@ export function buildMultiAccountForecast(
       });
     }
 
-    for (const { transaction, isInbound } of scheduledFlowsForAccount(normalized, account.id)) {
-      for (const occ of occurrencesById.get(transaction.id) ?? []) {
+    for (const { transaction, isInbound, lineInbound } of scheduledFlowsForAccount(normalized, account.id)) {
+      for (const [occIndex, occ] of (occurrencesById.get(transaction.id) ?? []).entries()) {
+        const lineTotal = lineInbound
+          ? sumMoney(
+              (occ.transferLines ?? []).filter(l => l.accountId === account.id).map(l => l.amount),
+              lineDecimals(account),
+            )
+          : 0;
+        // Lines that do not reach this account (an override restated them) leave it alone.
+        if (lineInbound && !(occ.transferLines ?? []).some(l => l.accountId === account.id)) continue;
+        if (lineInbound) withholdUnpricedLineCredit(transaction, account, occIndex, missingRateCurrencies);
         // Unresolved current FX for an investment occurrence withholds the whole
         // result (issue #1167), the same as a missing display-currency rate. The
         // flag is per-occurrence (F5-2).
@@ -1321,7 +1351,7 @@ export function buildMultiAccountForecast(
           name: transaction.name,
           amount: occ.unknown
             ? 0
-            : conv(isInbound ? -occ.amount : occ.amount, account.currencyCode),
+            : conv(lineInbound ? -lineTotal : isInbound ? -occ.amount : occ.amount, account.currencyCode),
           scheduledTransactionId: transaction.id,
           accountId: account.id,
           ...(occ.overdueOriginalDate !== undefined && {
@@ -1479,12 +1509,14 @@ export function getProjectedBalanceAtDate(
     const occurrences = occurrencesById.get(tx.id) ?? [];
     const isInbound = inboundTransferIds.has(tx.id);
     const lineInbound = tx.accountId !== account.id && !isInbound;
-    for (const occ of occurrences) {
+    for (const [occIndex, occ] of occurrences.entries()) {
       if (lineInbound) {
         const lines = (occ.transferLines ?? []).filter(l => l.accountId === account.id);
         if (lines.length === 0) continue;
         // Arrives at a rate fixed when it posts: unknown, as in `buildForecast`.
-        if (occ.unknown || (tx.currencyCode && tx.currencyCode !== account.currencyCode)) return null;
+        const unpriced = new Set<string>();
+        withholdUnpricedLineCredit(tx, account, occIndex, unpriced);
+        if (occ.unknown || unpriced.size > 0) return null;
         units += toUnits(-sumMoney(lines.map(l => l.amount), decimals), decimals);
         continue;
       }

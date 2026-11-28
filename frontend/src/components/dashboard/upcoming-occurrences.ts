@@ -4,7 +4,7 @@ import { parseLocalDate } from '@/lib/utils';
 import {
   nextOccurrenceAutoPosts,
   nextOccurrenceDueDate,
-  nextOccurrenceEffectiveAmount,
+  nextOccurrenceSpending,
 } from '@/lib/scheduled-effective-amount';
 import { occurrenceKind } from '@/lib/scheduled-kind';
 import type { UpcomingStrip, UpcomingStripDay } from './variants/upcoming-bills-view';
@@ -71,7 +71,7 @@ export function buildUpcomingStrip(
   for (const st of occurrences) {
     const day = byDate.get(nextOccurrenceDueDate(st));
     if (!day) continue;
-    const effective = nextOccurrenceEffectiveAmount(st);
+    const effective = nextOccurrenceSpending(st);
     const magnitude = effective.amount === null ? null : Math.abs(effective.amount);
     if (magnitude !== null) {
       currencies.add(effective.currencyCode);

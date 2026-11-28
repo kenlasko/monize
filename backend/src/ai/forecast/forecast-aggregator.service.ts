@@ -523,7 +523,7 @@ export class ForecastAggregatorService {
       maxOccurrences: 1,
     });
 
-    return occurrences.map((occurrence) => {
+    return occurrences.flatMap((occurrence) => {
       const st = occurrence.schedule;
       // Both halves come from the occurrence. The category is an independent
       // semantic and still wins where it is set; the sign is the occurrence's
@@ -544,6 +544,8 @@ export class ForecastAggregatorService {
         occurrence.transferLines.length > 0
           ? nonTransferAmount(occurrence)
           : null;
+      // A split made only of transfer lines has no income or spending to list.
+      if (spending === 0) return [];
       const isIncome =
         !st.isTransfer && st.category && isIncomeCategory(st.category)
           ? true
@@ -553,24 +555,29 @@ export class ForecastAggregatorService {
               ? null
               : occurrence.directionAmount > 0;
 
-      return {
-        name: st.name,
-        amount:
-          occurrence.amount === null || occurrence.transferLinesUnknown
-            ? null
-            : Math.abs(spending ?? occurrence.amount),
-        amountComplete:
-          occurrence.amount !== null && !occurrence.transferLinesUnknown,
-        amountEstimated: occurrence.estimated,
-        estimateStatus: occurrence.estimateStatus,
-        // A Custom schedule is spelled out ("custom: every week on Mon,
-        // Wed"): the bare word says nothing about how often it falls due.
-        frequency: describeFrequencyForModel(st.frequency, st.customRecurrence),
-        nextDueDate: occurrence.dueDate,
-        categoryName: st.category?.name || null,
-        isIncome,
-        isTransfer: st.isTransfer,
-      };
+      return [
+        {
+          name: st.name,
+          amount:
+            occurrence.amount === null || occurrence.transferLinesUnknown
+              ? null
+              : Math.abs(spending ?? occurrence.amount),
+          amountComplete:
+            occurrence.amount !== null && !occurrence.transferLinesUnknown,
+          amountEstimated: occurrence.estimated,
+          estimateStatus: occurrence.estimateStatus,
+          // A Custom schedule is spelled out ("custom: every week on Mon,
+          // Wed"): the bare word says nothing about how often it falls due.
+          frequency: describeFrequencyForModel(
+            st.frequency,
+            st.customRecurrence,
+          ),
+          nextDueDate: occurrence.dueDate,
+          categoryName: st.category?.name || null,
+          isIncome,
+          isTransfer: st.isTransfer,
+        },
+      ];
     });
   }
 

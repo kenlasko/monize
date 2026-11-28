@@ -28,6 +28,7 @@ import {
   nextOccurrenceAutoPosts,
   nextOccurrenceDueDate,
   nextOccurrenceEffectiveAmount,
+  nextOccurrenceSpending,
   occurrenceFollowsEstimate,
   occurrenceSettlementAccountId,
 } from '@/lib/scheduled-effective-amount';
@@ -197,8 +198,10 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
   // #1247). Never `nextOverride?.amount ?? amount`: for an FX-sensitive schedule
   // that scalar was written at an older rate, which is how this widget came to
   // disagree with the cash-flow forecast about the same bill.
+  // Without a split's transfer lines (not spending); the balance projection
+  // above keeps the whole amount, because the settlement account pays it all.
   const getEffective = (item: ScheduledTransaction) =>
-    nextOccurrenceEffectiveAmount(item);
+    nextOccurrenceSpending(item);
 
   const getItemType = (item: ScheduledTransaction): ScheduledKind =>
     occurrenceKind(getEffective(item), item);

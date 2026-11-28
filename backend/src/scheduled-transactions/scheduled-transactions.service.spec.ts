@@ -1600,6 +1600,58 @@ describe("ScheduledTransactionsService", () => {
       expect(result.totalUpcomingDeposits).toBe(3000);
     });
 
+    it("nets a coin's transfer line at the coin's own places", async () => {
+      const rows = [
+        makeScheduled({
+          id: "s-btc",
+          name: "BTC bill",
+          amount: -0.00013345,
+          currencyCode: "BTC",
+          isSplit: true,
+          splits: [
+            { id: "sp-1", kind: "category", amount: -0.00012345 },
+            {
+              id: "sp-2",
+              kind: "category",
+              amount: -0.00001,
+              transferAccountId: "acc-2",
+            },
+          ] as never,
+        }),
+      ];
+      scheduledRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder(rows));
+
+      const result = await service.getLlmUpcomingBillsAndDeposits(userId);
+
+      // Four places would have rounded this to -0.0001.
+      expect(result.items[0].amount).toBe(-0.00012345);
+    });
+
+    it("publishes a split made only of transfer lines as a transfer with what it moves", async () => {
+      const rows = [
+        makeScheduled({
+          id: "s-xfer",
+          name: "Move",
+          amount: -100,
+          isSplit: true,
+          splits: [
+            {
+              id: "sp-1",
+              kind: "category",
+              amount: -100,
+              transferAccountId: "acc-2",
+            },
+          ] as never,
+        }),
+      ];
+      scheduledRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder(rows));
+
+      const result = await service.getLlmUpcomingBillsAndDeposits(userId);
+
+      expect(result.items[0]).toMatchObject({ kind: "transfer", amount: -100 });
+      expect(result.totalUpcomingBills).toBe(0);
+    });
+
     it("does not count a split's transfer lines as a bill or a deposit", async () => {
       const rows = [
         makeScheduled({

@@ -2322,6 +2322,41 @@ describe('buildMultiAccountForecast', () => {
     expect(jan20?.balance).toBe(1300);
   });
 
+  describe('a split with a transfer line, both accounts selected', () => {
+    const splitTx = (over: Partial<ScheduledTransaction> = {}) => makeScheduled({
+      id: 'st-split', accountId: 'acc-1', amount: -100, frequency: 'ONCE', nextDueDate: '2025-01-20',
+      isSplit: true,
+      splits: [
+        { transferAccountId: null, amount: -30 } as any,
+        { transferAccountId: 'acc-2', amount: -70 } as any,
+      ],
+      ...over,
+    });
+
+    it('credits the target the line and moves the total by the category line only', () => {
+      const result = buildMultiAccountForecast([chequing, savings], [splitTx()], 'month', ['acc-1', 'acc-2']);
+      const jan20 = on(result, '2025-01-20');
+      expect(jan20?.balances).toEqual({ 'acc-1': 900, 'acc-2': 570 });
+      expect(jan20?.balance).toBe(1470);
+    });
+
+    it('withholds when the line crosses currencies', () => {
+      const result = buildMultiAccountForecast(
+        [chequing, { ...savings, currencyCode: 'USD' } as Account],
+        [splitTx({ currencyCode: 'CAD' } as any)], 'month', ['acc-1', 'acc-2'],
+      );
+      expect(result.points).toEqual([]);
+    });
+
+    it('credits a loan only for its next occurrence and withholds the series after it', () => {
+      const loan = { ...savings, accountType: 'MORTGAGE' } as Account;
+      const result = buildMultiAccountForecast(
+        [chequing, loan], [splitTx({ frequency: 'WEEKLY' })], 'month', ['acc-1', 'acc-2'],
+      );
+      expect(result.points).toEqual([]);
+    });
+  });
+
   it('tags each transaction with the account it moved', () => {
     const transactions = [makeScheduled({
       id: 'st-1', name: 'Rent', accountId: 'acc-1', amount: -200,

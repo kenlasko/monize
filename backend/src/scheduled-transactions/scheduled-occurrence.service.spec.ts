@@ -1,4 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { Currency } from "../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 import { DataSource } from "typeorm";
 import { ScheduledOccurrenceService } from "./scheduled-occurrence.service";
 import {
@@ -97,6 +99,7 @@ describe("ScheduledOccurrenceService", () => {
     ({ dataSource } = createScopedDbMocks([
       [ScheduledTransaction, scheduledRepo as never],
       [ScheduledTransactionOverride, overridesRepo as never],
+      [Currency, currencyPlacesRepoMock()],
     ]));
     // The security is USD now, and USD -> CAD is 1.35 -- the state that makes the
     // persisted 1.50 snapshot wrong.

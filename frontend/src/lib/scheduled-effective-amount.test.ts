@@ -13,6 +13,7 @@ import {
   overrideEffectiveAmount,
   scheduleEffectiveAmount,
   sumEffectiveOccurrences,
+  withoutTransferLines,
 } from './scheduled-effective-amount';
 import { isComplete } from './currency-total';
 import type {
@@ -643,5 +644,24 @@ describe('estimated amounts (issue #2096)', () => {
       const { floors: _floors, ...older } = st.amountEstimate!;
       expect(estimateAmountOn(older, '2025-02-26')).toBe(-2000);
     });
+  });
+});
+
+describe('withoutTransferLines', () => {
+  it('nets the lines from the amount and the direction, at the occurrence currency', () => {
+    expect(
+      withoutTransferLines({ amount: -0.00013345, currencyCode: 'BTC', directionAmount: -0.00013345 }, -0.00001),
+    ).toMatchObject({ amount: -0.00012345, directionAmount: -0.00012345 });
+  });
+
+  it('nets a known direction even when the amount is unknown', () => {
+    expect(
+      withoutTransferLines({ amount: null, currencyCode: 'CAD', directionAmount: -100 }, -70),
+    ).toEqual({ amount: null, currencyCode: 'CAD', directionAmount: -30 });
+  });
+
+  it('returns the occurrence unchanged without lines', () => {
+    const o = { amount: -100, currencyCode: 'CAD', directionAmount: -100 };
+    expect(withoutTransferLines(o, 0)).toBe(o);
   });
 });

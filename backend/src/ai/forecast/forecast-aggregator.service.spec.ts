@@ -1,4 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { Currency } from "../../currencies/entities/currency.entity";
+import { currencyPlacesRepoMock } from "../../test-helpers/currency-places-testing";
 import { DataSource } from "typeorm";
 import { ForecastAggregatorService } from "./forecast-aggregator.service";
 import { ScheduledEffectiveAmountService } from "../../scheduled-transactions/scheduled-effective-amount.service";
@@ -91,6 +93,7 @@ describe("ForecastAggregatorService", () => {
     fx = createInvestmentFxMock();
     scoped = createScopedDbMocks([
       [Transaction, mockTransactionRepo],
+      [Currency, currencyPlacesRepoMock({ BTC: 8 })],
       [ScheduledTransaction, mockScheduledTransactionRepo],
       [ScheduledTransactionOverride, mockOverridesRepo],
     ]);
@@ -630,6 +633,26 @@ describe("ForecastAggregatorService", () => {
 
       expect(result.scheduledTransactions[0].amount).toBe(30);
       expect(result.scheduledTransactions[0].isIncome).toBe(false);
+    });
+
+    it("leaves out a split made only of transfer lines", async () => {
+      mockScheduledTransactionRepo.find.mockResolvedValue([
+        {
+          id: "st-xfer",
+          name: "Move",
+          amount: -100,
+          frequency: "MONTHLY",
+          nextDueDate: new Date("2026-03-01"),
+          category: null,
+          isTransfer: false,
+          isSplit: true,
+          splits: [{ transferAccountId: "acc-2", amount: -100 }],
+        },
+      ]);
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      expect(result.scheduledTransactions).toEqual([]);
     });
 
     it("fetches active scheduled transactions with categories", async () => {

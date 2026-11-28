@@ -13,6 +13,10 @@ import {
 } from "../common/scheduled-occurrences";
 import { SplitKind } from "../transactions/entities/split-kind.enum";
 import { FIAT_MONEY_DECIMALS, sumMoney } from "../common/round.util";
+import {
+  loadCurrencyPlacesForRead,
+  moneyDecimalsForCode,
+} from "../common/currency-places.util";
 import { withScopedDb } from "../common/db/scoped-db";
 import { addDaysYMD, todayYMD } from "../common/date-utils";
 import { ensureYMD } from "../common/recurrence";
@@ -162,6 +166,11 @@ export interface ResolvedScheduledOccurrence extends EffectiveScheduledOccurrenc
    * what depends on them instead of reading the template's lines.
    */
   transferLinesUnknown: boolean;
+  /**
+   * The money precision of `currencyCode` (`moneyDecimalsFor`), loaded only
+   * when the occurrence has transfer lines to net; four otherwise.
+   */
+  moneyDecimals: number;
 }
 
 /**
@@ -171,8 +180,21 @@ export interface ResolvedScheduledOccurrence extends EffectiveScheduledOccurrenc
 export function transferLineTotal(o: ResolvedScheduledOccurrence): number {
   return sumMoney(
     o.transferLines.map((l) => l.amount),
-    FIAT_MONEY_DECIMALS,
+    o.moneyDecimals,
   );
+}
+
+/**
+ * The signed amount that decides whether the occurrence is an outflow: the
+ * direction less the split's transfer lines, which are not spending. `null`
+ * when it cannot be derived.
+ */
+export function spendingDirection(
+  o: ResolvedScheduledOccurrence,
+): number | null {
+  if (o.transferLines.length === 0) return o.directionAmount;
+  if (o.transferLinesUnknown || o.directionAmount === null) return null;
+  return sumMoney([o.directionAmount, -transferLineTotal(o)], o.moneyDecimals);
 }
 
 /**
@@ -183,9 +205,10 @@ export function transferLineTotal(o: ResolvedScheduledOccurrence): number {
 export function nonTransferAmount(
   o: ResolvedScheduledOccurrence,
 ): number | null {
-  return o.amount === null || o.transferLinesUnknown
-    ? null
-    : sumMoney([o.amount, -transferLineTotal(o)], FIAT_MONEY_DECIMALS);
+  if (o.amount === null || o.transferLinesUnknown) return null;
+  // Exact for a schedule without lines: no rounding of what is already stated.
+  if (o.transferLines.length === 0) return o.amount;
+  return sumMoney([o.amount, -transferLineTotal(o)], o.moneyDecimals);
 }
 
 function effectiveTransferLines(
@@ -288,6 +311,7 @@ export class ScheduledOccurrenceService {
           autoPosts: occurrenceAutoPosts(row, slot.override),
           schedule: row,
           transferLinesUnknown: false,
+          moneyDecimals: FIAT_MONEY_DECIMALS,
           transferLines: effectiveTransferLines(
             row,
             slot.override ?? undefined,
@@ -307,7 +331,25 @@ export class ScheduledOccurrenceService {
       overridesBySchedule,
     );
 
-    return priced.sort((a, b) =>
+    // The precision of each occurrence's own currency, read only when a line
+    // has to be netted (a coin's eight places must not be cut to four).
+    const withLines = priced.filter((o) => o.transferLines.length > 0);
+    const places =
+      withLines.length > 0
+        ? await withScopedDb(this.dataSource, (m) =>
+            loadCurrencyPlacesForRead(
+              m,
+              withLines.map((o) => o.currencyCode),
+            ),
+          )
+        : new Map<string, number>();
+    const decimaled = priced.map((o) =>
+      o.transferLines.length > 0
+        ? { ...o, moneyDecimals: moneyDecimalsForCode(places, o.currencyCode) }
+        : o,
+    );
+
+    return decimaled.sort((a, b) =>
       a.dueDate === b.dueDate
         ? a.scheduledTransactionId.localeCompare(b.scheduledTransactionId)
         : a.dueDate.localeCompare(b.dueDate),
@@ -392,6 +434,10 @@ export class ScheduledOccurrenceService {
                 AND s.kind = :investmentKind
                 AND s.investment_action IS NOT NULL
             ) OR EXISTS (
+              SELECT 1 FROM scheduled_transaction_splits s
+              WHERE s.scheduled_transaction_id = st.id
+                AND s.transfer_account_id IS NOT NULL
+            ) OR EXISTS (
               SELECT 1 FROM scheduled_transaction_overrides ovr
               WHERE ovr.scheduled_transaction_id = st.id
                 AND (ovr.amount IS NOT NULL OR ovr.is_split = true)
@@ -431,9 +477,11 @@ export class ScheduledOccurrenceService {
     // consumer's total is withheld either way, and dropping it would hide a
     // possible outflow behind a total that still looked complete.
     const outflows = keepManual(
-      occurrences.filter(
-        (o) => o.directionAmount === null || o.directionAmount < 0,
-      ),
+      occurrences.filter((candidate) => {
+        // The direction of the part that is spending, not of the transfer lines.
+        const o = { directionAmount: spendingDirection(candidate) };
+        return o.directionAmount === null || o.directionAmount < 0;
+      }),
     );
     if (window.maxOccurrences === undefined) return outflows;
 

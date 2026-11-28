@@ -280,6 +280,24 @@ describe('UpcomingBillsReport', () => {
     expect(screen.getByText('This Month').parentElement?.textContent).toContain('$100');
   });
 
+  it('treats spending as unknown when the server could not price the transfer lines', async () => {
+    const st = makeTransaction({
+      id: 'st-1', name: 'Loan payment', amount: -100, nextDueDate: '2026-02-20',
+      isSplit: true,
+      splits: [{ transferAccountId: null, amount: -30 }, { transferAccountId: 'acc-2', amount: -70 }],
+    });
+    mockGetAll.mockResolvedValue([st]);
+    mockGetOccurrences.mockResolvedValue([
+      { ...occurrencesFrom([st])[0], transferLineTotal: null },
+    ]);
+    render(<UpcomingBillsReport />);
+    await waitFor(() => {
+      expect(screen.getByText('This Month')).toBeInTheDocument();
+    });
+    // Neither the whole -100 nor the template's lines stand in for it.
+    expect(screen.getByText('This Month').parentElement?.textContent).not.toMatch(/\$\\s?\\d/);
+  });
+
   it('classifies a split by its non-transfer part (refund +500 beside a -600 transfer line)', async () => {
     const st = makeTransaction({
       id: 'st-1', name: 'Refund', amount: -100, nextDueDate: '2026-02-20',
@@ -294,8 +312,11 @@ describe('UpcomingBillsReport', () => {
     fireEvent.click(screen.getByText('List'));
     await waitFor(() => expect(screen.getAllByText('Refund').length).toBeGreaterThan(0));
     expect(screen.getByText('This Month').parentElement?.textContent).toContain('$500');
-    // Coloured as a deposit, not as the bill the whole -100 reads as.
-    expect(screen.getByText('$100').className).toContain('green');
+    // The row shows that same 500, coloured as a deposit rather than as the
+    // bill the whole -100 reads as.
+    const row = screen.getAllByText('$500').find((el) => el.className.includes('font-medium'));
+    expect(row?.className).toContain('green');
+    expect(screen.queryByText('$100')).not.toBeInTheDocument();
   });
 
   it('renders summary cards and view controls with data', async () => {

@@ -143,15 +143,14 @@ export function templateTransferLineTotal(
 export function withoutTransferLines<
   T extends { amount: number | null; currencyCode: string; directionAmount?: number | null },
 >(occurrence: T, lineTotal: number): T {
-  if (lineTotal === 0 || occurrence.amount === null) return occurrence;
-  const amount = sumMoney(
-    [occurrence.amount, -lineTotal],
-    moneyDecimalsForCurrency(occurrence.currencyCode),
-  );
+  if (lineTotal === 0) return occurrence;
+  const decimals = moneyDecimalsForCurrency(occurrence.currencyCode);
+  const less = (v: number) => sumMoney([v, -lineTotal], decimals);
   return {
     ...occurrence,
-    amount,
-    ...(occurrence.directionAmount !== undefined && { directionAmount: amount }),
+    // A known direction loses the transfer part even when the amount is unknown.
+    ...(occurrence.amount !== null && { amount: less(occurrence.amount) }),
+    ...(occurrence.directionAmount != null && { directionAmount: less(occurrence.directionAmount) }),
   };
 }
 
@@ -166,6 +165,23 @@ export function nextOccurrenceEffectiveAmount(
   return st.nextOverride
     ? overrideEffectiveAmount(st, st.nextOverride)
     : scheduleEffectiveAmount(st);
+}
+
+/**
+ * `nextOccurrenceEffectiveAmount` without the split's transfer lines: the part
+ * that is real income or spending, for a surface that totals, classifies or
+ * shows a bill. The template's lines and `nextOverride`'s are read.
+ */
+export function nextOccurrenceSpending(st: ScheduledTransaction): EffectiveScheduledAmount {
+  return withoutTransferLines(
+    nextOccurrenceEffectiveAmount(st),
+    templateTransferLineTotal(st, st.nextOverride),
+  );
+}
+
+/** `scheduleEffectiveAmount` without the split's transfer lines (see above). */
+export function scheduleSpending(st: ScheduledTransaction): EffectiveScheduledAmount {
+  return withoutTransferLines(scheduleEffectiveAmount(st), templateTransferLineTotal(st));
 }
 
 /**

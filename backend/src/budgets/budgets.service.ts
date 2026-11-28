@@ -29,7 +29,10 @@ import { NotificationDispatchService } from "../notifications/notification-dispa
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
-import { ScheduledOccurrenceService } from "../scheduled-transactions/scheduled-occurrence.service";
+import {
+  ScheduledOccurrenceService,
+  nonTransferAmount,
+} from "../scheduled-transactions/scheduled-occurrence.service";
 import { CreateBudgetDto } from "./dto/create-budget.dto";
 import { UpdateBudgetDto } from "./dto/update-budget.dto";
 import { CreateBudgetCategoryDto } from "./dto/create-budget-category.dto";
@@ -732,15 +735,19 @@ export class BudgetsService {
       { outflowsOnly: true },
     );
 
-    return occurrences.map((occurrence) => ({
-      id: occurrence.scheduledTransactionId,
-      name: occurrence.schedule.name,
-      amount: occurrence.amount === null ? null : Math.abs(occurrence.amount),
-      currencyCode: occurrence.currencyCode,
-      amountComplete: occurrence.complete,
-      dueDate: occurrence.dueDate,
-      categoryId: occurrence.schedule.categoryId,
-    }));
+    // A split's transfer lines are not spending: the amount is the part that is.
+    return occurrences.map((occurrence) => {
+      const spending = nonTransferAmount(occurrence);
+      return {
+        id: occurrence.scheduledTransactionId,
+        name: occurrence.schedule.name,
+        amount: spending === null ? null : Math.abs(spending),
+        currencyCode: occurrence.currencyCode,
+        amountComplete: spending !== null,
+        dueDate: occurrence.dueDate,
+        categoryId: occurrence.schedule.categoryId,
+      };
+    });
   }
 
   async getVelocity(
