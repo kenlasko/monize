@@ -187,6 +187,15 @@ export function AssetAllocationChart({
   // remembered here (and not cached as an empty allocation) so the view says so.
   const [tagFailed, setTagFailed] = useState<Record<string, true>>({});
   const [tagKeyFailed, setTagKeyFailed] = useState<Record<string, true>>({});
+  // A failed by-tag / by-tag-key load is forgotten on leaving the view, so the next
+  // visit asks again instead of showing the old failure for good.
+  const selectGroup = (next: GroupBy) => {
+    if (next !== groupBy) {
+      setTagFailed({});
+      setTagKeyFailed({});
+    }
+    setGroupBy(next);
+  };
   const [tagKeyCache, setTagKeyCache] = useState<Record<string, AssetAllocation>>(
     {},
   );
@@ -430,7 +439,7 @@ export function AssetAllocationChart({
     <div role="group" aria-label={t('assetAllocation.title')} className={SEGMENTED_GROUP_CLASS}>
       <button
         type="button"
-        onClick={() => setGroupBy('security')}
+        onClick={() => selectGroup('security')}
         className={`${segmentClass(effectiveGroupBy === 'security')} !px-2 !py-1 !text-xs`}
         aria-pressed={effectiveGroupBy === 'security'}
       >
@@ -439,7 +448,7 @@ export function AssetAllocationChart({
       {tagsAvailable && (
         <button
           type="button"
-          onClick={() => setGroupBy('tag')}
+          onClick={() => selectGroup('tag')}
           className={`${segmentClass(isTagView)} !px-2 !py-1 !text-xs`}
           aria-pressed={isTagView}
         >
@@ -449,7 +458,7 @@ export function AssetAllocationChart({
       {keysAvailable && (
         <button
           type="button"
-          onClick={() => setGroupBy('tagKey')}
+          onClick={() => selectGroup('tagKey')}
           className={`${segmentClass(isTagKeyView)} !px-2 !py-1 !text-xs`}
           aria-pressed={isTagKeyView}
         >
@@ -459,7 +468,7 @@ export function AssetAllocationChart({
       {countryAvailable && (
         <button
           type="button"
-          onClick={() => setGroupBy('country')}
+          onClick={() => selectGroup('country')}
           className={`${segmentClass(isCountryView)} !px-2 !py-1 !text-xs`}
           aria-pressed={isCountryView}
         >
@@ -469,7 +478,7 @@ export function AssetAllocationChart({
       {assetClassAvailable && (
         <button
           type="button"
-          onClick={() => setGroupBy('assetClass')}
+          onClick={() => selectGroup('assetClass')}
           className={`${segmentClass(isAssetClassView)} !px-2 !py-1 !text-xs`}
           aria-pressed={isAssetClassView}
         >

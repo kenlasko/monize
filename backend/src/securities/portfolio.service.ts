@@ -352,8 +352,9 @@ export interface PortfolioSummary {
   costBasisMissingRatePairs: string[];
   netInvestedMissingRatePairs: string[];
   /**
-   * False when a held position has no current price, which also makes every
-   * `total*` field above a subtotal.
+   * False when a held position has no current price, which makes the totals that
+   * value it (`totalHoldingsValue`, `totalPortfolioValue`, the gain and its
+   * percent) null. Each other total reads its own aggregate and stays known.
    *
    * Separate from `fxComplete` because the two have different causes and different
    * fixes -- a missing rate is a currencies problem, a missing price is a quotes
@@ -550,8 +551,18 @@ export interface LlmPortfolioSummary {
   pricesComplete: boolean;
   /** Symbols held in a non-zero quantity with no current price. */
   unpricedSymbols: string[];
-  /** `fxComplete && pricesComplete` -- gate a total on this one. */
+  /**
+   * `fxComplete && pricesComplete`: true only when no figure is withheld. Read a
+   * figure's own `total*` for null; this flag is summary-wide and a gap in one
+   * aggregate (a cost rate) makes it false while the others stay known.
+   */
   valuationComplete: boolean;
+  /**
+   * The pairs behind the gain alone: the holdings value and the cost basis. The
+   * gain is withheld for a cost rate with no unpriced holding, and says so.
+   */
+  holdingsValueMissingRatePairs: string[];
+  costBasisMissingRatePairs: string[];
   /**
    * Each `total*` is null unless every component of it is known; the sum of
    * what is known is in the `known*Subtotal` beside it. Never quote a subtotal
@@ -1628,6 +1639,8 @@ export class PortfolioService {
       fxComplete: summary.fxComplete,
       missingRatePairs: summary.missingRatePairs,
       pricesComplete: summary.pricesComplete,
+      holdingsValueMissingRatePairs: summary.holdingsValueMissingRatePairs,
+      costBasisMissingRatePairs: summary.costBasisMissingRatePairs,
       // Symbols rather than ids: an id means nothing to a model or a reader.
       unpricedSymbols: summary.unpricedSecurityIds
         .map(

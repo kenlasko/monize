@@ -1,4 +1,4 @@
-import type { ConvertedTotal } from "@/lib/currency-total";
+import type { ConvertedTotal } from '@/lib/currency-total';
 
 /**
  * Reading the completeness flags the net-worth series carries per month, in the
@@ -12,22 +12,18 @@ import type { ConvertedTotal } from "@/lib/currency-total";
 
 /** The source currency of a `"ZZZ->USD"` pair as the server names it. */
 export function pairSourceCurrency(pair: string): string {
-  const arrow = pair.indexOf("->");
+  const arrow = pair.indexOf('->');
   return arrow === -1 ? pair : pair.slice(0, arrow);
 }
 
 /** The distinct source currencies behind a list of pairs, first seen first. */
-export function missingCurrenciesFromPairs(
-  pairs: readonly string[] | undefined,
-): string[] {
+export function missingCurrenciesFromPairs(pairs: readonly string[] | undefined): string[] {
   return [...new Set((pairs ?? []).map(pairSourceCurrency))];
 }
 
 /** The distinct pairs across several months, first seen first. */
 export function unionPairs(
-  sources: ReadonlyArray<
-    { missingRatePairs?: readonly string[] } | null | undefined
-  >,
+  sources: ReadonlyArray<{ missingRatePairs?: readonly string[] } | null | undefined>,
 ): string[] {
   return [...new Set(sources.flatMap((s) => s?.missingRatePairs ?? []))];
 }
@@ -42,8 +38,7 @@ export function partialTotalFor(
   complete: boolean | undefined,
   pairs?: readonly string[],
 ): ConvertedTotal {
-  if (complete !== false)
-    return { value, missingCurrencies: [], excludedCount: 0 };
+  if (complete !== false) return { value, missingCurrencies: [], excludedCount: 0 };
   return {
     value,
     missingCurrencies: missingCurrenciesFromPairs(pairs),
@@ -109,16 +104,11 @@ export function summaryTotal(
 ): ConvertedTotal | null {
   const value = totalOrSubtotal(total, knownSubtotal);
   if (value === null) return null;
-  const withheld =
-    total === null ||
-    (knownSubtotal === undefined && isPortfolioPartial(source));
+  const withheld = total === null || (knownSubtotal === undefined && isPortfolioPartial(source));
   if (!withheld) return { value, missingCurrencies: [], excludedCount: 0 };
   const pairs = causes?.pairs ?? source?.missingRatePairs ?? [];
   const unpriced =
-    causes?.unpriced ??
-    source?.unpricedHoldingsCount ??
-    source?.unpricedSecurityIds?.length ??
-    0;
+    causes?.unpriced ?? source?.unpricedHoldingsCount ?? source?.unpricedSecurityIds?.length ?? 0;
   return {
     value,
     missingCurrencies: missingCurrenciesFromPairs(pairs),
@@ -147,9 +137,7 @@ export interface PortfolioCompleteness {
  * `fxComplete && pricesComplete`, so reading all three is only defence against
  * a payload that sends one of them.
  */
-export function isPortfolioPartial(
-  source: PortfolioCompleteness | null | undefined,
-): boolean {
+export function isPortfolioPartial(source: PortfolioCompleteness | null | undefined): boolean {
   if (!source) return false;
   return (
     source.valuationComplete === false ||
@@ -173,8 +161,7 @@ export function portfolioPartialTotal(
     return { value, missingCurrencies: [], excludedCount: 0 };
   }
   const pairs = source.missingRatePairs ?? [];
-  const unpriced =
-    source.unpricedHoldingsCount ?? source.unpricedSecurityIds?.length ?? 0;
+  const unpriced = source.unpricedHoldingsCount ?? source.unpricedSecurityIds?.length ?? 0;
   return {
     value,
     missingCurrencies: missingCurrenciesFromPairs(pairs),

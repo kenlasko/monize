@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { portfolioHeadline, summaryFigure } from './portfolio-headline';
+import {
+  portfolioHeadline,
+  portfolioValueForShare,
+  summaryFigure,
+  summaryFigureCauses,
+} from './portfolio-headline';
 import type { PortfolioSummary } from '@/types/investment';
 
 const account = (overrides: Record<string, unknown>) =>
@@ -148,6 +153,52 @@ describe('summaryFigure names the causes of its own figure', () => {
       value: 800,
       missingCurrencies: [],
       excludedCount: 0,
+    });
+  });
+});
+
+describe('portfolioValueForShare', () => {
+  it('is the server total when it is known', () => {
+    expect(
+      portfolioValueForShare(summary({ totalPortfolioValue: 400, knownPortfolioValueSubtotal: 400 })),
+    ).toBe(400);
+  });
+
+  it('is null when the server withheld the total', () => {
+    expect(
+      portfolioValueForShare(summary({ totalPortfolioValue: null, knownPortfolioValueSubtotal: 400 })),
+    ).toBeNull();
+  });
+
+  it('is null for an older backend sending a numeric subtotal with valuationComplete false', () => {
+    expect(
+      portfolioValueForShare(summary({ totalPortfolioValue: 400, valuationComplete: false })),
+    ).toBeNull();
+  });
+
+  it('is the total for an older backend whose valuation is complete, and null with no summary', () => {
+    expect(
+      portfolioValueForShare(summary({ totalPortfolioValue: 400, valuationComplete: true })),
+    ).toBe(400);
+    expect(portfolioValueForShare(null)).toBeNull();
+  });
+});
+
+describe('summaryFigureCauses', () => {
+  it('names the symbol of an unpriced holding for a value figure and none for cash', () => {
+    const s = summary({
+      holdings: [{ securityId: 'sec-1', symbol: 'VFV.TO' }] as never,
+      unpricedSecurityIds: ['sec-1'],
+      cashMissingRatePairs: ['CHF->USD'],
+      portfolioValueMissingRatePairs: ['CHF->USD'],
+    });
+    expect(summaryFigureCauses(s, 'portfolioValue')).toMatchObject({
+      pairs: ['CHF->USD'],
+      unpricedSymbols: ['VFV.TO'],
+    });
+    expect(summaryFigureCauses(s, 'cash')).toMatchObject({
+      pairs: ['CHF->USD'],
+      unpricedSymbols: [],
     });
   });
 });

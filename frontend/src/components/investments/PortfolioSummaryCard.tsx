@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { PortfolioSummary } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
+import { useWithheldReason } from '@/hooks/useWithheldReason';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import {
@@ -17,7 +18,7 @@ import {
   hasIncompleteData,
   type IncompleteDataCauses,
 } from '@/lib/incomplete-data-ranges';
-import { gainLossColor } from '@/lib/format';
+import { gainLossColor, moneyDecimalsForCurrency, roundMoney } from '@/lib/format';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { isPortfolioPartial, partialTotalFor, totalOrSubtotal } from '@/lib/net-worth-completeness';
 import { isComplete } from '@/lib/currency-total';
@@ -48,6 +49,7 @@ export function PortfolioSummaryCard({
   const t = useTranslations('investments');
   const { formatCurrency, formatSignedPercent } = useNumberFormat();
   const { getRate, defaultCurrency } = useExchangeRates();
+  const withheldReason = useWithheldReason();
 
   // When viewing a single foreign-currency account, show values in that currency
   const foreignCurrency = singleAccountCurrency && singleAccountCurrency !== defaultCurrency
@@ -284,7 +286,6 @@ export function PortfolioSummaryCard({
   // ITS OWN total being withheld, not from the summary-wide flags: a missing
   // cost rate must not mark a market value that is fully known. Both absent is
   // unknown and renders as such. The foreign-account view reads its own flags.
-  const incompleteLabel = t('portfolioSummary.incompleteHeading');
   const gainTotal = converted
     ? gainPartial
     : summaryFigure(summary, 'gain');
@@ -299,10 +300,15 @@ export function PortfolioSummaryCard({
   const olderBackendGain = (): number | null => {
     const value = totalOrSubtotal(summary.totalPortfolioValue, summary.knownPortfolioValueSubtotal);
     const invested = totalOrSubtotal(summary.totalNetInvested, summary.knownNetInvestedSubtotal);
-    return value === null || invested === null ? null : value - invested;
+    return value === null || invested === null
+      ? null
+      : roundMoney(value - invested, moneyDecimalsForCurrency(defaultCurrency));
   };
   const totalGainVal = converted
-    ? converted.portfolio - converted.netInvested
+    ? roundMoney(
+        converted.portfolio - converted.netInvested,
+        moneyDecimalsForCurrency(foreignCurrency),
+      )
     : (totalOrSubtotal(summary.totalGainOverNetInvested, summary.knownGainOverNetInvestedSubtotal) ??
       olderBackendGain());
   const percentTotal = converted
@@ -316,7 +322,7 @@ export function PortfolioSummaryCard({
   const figure = (own: number | undefined, which: SummaryFigure) => {
     if (own !== undefined) return fmtVal(own);
     const t = summaryFigure(summary, which);
-    if (t === null) return <UnknownAmount reasonText={incompleteLabel} />;
+    if (t === null) return <UnknownAmount reasonText={withheldReason(summary, which)} />;
     return (
       <PartialTotal total={t} displayCurrency={gainDisplayCurrency}>
         {fmtVal(t.value)}
@@ -383,7 +389,7 @@ export function PortfolioSummaryCard({
       <div className="space-y-4">
         {/* Total Portfolio Value -- labelled a partial when it is one. */}
         {headline === null ? (
-          <UnknownAmount reasonText={incompleteLabel} />
+          <UnknownAmount reasonText={withheldReason(summary, 'portfolioValue')} />
         ) : (
         <PortfolioHeadline
           label={
@@ -405,7 +411,7 @@ export function PortfolioSummaryCard({
               gainLossVal === null ? 'flat' : gainLossVal > 0 ? 'up' : gainLossVal < 0 ? 'down' : 'flat',
             text:
               gainLossVal === null || gainLossPercentVal === null || gainTotal === null ? (
-                <UnknownAmount reasonText={incompleteLabel} />
+                <UnknownAmount reasonText={withheldReason(summary, 'gain')} />
               ) : (
                 <PartialTotal total={gainTotal} displayCurrency={gainDisplayCurrency}>
                   {`${gainLossVal > 0 ? '+' : ''}${fmtVal(gainLossVal)} \u00B7 ${formatPercent(gainLossPercentVal)}`}
@@ -448,9 +454,9 @@ export function PortfolioSummaryCard({
                   learnMore="investmentCashVsReturns"
                 />
               </div>
-              <div data-sign={signOf(totalGainVal ?? 0)} className={`ui-sum-fig ui-gain text-base sm:text-lg font-semibold ${returnColorClass(totalGainVal ?? 0)}`}>
+              <div data-sign={signOf(totalGainVal)} className={`ui-sum-fig ui-gain text-base sm:text-lg font-semibold ${returnColorClass(totalGainVal)}`}>
                 {totalGainVal === null ? (
-                  <UnknownAmount reasonText={incompleteLabel} />
+                  <UnknownAmount reasonText={withheldReason(summary, 'gainOverNetInvested')} />
                 ) : totalGainTotal === null ? (
                   fmtVal(totalGainVal)
                 ) : (
@@ -487,9 +493,9 @@ export function PortfolioSummaryCard({
                 {t('portfolioSummary.gainLoss')}
                 <InfoTooltip placement="top" text={t('portfolioSummary.gainLossTooltip')} />
               </div>
-              <div data-sign={signOf(gainLossVal ?? 0)} className={`ui-sum-fig ui-gain text-base sm:text-lg font-semibold ${returnColorClass(gainLossVal ?? 0)}`}>
+              <div data-sign={signOf(gainLossVal)} className={`ui-sum-fig ui-gain text-base sm:text-lg font-semibold ${returnColorClass(gainLossVal)}`}>
                 {gainLossVal === null || gainTotal === null ? (
-                  <UnknownAmount reasonText={incompleteLabel} />
+                  <UnknownAmount reasonText={withheldReason(summary, 'gain')} />
                 ) : (
                   <PartialTotal total={gainTotal} displayCurrency={gainDisplayCurrency}>
                     {fmtVal(gainLossVal)}
@@ -516,9 +522,9 @@ export function PortfolioSummaryCard({
                 {t('portfolioSummary.simpleReturn')}
                 <InfoTooltip placement="top" text={t('portfolioSummary.simpleReturnTooltip')} />
               </div>
-              <div data-sign={signOf(gainLossPercentVal ?? 0)} className={`ui-sum-fig ui-gain text-base sm:text-lg font-semibold ${returnColorClass(gainLossPercentVal ?? 0)}`}>
+              <div data-sign={signOf(gainLossPercentVal)} className={`ui-sum-fig ui-gain text-base sm:text-lg font-semibold ${returnColorClass(gainLossPercentVal)}`}>
                 {gainLossPercentVal === null || percentTotal === null ? (
-                  <UnknownAmount reasonText={incompleteLabel} />
+                  <UnknownAmount reasonText={withheldReason(summary, 'gainPercent')} />
                 ) : (
                   <PartialTotal total={percentTotal} displayCurrency={gainDisplayCurrency}>
                     {formatPercent(gainLossPercentVal)}

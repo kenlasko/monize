@@ -16,7 +16,7 @@ import {
 import { convertRowAmount, rowAmountCurrency } from '@/lib/investment-row-currency';
 import { PortfolioSummaryCard } from '@/components/investments/PortfolioSummaryCard';
 import { AssetAllocationChart } from '@/components/investments/AssetAllocationChart';
-import { summaryAllocation } from '@/lib/portfolio-headline';
+import { portfolioValueForShare, summaryAllocation } from '@/lib/portfolio-headline';
 import { InvestmentValueChart } from '@/components/investments/InvestmentValueChart';
 import { GroupedHoldingsList } from '@/components/investments/GroupedHoldingsList';
 import { InvestmentRegisterPanel } from '@/components/investments/InvestmentRegisterPanel';
@@ -233,7 +233,7 @@ export function InvestmentDetailView({ account, refreshKey = 0 }: InvestmentDeta
       <GroupedHoldingsList
         holdingsByAccount={summary?.holdingsByAccount ?? []}
         isLoading={isLoading}
-        totalPortfolioValue={summary?.totalPortfolioValue ?? null}
+        totalPortfolioValue={portfolioValueForShare(summary)}
         onSecurityClick={(securityId) => router.push(`/securities/${securityId}`)}
         onCashClick={(cashAccountId) => router.push(`/transactions?accountId=${cashAccountId}`)}
       />

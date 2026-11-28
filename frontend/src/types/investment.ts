@@ -442,8 +442,9 @@ export interface PortfolioSummary {
   returnDiagnostics?: ReturnDiagnostics;
   cagr: number | null;
   /**
-   * Whether every currency conversion behind the `total*` fields succeeded.
-   * False makes each of them a subtotal of what could be converted.
+   * Whether every currency conversion behind the summary succeeded. Summary-wide:
+   * a gap in one aggregate (a cost rate) makes it false while the other figures
+   * stay known, so read a figure's own `total*` for null, not this flag.
    *
    * Optional for the same rolling-deploy reason as on `AccountHoldings`: an
    * older backend's payload has none of these, absent means "no information",

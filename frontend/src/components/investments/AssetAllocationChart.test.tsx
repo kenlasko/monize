@@ -189,6 +189,33 @@ describe('AssetAllocationChart', () => {
     expect(investmentsApi.getAllocationByTag).toHaveBeenCalledTimes(1);
   });
 
+  it('asks again after leaving a failed by-tag view and coming back', async () => {
+    (investmentsApi.getPortfolioTagSummary as any).mockResolvedValue({
+      keys: [],
+      hasTaggedHoldings: true,
+    });
+    (investmentsApi.getAllocationByTag as any).mockRejectedValueOnce(new Error('boom'));
+    const allocation = { totalValue: 10000, allocation: [] };
+
+    await renderChart({ allocation, isLoading: false, accountIds: [] });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('By tag'));
+    });
+    await act(async () => {});
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('By security'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('By tag'));
+    });
+    await act(async () => {});
+
+    expect(investmentsApi.getAllocationByTag).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('says nothing when the valuation is complete', async () => {
     const allocation = {
       totalValue: 10000,

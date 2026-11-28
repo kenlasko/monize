@@ -43,6 +43,7 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { summaryFigure } from '@/lib/portfolio-headline';
 import { usePartialTotalNote } from '@/hooks/usePartialTotalNote';
+import { useWithheldReason } from '@/hooks/useWithheldReason';
 import {
   partialTotalFor,
   portfolioPartialTotal,
@@ -280,6 +281,7 @@ export function InvestmentPerformanceReport() {
   }, [portfolio, isSingleAccount]);
 
   const { noteFor } = usePartialTotalNote();
+  const withheldReason = useWithheldReason();
   // The value leaves out what could not be priced or converted; the cost basis
   // counts every holding and is short only of a cost with no rate.
   const valuePartial = summaryValues?.valueTotal ?? null;
@@ -502,7 +504,9 @@ export function InvestmentPerformanceReport() {
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('investmentPerformance.totalValue')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {valuePartial === null ? (
-              <UnknownAmount reasonText={t('investmentPerformance.na')} />
+              <UnknownAmount
+                reasonText={portfolio ? withheldReason(portfolio, 'portfolioValue') : t('investmentPerformance.na')}
+              />
             ) : (
               <PartialTotal total={valuePartial} displayCurrency={summaryCurrency}>
                 {fmtSummary(summaryValues.totalPortfolioValue)}
@@ -514,7 +518,9 @@ export function InvestmentPerformanceReport() {
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('investmentPerformance.costBasis')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {costPartial === null ? (
-              <UnknownAmount reasonText={t('investmentPerformance.na')} />
+              <UnknownAmount
+                reasonText={portfolio ? withheldReason(portfolio, 'costBasis') : t('investmentPerformance.na')}
+              />
             ) : (
               <PartialTotal total={costPartial} displayCurrency={summaryCurrency}>
                 {fmtSummary(summaryValues.totalCostBasis)}

@@ -53,7 +53,7 @@ import { FloatingPageBar } from '@/components/layout/FloatingPageBar';
 import { FloatingAddButton } from '@/components/layout/FloatingAddButton';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { isPortfolioPartial, portfolioPartialTotal } from '@/lib/net-worth-completeness';
-import { portfolioHeadline, summaryAllocation } from '@/lib/portfolio-headline';
+import { portfolioHeadline, portfolioValueForShare, summaryAllocation } from '@/lib/portfolio-headline';
 import { preferredCurrency } from '@/lib/default-currency';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { CollapsedHeaderSwitcher } from '@/store/mobileChromeStore';
@@ -520,7 +520,7 @@ function InvestmentsContent() {
             <GroupedHoldingsList
               holdingsByAccount={data.portfolioSummary?.holdingsByAccount || []}
               isLoading={data.isSummaryLoading}
-              totalPortfolioValue={data.portfolioSummary?.totalPortfolioValue ?? null}
+              totalPortfolioValue={portfolioValueForShare(data.portfolioSummary)}
               onSecurityClick={data.handleSecurityClick}
               onCashClick={data.handleCashClick}
             />

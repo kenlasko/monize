@@ -1407,32 +1407,6 @@ describe("MonteCarloService", () => {
       );
     });
 
-    it("still runs when only the cost basis is incomplete: the value is its own signal", async () => {
-      // `valuationComplete` is summary-wide and a missing dated cost rate makes it
-      // false, but the starting value and the cash weight are known.
-      scenariosRepository.findOne.mockResolvedValueOnce(
-        buildScenario({ useCurrentBalance: true }),
-      );
-      portfolioService.getPortfolioSummary.mockResolvedValueOnce({
-        totalPortfolioValue: 100,
-        totalCashValue: 10,
-        totalCostBasis: null,
-        costBasisMissingRatePairs: ["CAD->EUR"],
-        fxComplete: false,
-        missingRatePairs: ["CAD->EUR"],
-        portfolioValueMissingRatePairs: [],
-        pricesComplete: true,
-        unpricedSecurityIds: [],
-        valuationComplete: false,
-      });
-      scenariosRepository.save.mockImplementationOnce((s) =>
-        Promise.resolve(s),
-      );
-
-      const result = await service.runSaved(userId, "scn-1");
-      expect(result).toBeDefined();
-    });
-
     it("still runs from a genuinely empty portfolio", async () => {
       // Zero is a known answer. Refusing here would tell the user a settled
       // question could not be worked out, which is the other half of the same

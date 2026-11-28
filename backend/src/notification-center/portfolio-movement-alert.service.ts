@@ -180,7 +180,7 @@ export class PortfolioMovementAlertService {
       baseline.currency === currency &&
       capturedOn != null &&
       baselinePositions != null &&
-      summary.totalPortfolioValue !== null;
+      summary.valuationComplete === true;
     const baselineDate = comparable ? capturedOn : null;
 
     const flow =
@@ -217,8 +217,9 @@ export class PortfolioMovementAlertService {
     }
 
     const inputs: MovementInputs = {
-      mvComplete: summary.totalPortfolioValue !== null,
-      // Read only when `mvComplete`, which is when the total is known.
+      // valuationComplete=false is a no-op (docs/specs/portfolio-movement-notifications.md,
+      // INV-PORTMOVE-001/002); a complete valuation always has a known total.
+      mvComplete: summary.valuationComplete === true,
       mvToday: summary.totalPortfolioValue ?? 0,
       latePrice: { complete: late.complete, value: late.total },
       currency,

@@ -31,10 +31,10 @@ export interface PortfolioHeroViewProps {
   holdings: ConvertedTotal | null;
   cash: ConvertedTotal | null;
   /**
-   * What stands where a figure above is `null` (withheld outright): the reason,
-   * as `UnknownAmount` draws it. The rest of the set still shows.
+   * What stands where a figure above is `null` (withheld outright): that figure's
+   * own reason, as `UnknownAmount` draws it. The rest of the set still shows.
    */
-  unknown: ReactNode;
+  unknown: { total: ReactNode; holdings: ReactNode; cash: ReactNode };
   /**
    * The chosen figure: `name` reads inside a sentence, `label` over an amount,
    * and `value` is its figure, a placeholder or the reason it is withheld.

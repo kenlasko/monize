@@ -41,7 +41,7 @@ export function PortfolioHeroFolio({
           sizeClass="text-6xl sm:text-7xl lg:text-[84px] font-medium"
         >
           {total === null ? (
-            unknown
+            unknown.total
           ) : (
             <PartialTotal total={total} displayCurrency={currency}>
               <MoneyFigure amount={total.value} currencyCode={currency} display />
@@ -60,10 +60,10 @@ export function PortfolioHeroFolio({
           ))}
         <dl className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(0,1fr))] border-t border-gray-200 dark:border-gray-700">
           <StatementFigure label={t('hero.holdingsLabel')} first>
-            {holdings === null ? unknown : <StatementAmount total={holdings} currency={currency} />}
+            {holdings === null ? unknown.holdings : <StatementAmount total={holdings} currency={currency} />}
           </StatementFigure>
           <StatementFigure label={t('hero.cashLabel')}>
-            {cash === null ? unknown : <StatementAmount total={cash} currency={currency} />}
+            {cash === null ? unknown.cash : <StatementAmount total={cash} currency={currency} />}
           </StatementFigure>
           <StatementFigure label={metric.label} testId="dashboard-hero-metric">
             {metric.value}

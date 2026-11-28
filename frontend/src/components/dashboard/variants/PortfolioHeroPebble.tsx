@@ -40,7 +40,7 @@ export function PortfolioHeroPebble({
             sizeClass="text-6xl sm:text-7xl xl:text-[92px] font-bold text-gray-900 dark:text-gray-50"
           >
             {total === null ? (
-              unknown
+              unknown.total
             ) : (
               <PartialTotal total={total} displayCurrency={currency}>
                 <MoneyFigure amount={total.value} currencyCode={currency} display />
@@ -61,7 +61,7 @@ export function PortfolioHeroPebble({
         <dl className="mt-auto flex flex-wrap gap-x-9 gap-y-3 pt-7">
           <BlockFigure label={t('hero.holdingsLabel')}>
             {holdings === null ? (
-              unknown
+              unknown.holdings
             ) : (
               <PartialTotal total={holdings} displayCurrency={currency}>
                 {formatCurrency(holdings.value, currency)}
@@ -70,7 +70,7 @@ export function PortfolioHeroPebble({
           </BlockFigure>
           <BlockFigure label={t('hero.cashLabel')}>
             {cash === null ? (
-              unknown
+              unknown.cash
             ) : (
               <PartialTotal total={cash} displayCurrency={currency}>
                 {formatCurrency(cash.value, currency)}

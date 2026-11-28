@@ -22,7 +22,11 @@ const props: PortfolioHeroViewProps = {
   change: { kind: 'known', up: true, text: 'Up $12,345.67 · 1Y' },
   holdings: total(150000.4),
   cash: total(4523.45),
-  unknown: <span>withheld</span>,
+  unknown: {
+    total: <span>withheld total</span>,
+    holdings: <span>withheld holdings</span>,
+    cash: <span>withheld cash</span>,
+  },
   metric: { name: 'TWR', label: 'TWR', value: '+8.40 %' },
   chart: <div>the chart</div>,
 };
@@ -71,7 +75,8 @@ describe.each([
   it('draws the withheld marker for the cash and keeps every other figure', () => {
     render(<Variant {...props} cash={null} />);
     expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent('$154,523.85');
-    expect(screen.getByText('withheld')).toBeInTheDocument();
+    expect(screen.getByText('withheld cash')).toBeInTheDocument();
+    expect(screen.queryByText('withheld holdings')).not.toBeInTheDocument();
     expect(screen.getByTestId('dashboard-hero-metric')).toHaveTextContent('+8.40 %');
     expect(screen.getByTestId('dashboard-hero-chart')).toHaveTextContent('the chart');
   });

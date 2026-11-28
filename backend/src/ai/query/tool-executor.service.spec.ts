@@ -1637,6 +1637,8 @@ describe("ToolExecutorService", () => {
         unpricedCostBasis: 50000,
         totalPortfolioValue: null,
         knownPortfolioValueSubtotal: 100000,
+        holdingsValueMissingRatePairs: [],
+        costBasisMissingRatePairs: [],
         totalGainLoss: null,
         knownGainLossSubtotal: 20000,
         totalGainLossPercent: null,
@@ -1660,6 +1662,43 @@ describe("ToolExecutorService", () => {
       expect(result.summary).not.toContain("every total above");
       expect(result.summary).toContain("known portfolio value (a subtotal");
       expect(result.summary).toContain("25.00% over the valued holdings");
+    });
+
+    it("get_portfolio_summary names a cost rate, not unpriced holdings, when only the cost rate withholds the gain", async () => {
+      portfolio.getLlmSummary.mockResolvedValueOnce({
+        holdingCount: 1,
+        currency: "EUR",
+        fxComplete: false,
+        missingRatePairs: ["USD->CAD"],
+        pricesComplete: true,
+        unpricedSymbols: [],
+        valuationComplete: false,
+        totalCashValue: 0,
+        totalHoldingsValue: 900,
+        totalCostBasis: null,
+        knownCostBasisSubtotal: 0,
+        gainCostBasis: 0,
+        unpricedCostBasis: 0,
+        totalPortfolioValue: 900,
+        holdingsValueMissingRatePairs: [],
+        costBasisMissingRatePairs: ["USD->CAD"],
+        totalGainLoss: null,
+        knownGainLossSubtotal: 0,
+        totalGainLossPercent: null,
+        knownGainLossPercentSubtotal: 0,
+        timeWeightedReturn: null,
+        cagr: null,
+        holdings: [],
+        holdingsByAccount: [],
+        allocation: [],
+      });
+
+      const result = await service.execute(userId, "get_portfolio_summary", {});
+
+      expect(result.summary).toContain("USD->CAD");
+      expect(result.summary).not.toContain("priced holdings only");
+      expect(result.summary).not.toContain("excluded from it");
+      expect(result.summary).toContain("total portfolio value 900.00");
     });
 
     it("list_investment_transactions delegates to investmentTransactions.getLlmInvestmentTransactions", async () => {

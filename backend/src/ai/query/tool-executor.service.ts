@@ -2769,22 +2769,35 @@ export class ToolExecutorService {
     // The gain is over the holdings that have a value, so say which cost it
     // leaves out; "every total above is a subtotal" does not tell a model that
     // the percentage is over a smaller base (A26-M38).
+    const gainPairs =
+      data.totalGainLoss === null
+        ? [
+            ...new Set([
+              ...data.holdingsValueMissingRatePairs,
+              ...data.costBasisMissingRatePairs,
+            ]),
+          ].sort()
+        : [];
     const gainLeftOut = [
       ...(data.unpricedSymbols.length > 0
         ? [`${data.unpricedSymbols.join(", ")} (no price)`]
         : []),
-      ...(data.missingRatePairs.length > 0
-        ? [`holdings needing ${data.missingRatePairs.join(", ")} (no rate)`]
+      ...(gainPairs.length > 0
+        ? [`holdings needing ${gainPairs.join(", ")} (no rate)`]
         : []),
     ];
+    // A gain withheld only for a rate has no unpriced holding and no excluded
+    // cost to quote, so it must not claim either.
     const gainNote =
       data.totalGainLoss !== null
         ? ""
-        : ` The unrealized gain/loss is over the priced holdings only; it leaves out ${
-            gainLeftOut.length > 0
-              ? gainLeftOut.join("; ")
-              : "unvalued holdings"
-          }, and the cost of the unpriced holdings excluded from it is ${fig(data.unpricedCostBasis)} ${cur}.`;
+        : data.unpricedSymbols.length > 0
+          ? ` The unrealized gain/loss is over the priced holdings only; it leaves out ${gainLeftOut.join("; ")}, and the cost of the unpriced holdings excluded from it is ${fig(data.unpricedCostBasis)} ${cur}.`
+          : ` The unrealized gain/loss is withheld and the figure shown is over the holdings that could be valued only; it leaves out ${
+              gainLeftOut.length > 0
+                ? gainLeftOut.join("; ")
+                : "unvalued holdings"
+            }.`;
     // An account whose own totals could not be worked out is separately worth
     // saying: its figures are in its own currency, so the flags above do not
     // cover it (recheck RR3-005).

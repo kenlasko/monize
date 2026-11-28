@@ -50,7 +50,7 @@ export function PortfolioHeroStandard({
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
             <HeroHeadline negative={total !== null && total.value < 0} collapsed={collapsed}>
               {total === null ? (
-                unknown
+                unknown.total
               ) : (
                 <PartialTotal total={total} displayCurrency={currency}>
                   {formatCurrency(total.value, currency)}
@@ -64,7 +64,7 @@ export function PortfolioHeroStandard({
               {t.rich('hero.holdings', {
                 value: () =>
                   holdings === null ? (
-                    unknown
+                    unknown.holdings
                   ) : (
                     <PartialTotal total={holdings} displayCurrency={currency}>
                       {formatCurrency(holdings.value, currency)}
@@ -77,7 +77,7 @@ export function PortfolioHeroStandard({
               {t.rich('hero.cash', {
                 value: () =>
                   cash === null ? (
-                    unknown
+                    unknown.cash
                   ) : (
                     <PartialTotal total={cash} displayCurrency={currency}>
                       {formatCurrency(cash.value, currency)}
