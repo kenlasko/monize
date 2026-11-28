@@ -1456,12 +1456,13 @@ export class ReportsService {
       // cells are read per ordinary line; a parent with none adds nothing.
       const lines = netLinesOf(tx, false, !!config.transferMeasure);
       if (lines.length === 0) continue;
-      const payeeId = tx.payeeId || "unknown";
+      const groupKey =
+        tx.payeeId ?? (tx.payeeName ? `name:${tx.payeeName}` : "unknown");
       for (const line of lines) {
-        cells.add(payeeId, line, conv.convert(line.amount, tx, line.split));
+        cells.add(groupKey, line, conv.convert(line.amount, tx, line.split));
       }
-      if (!payeeNames.has(payeeId) && tx.payeeName) {
-        payeeNames.set(payeeId, tx.payeeName);
+      if (!payeeNames.has(groupKey) && tx.payeeName) {
+        payeeNames.set(groupKey, tx.payeeName);
       }
     }
     const dataMap = cells.settle();
@@ -1471,12 +1472,12 @@ export class ReportsService {
     const whole = shareDenominator(dataMap, config);
 
     const result: ReportRow[] = [];
-    for (const [payeeId, data] of dataMap) {
-      const payee = payeeMap.get(payeeId);
+    for (const [groupKey, data] of dataMap) {
+      const payee = payeeMap.get(groupKey);
       result.push({
         point: {
-          id: payeeId,
-          label: payee?.name || payeeNames.get(payeeId) || "Unknown",
+          id: groupKey,
+          label: payee?.name || payeeNames.get(groupKey) || "Unknown",
           ...this.groupFigure(data, metric, conv, config),
           percentage: whole && shareOf(data.agg, whole),
           count: data.count,
