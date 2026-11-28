@@ -64,10 +64,7 @@ import { Budget } from "../budgets/entities/budget.entity";
 import { CustomReport } from "../reports/entities/custom-report.entity";
 import { acquireAdvisoryLock, LockScope } from "../common/db/locks";
 import { withSystemContext } from "../common/db/with-context";
-import {
-  runOutsideActiveScopedManager,
-  withScopedDb,
-} from "../common/db/scoped-db";
+import { withScopedDb } from "../common/db/scoped-db";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
 import {
   LockedTransactionRow,
@@ -93,23 +90,6 @@ import {
 import { invalidatePortfolioSummary } from "../securities/portfolio-summary-memo";
 import { todayYMD } from "../common/date-utils";
 
-/** Refuses when the lock did not return a row the undo means to delete. */
-function assertAllLocked(
-  ids: readonly string[],
-  locked: ReadonlyMap<string, unknown>,
-): void {
-  const missing = ids.find((id) => !locked.has(id));
-  if (missing) {
-    throw new NotFoundException(
-      tr(
-        "errors.transactions.notFoundById",
-        `Transaction with ID ${missing} not found`,
-        { id: missing },
-      ),
-    );
-  }
-}
-
 /**
  * A create whose snapshot links the row to a counterpart leg (a transfer leg,
  * or a split line with a linked leg) cannot be redone: the undo deleted the
@@ -122,11 +102,7 @@ function assertTransactionCreateRedoable(action: ActionHistory): void {
     (after?.isTransfer === true && !!after?.linkedTransactionId) ||
     (splits as SplitSnapshot[]).some(isLegSplit);
   if (!hasLegs) return;
-  throw redoCreateWithLegsError();
-}
-
-function redoCreateWithLegsError(): ConflictException {
-  return new ConflictException({
+  throw new ConflictException({
     message: tr(
       "errors.actionHistory.redoCreateWithLegs",
       "This transaction created entries in other accounts, so it cannot be redone. Create it again instead",
@@ -1681,36 +1657,37 @@ export class ActionHistoryService {
 
   /**
    * Row-lock the caller's own legs of a transfer. An id the lock did not
-   * return is either gone (skipped) or another owner's leg of a cross-owner
-   * transfer, which an undo cannot remove under this owner's identity: the
-   * undo is refused. One short read on its own connection under the system
-   * context tells the two apart, because RLS hides the other owner's row.
+   * return is either gone (skipped) or the other owner's leg of a cross-owner
+   * transfer, which an undo cannot remove under this owner's identity (refused
+   * with 409). RLS hides the other owner's row, so the two are told apart in
+   * the same transaction by the leg's snapshot account: one of the caller's
+   * accounts means the leg is gone, any other means another owner's.
    */
   private async lockOwnTransferLegs(
     manager: EntityManager,
     userId: string,
-    ids: string[],
+    legs: { id: string; accountId?: string | null }[],
   ): Promise<Map<string, LockedTransactionRow>> {
-    const locked = await lockTransactionRows(manager, ids, userId);
-    const notReturned = ids.filter((id) => !locked.has(id));
-    if (notReturned.length === 0) return locked;
-    const existing: { id: string }[] = await runOutsideActiveScopedManager(() =>
-      withSystemContext(() =>
-        withScopedDb(this.dataSource, (m) =>
-          m.query(`SELECT id FROM transactions WHERE id = ANY($1)`, [
-            notReturned,
-          ]),
-        ),
-      ),
+    const locked = await lockTransactionRows(
+      manager,
+      legs.map((leg) => leg.id),
+      userId,
     );
-    if (existing.length > 0) {
-      throw new ConflictException({
-        message: tr(
-          "errors.actionHistory.undoCrossOwnerTransferNotSupported",
-          "This transfer has a side in an account of another owner, so it cannot be undone. Delete the transfer instead.",
-        ),
-        errorCode: "UNDO_CROSS_OWNER_TRANSFER_NOT_SUPPORTED",
-      });
+    for (const leg of legs) {
+      if (locked.has(leg.id) || !leg.accountId) continue;
+      const own: { id: string }[] = await manager.query(
+        `SELECT id FROM accounts WHERE id = $1 AND user_id = $2`,
+        [leg.accountId, userId],
+      );
+      if (own.length === 0) {
+        throw new ConflictException({
+          message: tr(
+            "errors.actionHistory.undoCrossOwnerTransferNotSupported",
+            "This transfer has a side in an account of another owner, so it cannot be undone. Delete the transfer instead.",
+          ),
+          errorCode: "UNDO_CROSS_OWNER_TRANSFER_NOT_SUPPORTED",
+        });
+      }
     }
     return locked;
   }
@@ -1730,7 +1707,10 @@ export class ActionHistoryService {
     const lockedLegs = await this.lockOwnTransferLegs(
       manager,
       action.userId,
-      [fromTransactionId, toTransactionId].filter((id): id is string => !!id),
+      [
+        { id: fromTransactionId, accountId: fromAccountId },
+        { id: toTransactionId, accountId: toAccountId },
+      ].filter((leg) => !!leg.id),
     );
     const legIds = [fromTransactionId, toTransactionId].filter(
       (id): id is string => !!id && lockedLegs.has(id),
@@ -1760,11 +1740,11 @@ export class ActionHistoryService {
       await manager.delete(Transaction, { id: txId, userId: action.userId });
     }
 
-    if (fromAccountId) {
-      await this.recalculateBalance(action.userId, fromAccountId, manager);
-    }
-    if (toAccountId) {
-      await this.recalculateBalance(action.userId, toAccountId, manager);
+    // The accounts the locked legs sit in now, not the creation snapshot's.
+    for (const accountId of new Set(
+      [...lockedLegs.values()].map((leg) => leg.accountId),
+    )) {
+      await this.recalculateBalance(action.userId, accountId, manager);
     }
   }
 
@@ -2012,8 +1992,9 @@ export class ActionHistoryService {
 
     // INV-RECONCILE-001: the cash rows go with the create, so a reconciled one
     // refuses the undo before anything is written. The ids come from the
-    // locked rows, and a row the lock did not return is refused, never deleted
-    // unchecked.
+    // locked rows. A cash row the lock did not return is gone (it is the same
+    // owner's row as the investment row), so it is skipped below as before,
+    // never deleted unchecked.
     const cashIds = lockedRows.flatMap((leg) =>
       leg.transactionId ? [leg.transactionId] : [],
     );
@@ -2022,7 +2003,6 @@ export class ActionHistoryService {
       cashIds,
       action.userId,
     );
-    assertAllLocked(cashIds, lockedCash);
     await assertReconciledRowsMutable(manager, action.userId, [
       ...lockedCash.values(),
     ]);
@@ -2033,7 +2013,7 @@ export class ActionHistoryService {
 
       // Delete linked cash transaction
       const cashId = locked.transactionId;
-      if (cashId) {
+      if (cashId && lockedCash.has(cashId)) {
         const cashTx = await manager.findOne(Transaction, {
           where: { id: cashId, userId: action.userId },
         });

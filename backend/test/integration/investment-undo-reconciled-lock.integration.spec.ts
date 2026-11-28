@@ -44,29 +44,38 @@ describe("undo of an investment create honours the reconciled lock (integration,
     dataSource = module.get(DataSource);
   });
 
-  afterAll(async () => {
-    await settlePendingHistoryWrites();
-    await module.close();
-  });
+  const FK_LOOKUP = `
+    SELECT conname, pg_get_constraintdef(oid) AS def FROM pg_constraint
+     WHERE conrelid = 'investment_transactions'::regclass
+       AND contype = 'f'
+       AND confrelid = 'transactions'::regclass
+       AND conkey = ARRAY[(SELECT attnum FROM pg_attribute
+            WHERE attrelid = 'investment_transactions'::regclass
+              AND attname = 'transaction_id')]`;
+  let originalFk: { conname: string; def: string };
 
   beforeAll(async () => {
     // The synchronize-built schema has NO ACTION here; database/schema.sql has
     // ON DELETE SET NULL, which the undo's delete of the cash row relies on.
-    await dataSource.query(`
-      DO $$
-      DECLARE c text;
-      BEGIN
-        SELECT conname INTO c FROM pg_constraint
-         WHERE conrelid = 'investment_transactions'::regclass
-           AND contype = 'f'
-           AND confrelid = 'transactions'::regclass
-           AND conkey = ARRAY[(SELECT attnum FROM pg_attribute
-                WHERE attrelid = 'investment_transactions'::regclass
-                  AND attname = 'transaction_id')];
-        EXECUTE format('ALTER TABLE investment_transactions DROP CONSTRAINT %I', c);
-        ALTER TABLE investment_transactions ADD FOREIGN KEY (transaction_id)
-          REFERENCES transactions(id) ON DELETE SET NULL;
-      END $$`);
+    originalFk = (await dataSource.query(FK_LOOKUP))[0];
+    await dataSource.query(
+      `ALTER TABLE investment_transactions DROP CONSTRAINT "${originalFk.conname}"`,
+    );
+    await dataSource.query(
+      `ALTER TABLE investment_transactions ADD CONSTRAINT "${originalFk.conname}"
+         FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL`,
+    );
+  });
+
+  afterAll(async () => {
+    await settlePendingHistoryWrites();
+    await dataSource.query(
+      `ALTER TABLE investment_transactions DROP CONSTRAINT "${originalFk.conname}"`,
+    );
+    await dataSource.query(
+      `ALTER TABLE investment_transactions ADD CONSTRAINT "${originalFk.conname}" ${originalFk.def}`,
+    );
+    await module.close();
   });
 
   beforeEach(async () => {
@@ -247,6 +256,10 @@ describe("undo of an investment create honours the reconciled lock (integration,
         `UPDATE transactions SET user_id = $1 WHERE account_id = $2`,
         [other.id, otherAccountId],
       );
+      await dataSource.query(`UPDATE accounts SET user_id = $1 WHERE id = $2`, [
+        other.id,
+        otherAccountId,
+      ]);
 
       await expect(
         withUserContext(userId, () => history.undo(userId)),
