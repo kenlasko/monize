@@ -1,4 +1,10 @@
-import { test, expect, type BrowserContext, type Page } from "@playwright/test";
+import {
+  test,
+  expect,
+  type BrowserContext,
+  type Locator,
+  type Page,
+} from "@playwright/test";
 import { apiFor, scrollUnderHeader, waitForReady } from "../readme/session";
 import { loadIds, type Ids } from "../readme/ids";
 import { showcaseMonth } from "../readme/settings";
@@ -139,6 +145,64 @@ test("investment-transaction-form", async () => {
     if ((await discard.count()) > 0) await discard.click();
     await expect(dialog).toHaveCount(0, { timeout: 1_000 });
   }).toPass({ timeout: 15_000 });
+});
+
+/** Cancel a dialog, discarding what was filled in when the form asks. */
+async function discard(dialog: Locator): Promise<void> {
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(async () => {
+    const button = page.getByRole("button", { name: "Discard", exact: true });
+    if ((await button.count()) > 0) await button.click();
+    await expect(dialog).toHaveCount(0, { timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
+}
+
+test("investment-quick-fill", async () => {
+  await openInvestments();
+  await page.getByRole("button", { name: "+ New Transaction" }).click();
+  await page.getByRole("button", { name: "Investment Transaction" }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "New Investment Transaction",
+  });
+  await expect(dialog).toBeVisible();
+  await chooseIconSelectOption(dialog.getByLabel("Brokerage Account"), {
+    label: "TFSA - Tax Free - Brokerage",
+  });
+  await dialog
+    .getByRole("button", { name: "Show recent transactions for this account" })
+    .click();
+  const history = page.getByRole("dialog", { name: "Recent transactions" });
+  await expect(history.getByRole("listitem").first()).toBeVisible({
+    timeout: 30_000,
+  });
+  await waitForReady(page);
+  await docShot(page, "investment-quick-fill", dialog);
+  // The history button opens and closes the list.
+  await dialog
+    .getByRole("button", { name: "Show recent transactions for this account" })
+    .click();
+  await expect(history).toHaveCount(0);
+  await discard(dialog);
+});
+
+test("investment-duplicate-form", async () => {
+  await openInvestments();
+  // A dividend: the repeat entry a duplicate saves the most typing on.
+  const row = page.getByRole("row", { name: /Dividend/ }).first();
+  await expect(row).toBeVisible({ timeout: 30_000 });
+  await row.scrollIntoViewIfNeeded();
+  await row.getByRole("button", { name: "Duplicate" }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Duplicate Investment Transaction",
+  });
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole("textbox", { name: "Security", exact: true }),
+  ).not.toHaveValue("");
+  await waitForReady(page);
+  await docShot(page, "investment-duplicate-form", dialog);
+  await discard(dialog);
+  await top();
 });
 
 /**

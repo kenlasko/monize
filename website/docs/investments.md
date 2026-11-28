@@ -227,11 +227,15 @@ Use the arrow beside **Create Transaction** to choose **Create Transaction & New
 
 Click **Duplicate** on a row in the brokerage register to start a new transaction from it, such as next quarter's dividend from the same fund. The **Duplicate Investment Transaction** form opens with the row's account, transaction type, security, funding or deposit account, shares, price, commission and description filled in. Change whatever differs, usually the date and the amount, then click **Create Transaction**.
 
+![The Duplicate Investment Transaction form, copied from a dividend and dated today](images/investment-duplicate-form.png)
+
 The original row is not changed. The copy is dated today and starts as **Unreconciled**. For a security priced in another currency, the exchange rate is looked up again for the new date rather than copied from the original. Duplicating either side of a transfer opens a new **Transfer** between the same two accounts.
 
 ### Quick Fill from Recent Transactions
 
 A new investment transaction has a **history button** (clock icon) next to the **Brokerage Account**. Click it to list your most recent investment transactions, then pick one to fill the form with its transaction type, security, amounts, funding or deposit account and description. The account and the date stay as you set them, and the status starts as **Unreconciled**.
+
+![The history list beside the Brokerage Account, showing the account's recent transactions](images/investment-quick-fill.png)
 
 | Form state | What the list shows |
 |------------|---------------------|
