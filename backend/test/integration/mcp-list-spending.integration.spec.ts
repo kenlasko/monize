@@ -9,6 +9,8 @@ import { SharedReviewService } from "@/shared-expenses/shared-review.service";
 import { Transaction } from "@/transactions/entities/transaction.entity";
 import { TransactionSplit } from "@/transactions/entities/transaction-split.entity";
 import { TransactionAnalyticsService } from "@/transactions/transaction-analytics.service";
+import { TransactionsModule } from "@/transactions/transactions.module";
+import { TransactionsService } from "@/transactions/transactions.service";
 import { UserPreference } from "@/users/entities/user-preference.entity";
 import {
   cleanTables,
@@ -34,7 +36,7 @@ describe("list_transactions grouped spending through MCP (USD)", () => {
   const endDate = "2026-12-31";
 
   beforeAll(async () => {
-    module = await createIntegrationModule([]);
+    module = await createIntegrationModule([TransactionsModule]);
     db = module.get(DataSource);
     tools = await Test.createTestingModule({
       providers: [
@@ -157,6 +159,60 @@ describe("list_transactions grouped spending through MCP (USD)", () => {
       }
     },
   );
+
+  it("keeps linked payees and free text separate when their stored names match", async () => {
+    const secondId = (await createTestPayee(db, userId, { name: "Birch" })).id;
+    for (const transactionDate of [startDate, "2026-11-02", "2026-11-03"]) {
+      await post(-12, { payeeId, payeeName: "Shop", transactionDate });
+      await post(-7, { payeeId: secondId, payeeName: "Shop", transactionDate });
+      await post(-2, { payeeId: null, payeeName: "Shop", transactionDate });
+    }
+    for (const direction of ["expenses", "outgoing"] as const) {
+      const result = await list(direction, "payee");
+      expect(result.breakdown).toMatchObject([
+        { payee: "Shop", payeeId, total: 36, count: 3 },
+        { payee: "Birch", payeeId: secondId, total: 21, count: 3 },
+        { payee: "Shop", payeeId: null, total: 6, count: 3 },
+      ]);
+      const ai = await withUserContext(userId, () =>
+        tools.get(ToolExecutorService).execute(userId, "list_transactions", {
+          startDate,
+          endDate,
+          direction,
+          groupBy: "payee",
+        }),
+      );
+      expect(ai.isError).toBeFalsy();
+      expect(ai.data).toMatchObject({ breakdown: result.breakdown });
+      for (const row of result.breakdown) {
+        if (!row.payeeId) continue;
+        const detail = await withUserContext(userId, () =>
+          module
+            .get(TransactionsService)
+            .findAll(userId, undefined, startDate, endDate, undefined, [
+              row.payeeId,
+            ]),
+        );
+        expect(detail.data).toHaveLength(row.count);
+        expect(
+          -detail.data.reduce((sum, tx) => sum + Number(tx.amount), 0),
+        ).toBe(row.total);
+      }
+    }
+  });
+
+  it("applies the disclosure threshold per payee before pooling small totals", async () => {
+    const secondId = (await createTestPayee(db, userId, { name: "Birch" })).id;
+    for (const id of [payeeId, secondId]) {
+      await post(-4, { payeeId: id, payeeName: "Shared text" });
+      await post(-6, { payeeId: id, payeeName: "Shared text" });
+    }
+    expect(await list("expenses", "payee")).toMatchObject({
+      breakdown: [
+        { payee: "Other (aggregated)", payeeId: null, total: 20, count: 4 },
+      ],
+    });
+  });
 
   it("keeps the December refund signed when November holds the purchase", async () => {
     await post(-100);
