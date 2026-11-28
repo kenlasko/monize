@@ -1995,7 +1995,7 @@ export class TransactionTransferService {
     transactionId: string,
     findOne: (userId: string, id: string) => Promise<Transaction>,
     actor?: TransferActor,
-  ): Promise<void> {
+  ): Promise<string[]> {
     const realUserId = actor?.realUserId ?? userId;
     const transaction = await findOne(userId, transactionId);
 
@@ -2024,6 +2024,8 @@ export class TransactionTransferService {
     }
 
     const affectedAccountIds = new Set<string>();
+    // The rows this call removed, from each conditional DELETE under its lock.
+    const removedIds: string[] = [];
 
     // Both legs and their balance adjustments are removed atomically.
     await withScopedDb(this.dataSource, async (m) => {
@@ -2077,13 +2079,18 @@ export class TransactionTransferService {
         // Conditional delete, reverse only what this call removed, VOID rows
         // reverse nothing, future-dated rows recompute. Shared with split
         // removal so the sequence exists once (see remove-transaction-leg.ts).
-        await removeLockedTransactionLeg(m, leg, userId, this.accountsService);
+        if (
+          await removeLockedTransactionLeg(m, leg, userId, this.accountsService)
+        ) {
+          removedIds.push(leg.id);
+        }
       }
     });
 
     for (const accId of affectedAccountIds) {
       this.triggerNetWorthRecalc(accId, userId);
     }
+    return removedIds;
   }
 
   /**
@@ -2098,7 +2105,7 @@ export class TransactionTransferService {
   private async removeCrossOwnerTransfer(
     realUserId: string,
     ownLeg: Transaction,
-  ): Promise<void> {
+  ): Promise<string[]> {
     const counterpart = ownLeg.linkedTransactionId
       ? await this.loadLegById(ownLeg.linkedTransactionId)
       : null;
@@ -2109,9 +2116,12 @@ export class TransactionTransferService {
     // Both legs were loaded before this transaction opened, so the amount each
     // reversal subtracts is re-read under the row's own lock and the reversal is
     // gated on this call being the one that removed the row (audit FV4-002).
-    const removeLeg = async (m: EntityManager, leg: Transaction) => {
+    const removeLeg = async (
+      m: EntityManager,
+      leg: Transaction,
+    ): Promise<boolean> => {
       const locked = await lockTransactionRow(m, leg.id, leg.userId);
-      if (!locked) return;
+      if (!locked) return false;
       // An investment cash leg belongs to its trade, on either side of the
       // pair: refuse under this leg's lock, before any write (both legs share
       // one transaction, so a refusal on the second rolls back the first).
@@ -2123,13 +2133,16 @@ export class TransactionTransferService {
       // path (A26-M11). Both legs run in one transaction, so a refusal on the
       // second rolls back the first.
       await assertReconciledRowsMutable(m, leg.userId, [locked]);
-      await removeLockedTransactionLeg(
+      return removeLockedTransactionLeg(
         m,
         locked,
         leg.userId,
         this.accountsService,
       );
     };
+    // Only the caller's own leg is reported: the other owner's row is not
+    // theirs to be told about, and a frozen counterpart is only detached.
+    let ownRemoved = false;
 
     if (access === "connected" && counterpart) {
       // Ascending id order, not "counterpart then mine".
@@ -2155,15 +2168,19 @@ export class TransactionTransferService {
             );
           }
           for (const leg of ordered) {
-            await removeLeg(m, leg);
+            const removed = await removeLeg(m, leg);
+            if (leg.id === ownLeg.id) ownRemoved = removed;
           }
         }),
       );
       this.triggerNetWorthRecalc(counterpart.accountId, counterpart.userId);
     } else {
-      await withScopedDb(this.dataSource, (m) => removeLeg(m, ownLeg));
+      ownRemoved = await withScopedDb(this.dataSource, (m) =>
+        removeLeg(m, ownLeg),
+      );
     }
     this.triggerNetWorthRecalc(ownLeg.accountId, ownLeg.userId);
+    return ownRemoved ? [ownLeg.id] : [];
   }
 
   async updateTransfer(

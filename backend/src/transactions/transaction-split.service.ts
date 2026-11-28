@@ -1645,11 +1645,14 @@ export class TransactionSplitService {
     transaction: Transaction,
     splitId: string,
     userId: string,
-  ): Promise<void> {
+  ): Promise<string[]> {
     // Accounts this removal moved, the parent's included once its amount
     // changes, invalidated after commit (recheck RR5-002).
     const affectedAccountIds = new Set<string>();
     const touchedSecurityIds = new Set<string>();
+    // The transaction rows this removal deleted: the line's leg, when this call
+    // removed it (the conditional DELETE, under the leg's lock).
+    const removedIds: string[] = [];
     await withScopedDb(this.dataSource, async (m) => {
       // The parent first, so a concurrent split mutation on the same parent
       // serializes behind this one, and so the split below is read from a state
@@ -1799,12 +1802,16 @@ export class TransactionSplitService {
         const removedLeg = legs.get(removedLegId);
         if (removedLeg) {
           affectedAccountIds.add(removedLeg.accountId);
-          await removeLockedTransactionLeg(
-            m,
-            removedLeg,
-            userId,
-            this.accountsService,
-          );
+          if (
+            await removeLockedTransactionLeg(
+              m,
+              removedLeg,
+              userId,
+              this.accountsService,
+            )
+          ) {
+            removedIds.push(removedLeg.id);
+          }
         }
       }
 
@@ -1872,6 +1879,7 @@ export class TransactionSplitService {
 
     this.invalidateNetWorth(affectedAccountIds, userId);
     await this.recomputeBondPricesAfterWrite(userId, touchedSecurityIds);
+    return removedIds;
   }
 
   /**

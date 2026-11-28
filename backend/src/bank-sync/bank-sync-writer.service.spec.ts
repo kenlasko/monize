@@ -1927,6 +1927,7 @@ describe("BankSyncWriterService", () => {
       const order: string[] = [];
       transactionsService.remove.mockImplementation(async () => {
         order.push("remove");
+        return [];
       });
       manager.save.mockImplementation(async (entity: object) => {
         order.push("create");
