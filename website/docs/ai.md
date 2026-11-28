@@ -144,7 +144,7 @@ The AI page displays suggested query buttons to help you get started quickly: **
 
 ### Charts and Visualizations
 
-When the assistant returns data that lends itself to visualization, an inline chart is rendered directly in the chat. For example, a spending-by-category query may display a bar or pie chart alongside the text response. A chart can be downloaded as a PNG and a table as a CSV.
+When the assistant returns data that lends itself to visualization, an inline chart is rendered directly in the chat. For example, a spending-by-category query may display a bar or pie chart alongside the text response. A chart can be downloaded as a PNG and a table as a CSV. Bar charts and time series preserve signed values, including negative net spending after refunds. Pie charts require non-negative slices.
 
 ### Entity Links
 

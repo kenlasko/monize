@@ -398,19 +398,29 @@ export const calculateSchema = z.object({
  * enough that recharts renders cleanly and that a misbehaving model can't
  * flood the client with thousands of points.
  */
-export const renderChartSchema = z.object({
-  type: z.enum(["bar", "pie", "line", "area"]),
-  title: z.string().min(1).max(120),
-  data: z
-    .array(
-      z.object({
-        label: z.string().min(1).max(80),
-        value: numberArg(z.number().finite().nonnegative()),
-      }),
-    )
-    .min(1)
-    .max(20),
-});
+export const renderChartSchema = z
+  .object({
+    type: z.enum(["bar", "pie", "line", "area"]),
+    title: z.string().min(1).max(120),
+    data: z
+      .array(
+        z.object({
+          label: z.string().min(1).max(80),
+          value: numberArg(z.number().finite()),
+        }),
+      )
+      .min(1)
+      .max(20),
+  })
+  .refine(
+    (chart) =>
+      chart.type !== "pie" || chart.data.every((point) => point.value >= 0),
+    {
+      message:
+        "Pie slices require non-negative values; use a bar chart for signed amounts.",
+      path: ["data"],
+    },
+  );
 
 /**
  * Money amount matching CreateTransactionDto: bounded and at most `MONEY_SCALE`
