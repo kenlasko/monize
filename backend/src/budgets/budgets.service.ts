@@ -1127,21 +1127,12 @@ export class BudgetsService {
         ? Math.round((totalSpent / totalBudgeted) * 10000) / 100
         : 0;
 
-    const today = new Date();
-    const startDate = new Date(periodStart);
-    const endDate = new Date(periodEnd);
-    // periodEnd is the inclusive last day, so the period spans one more day.
-    const totalDays =
-      Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      ) + 1;
-    const daysElapsed = Math.max(
-      1,
-      Math.ceil(
-        (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      ),
+    // Same window as getVelocity, on the user's day, so both surfaces agree.
+    const { daysRemaining } = budgetPaceWindow(
+      periodStart,
+      periodEnd,
+      todayYMD(),
     );
-    const daysRemaining = Math.max(0, totalDays - daysElapsed);
     const safeDailySpend =
       daysRemaining > 0 ? Math.max(0, remaining / daysRemaining) : 0;
 

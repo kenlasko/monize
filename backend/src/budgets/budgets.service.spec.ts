@@ -7,6 +7,7 @@ import {
 } from "./budget-spending.util";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { DataSource, In } from "typeorm";
+import { requestContextStorage } from "../common/request-context";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { BudgetsService } from "./budgets.service";
 import { ScheduledEffectiveAmountService } from "../scheduled-transactions/scheduled-effective-amount.service";
@@ -2628,6 +2629,40 @@ describe("BudgetsService", () => {
       expect(result!.safeDailySpend).toBeGreaterThanOrEqual(0);
       expect(typeof result!.daysRemaining).toBe("number");
       expect(result!.daysRemaining).toBeGreaterThanOrEqual(0);
+    });
+
+    it("counts days remaining on the user's day, not the server's (#2365)", async () => {
+      // 2026-12-15T20:00Z is already 2026-12-16 in Kiritimati (UTC+14): day 16 of
+      // 31 leaves 15, where the server clock's day 15 would leave 16.
+      jest.useFakeTimers({
+        now: new Date("2026-12-15T20:00:00Z"),
+        doNotFake: ["nextTick", "setImmediate", "queueMicrotask"],
+      });
+      try {
+        budgetsRepository.findOne.mockResolvedValue({
+          ...mockBudget,
+          categories: [],
+        });
+        transactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            getRawMany: jest.fn().mockResolvedValue([]),
+          }),
+        );
+        splitsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            getRawMany: jest.fn().mockResolvedValue([]),
+          }),
+        );
+
+        const result = await requestContextStorage.run(
+          { userId: "user-1", timezone: "Pacific/Kiritimati" },
+          () => service.getDashboardSummary("user-1"),
+        );
+
+        expect(result!.daysRemaining).toBe(15);
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("returns zero percentUsed when totalBudgeted is zero", async () => {

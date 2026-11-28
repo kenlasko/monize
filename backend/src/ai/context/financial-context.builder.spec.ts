@@ -1,3 +1,4 @@
+import { requestContextStorage } from "../../common/request-context";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { FinancialContextBuilder } from "./financial-context.builder";
@@ -135,6 +136,22 @@ describe("FinancialContextBuilder", () => {
       const result = await builder.buildQueryContext(userId);
       const today = new Date().toISOString().substring(0, 10);
       expect(result).toContain(`TODAY'S DATE: ${today}`);
+    });
+
+    it("names the user's day, not the server's, as today (#2365)", async () => {
+      jest.useFakeTimers({
+        now: new Date("2026-11-30T20:00:00Z"),
+        doNotFake: ["nextTick", "setImmediate", "queueMicrotask"],
+      });
+      try {
+        const result = await requestContextStorage.run(
+          { userId, timezone: "Pacific/Kiritimati" },
+          () => builder.buildQueryContext(userId),
+        );
+        expect(result).toContain("TODAY'S DATE: 2026-12-01");
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("defaults to USD when no preferences found", async () => {

@@ -10,6 +10,7 @@ import {
 import { DataSource, In } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
 import { withUserContext } from "../../common/db/with-context";
+import { getRequestTimezone } from "../../common/request-context";
 import { Account } from "../../accounts/entities/account.entity";
 import { Holding } from "../../securities/entities/holding.entity";
 import { HoldingsService } from "../../securities/holdings.service";
@@ -243,15 +244,21 @@ export class MnyImportService {
     // Unawaited on purpose (design ADR-3): the request returns the job id and
     // the wizard polls. `withUserContext` keeps an identity for the async chain
     // once the request scope is gone.
-    void withUserContext(userId, () =>
-      this.jobs.runClaimed(userId, job.id, (context) =>
-        format === "mny"
-          ? this.runImport(userId, staged.id, options, context)
-          : this.runImport(userId, staged.id, options, context, {
-              format,
-              filename: staged.filename,
-            }),
-      ),
+    // The job outlives the request's context, so the user's zone is carried
+    // over by hand: post-processing decides "today" with it (#2365).
+    const timezone = getRequestTimezone();
+    void withUserContext(
+      userId,
+      () =>
+        this.jobs.runClaimed(userId, job.id, (context) =>
+          format === "mny"
+            ? this.runImport(userId, staged.id, options, context)
+            : this.runImport(userId, staged.id, options, context, {
+                format,
+                filename: staged.filename,
+              }),
+        ),
+      timezone,
     ).catch(async (error) => {
       const detail = error instanceof Error ? error.message : String(error);
       this.logger.error(`Import job ${job.id} could not be started: ${detail}`);

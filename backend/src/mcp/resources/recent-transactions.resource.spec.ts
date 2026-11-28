@@ -1,3 +1,4 @@
+import { requestContextStorage } from "../../common/request-context";
 import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { sharedReviewMock } from "../../shared-expenses/__fixtures__/shared-review";
 import { McpRecentTransactionsResource } from "./recent-transactions.resource";
@@ -107,6 +108,40 @@ describe("McpRecentTransactionsResource", () => {
     expect(parsed.summary.totalIncome).toBe(5000);
     expect(parsed.recentTransactions).toHaveLength(1);
     expect(parsed.total).toBe(1);
+  });
+
+  // #2365: 20:00Z is already 2026-12-01 in Kiritimati (UTC+14).
+  it("takes the 30-day window from the user's day, not the server's", async () => {
+    jest.useFakeTimers({
+      now: new Date("2026-11-30T20:00:00Z"),
+      doNotFake: ["nextTick", "setImmediate", "queueMicrotask"],
+    });
+    try {
+      ctx.setUser({ userId: "u1", scopes: "read" });
+      transactionsService.findAll.mockResolvedValue({
+        data: [],
+        pagination: { total: 0, hasMore: false },
+      });
+      analyticsService.getSummary.mockResolvedValue({});
+
+      await requestContextStorage.run(
+        { userId: "u1", timezone: "Pacific/Kiritimati" },
+        () => handler("monize://recent-transactions", ctx),
+      );
+
+      expect(transactionsService.findAll).toHaveBeenCalledWith(
+        "u1",
+        undefined,
+        "2026-11-01",
+        "2026-12-01",
+        undefined,
+        undefined,
+        1,
+        100,
+      );
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("expands split transactions into per-split rows", async () => {

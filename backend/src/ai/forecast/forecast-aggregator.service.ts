@@ -183,11 +183,8 @@ export class ForecastAggregatorService {
     userId: string,
     currency: string,
   ): Promise<ForecastAggregates> {
-    const now = new Date();
-    const today = now.toISOString().substring(0, 10);
-    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 12, 1)
-      .toISOString()
-      .substring(0, 10);
+    const today = todayYMD();
+    const twelveMonthsAgo = `${Number(today.slice(0, 4)) - 1}-${today.slice(5, 7)}-01`;
 
     const [
       history,

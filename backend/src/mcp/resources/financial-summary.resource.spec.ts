@@ -1,3 +1,4 @@
+import { requestContextStorage } from "../../common/request-context";
 import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { sharedReviewMock } from "../../shared-expenses/__fixtures__/shared-review";
 import { McpFinancialSummaryResource } from "./financial-summary.resource";
@@ -95,6 +96,32 @@ describe("McpFinancialSummaryResource", () => {
     expect(parsed.currentMonth.totalsCurrency).toBe("PLN");
     expect(parsed.currentMonth.totalIncome).toBe(5000);
     expect(parsed.currentMonth.period).toBeDefined();
+  });
+
+  // #2365: 20:00Z is already 2026-12-01 in Kiritimati (UTC+14), a new month there.
+  it("starts the month on the user's day, not the server's", async () => {
+    jest.useFakeTimers({
+      now: new Date("2026-11-30T20:00:00Z"),
+      doNotFake: ["nextTick", "setImmediate", "queueMicrotask"],
+    });
+    try {
+      ctx.setUser({ userId: "u1", scopes: "read" });
+      accountsService.getSummary.mockResolvedValue({ netWorth: 0 });
+      analyticsService.getSummary.mockResolvedValue({});
+
+      const result = await requestContextStorage.run(
+        { userId: "u1", timezone: "Pacific/Kiritimati" },
+        () => handler("monize://financial-summary", ctx),
+      );
+
+      const parsed = JSON.parse(result.contents[0].text);
+      expect(parsed.currentMonth.period).toEqual({
+        startDate: "2026-12-01",
+        endDate: "2026-12-01",
+      });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("reports the month's totals converted into one currency, withheld while a rate is missing", async () => {

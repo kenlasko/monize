@@ -12,6 +12,7 @@ import { QUERY_SYSTEM_PROMPT } from "./prompt-templates";
 import { aiLanguageInstruction } from "./language-directive";
 import { sanitizePromptValue } from "../../common/sanitization.util";
 import { preferredCurrency } from "../../common/default-currency.util";
+import { todayYMD } from "../../common/date-utils";
 
 interface CategoryNode {
   id: string;
@@ -51,7 +52,7 @@ export class FinancialContextBuilder {
     ]);
 
     const currency = preferredCurrency(preferences);
-    const today = new Date().toISOString().substring(0, 10);
+    const today = todayYMD();
 
     // LLM06-F1: Only include account names and types, not balances.
     // Balances are available through the list_accounts tool.

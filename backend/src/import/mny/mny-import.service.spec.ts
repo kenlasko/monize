@@ -36,6 +36,8 @@ import { HoldingsService } from "../../securities/holdings.service";
 import { TransactionRulesApplierService } from "../../transaction-rules/transaction-rules-applier.service";
 import { TagsService } from "../../tags/tags.service";
 import { writeTags } from "./writers/write-tags";
+import { withUserContext } from "../../common/db/with-context";
+import { requestContextStorage } from "../../common/request-context";
 
 jest.mock("../../common/db/scoped-db", () => ({
   withScopedDb: jest.fn(),
@@ -43,7 +45,9 @@ jest.mock("../../common/db/scoped-db", () => ({
 }));
 
 jest.mock("../../common/db/with-context", () => ({
-  withUserContext: <T>(_userId: string, fn: () => T): T => fn(),
+  withUserContext: jest.fn(
+    <T>(_userId: string, fn: () => T, _timezone?: string): T => fn(),
+  ),
   withSystemContext: <T>(fn: () => T): T => fn(),
 }));
 
@@ -485,6 +489,23 @@ describe("MnyImportService", () => {
         "user-1",
         "job-1",
         expect.any(Function),
+      );
+    });
+
+    it("runs the job in the starting request's timezone (#2365)", async () => {
+      // The job outlives the request, so post-processing decides the user's
+      // "today" from the zone handed over here, not from the server clock.
+      (withUserContext as jest.Mock).mockClear();
+
+      await requestContextStorage.run(
+        { userId: "user-1", timezone: "Pacific/Kiritimati" },
+        () => service.start("user-1", { stagedFileId: "staged-1" }),
+      );
+
+      expect(withUserContext).toHaveBeenCalledWith(
+        "user-1",
+        expect.any(Function),
+        "Pacific/Kiritimati",
       );
     });
 

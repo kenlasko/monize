@@ -1,3 +1,4 @@
+import { requestContextStorage } from "../../common/request-context";
 import { Test, TestingModule } from "@nestjs/testing";
 import { Currency } from "../../currencies/entities/currency.entity";
 import { currencyPlacesRepoMock } from "../../test-helpers/currency-places-testing";
@@ -220,6 +221,28 @@ describe("ForecastAggregatorService", () => {
       expect(result.monthlyHistory[0].totalExpenses).toBe(500);
       expect(result.monthlyHistory[0].netCashFlow).toBe(3500);
       expect(result.monthlyHistory[0].categoryBreakdown).toHaveLength(2);
+    });
+
+    it("takes today and the 12-month start from the user's day (#2365)", async () => {
+      jest.useFakeTimers({
+        now: new Date("2026-11-30T20:00:00Z"),
+        doNotFake: ["nextTick", "setImmediate", "queueMicrotask"],
+      });
+      try {
+        const history = jest.spyOn(service as any, "getMonthlyHistory");
+        await requestContextStorage.run(
+          { userId, timezone: "Pacific/Kiritimati" },
+          () => service.computeAggregates(userId, "USD"),
+        );
+        expect(history).toHaveBeenCalledWith(
+          userId,
+          "2025-12-01",
+          "2026-12-01",
+          "USD",
+        );
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("converts balances into the reporting currency and nulls the total when a rate is missing", async () => {
