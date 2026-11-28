@@ -60,14 +60,20 @@ export function normalizeAmountSeparators(value: string): string {
   return value;
 }
 
-/** Digits in a leading group of 1-3, then groups of 2-3 (US, European, lakh). */
+/**
+ * Digit groups split by `separator` read as grouping only in the two shapes
+ * people write: 1-3 digits then groups of 3 ("1,234,567"), or the lakh form,
+ * 1-2 digits, groups of 2, a last group of 3 ("12,34,567"). "12.03.26" is a
+ * date and "1,234,56" a typo, so both are left unread.
+ */
 function isGrouped(integer: string, separator: string): boolean {
-  return integer
-    .replace(/^[-+]/, "")
-    .split(separator)
-    .every((group, i) =>
-      i === 0 ? /^\d{1,3}$/.test(group) : /^\d{2,3}$/.test(group),
-    );
+  const [first, ...rest] = integer.replace(/^[-+]/, "").split(separator);
+  const last = rest.pop();
+  if (last === undefined || !/^\d{3}$/.test(last)) return false;
+  return (
+    (/^\d{1,3}$/.test(first) && rest.every((g) => /^\d{3}$/.test(g))) ||
+    (/^\d{1,2}$/.test(first) && rest.every((g) => /^\d{2}$/.test(g)))
+  );
 }
 
 function countOf(value: string, separator: string): number {

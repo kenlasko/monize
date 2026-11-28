@@ -1293,7 +1293,12 @@ export function parseQifFull(
         // The limit keeps the lenient read it always had (the leading number,
         // so "5000.00 CAD" is 5000): it is account metadata, not a posted amount.
         const limit = parseFloat(
-          normalizeAmountSeparators(value.replace(/[$£€\s]/g, "")),
+          normalizeAmountSeparators(
+            value
+              .replace(/[$£€\s]/g, "")
+              .replace(/^([-+]?)\p{L}{1,4}/u, "$1")
+              .replace(/\p{L}{1,4}$/u, ""),
+          ),
         );
         pendingAccountLimit = Number.isNaN(limit) ? null : limit;
       }

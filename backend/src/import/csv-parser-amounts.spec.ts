@@ -58,11 +58,18 @@ describe("parseCsv amounts", () => {
     expect(result.unreadableAmountRows).toEqual([
       {
         rowNumber: 3,
+        field: "amount",
         rawAmount: "12.34 pending",
         date: "2026-01-16",
         payee: "Cafe",
       },
-      { rowNumber: 4, rawAmount: "N/A", date: "2026-01-17", payee: "Store" },
+      {
+        rowNumber: 4,
+        field: "amount",
+        rawAmount: "N/A",
+        date: "2026-01-17",
+        payee: "Store",
+      },
     ]);
   });
 
@@ -120,7 +127,13 @@ describe("parseCsv amounts", () => {
 
     expect(result.transactions).toHaveLength(0);
     expect(result.unreadableAmountRows).toEqual([
-      { rowNumber: 2, rawAmount: "ten dollars", date: "2026-01-15", payee: "" },
+      {
+        rowNumber: 2,
+        field: "amount",
+        rawAmount: "ten dollars",
+        date: "2026-01-15",
+        payee: "",
+      },
     ]);
   });
 
@@ -129,7 +142,6 @@ describe("parseCsv amounts", () => {
     ["commission", "1,2.3"],
     ["commission", "1.2.3"],
     ["quantity", "1.2.3"],
-    ["price", "1,2.3"],
   ])(
     "reports an unreadable investment %s %j, never imports it",
     (field, bad) => {
@@ -142,10 +154,57 @@ describe("parseCsv amounts", () => {
 
       expect(result.transactions).toHaveLength(0);
       expect(result.unreadableAmountRows).toEqual([
-        { rowNumber: 2, rawAmount: bad, date: "2026-01-15", payee: "" },
+        {
+          rowNumber: 2,
+          field,
+          rawAmount: bad,
+          date: "2026-01-15",
+          payee: "",
+        },
       ]);
     },
   );
+
+  const HEADER = "Date,Action,Symbol,Quantity,Price,Commission,Amount\n";
+
+  it("derives a buy price from the amount when the price cell is unreadable", () => {
+    const result = parseCsv(
+      HEADER + "01/15/2026,Buy,AAPL,2,N/A,5,105\n",
+      investmentConfig(),
+    );
+
+    expect(result.unreadableAmountRows).toEqual([]);
+    expect(result.transactions.map((t) => t.price)).toEqual([50]);
+  });
+
+  it("reports an unreadable price when no amount can derive it", () => {
+    const result = parseCsv(
+      HEADER +
+        "01/15/2026,Buy,AAPL,2,1.2.3,5,\n" +
+        "01/16/2026,Sell,AAPL,2,N/A,5,\n",
+      investmentConfig(),
+    );
+
+    expect(result.transactions).toHaveLength(0);
+    expect(
+      result.unreadableAmountRows?.map((r) => [r.rowNumber, r.field]),
+    ).toEqual([
+      [2, "price"],
+      [3, "price"],
+    ]);
+  });
+
+  it("ignores an unreadable price and quantity on a dividend, as unknown", () => {
+    const result = parseCsv(
+      HEADER + "01/15/2026,Dividend,AAPL,N/A,N/A,N/A,12.50\n",
+      investmentConfig(),
+    );
+
+    expect(result.unreadableAmountRows).toEqual([]);
+    expect(
+      result.transactions.map((t) => [t.amount, t.quantity, t.price]),
+    ).toEqual([[12.5, 0, 0]]);
+  });
 
   it("reads a grouped commission and a blank commission as 0", () => {
     const csv =

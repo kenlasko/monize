@@ -2891,20 +2891,27 @@ describe("unreadable amounts", () => {
       expect(result.unreadableAmountRows).toHaveLength(1);
     });
 
-    it("reads an account credit limit with a currency code after it", () => {
-      const full = parseQifFull(
-        [
-          "!Account",
-          "NCard",
-          "TCCard",
-          "L5000.00 CAD",
-          "^",
-          "!Type:CCard",
-          rec("D01/02/2026", "T-5"),
-        ].join("\n"),
-      );
-      expect(full.accountBlocks[0].creditLimit).toBe(5000);
-    });
+    it.each([
+      ["5000.00 CAD", 5000],
+      ["1,000,000 CAD", 1000000],
+      ["1.000.000 EUR", 1000000],
+    ])(
+      "reads an account credit limit with a currency code after it: %s",
+      (limit, expected) => {
+        const full = parseQifFull(
+          [
+            "!Account",
+            "NCard",
+            "TCCard",
+            `L${limit}`,
+            "^",
+            "!Type:CCard",
+            rec("D01/02/2026", "T-5"),
+          ].join("\n"),
+        );
+        expect(full.accountBlocks[0].creditLimit).toBe(expected);
+      },
+    );
   });
 
   describe("blank T and unreadable Q", () => {

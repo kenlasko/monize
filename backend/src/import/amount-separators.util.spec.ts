@@ -24,7 +24,24 @@ describe("normalizeAmountSeparators", () => {
     ["1.234", "1.234"],
     ["18.36", "18.36"],
     ["42", "42"],
+    // the lakh pattern
+    ["12,34,567", "1234567"],
+    ["12,34,567.89", "1234567.89"],
   ])("%s -> %s", (input, expected) => {
     expect(normalizeAmountSeparators(input)).toBe(expected);
+  });
+
+  // Malformed grouping is returned as it came, so the plain-number check
+  // refuses it instead of reading a number the file did not say.
+  it.each([
+    "1,2.3",
+    "1.2.3",
+    "12.03.26",
+    "1,234,56.78",
+    "12,34,56",
+    "1,2,3",
+    "1.234.56,7",
+  ])("leaves %s unread", (input) => {
+    expect(normalizeAmountSeparators(input)).toBe(input);
   });
 });
