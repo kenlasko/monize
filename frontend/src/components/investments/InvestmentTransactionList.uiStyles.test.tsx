@@ -173,6 +173,11 @@ describe('the brokerage register in Folio on a desktop width (issue #2510)', () 
     expect(legend!.textContent).toContain('reconciled');
   });
 
+  it('hides the legend below lg, where the Status cells are not drawn', () => {
+    const { container } = renderList();
+    expect(container.querySelector('.ui-register-legend')!.parentElement!.className).toBe('hidden lg:block');
+  });
+
   it('drops the legend with the Status column', () => {
     seedHidden(['status']);
     const { container } = renderList();
@@ -238,6 +243,29 @@ describe('the brokerage register in Pebble on a desktop width (issue #2510)', ()
     fireEvent.keyDown(row, { key: 'Enter' });
     expect(onEdit).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole('complementary')).toBeNull();
+  });
+
+  it('keeps Edit, Duplicate and Delete on each row, without opening the editor', () => {
+    const onEdit = vi.fn();
+    const onDuplicate = vi.fn();
+    render(
+      <InvestmentTransactionList
+        transactions={DAYS}
+        accounts={ACCOUNTS}
+        isLoading={false}
+        onEdit={onEdit}
+        onDuplicate={onDuplicate}
+        onDelete={vi.fn()}
+      />,
+    );
+    const [row] = screen.getAllByTestId('pebble-trade-row');
+    fireEvent.click(within(row).getByRole('button', { name: 'Duplicate' }));
+    expect(onDuplicate).toHaveBeenCalledWith(DAYS[0]);
+    fireEvent.click(within(row).getByRole('button', { name: 'Delete' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(onEdit).not.toHaveBeenCalled();
+    fireEvent.click(within(row).getByRole('button', { name: 'Edit' }));
+    expect(onEdit).toHaveBeenCalledTimes(1);
   });
 
   it('cycles the status from its button without opening the editor', async () => {

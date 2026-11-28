@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { RowActions } from '@/components/ui/row-actions/RowActions';
 import { InvestmentTransaction } from '@/types/investment';
 import { TransactionStatus } from '@/types/transaction';
 import { HOVER_ROW_ON_PAGE } from '@/components/ui/Card';
@@ -14,6 +15,7 @@ import {
   registerGroupLabel,
 } from '@/components/transactions/register-style-data';
 import {
+  buildInvestmentTxActions,
   InvestmentPriceValue,
   InvestmentSharesValue,
   InvestmentTotalValue,
@@ -37,6 +39,11 @@ export interface InvestmentPebbleRegisterProps {
   /** The list's long-press handlers: a click edits, a long press opens the sheet. */
   getRowHandlers: (tx: InvestmentTransaction) => LongPressRowHandlers;
   onEdit?: (tx: InvestmentTransaction) => void;
+  onDuplicate?: (tx: InvestmentTransaction) => void;
+  /** Opens the list's delete confirmation. */
+  onDeleteClick: (tx: InvestmentTransaction) => void;
+  /** This surface offers row actions; the row then draws them, as the tier row's Actions cell does. */
+  hasActions: boolean;
   onCycleStatus: (tx: InvestmentTransaction) => void;
   /** The register's hidden columns; each is absent from the row too. */
   hidden: ReadonlySet<HideableColumn<'investmentRegister'>>;
@@ -50,6 +57,7 @@ interface PebbleTradeRowProps {
   accountName: string | undefined;
   isFuture: boolean;
   p: InvestmentPebbleRegisterProps;
+  actionLabels: { edit: string; duplicate: string; delete: string };
 }
 
 /** The security's initial on a round disc, as Pebble's payee avatar draws a payee's. */
@@ -68,9 +76,11 @@ function SecurityAvatar({ symbol }: { symbol: string | undefined }) {
  * One trade. It shows the figures the tier row shows, through the same three
  * renderers, so a SPLIT's ratio, an unpriced row and a redemption's total read
  * the same in every layout. A click edits the trade, as the tier row does;
- * there is no inspector (issue #2510).
+ * there is no inspector (issue #2510), so the row keeps the tier row's Edit,
+ * Duplicate and Delete buttons, the one pointer- and keyboard-reachable way
+ * to them besides the long-press sheet.
  */
-function PebbleTradeRow({ tx, actionInfo, accountName, isFuture, p }: PebbleTradeRowProps) {
+function PebbleTradeRow({ tx, actionInfo, accountName, isFuture, p, actionLabels }: PebbleTradeRowProps) {
   const isVoid = tx.status === TransactionStatus.VOID;
   const voidText = isVoid ? 'line-through' : '';
   const isVisible = (id: string) => !(p.hidden as ReadonlySet<string>).has(id);
@@ -140,6 +150,18 @@ function PebbleTradeRow({ tx, actionInfo, accountName, isFuture, p }: PebbleTrad
       <span className={`shrink-0 text-right font-semibold text-[15px] sm:min-w-28 whitespace-nowrap text-gray-900 dark:text-gray-100 ${voidText}`}>
         <InvestmentTotalValue tx={tx} formatCurrency={p.formatCurrency} defaultCurrency={p.defaultCurrency} />
       </span>
+      {p.hasActions && (
+        <span className="hidden sm:flex shrink-0" onClick={(e) => e.stopPropagation()}>
+          <RowActions
+            actions={buildInvestmentTxActions(tx, actionLabels, {
+              onEdit: p.onEdit,
+              onDuplicate: p.onDuplicate,
+              onDeleteClick: p.onDeleteClick,
+            })}
+            density="compact"
+          />
+        </span>
+      )}
     </li>
   );
 }
@@ -158,6 +180,12 @@ function PebbleTradeRow({ tx, actionInfo, accountName, isFuture, p }: PebbleTrad
 export function InvestmentPebbleRegister(p: InvestmentPebbleRegisterProps) {
   const t = useTranslations('transactions');
   const tInv = useTranslations('investments');
+  const tc = useTranslations('common');
+  const actionLabels = {
+    edit: tc('actions.edit'),
+    duplicate: tc('actions.duplicate'),
+    delete: tc('actions.delete'),
+  };
   const locale = useLocale();
   const actionInfoFor = useInvestmentActionInfo();
 
@@ -215,6 +243,7 @@ export function InvestmentPebbleRegister(p: InvestmentPebbleRegisterProps) {
         accountName={p.accountMap.get(tx.accountId)}
         isFuture={tx.transactionDate > p.today}
         p={p}
+        actionLabels={actionLabels}
       />,
     );
   });

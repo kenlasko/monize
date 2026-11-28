@@ -794,6 +794,9 @@ export function InvestmentTransactionList({
           formatQuantity={formatQuantity}
           getRowHandlers={getRowHandlers}
           onEdit={onEdit}
+          onDuplicate={onDuplicate}
+          onDeleteClick={handleDeleteClick}
+          hasActions={!!(onDelete || onEdit || onDuplicate)}
           onCycleStatus={handleCycleStatus}
           hidden={hiddenColumns}
           emptyText={t('transactionList.noTransactionsFiltered')}
@@ -917,12 +920,17 @@ export function InvestmentTransactionList({
       </div>
       )}
       {/* Folio's ledger prints each status as its mark; the legend reads them,
-          as under the cash register. Absent with the Status column. */}
+          as under the cash register. Absent with the Status column, and below
+          `lg`, where that column's cells are not drawn. The wrapper carries
+          the breakpoint because the legend's own `display` rule is unlayered
+          and would override a utility on it. */}
       {ledger && !wrapped && isVisible('status') && (
-        <p className="ui-register-legend">
-          <span><span className="ui-register-mark">{tStatus('list.folio.markCleared')}</span> {tStatus('list.folio.legendCleared')}</span>
-          <span><span className="ui-register-mark">{tStatus('list.folio.markReconciled')}</span> {tStatus('list.folio.legendReconciled')}</span>
-        </p>
+        <div className="hidden lg:block">
+          <p className="ui-register-legend">
+            <span><span className="ui-register-mark">{tStatus('list.folio.markCleared')}</span> {tStatus('list.folio.legendCleared')}</span>
+            <span><span className="ui-register-mark">{tStatus('list.folio.markReconciled')}</span> {tStatus('list.folio.legendReconciled')}</span>
+          </p>
+        </div>
       )}
 
       {/* Delete Confirmation Dialog */}
