@@ -120,6 +120,7 @@ describe("McpTransactionsTools", () => {
       updateSplits: jest.fn().mockResolvedValue([]),
       remove: jest.fn().mockResolvedValue(undefined),
       removeAny: jest.fn().mockResolvedValue(undefined),
+      findMirrorLegIds: jest.fn().mockResolvedValue(new Map()),
       previewUpdate: jest.fn(),
       previewDelete: jest.fn(),
       createTransfer: jest.fn(),
@@ -2255,6 +2256,32 @@ describe("McpTransactionsTools", () => {
       expect(transactionsService.removeAny).toHaveBeenCalledTimes(2);
       const parsed = result.structuredContent as any;
       expect(parsed.ids).toEqual(["t1", "t2"]);
+    });
+
+    it("deletes a transfer once when both of its legs are in a bulk delete", async () => {
+      relayService.emitPendingAction.mockResolvedValue(false);
+      acceptingClient();
+      prepService.prepareDeleteBulk.mockResolvedValue({
+        okRows: [{ transactionId: "t1" }, { transactionId: "t2" }],
+        previewRows: [{ status: "ok" }, { status: "ok" }],
+        okIndex: [0, 1],
+        skipped: [],
+      });
+      transactionsService.findMirrorLegIds.mockResolvedValue(
+        new Map([["t2", "t1"]]),
+      );
+      const result = await handlers["manage_transactions"](
+        {
+          operation: "delete",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            transactionId: `t${i + 1}`,
+          })),
+        },
+        ctx,
+      );
+      expect(transactionsService.removeAny).toHaveBeenCalledTimes(1);
+      expect(transactionsService.removeAny).toHaveBeenCalledWith("u1", "t1");
+      expect((result.structuredContent as any).ids).toEqual(["t1", "t2"]);
     });
 
     it("errors when no bulk delete row prepares", async () => {

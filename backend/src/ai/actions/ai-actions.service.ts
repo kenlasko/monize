@@ -610,7 +610,27 @@ export class AiActionsService {
     // is signature-verified and assertBulkRowCount already rejects oversize
     // input. Defense-in-depth; also clears CodeQL's loop-bound-injection flag.
     const rowCount = Math.min(descriptor.rows.length, MAX_BULK_ACTION_ROWS);
+    // Both legs of a transfer selected: the first delete removes the mirror, so
+    // the second must not run (it would 404 after the first wrote).
+    const deleteRows = descriptor.rows as BatchDeleteTransactionRow[];
+    const mirrorOf =
+      descriptor.operation === "delete"
+        ? await this.transactionsService.findMirrorLegIds(
+            userId,
+            deleteRows.slice(0, rowCount).map((row) => row.transactionId),
+          )
+        : new Map<string, string>();
+    const failedIds = new Set<string>();
     for (let i = 0; i < rowCount; i++) {
+      const mirrored = mirrorOf.get(deleteRows[i].transactionId);
+      if (mirrored !== undefined) {
+        if (failedIds.has(mirrored)) {
+          skipped.push({ index: i, reason: this.bulkRowInvalidReason() });
+        } else {
+          ids.push(deleteRows[i].transactionId);
+        }
+        continue;
+      }
       try {
         const id = await this.executeBatchRow(
           userId,
@@ -619,6 +639,7 @@ export class AiActionsService {
         );
         ids.push(id);
       } catch {
+        failedIds.add(deleteRows[i].transactionId);
         skipped.push({ index: i, reason: this.bulkRowInvalidReason() });
       }
     }

@@ -83,6 +83,7 @@ describe("AiActionsService", () => {
       updateSplits: jest.fn().mockResolvedValue([]),
       remove: jest.fn().mockResolvedValue(undefined),
       removeAny: jest.fn().mockResolvedValue(undefined),
+      findMirrorLegIds: jest.fn().mockResolvedValue(new Map()),
       createBulk: jest.fn(),
       createTransfer: jest.fn().mockResolvedValue({
         fromTransaction: { id: "tf-1" },
@@ -2219,6 +2220,43 @@ describe("AiActionsService", () => {
       expect(result.type).toBe("batch_actions");
       expect(result.count).toBe(1);
       expect(result.skipped).toHaveLength(1);
+    });
+
+    it("skips the mirror leg of a transfer selected with its other leg", async () => {
+      transactions.findMirrorLegIds.mockResolvedValueOnce(
+        new Map([[ACC2, TX]]),
+      );
+      const descriptor: import("./ai-action.types").BatchActionsDescriptor = {
+        type: "batch_actions",
+        userId: USER,
+        actionId: "act-batch-mirror",
+        expiresAt: Date.now() + 60_000,
+        operation: "delete",
+        rows: [{ transactionId: TX }, { transactionId: ACC2 }],
+      };
+      const result = await service.confirm(USER, dtoFor(descriptor));
+      expect(transactions.removeAny).toHaveBeenCalledTimes(1);
+      expect(transactions.removeAny).toHaveBeenCalledWith(USER, TX);
+      expect(result.count).toBe(2);
+      expect(result.skipped).toHaveLength(0);
+    });
+
+    it("reports the mirror leg skipped when the other leg's delete failed", async () => {
+      transactions.findMirrorLegIds.mockResolvedValueOnce(
+        new Map([[ACC2, TX]]),
+      );
+      transactions.removeAny.mockRejectedValueOnce(new Error("nope"));
+      const descriptor: import("./ai-action.types").BatchActionsDescriptor = {
+        type: "batch_actions",
+        userId: USER,
+        actionId: "act-batch-mirror-fail",
+        expiresAt: Date.now() + 60_000,
+        operation: "delete",
+        rows: [{ transactionId: TX }, { transactionId: ACC2 }],
+      };
+      const result = await service.confirm(USER, dtoFor(descriptor));
+      expect(result.count).toBe(0);
+      expect(result.skipped).toHaveLength(2);
     });
 
     it("executes batch_actions(update) for each row", async () => {

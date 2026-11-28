@@ -5288,6 +5288,39 @@ export class TransactionsService {
   }
 
   /**
+   * Of a selection to delete one row at a time with `removeAny`, the ids that
+   * are the mirror leg of an EARLIER selected id (mirror id -> that earlier
+   * id): deleting the earlier leg already removes them, so deleting them again
+   * fails with a 404 after the first delete wrote. Callers skip them, and count
+   * them as deleted only when the earlier leg's delete succeeded.
+   * Only a mutual link counts; a split-transfer leg links to its split parent,
+   * which does not link back, so it never qualifies.
+   */
+  async findMirrorLegIds(
+    userId: string,
+    transactionIds: string[],
+  ): Promise<Map<string, string>> {
+    if (transactionIds.length === 0) return new Map();
+    const rows = await withScopedDb(this.dataSource, (m) =>
+      m.getRepository(Transaction).find({
+        where: { id: In(transactionIds), userId, isTransfer: true },
+        select: ["id", "linkedTransactionId"],
+      }),
+    );
+    const linkOf = new Map(rows.map((r) => [r.id, r.linkedTransactionId]));
+    const mirrors = new Map<string, string>();
+    const seen = new Set<string>();
+    for (const id of transactionIds) {
+      const linked = linkOf.get(id);
+      if (linked && seen.has(linked) && linkOf.get(linked) === id) {
+        mirrors.set(id, linked);
+      }
+      seen.add(id);
+    }
+    return mirrors;
+  }
+
+  /**
    * Persist split-level tags and mirror them onto each split's transfer
    * counterpart. A transfer split's tags live on both the split row (shown on
    * the source transaction) and the counterpart leg's transaction tags (shown

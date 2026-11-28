@@ -1888,8 +1888,17 @@ export class McpTransactionsTools {
         "Cancelled: the confirmation was declined, so nothing was deleted.",
       );
     const ids: string[] = [];
+    // Both legs of a transfer selected: the first delete removes the mirror.
+    const mirrorLegIds = await this.transactionsService.findMirrorLegIds(
+      userId,
+      bulk.okRows.map((row) => row.transactionId),
+    );
     for (const row of bulk.okRows) {
-      await this.transactionsService.removeAny(userId, row.transactionId);
+      // An earlier delete that threw leaves this loop, so a mirror is only
+      // ever skipped after its partner was removed.
+      if (!mirrorLegIds.has(row.transactionId)) {
+        await this.transactionsService.removeAny(userId, row.transactionId);
+      }
       ids.push(row.transactionId);
       await this.writeLimiter.record(userId, "delete_transaction");
     }
