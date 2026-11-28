@@ -88,6 +88,10 @@ export async function buildRateIndex(
       ? conversionHorizon
       : endDate;
   const currArr = Array.from(currencies);
+  // One "today" for the SQL anchor and the resolver: the user's day inside a
+  // request; outside one it is Node's local clock (its TZ), never Postgres'
+  // CURRENT_DATE.
+  const today = todayYMD();
   const rates = await query(
     `WITH pairs AS (
          SELECT c AS from_currency, $2::TEXT AS to_currency
@@ -122,15 +126,26 @@ export async function buildRateIndex(
          ) loaded
         ORDER BY rate_date`,
     // The user's day (todayYMD), not the database server's CURRENT_DATE (#2365).
-    [currArr, defaultCurrency, startDate, loadTo, todayYMD()],
+    [currArr, defaultCurrency, startDate, loadTo, today],
   );
 
-  return indexRateRows(rates);
+  return indexRateRows(rates, today);
 }
 
+/**
+ * The day an index was loaded against, so the resolver's future cap and age
+ * bound use the same "today" as the SQL anchor. Per index, never shared: an
+ * index lives for one computation (and so does its resolution memo).
+ */
+const indexToday = new WeakMap<RateIndex, string>();
+
 /** Group already-fetched rows into the pair index, preserving their order. */
-export function indexRateRows(rows: RateIndexRow[]): RateIndex {
+export function indexRateRows(
+  rows: RateIndexRow[],
+  today: string = todayYMD(),
+): RateIndex {
   const index: RateIndex = new Map();
+  indexToday.set(index, today);
   for (const r of rows) {
     const key = `${r.from_currency}->${r.to_currency}`;
     if (!index.has(key)) index.set(key, []);
@@ -203,8 +218,12 @@ export function resolveIndexedRate(
   const key = `${from}->${to}@${onDate}`;
   const known = memo.get(key);
   if (known) return known;
-  const resolution = resolveFxRate(from, to, onDate, (f, t) =>
-    rateIndex.get(`${f}->${t}`),
+  const resolution = resolveFxRate(
+    from,
+    to,
+    onDate,
+    (f, t) => rateIndex.get(`${f}->${t}`),
+    { today: indexToday.get(rateIndex) ?? todayYMD() },
   );
   memo.set(key, resolution);
   return resolution;

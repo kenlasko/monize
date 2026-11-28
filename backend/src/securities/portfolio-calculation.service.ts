@@ -664,8 +664,12 @@ export class PortfolioCalculationService {
     to: string,
     dateStr: string,
   ): number | undefined {
-    const resolved = resolveFxRate(from, to, dateStr, (f, t) =>
-      index.get(`${f}->${t}`),
+    const resolved = resolveFxRate(
+      from,
+      to,
+      dateStr,
+      (f, t) => index.get(`${f}->${t}`),
+      { today: todayYMD() },
     );
     return resolved.rate === null ? undefined : resolved.rate;
   }

@@ -344,6 +344,34 @@ describe("rate-index.util", () => {
         resolveIndexedRate(after, "USD", "CAD", "2026-06-17"),
       ).toMatchObject({ rate: 1.5 });
     });
+
+    describe("the user's day caps a future date and bounds the age", () => {
+      // 11:00Z is 2026-06-11 in Kiritimati and 2026-06-10 in Los Angeles. The
+      // row dated 2026-04-26 is 46 days old on the 11th and 45 on the 10th.
+      const at = (timezone: string) => {
+        jest.useFakeTimers().setSystemTime(new Date("2026-06-10T11:00:00Z"));
+        return requestContextStorage.run({ timezone }, () =>
+          indexRateRows([row("USD", "CAD", 1.3, "2026-04-26")]),
+        );
+      };
+      afterEach(() => jest.useRealTimers());
+
+      it("refuses the 46-day-old row on the user's day (Kiritimati)", () => {
+        const index = at("Pacific/Kiritimati");
+        expect(
+          resolveIndexedRate(index, "USD", "CAD", "2026-07-01").rate,
+        ).toBeNull();
+        expect(convertAtDate(10, "USD", "CAD", "2026-07-01", index)).toBeNull();
+      });
+
+      it("accepts the 45-day-old row on the user's day (Los Angeles)", () => {
+        const index = at("America/Los_Angeles");
+        expect(resolveIndexedRate(index, "USD", "CAD", "2026-07-01").rate).toBe(
+          1.3,
+        );
+        expect(convertAtDate(10, "USD", "CAD", "2026-07-01", index)).toBe(13);
+      });
+    });
   });
 
   describe("convertAtDate", () => {
