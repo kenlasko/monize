@@ -7,6 +7,10 @@ import {
 import { tr } from "../i18n/translate";
 import { DataSource, In } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
+import {
+  loadCurrencyPlacesForRead,
+  moneyDecimalsForCode,
+} from "../common/currency-places.util";
 import { Budget } from "./entities/budget.entity";
 import {
   BudgetCategory,
@@ -832,6 +836,9 @@ export class BudgetsService {
     // owns the memoized per-pair lookup, the rejecting rate resolver, and both
     // ways a component goes missing. This block used to be written out here and
     // again in the AI/MCP rollup, comments included.
+    const budgetPlaces = await withScopedDb(this.dataSource, (m) =>
+      loadCurrencyPlacesForRead(m, [budget.currencyCode]),
+    );
     const billsTotal = await convertingTotal(
       upcomingBills.map((bill) => ({
         amount: bill.amount,
@@ -839,6 +846,8 @@ export class BudgetsService {
       })),
       budget.currencyCode,
       memoizedRateResolver(this.exchangeRates, budget.currencyCode, todayStr),
+      undefined,
+      moneyDecimalsForCode(budgetPlaces, budget.currencyCode),
     );
     const upcomingBillsComplete = billsTotal.total !== null;
     const knownUpcomingBillsSubtotal = billsTotal.knownSubtotal;

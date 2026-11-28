@@ -2652,16 +2652,23 @@ export class ScheduledTransactionsService {
       totalsCurrency,
       today,
     );
+    const totalsPlaces = await withScopedDb(this.dataSource, (m) =>
+      loadCurrencyPlacesForRead(m, [totalsCurrency]),
+    );
+    const totalsDecimals = moneyDecimalsForCode(totalsPlaces, totalsCurrency);
     const billsTotal = await convertingTotal(
       [...bills, ...unclassified],
       totalsCurrency,
       rateFor,
       (a) => Math.abs(a),
+      totalsDecimals,
     );
     const depositsTotal = await convertingTotal(
       [...deposits, ...unclassified],
       totalsCurrency,
       rateFor,
+      undefined,
+      totalsDecimals,
     );
     const missingRatePairs = [
       ...new Set([...billsTotal.missingPairs, ...depositsTotal.missingPairs]),
