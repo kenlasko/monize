@@ -108,6 +108,7 @@
     "title": "[XX-Asset Allocation-XX]",
     "noData": "[XX-No allocation data available.-XX]",
     "knownValueOnly": "[XX-Percentages cover known value only; some holdings could not be valued.-XX]",
+    "knownValueOnlyMissing": "[XX-Not valued: {items}. Add the missing prices on each security's price history and the missing rates on the Currencies page.-XX]",
     "cash": "[XX-Cash-XX]",
     "untagged": "[XX-Untagged-XX]",
     "noTagData": "[XX-No tagged holdings to show. Add tags to your securities to see exposure by tag.-XX]",

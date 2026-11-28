@@ -1,6 +1,6 @@
-import type { PortfolioSummary } from '@/types/investment';
+import type { AssetAllocation, PortfolioSummary } from '@/types/investment';
 import { moneyDecimalsForCurrency, sumMoney } from '@/lib/format';
-import type { PortfolioCompleteness } from '@/lib/net-worth-completeness';
+import { totalOrSubtotal, type PortfolioCompleteness } from '@/lib/net-worth-completeness';
 
 /** The Investments page's headline figure: what the portfolio in view is worth. */
 export interface PortfolioHeadline {
@@ -12,6 +12,20 @@ export interface PortfolioHeadline {
   currencyCode: string | null;
   /** What `value` is complete over, for `portfolioPartialTotal`. */
   completeness: PortfolioCompleteness;
+}
+
+/** The summary's by-security allocation, with the completeness it was valued under. */
+export function summaryAllocation(summary: PortfolioSummary): AssetAllocation {
+  return {
+    allocation: summary.allocation,
+    totalValue: summary.totalPortfolioValue,
+    knownSubtotal: summary.knownPortfolioValueSubtotal,
+    valuationComplete: summary.valuationComplete,
+    fxComplete: summary.fxComplete,
+    pricesComplete: summary.pricesComplete,
+    missingRatePairs: summary.missingRatePairs,
+    unpricedSecurityIds: summary.unpricedSecurityIds,
+  };
 }
 
 /**
@@ -47,7 +61,7 @@ export function portfolioHeadline(
     };
   }
   return {
-    value: summary.totalPortfolioValue,
+    value: totalOrSubtotal(summary.totalPortfolioValue, summary.knownPortfolioValueSubtotal),
     currencyCode: null,
     completeness: summary,
   };

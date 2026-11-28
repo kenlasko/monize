@@ -75,6 +75,7 @@
     "title": "Alokasi Aset",
     "noData": "Tidak ada data alokasi tersedia.",
     "knownValueOnly": "Persentase hanya mencakup nilai yang diketahui; beberapa kepemilikan tidak dapat dinilai.",
+    "knownValueOnlyMissing": "Tidak dinilai: {items}. Tambahkan harga yang hilang pada riwayat harga setiap sekuritas dan kurs yang hilang pada halaman Mata Uang.",
     "cash": "Tunai",
     "untagged": "Tanpa tag",
     "noTagData": "Tidak ada kepemilikan bertag untuk ditampilkan. Tambahkan tag ke sekuritas Anda untuk melihat eksposur berdasarkan tag.",

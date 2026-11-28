@@ -2722,7 +2722,10 @@ export class ToolExecutorService {
       includeLookThrough: input.includeLookThrough === true,
     });
 
-    const sign = data.totalGainLoss >= 0 ? "+" : "";
+    // A total is null unless every component is known; the line then quotes
+    // the known subtotal under its own name, never as the total.
+    const gainLoss = data.totalGainLoss ?? data.knownGainLossSubtotal;
+    const sign = gainLoss >= 0 ? "+" : "";
     // The totals are in the reporting currency and arrive rounded at its
     // places; the line names it and prints them there (`figureIn`).
     const cur = data.currency;
@@ -2774,7 +2777,7 @@ export class ToolExecutorService {
         : "";
     return {
       data,
-      summary: `${data.holdingCount} holding${data.holdingCount === 1 ? "" : "s"}, total portfolio value ${fig(data.totalPortfolioValue)} ${cur}, unrealized gain/loss ${sign}${fig(data.totalGainLoss)} ${cur} (${sign}${data.totalGainLossPercent.toFixed(2)}%).${lookThroughNote}${incompleteNote}${gainNote}${incompleteAccountsNote}`,
+      summary: `${data.holdingCount} holding${data.holdingCount === 1 ? "" : "s"}, ${data.totalPortfolioValue === null ? `known portfolio value (a subtotal, the total is unknown) ${fig(data.knownPortfolioValueSubtotal)}` : `total portfolio value ${fig(data.totalPortfolioValue)}`} ${cur}, unrealized gain/loss ${data.totalGainLoss === null ? "over the valued holdings only " : ""}${sign}${fig(gainLoss)} ${cur} (${sign}${data.totalGainLossPercent.toFixed(2)}%).${lookThroughNote}${incompleteNote}${gainNote}${incompleteAccountsNote}`,
       sources: [
         {
           type: "portfolio",

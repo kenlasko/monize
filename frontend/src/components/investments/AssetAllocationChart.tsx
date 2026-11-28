@@ -559,9 +559,23 @@ export function AssetAllocationChart({
   const foreignAggregateIncomplete =
     foreignCurrency !== null &&
     (holdingsByAccount ?? []).some((a) => a.valuationComplete === false);
+  // The by-tag and by-tag-key views are regrouped from the same valuation, so
+  // each carries its own flag; absent (an older backend) reads as complete.
   const knownValueOnly =
-    effectiveGroupBy === 'security' &&
-    (valuationComplete === false || foreignAggregateIncomplete);
+    (effectiveGroupBy === 'security' &&
+      (valuationComplete === false ||
+        activeAllocation?.valuationComplete === false ||
+        foreignAggregateIncomplete)) ||
+    ((isTagView || isTagKeyView) && activeAllocation?.valuationComplete === false);
+  // What is missing, by name: a symbol for a holding with no price (never its
+  // id), a pair for a missing rate.
+  const symbolById = new Map(
+    (holdingsByAccount ?? []).flatMap((a) => a.holdings.map((h) => [h.securityId, h.symbol] as const)),
+  );
+  const notValued = [
+    ...(activeAllocation?.unpricedSecurityIds ?? []).map((id) => symbolById.get(id) ?? id),
+    ...(activeAllocation?.missingRatePairs ?? []),
+  ];
 
   return (
     <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[420px]`}>
@@ -569,6 +583,12 @@ export function AssetAllocationChart({
       {knownValueOnly && (
         <p className="text-xs text-amber-700 dark:text-amber-300 mb-2">
           {t('assetAllocation.knownValueOnly')}
+          {notValued.length > 0 && (
+            <>
+              {' '}
+              {t('assetAllocation.knownValueOnlyMissing', { items: notValued.join(', ') })}
+            </>
+          )}
         </p>
       )}
       <div className="h-64">

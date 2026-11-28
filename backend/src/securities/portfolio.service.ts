@@ -235,26 +235,45 @@ export interface AccountHoldings {
   valuationComplete: boolean;
 }
 
+/**
+ * Each `total*` figure of the summary is `null` unless every component of it is
+ * known (`AGENTS.md`, "A subtotal is not a total"); the sum of what did
+ * convert and was priced is in the `known*Subtotal` beside it. An empty portfolio
+ * holds zero and is complete, so its totals are 0, never null.
+ */
 export interface PortfolioSummary {
-  totalCashValue: number;
-  totalHoldingsValue: number;
-  totalCostBasis: number;
-  totalNetInvested: number;
-  totalPortfolioValue: number;
+  /** null when a cash balance could not be converted into the reporting currency. */
+  totalCashValue: number | null;
+  knownCashValueSubtotal: number;
+  /** null when a holding is unpriced or has no rate into the reporting currency. */
+  totalHoldingsValue: number | null;
+  knownHoldingsValueSubtotal: number;
+  /** null when a holding's cost has no rate into the reporting currency. */
+  totalCostBasis: number | null;
+  knownCostBasisSubtotal: number;
+  /** null when an account's cash or flows could not be converted. */
+  totalNetInvested: number | null;
+  knownNetInvestedSubtotal: number;
+  /** null unless `totalCashValue` and `totalHoldingsValue` are both known. */
+  totalPortfolioValue: number | null;
+  knownPortfolioValueSubtotal: number;
   /**
    * `totalPortfolioValue` less `totalNetInvested`, the Investments page's
    * Total Gain: the difference of the two aggregates read once at the
    * reporting currency's places, never the difference of the two readings,
    * which can sit a unit off it (docs/specs/report-rounding-and-aggregation.md
-   * rule 4). A partial figure whenever `valuationComplete` is false.
+   * rule 4). null unless the portfolio value and the net invested are both known.
    */
-  totalGainOverNetInvested: number;
+  totalGainOverNetInvested: number | null;
+  knownGainOverNetInvestedSubtotal: number;
   /**
    * The gain over the holdings that joined `totalHoldingsValue` and whose cost
    * converted: their value less THEIR cost, never less every holding's cost
-   * (A26-M38). A partial figure whenever `valuationComplete` is false.
+   * (A26-M38). null when a holding is unpriced or unconverted: the gain of the
+   * holdings that did value is `knownGainLossSubtotal`.
    */
-  totalGainLoss: number;
+  totalGainLoss: number | null;
+  knownGainLossSubtotal: number;
   /** Over `gainCostBasis`; 0 when that is 0. */
   totalGainLossPercent: number;
   /** Cost of the holdings `totalGainLoss` is over. */
@@ -377,9 +396,42 @@ export interface AllocationItem {
   currencyCode?: string;
 }
 
+/**
+ * The allocation's completeness, copied from the summary it is built from. A
+ * holding that cannot be valued (no price, no rate) is left out of
+ * `allocation`, so the percentages are over the known value only, and
+ * `valuationComplete: false` says so.
+ */
 export interface AssetAllocation {
   allocation: AllocationItem[];
-  totalValue: number;
+  /** null unless every holding and cash balance is valued; see `knownSubtotal`. */
+  totalValue: number | null;
+  /** The value the percentages are measured against: what could be valued. */
+  knownSubtotal: number;
+  fxComplete: boolean;
+  /** `"EUR->USD"` for each pair with no rate; empty when complete. */
+  missingRatePairs: string[];
+  pricesComplete: boolean;
+  /** Securities held in a non-zero quantity with no current price. */
+  unpricedSecurityIds: string[];
+  /** `fxComplete && pricesComplete`; read as `=== false`. */
+  valuationComplete: boolean;
+}
+
+function allocationOf(
+  summary: PortfolioSummary,
+  allocation: AllocationItem[],
+): AssetAllocation {
+  return {
+    allocation,
+    totalValue: summary.totalPortfolioValue,
+    knownSubtotal: summary.knownPortfolioValueSubtotal,
+    fxComplete: summary.fxComplete,
+    missingRatePairs: summary.missingRatePairs,
+    pricesComplete: summary.pricesComplete,
+    unpricedSecurityIds: summary.unpricedSecurityIds,
+    valuationComplete: summary.valuationComplete,
+  };
 }
 
 /**
@@ -467,12 +519,22 @@ export interface LlmPortfolioSummary {
   unpricedSymbols: string[];
   /** `fxComplete && pricesComplete` -- gate a total on this one. */
   valuationComplete: boolean;
-  totalCashValue: number;
-  totalHoldingsValue: number;
-  totalCostBasis: number;
-  totalPortfolioValue: number;
-  /** Over the holdings that have a value (`gainCostBasis`); partial when `valuationComplete` is false. */
-  totalGainLoss: number;
+  /**
+   * Each `total*` is null unless every component of it is known; the sum of
+   * what is known is in the `known*Subtotal` beside it. Never quote a subtotal
+   * as a total.
+   */
+  totalCashValue: number | null;
+  knownCashValueSubtotal: number;
+  totalHoldingsValue: number | null;
+  knownHoldingsValueSubtotal: number;
+  totalCostBasis: number | null;
+  knownCostBasisSubtotal: number;
+  totalPortfolioValue: number | null;
+  knownPortfolioValueSubtotal: number;
+  /** Over the holdings that have a value (`gainCostBasis`); null when a holding has no value. */
+  totalGainLoss: number | null;
+  knownGainLossSubtotal: number;
   totalGainLossPercent: number;
   gainCostBasis: number;
   /** Cost the gain leaves out: holdings with no value. */
@@ -1275,18 +1337,39 @@ export class PortfolioService {
       ]),
     ].sort();
 
+    // A total is known only when every component of it is. Cash, holdings and
+    // net invested are three different questions, so each total reads its own.
+    const holdingsValueComplete =
+      holdingsResult.fxComplete && holdingsResult.pricesComplete;
+    const portfolioComplete = cashResult.fxComplete && holdingsValueComplete;
+    const gainOverNetInvested = FxAggregate.difference(
+      portfolioValue,
+      netInvestedAgg,
+    ).knownSubtotalAt(places);
+
     return {
       valuation: {
-        totalCashValue,
-        totalHoldingsValue: holdingsResult.totalHoldingsValue,
-        totalCostBasis: holdingsResult.totalCostBasis,
-        totalNetInvested,
-        totalPortfolioValue,
-        totalGainOverNetInvested: FxAggregate.difference(
-          portfolioValue,
-          netInvestedAgg,
-        ).knownSubtotalAt(places),
-        totalGainLoss,
+        totalCashValue: cashResult.fxComplete ? totalCashValue : null,
+        knownCashValueSubtotal: totalCashValue,
+        totalHoldingsValue: holdingsValueComplete
+          ? holdingsResult.totalHoldingsValue
+          : null,
+        knownHoldingsValueSubtotal: holdingsResult.totalHoldingsValue,
+        totalCostBasis: holdingsResult.fxComplete
+          ? holdingsResult.totalCostBasis
+          : null,
+        knownCostBasisSubtotal: holdingsResult.totalCostBasis,
+        totalNetInvested: netInvestedAgg.isComplete ? totalNetInvested : null,
+        knownNetInvestedSubtotal: totalNetInvested,
+        totalPortfolioValue: portfolioComplete ? totalPortfolioValue : null,
+        knownPortfolioValueSubtotal: totalPortfolioValue,
+        totalGainOverNetInvested:
+          portfolioComplete && netInvestedAgg.isComplete
+            ? gainOverNetInvested
+            : null,
+        knownGainOverNetInvestedSubtotal: gainOverNetInvested,
+        totalGainLoss: holdingsValueComplete ? totalGainLoss : null,
+        knownGainLossSubtotal: totalGainLoss,
         totalGainLossPercent,
         gainCostBasis: holdingsResult.gainCostBasis,
         unpricedCostBasis: holdingsResult.unpricedCostBasis,
@@ -1409,6 +1492,10 @@ export class PortfolioService {
     const asShown = (v: number | null | undefined): number =>
       v === null || v === undefined ? 0 : Number(v);
 
+    // A withheld total stays withheld: null is "not known", never 0.
+    const shownOrNull = (v: number | null | undefined): number | null =>
+      v === null || v === undefined ? null : Number(v);
+
     const toLlmHolding = (h: HoldingWithMarketValue): LlmPortfolioHolding => ({
       securityId: h.securityId,
       symbol: h.symbol,
@@ -1456,11 +1543,16 @@ export class PortfolioService {
     return {
       holdingCount: holdings.length,
       currency: await this.resolveDefaultCurrency(userId),
-      totalCashValue: asShown(summary.totalCashValue),
-      totalHoldingsValue: asShown(summary.totalHoldingsValue),
-      totalCostBasis: asShown(summary.totalCostBasis),
-      totalPortfolioValue: asShown(summary.totalPortfolioValue),
-      totalGainLoss: asShown(summary.totalGainLoss),
+      totalCashValue: shownOrNull(summary.totalCashValue),
+      knownCashValueSubtotal: asShown(summary.knownCashValueSubtotal),
+      totalHoldingsValue: shownOrNull(summary.totalHoldingsValue),
+      knownHoldingsValueSubtotal: asShown(summary.knownHoldingsValueSubtotal),
+      totalCostBasis: shownOrNull(summary.totalCostBasis),
+      knownCostBasisSubtotal: asShown(summary.knownCostBasisSubtotal),
+      totalPortfolioValue: shownOrNull(summary.totalPortfolioValue),
+      knownPortfolioValueSubtotal: asShown(summary.knownPortfolioValueSubtotal),
+      totalGainLoss: shownOrNull(summary.totalGainLoss),
+      knownGainLossSubtotal: asShown(summary.knownGainLossSubtotal),
       totalGainLossPercent: roundPct(summary.totalGainLossPercent) ?? 0,
       gainCostBasis: asShown(summary.gainCostBasis),
       unpricedCostBasis: asShown(summary.unpricedCostBasis),
@@ -1866,10 +1958,7 @@ export class PortfolioService {
     accountIds?: string[],
   ): Promise<AssetAllocation> {
     const summary = await this.getPortfolioSummary(userId, accountIds);
-    return {
-      allocation: summary.allocation,
-      totalValue: summary.totalPortfolioValue,
-    };
+    return allocationOf(summary, summary.allocation);
   }
 
   /**
@@ -1890,7 +1979,7 @@ export class PortfolioService {
       inputs.totalCashValue,
       inputs.defaultCurrency,
     );
-    return { allocation, totalValue: inputs.totalValue };
+    return allocationOf(inputs.summary, allocation);
   }
 
   /**
@@ -1912,7 +2001,7 @@ export class PortfolioService {
       inputs.defaultCurrency,
       key,
     );
-    return { allocation, totalValue: inputs.totalValue };
+    return allocationOf(inputs.summary, allocation);
   }
 
   /**
@@ -2000,7 +2089,7 @@ export class PortfolioService {
       string,
       Array<{ id: string; name: string; color: string | null }>
     >;
-    totalValue: number;
+    summary: PortfolioSummary;
   }> {
     const summary = await this.getPortfolioSummary(userId, accountIds);
     const securityItems = summary.allocation.filter(
@@ -2023,7 +2112,7 @@ export class PortfolioService {
       totalCashValue,
       defaultCurrency,
       tagsBySymbol,
-      totalValue: summary.totalPortfolioValue,
+      summary,
     };
   }
 

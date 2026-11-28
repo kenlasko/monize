@@ -75,6 +75,7 @@
     "title": "Phân bổ tài sản",
     "noData": "Không có dữ liệu phân bổ.",
     "knownValueOnly": "Tỷ lệ phần trăm chỉ tính trên giá trị đã biết; một số khoản nắm giữ không thể định giá.",
+    "knownValueOnlyMissing": "Chưa định giá: {items}. Hãy thêm giá còn thiếu vào lịch sử giá của từng chứng khoán và tỷ giá còn thiếu trên trang Tiền tệ.",
     "cash": "Tiền mặt",
     "untagged": "Chưa gắn thẻ",
     "noTagData": "Không có khoản nắm giữ nào được gắn thẻ. Thêm thẻ cho chứng khoán của bạn để xem mức độ tiếp xúc theo thẻ.",

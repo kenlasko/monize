@@ -19,7 +19,7 @@ import {
 } from '@/lib/incomplete-data-ranges';
 import { gainLossColor } from '@/lib/format';
 import { PartialTotal } from '@/components/ui/PartialTotal';
-import { partialTotalFor } from '@/lib/net-worth-completeness';
+import { partialTotalFor, totalOrSubtotal } from '@/lib/net-worth-completeness';
 import { portfolioHeadline } from '@/lib/portfolio-headline';
 import { PortfolioHeadline } from './variants/PortfolioHeadline';
 
@@ -279,13 +279,19 @@ export function PortfolioSummaryCard({
   );
   const gainDisplayCurrency = foreignCurrency ?? defaultCurrency;
 
-  const gainLossVal = converted?.gainLoss ?? summary.totalGainLoss;
+  // A withheld total (null) is shown as its known subtotal, under the partial
+  // labels above (`valuationIncomplete`, `gainPartial`).
+  const gainLossVal =
+    converted?.gainLoss ?? totalOrSubtotal(summary.totalGainLoss, summary.knownGainLossSubtotal);
   // The server's one rounding of value less net invested; a difference of the
   // two readings can sit a cent off it. A foreign account's view and an older
   // backend take the difference here.
   const totalGainVal = converted
     ? converted.portfolio - converted.netInvested
-    : (summary.totalGainOverNetInvested ?? summary.totalPortfolioValue - summary.totalNetInvested);
+    : (summary.totalGainOverNetInvested ??
+      summary.knownGainOverNetInvestedSubtotal ??
+      totalOrSubtotal(summary.totalPortfolioValue, summary.knownPortfolioValueSubtotal) -
+        totalOrSubtotal(summary.totalNetInvested, summary.knownNetInvestedSubtotal));
   const gainLossPercentVal = converted?.gainLossPercent ?? summary.totalGainLossPercent;
   const twr = summary.timeWeightedReturn;
   // A withheld return names its cause, as the chart's does: "n/a" with no cause
@@ -378,7 +384,7 @@ export function PortfolioSummaryCard({
                 <InfoTooltip placement="top" text={t('portfolioSummary.holdingsValueTooltip')} />
               </div>
               <div className="ui-sum-fig text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {fmtVal(converted?.holdings ?? summary.totalHoldingsValue)}
+                {fmtVal(converted?.holdings ?? totalOrSubtotal(summary.totalHoldingsValue, summary.knownHoldingsValueSubtotal))}
               </div>
             </div>
             <div>
@@ -387,7 +393,7 @@ export function PortfolioSummaryCard({
                 <InfoTooltip placement="top" text={t('portfolioSummary.cashBalanceTooltip')} />
               </div>
               <div className="ui-sum-fig text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {fmtVal(converted?.cash ?? summary.totalCashValue)}
+                {fmtVal(converted?.cash ?? totalOrSubtotal(summary.totalCashValue, summary.knownCashValueSubtotal))}
               </div>
             </div>
             <div>
@@ -409,7 +415,7 @@ export function PortfolioSummaryCard({
                 <InfoTooltip placement="top" text={t('portfolioSummary.netInvestedTooltip')} />
               </div>
               <div className="ui-sum-fig text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {fmtVal(converted?.netInvested ?? summary.totalNetInvested)}
+                {fmtVal(converted?.netInvested ?? totalOrSubtotal(summary.totalNetInvested, summary.knownNetInvestedSubtotal))}
               </div>
             </div>
             <div>
@@ -422,7 +428,7 @@ export function PortfolioSummaryCard({
                 />
               </div>
               <div className="ui-sum-fig text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {fmtVal(converted?.costBasis ?? summary.totalCostBasis)}
+                {fmtVal(converted?.costBasis ?? totalOrSubtotal(summary.totalCostBasis, summary.knownCostBasisSubtotal))}
               </div>
             </div>
             <div>

@@ -44,6 +44,7 @@ import { usePartialTotalNote } from '@/hooks/usePartialTotalNote';
 import {
   partialTotalFor,
   portfolioPartialTotal,
+  totalOrSubtotal,
   type PortfolioCompleteness,
 } from '@/lib/net-worth-completeness';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -253,8 +254,13 @@ export function InvestmentPerformanceReport() {
     }
     // All accounts: use the backend-converted totals (already in default currency)
     return {
-      totalPortfolioValue: portfolio.totalPortfolioValue,
-      totalCostBasis: portfolio.totalCostBasis,
+      // A withheld total (null) prints as its known subtotal; the figure is
+      // labelled partial below from the same completeness.
+      totalPortfolioValue: totalOrSubtotal(
+        portfolio.totalPortfolioValue,
+        portfolio.knownPortfolioValueSubtotal,
+      ),
+      totalCostBasis: totalOrSubtotal(portfolio.totalCostBasis, portfolio.knownCostBasisSubtotal),
       completeness: portfolio as PortfolioCompleteness,
     };
   }, [portfolio, isSingleAccount]);

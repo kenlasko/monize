@@ -817,6 +817,30 @@ describe('PortfolioSummaryCard', () => {
         ...overrides,
       });
 
+    it('prints the known subtotal under the partial label when the server withholds the totals (audit #2365 p)', () => {
+      render(
+        <PortfolioSummaryCard
+          summary={partialSummary({
+            totalPortfolioValue: null,
+            knownPortfolioValueSubtotal: 100000,
+            totalHoldingsValue: null,
+            knownHoldingsValueSubtotal: 100000,
+            totalGainLoss: null,
+            knownGainLossSubtotal: 20000,
+            totalGainOverNetInvested: null,
+            knownGainOverNetInvestedSubtotal: 20000,
+          })}
+          isLoading={false}
+        />,
+      );
+
+      // The known subtotal is shown, not a blank, and the gain stays marked partial.
+      expect(screen.getAllByText('$100000.00').length).toBeGreaterThan(0);
+      expect(
+        screen.getByText('+25.00%').closest('[data-testid="partial-total"]'),
+      ).not.toBeNull();
+    });
+
     it('marks the gain and the simple return as partial and prints the server figure', () => {
       render(<PortfolioSummaryCard summary={partialSummary()} isLoading={false} />);
 

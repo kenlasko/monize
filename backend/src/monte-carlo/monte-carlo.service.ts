@@ -1084,7 +1084,7 @@ export class MonteCarloService {
       const value = summary.totalPortfolioValue;
       // A non-finite aggregate means some component was unusable, which is a
       // failure to value rather than a value of zero.
-      if (!Number.isFinite(value)) {
+      if (value === null || !Number.isFinite(value)) {
         this.logger.warn(
           `Current portfolio value for accounts ${accountIds.join(",")} is not finite; reporting it as unavailable`,
         );

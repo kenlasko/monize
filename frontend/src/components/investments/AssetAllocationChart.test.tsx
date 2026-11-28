@@ -116,6 +116,56 @@ describe('AssetAllocationChart', () => {
     ).toBeInTheDocument();
   });
 
+  it('labels the allocation partial from its own flags and names what is missing (audit #2365 l)', async () => {
+    const allocation = {
+      totalValue: null,
+      knownSubtotal: 10000,
+      valuationComplete: false,
+      pricesComplete: false,
+      fxComplete: false,
+      unpricedSecurityIds: ['sec-vfv'],
+      missingRatePairs: ['EUR->CAD'],
+      allocation: [
+        { symbol: 'VTI', name: 'Vanguard Total', type: 'security' as const, value: 10000, percentage: 100, color: '#22c55e', currencyCode: 'CAD' },
+      ],
+    };
+    const holdingsByAccount = [
+      { holdings: [{ securityId: 'sec-vfv', symbol: 'VFV.TO' }] },
+    ] as any;
+
+    await renderChart({ allocation, isLoading: false, holdingsByAccount });
+
+    expect(screen.getByText(/Percentages cover known value only/)).toBeInTheDocument();
+    expect(screen.getByText(/Not valued: VFV\.TO, EUR->CAD\./)).toBeInTheDocument();
+  });
+
+  it('labels the by-tag view partial from the by-tag response (audit #2365 l)', async () => {
+    (investmentsApi.getPortfolioTagSummary as any).mockResolvedValue({
+      keys: [],
+      hasTaggedHoldings: true,
+    });
+    (investmentsApi.getAllocationByTag as any).mockResolvedValue({
+      totalValue: null,
+      knownSubtotal: 10000,
+      valuationComplete: false,
+      unpricedSecurityIds: ['sec-x'],
+      missingRatePairs: [],
+      allocation: [
+        { symbol: null, name: 'Growth', type: 'tag' as const, value: 10000, percentage: 100, color: '#22c55e', currencyCode: 'CAD' },
+      ],
+    });
+    // The parent's own flag is clean; only the tag response says partial.
+    const allocation = { totalValue: 10000, allocation: [] };
+
+    await renderChart({ allocation, isLoading: false, valuationComplete: true, accountIds: [] });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('By tag'));
+    });
+
+    expect(screen.getByText(/Percentages cover known value only/)).toBeInTheDocument();
+    expect(screen.getByText(/Not valued: sec-x\./)).toBeInTheDocument();
+  });
+
   it('says nothing when the valuation is complete', async () => {
     const allocation = {
       totalValue: 10000,

@@ -16,6 +16,7 @@ import {
 import { convertRowAmount, rowAmountCurrency } from '@/lib/investment-row-currency';
 import { PortfolioSummaryCard } from '@/components/investments/PortfolioSummaryCard';
 import { AssetAllocationChart } from '@/components/investments/AssetAllocationChart';
+import { summaryAllocation } from '@/lib/portfolio-headline';
 import { InvestmentValueChart } from '@/components/investments/InvestmentValueChart';
 import { GroupedHoldingsList } from '@/components/investments/GroupedHoldingsList';
 import { InvestmentRegisterPanel } from '@/components/investments/InvestmentRegisterPanel';
@@ -216,11 +217,7 @@ export function InvestmentDetailView({ account, refreshKey = 0 }: InvestmentDeta
 
       <div className="grid gap-6 lg:grid-cols-2">
         <AssetAllocationChart
-          allocation={
-            summary
-              ? { allocation: summary.allocation, totalValue: summary.totalPortfolioValue }
-              : null
-          }
+          allocation={summary ? summaryAllocation(summary) : null}
           isLoading={isLoading}
           singleAccountCurrency={currency}
           holdingsByAccount={summary?.holdingsByAccount}

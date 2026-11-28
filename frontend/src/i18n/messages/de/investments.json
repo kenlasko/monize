@@ -75,6 +75,7 @@
     "title": "Vermögensaufteilung",
     "noData": "Keine Aufteilungsdaten verfügbar.",
     "knownValueOnly": "Prozentsätze umfassen nur den bekannten Wert; einige Positionen konnten nicht bewertet werden.",
+    "knownValueOnlyMissing": "Nicht bewertet: {items}. Fehlende Kurse im Kursverlauf des Wertpapiers und fehlende Wechselkurse auf der Seite Währungen ergänzen.",
     "cash": "Barmittel",
     "untagged": "Ohne Tags",
     "noTagData": "Keine getaggten Positionen vorhanden. Vergib Tags an deine Wertpapiere, um die Aufteilung nach Tags zu sehen.",

@@ -53,7 +53,7 @@ import { FloatingPageBar } from '@/components/layout/FloatingPageBar';
 import { FloatingAddButton } from '@/components/layout/FloatingAddButton';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { isPortfolioPartial, portfolioPartialTotal } from '@/lib/net-worth-completeness';
-import { portfolioHeadline } from '@/lib/portfolio-headline';
+import { portfolioHeadline, summaryAllocation } from '@/lib/portfolio-headline';
 import { preferredCurrency } from '@/lib/default-currency';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { CollapsedHeaderSwitcher } from '@/store/mobileChromeStore';
@@ -466,7 +466,7 @@ function InvestmentsContent() {
               hasAccountFilter
             />
             <AssetAllocationChart
-              allocation={data.portfolioSummary ? { allocation: data.portfolioSummary.allocation, totalValue: data.portfolioSummary.totalPortfolioValue } : null}
+              allocation={data.portfolioSummary ? summaryAllocation(data.portfolioSummary) : null}
               isLoading={data.isSummaryLoading}
               singleAccountCurrency={
                 data.selectedAccountIds.length === 1

@@ -39,7 +39,7 @@ import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { PartialTotal } from '@/components/ui/PartialTotal';
-import { portfolioPartialTotal } from '@/lib/net-worth-completeness';
+import { portfolioPartialTotal, totalOrSubtotal } from '@/lib/net-worth-completeness';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
 import { WidgetCard, WidgetConfigRow, WidgetMessage } from './WidgetCard';
@@ -178,7 +178,10 @@ export function PortfolioValueWidget({
     onRefresh(scope);
   }, [config.accountIds, summary, onRefresh]);
 
-  const totalPortfolioValue = summary?.totalPortfolioValue ?? null;
+  // A withheld total shows as its known subtotal, under the partial marker.
+  const totalPortfolioValue = summary
+    ? totalOrSubtotal(summary.totalPortfolioValue, summary.knownPortfolioValueSubtotal)
+    : null;
   // The headline is a subtotal whenever the server says a holding has no price
   // or a currency no rate (`valuationComplete === false`; absent is no
   // information). It stays on screen under the marker, which names the missing

@@ -8,6 +8,7 @@ import {
   pairSourceCurrency,
   partialTotalFor,
   portfolioPartialTotal,
+  totalOrSubtotal,
   unionPairs,
 } from './net-worth-completeness';
 import { isComplete } from './currency-total';
@@ -84,5 +85,14 @@ describe('net-worth completeness', () => {
     const bare = portfolioPartialTotal(5, { valuationComplete: false });
     expect(isComplete(bare)).toBe(false);
     expect(bare.excludedCount).toBe(1);
+  });
+});
+
+describe('totalOrSubtotal', () => {
+  it('prints the total, else the known subtotal, else 0 for an older backend', () => {
+    expect(totalOrSubtotal(5, 3)).toBe(5);
+    expect(totalOrSubtotal(0, 3)).toBe(0);
+    expect(totalOrSubtotal(null, 3)).toBe(3);
+    expect(totalOrSubtotal(null, undefined)).toBe(0);
   });
 });

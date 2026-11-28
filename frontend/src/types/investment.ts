@@ -359,24 +359,38 @@ export interface ReturnDiagnostics {
   truncated: { prices: boolean; rates: boolean; cash: boolean };
 }
 
+/**
+ * Each `total*` is `null` unless every component of it is known; the sum of
+ * what is known is the `known*Subtotal` beside it. The subtotals are optional:
+ * an older backend mid-deploy sends neither them nor a null total, and absent
+ * is no information. Read a figure with `totalOrSubtotal` and label it partial.
+ */
 export interface PortfolioSummary {
-  totalCashValue: number;
-  totalHoldingsValue: number;
-  totalCostBasis: number;
-  totalNetInvested: number;
-  totalPortfolioValue: number;
+  totalCashValue: number | null;
+  knownCashValueSubtotal?: number;
+  totalHoldingsValue: number | null;
+  knownHoldingsValueSubtotal?: number;
+  totalCostBasis: number | null;
+  knownCostBasisSubtotal?: number;
+  totalNetInvested: number | null;
+  knownNetInvestedSubtotal?: number;
+  totalPortfolioValue: number | null;
+  knownPortfolioValueSubtotal?: number;
   /**
    * `totalPortfolioValue` less `totalNetInvested`, the Total Gain, worked out
    * on the server before either is rounded, so it is one rounding rather than
    * a difference of two. Optional: an older backend mid-deploy sends none, and
    * the card then takes the difference itself.
    */
-  totalGainOverNetInvested?: number;
+  totalGainOverNetInvested?: number | null;
+  knownGainOverNetInvestedSubtotal?: number;
   /**
-   * Value less cost over the holdings that have a value; a partial figure while
-   * `valuationComplete` is `false`, which `PartialTotal` marks.
+   * Value less cost over the holdings that have a value; `null` while
+   * `valuationComplete` is `false`, when `knownGainLossSubtotal` is the partial
+   * figure `PartialTotal` marks.
    */
-  totalGainLoss: number;
+  totalGainLoss: number | null;
+  knownGainLossSubtotal?: number;
   /** Over `gainCostBasis`; 0 when that is 0. */
   totalGainLossPercent: number;
   /** Cost of the holdings `totalGainLoss` is over. Optional: absent is no information. */
@@ -483,7 +497,16 @@ export interface AllocationItem {
 
 export interface AssetAllocation {
   allocation: AllocationItem[];
-  totalValue: number;
+  /** null while `valuationComplete` is false; percentages are then over `knownSubtotal`. */
+  totalValue: number | null;
+  /** What could be valued: the base the percentages are measured against. */
+  knownSubtotal?: number;
+  /** Flags are optional: absent (an older backend) is no information, read as `=== false`. */
+  valuationComplete?: boolean;
+  fxComplete?: boolean;
+  pricesComplete?: boolean;
+  missingRatePairs?: string[];
+  unpricedSecurityIds?: string[];
 }
 
 /**

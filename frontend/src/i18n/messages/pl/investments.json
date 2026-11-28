@@ -75,6 +75,7 @@
     "title": "Alokacja aktywów",
     "noData": "Brak danych o alokacji.",
     "knownValueOnly": "Wartości procentowe obejmują tylko znaną wartość; niektórych pozycji nie udało się wycenić.",
+    "knownValueOnlyMissing": "Niewycenione: {items}. Dodaj brakujące ceny w historii cen każdego papieru i brakujące kursy na stronie Waluty.",
     "cash": "Gotówka",
     "untagged": "Bez tagów",
     "noTagData": "Brak otagowanych pozycji do pokazania. Dodaj tagi do swoich papierów, aby zobaczyć ekspozycję wg tagów.",

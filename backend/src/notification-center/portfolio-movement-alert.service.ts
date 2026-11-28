@@ -218,7 +218,8 @@ export class PortfolioMovementAlertService {
 
     const inputs: MovementInputs = {
       mvComplete: summary.valuationComplete === true,
-      mvToday: summary.totalPortfolioValue,
+      // Read only when `mvComplete`, which is when the total is known.
+      mvToday: summary.totalPortfolioValue ?? 0,
       latePrice: { complete: late.complete, value: late.total },
       currency,
       baseline,

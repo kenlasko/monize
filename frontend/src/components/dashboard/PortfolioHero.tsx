@@ -6,7 +6,7 @@ import { parseISO } from 'date-fns';
 import { investmentsApi } from '@/lib/investments';
 import { resolveRangePreset } from '@/lib/date-range';
 import { useFinancialToday } from '@/hooks/useFinancialToday';
-import { partialTotalFor, portfolioPartialTotal } from '@/lib/net-worth-completeness';
+import { partialTotalFor, portfolioPartialTotal, totalOrSubtotal } from '@/lib/net-worth-completeness';
 import { isComplete } from '@/lib/currency-total';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
@@ -266,7 +266,7 @@ export function PortfolioHero({
 
   const metricName = t(`hero.metricNames.${config.portfolioMetric}`);
 
-  const cashTotal = partialTotalFor(summary.totalCashValue, summary.fxComplete, summary.missingRatePairs);
+  const cashTotal = partialTotalFor(totalOrSubtotal(summary.totalCashValue, summary.knownCashValueSubtotal), summary.fxComplete, summary.missingRatePairs);
 
   const chartNode = seriesError ? (
     <p className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
@@ -298,7 +298,11 @@ export function PortfolioHero({
     />
   );
 
-  const total = portfolioPartialTotal(summary.totalPortfolioValue, summary);
+  const portfolioValue = totalOrSubtotal(
+    summary.totalPortfolioValue,
+    summary.knownPortfolioValueSubtotal,
+  );
+  const total = portfolioPartialTotal(portfolioValue, summary);
 
   return renderForStyle(uiStyle, PORTFOLIO_HERO_VARIANTS, {
     label,
@@ -311,7 +315,7 @@ export function PortfolioHero({
     total,
     collapsed: {
       title: t('customize.hero.sets.portfolio'),
-      figure: formatCurrency(summary.totalPortfolioValue, defaultCurrency),
+      figure: formatCurrency(portfolioValue, defaultCurrency),
       figurePartial: !isComplete(total),
       change:
         totalChange === null
@@ -322,7 +326,10 @@ export function PortfolioHero({
             },
     },
     change,
-    holdings: portfolioPartialTotal(summary.totalHoldingsValue, summary),
+    holdings: portfolioPartialTotal(
+      totalOrSubtotal(summary.totalHoldingsValue, summary.knownHoldingsValueSubtotal),
+      summary,
+    ),
     cash: cashTotal,
     metric: {
       name: metricName,

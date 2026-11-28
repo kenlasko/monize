@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { netWorthApi } from '@/lib/net-worth';
 import { resolveRangePreset } from '@/lib/date-range';
 import { useFinancialToday } from '@/hooks/useFinancialToday';
-import { partialTotalFor } from '@/lib/net-worth-completeness';
+import { partialTotalFor, totalOrSubtotal } from '@/lib/net-worth-completeness';
 import { isComplete } from '@/lib/currency-total';
 import { moneyDecimalsForCurrency } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -104,9 +104,15 @@ export function NetWorthHero({
   const invested =
     hasInvestments && portfolioValuation
       ? {
-          value: portfolioValuation.totalHoldingsValue,
-          total: partialTotalFor(
+          value: totalOrSubtotal(
             portfolioValuation.totalHoldingsValue,
+            portfolioValuation.knownHoldingsValueSubtotal,
+          ),
+          total: partialTotalFor(
+            totalOrSubtotal(
+              portfolioValuation.totalHoldingsValue,
+              portfolioValuation.knownHoldingsValueSubtotal,
+            ),
             portfolioValuation.valuationComplete,
             portfolioValuation.missingRatePairs,
           ),

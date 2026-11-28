@@ -76,6 +76,19 @@ export function liabilitiesFxComplete(month: {
 }
 
 /**
+ * A summary figure to print: the server's total, or its known subtotal when the
+ * server withheld the total (`null`). The caller labels it partial with
+ * `portfolioPartialTotal`; the subtotal is never shown as a bare total. Both
+ * absent cannot come from a current backend, and 0 keeps an older one rendering.
+ */
+export function totalOrSubtotal(
+  total: number | null | undefined,
+  knownSubtotal: number | undefined,
+): number {
+  return total ?? knownSubtotal ?? 0;
+}
+
+/**
  * The completeness a portfolio figure carries, from whichever aggregate it was
  * read off: the summary (`unpricedSecurityIds`), one account of it
  * (`unpricedHoldingsCount`), or an intraday response. Every field is optional

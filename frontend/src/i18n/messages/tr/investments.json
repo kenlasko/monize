@@ -75,6 +75,7 @@
     "title": "Varlık Dağılımı",
     "noData": "Dağılım verisi mevcut değil.",
     "knownValueOnly": "Yüzdeler yalnızca bilinen değeri kapsar; bazı pozisyonlar değerlenemedi.",
+    "knownValueOnlyMissing": "Değerlenmeyen: {items}. Eksik fiyatları her menkul kıymetin fiyat geçmişine, eksik kurları Para Birimleri sayfasına ekleyin.",
     "cash": "Nakit",
     "untagged": "Etiketsiz",
     "noTagData": "Gösterilecek etiketli pozisyon yok. Etikete göre dağılımı görmek için menkul kıymetlerinize etiket ekleyin.",
