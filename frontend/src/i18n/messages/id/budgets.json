@@ -134,6 +134,7 @@
       "carriedIn": "Dibawa masuk:",
       "carriedOut": "Dibawa keluar:"
     },
+    "noPositiveFunding": "Persentase penggunaan hanya dapat dihitung jika anggaran positif.",
     "overallUsage": "Penggunaan Anggaran Keseluruhan",
     "expenseCategories": "Kategori Pengeluaran",
     "incomeCategories": "Kategori Pendapatan",

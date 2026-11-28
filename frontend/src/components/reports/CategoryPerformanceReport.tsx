@@ -232,7 +232,8 @@ export function CategoryPerformanceReport() {
     const recentAvg = recent.reduce((s, v) => s + v, 0) / recent.length;
     const earlierAvg = earlier.reduce((s, v) => s + v, 0) / earlier.length;
     if (earlierAvg === 0) return { arrow: '--', color: 'text-gray-400' };
-    const change = ((recentAvg - earlierAvg) / earlierAvg) * 100;
+    // Compare the movement with the size of the baseline, including net refunds.
+    const change = ((recentAvg - earlierAvg) / Math.abs(earlierAvg)) * 100;
     if (change > 10) return { arrow: t('categoryPerformance.trendUp'), color: 'text-red-600 dark:text-red-400' };
     if (change < -10) return { arrow: t('categoryPerformance.trendDown'), color: 'text-green-600 dark:text-green-400' };
     return { arrow: t('categoryPerformance.trendFlat'), color: 'text-gray-500 dark:text-gray-400' };

@@ -264,7 +264,7 @@ The report then reloads without the deleted transactions. If **Lock reconciled t
 | **Budget Health Score** | Get a 0--100 health score for your budget with detailed per-category impact analysis |
 | **Seasonal Spending Patterns** | Discover seasonal trends and high-spending months across your budget categories |
 | **Budget Trend** | Line chart showing total budgeted vs total actual spending over 6--12 months to track improvement |
-| **Category Performance** | Table showing each category's budget performance over multiple months with trend indicators |
+| **Category Performance** | Table showing each category's budget performance over multiple months. The trend follows the direction of change even when earlier refunds made usage negative |
 | **Savings Rate** | Track your savings rate (income minus expenses divided by income) over time vs your target |
 | **Health Score History** | Line chart of monthly budget health scores showing your financial trajectory over time |
 | **Flex Group Analysis** | Stacked bar chart for each flex group showing component categories with group limit reference |

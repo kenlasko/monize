@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@/test/render';
+import { render, screen, fireEvent, waitFor, act, within } from '@/test/render';
 import { CategoryPerformanceReport } from './CategoryPerformanceReport';
 import type { Budget, CategoryTrendSeries } from '@/types/budget';
 
@@ -168,6 +168,26 @@ describe('CategoryPerformanceReport', () => {
     expect(screen.getAllByText('Under Budget').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Over Budget/i).length).toBeGreaterThan(0);
     expect(screen.getByText('On Track')).toBeInTheDocument();
+  });
+
+  it.each([
+    [-20, 10, 'Up'],
+    [-20, -40, 'Down'],
+    [-20, -18, 'Flat'],
+  ] as const)('shows the trend from %s to %s on screen and in the PDF', async (before, after, direction) => {
+    const months = [before, before, before, after, after, after];
+    mockGetAll.mockResolvedValue([makeBudget()]);
+    mockGetCategoryTrend.mockResolvedValue([
+      makeSeries('food', 'Groceries', months.map(actual => ({ budgeted: 100, actual }))),
+    ]);
+    await renderReport();
+
+    const row = screen.getByRole('row', { name: /Groceries/ });
+    expect(within(row).getByText(direction)).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle('Export PDF'));
+    await waitFor(() => expect(mockExportToPdf).toHaveBeenCalled());
+    const { headers, rows } = mockExportToPdf.mock.calls[0][0].tableData;
+    expect(rows[0][headers.indexOf('Trend')]).toBe(direction);
   });
 
   it('toggles sort direction and switches sort field', async () => {
