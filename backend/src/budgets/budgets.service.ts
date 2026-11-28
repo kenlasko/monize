@@ -736,8 +736,13 @@ export class BudgetsService {
     );
 
     // A split's transfer lines are not spending: the amount is the part that is.
+    // A plain scheduled transfer is not spending at all, whatever account it
+    // pays (a card or loan too: the charge was the spending); the bills page and
+    // calendar still list it as amount due.
     return occurrences.map((occurrence) => {
-      const spending = nonTransferAmount(occurrence);
+      const spending = occurrence.schedule.isTransfer
+        ? 0
+        : nonTransferAmount(occurrence);
       return {
         id: occurrence.scheduledTransactionId,
         name: occurrence.schedule.name,

@@ -3093,6 +3093,46 @@ describe("BudgetsService", () => {
       expect(result[1].amount).toBe(79.99);
     });
 
+    // Audit #2365 (u): a plain scheduled transfer moves money between the user's
+    // own accounts, so it is no bill. A transfer into a liability (card, loan) is
+    // the same: budgets count a transfer only through a budget transfer line.
+    it("getUpcomingBills counts a plain scheduled transfer as no spending", async () => {
+      const tomorrow = addDaysYMD(todayYMD(), 1);
+      const stQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([
+          {
+            id: "st-t",
+            name: "To other account",
+            amount: -70,
+            isTransfer: true,
+            transferAccountId: "acc-2",
+            frequency: "MONTHLY",
+            nextDueDate: tomorrow,
+            categoryId: null,
+          },
+          {
+            id: "st-1",
+            name: "Netflix",
+            amount: -15.99,
+            frequency: "MONTHLY",
+            nextDueDate: tomorrow,
+            categoryId: "cat-ent",
+          },
+        ]),
+      });
+      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(stQb);
+
+      const result = await service.getUpcomingBills(
+        "user-1",
+        addDaysYMD(todayYMD(), 7),
+      );
+
+      const transfer = result.find((b) => b.id === "st-t");
+      expect(transfer?.amount ?? 0).toBe(0);
+      expect(transfer?.amountComplete ?? true).toBe(true);
+      expect(result.find((b) => b.id === "st-1")?.amount).toBe(15.99);
+    });
+
     // Discussion #1784: a bill still unposted within OVERDUE_CARRY_DAYS is owed
     // and counted; one older than that is read as forgotten.
     it("getUpcomingBills counts a recent overdue bill and leaves a forgotten one out", async () => {
