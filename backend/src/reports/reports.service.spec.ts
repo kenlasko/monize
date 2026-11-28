@@ -1510,29 +1510,83 @@ describe("ReportsService", () => {
         expect(result.data[0].value).toBe(-20);
       });
 
-      it("labels unknown payees from payeeName field", async () => {
-        const transactions = [
-          createMockTransaction({
-            id: "tx-1",
-            payeeId: null,
-            payeeName: "Cash Payment",
-            amount: -25,
-          }),
-        ];
+      it("reports each free-text payee with its own signed total", async () => {
         setupExecuteMocks(
           {
             groupBy: GroupByType.PAYEE,
             config: { ...defaultConfig, metric: MetricType.TOTAL_AMOUNT },
           },
-          transactions,
+          [
+            createMockTransaction({
+              id: "a",
+              payeeId: null,
+              payeeName: "Shop A",
+              amount: -25,
+            }),
+            createMockTransaction({
+              id: "b",
+              payeeId: null,
+              payeeName: "Shop B",
+              amount: -10,
+            }),
+          ],
         );
-        payeesRepository.find.mockResolvedValue([]);
 
         const result = await service.execute("user-1", "report-1");
 
-        expect(result.data).toHaveLength(1);
-        expect(result.data[0].id).toBe("unknown");
-        expect(result.data[0].label).toBe("Cash Payment");
+        expect(result.data).toMatchObject([
+          { label: "Shop B", value: -10 },
+          { label: "Shop A", value: -25 },
+        ]);
+        expect(result.summary.total).toBe(-35);
+      });
+
+      it("combines matching free-text names separately from linked and unnamed payees", async () => {
+        setupExecuteMocks(
+          {
+            groupBy: GroupByType.PAYEE,
+            config: { ...defaultConfig, metric: MetricType.TOTAL_AMOUNT },
+          },
+          [
+            createMockTransaction({
+              id: "a",
+              payeeId: null,
+              payeeName: "unknown",
+              amount: -25,
+            }),
+            createMockTransaction({
+              id: "b",
+              payeeId: null,
+              payeeName: "unknown",
+              amount: -10,
+            }),
+            createMockTransaction({
+              id: "c",
+              payeeId: "payee-1",
+              payeeName: "unknown",
+              amount: -7,
+            }),
+            createMockTransaction({
+              id: "d",
+              payeeId: null,
+              payeeName: "",
+              amount: -3,
+            }),
+          ],
+        );
+        payeesRepository.find.mockResolvedValue([
+          { ...mockPayee, name: "unknown" },
+        ]);
+
+        const result = await service.execute("user-1", "report-1");
+
+        expect(result.data).toMatchObject([
+          { id: "unknown", label: "Unknown", value: -3 },
+          { id: "payee-1", label: "unknown", value: -7 },
+          { label: "unknown", value: -35, count: 2 },
+        ]);
+        expect(new Set(result.data.map((row) => row.id)).size).toBe(3);
+        expect(result.summary.total).toBe(-45);
       });
 
       it("labels completely unknown payees as Unknown", async () => {
