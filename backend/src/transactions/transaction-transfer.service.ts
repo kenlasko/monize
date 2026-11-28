@@ -1386,6 +1386,30 @@ export class TransactionTransferService {
     }
   }
 
+  /**
+   * Records a transfer edit, status change or delete so Undo stops at it.
+   * Awaited: an entry still in flight when the user presses Undo would let it
+   * reach the transfer's creation and delete both legs. Its undo is refused
+   * (`UNDO_TRANSFER_CHANGE_NOT_SUPPORTED`); it carries no snapshot.
+   */
+  async recordTransferChangeHistory(
+    userId: string,
+    transferLegId: string,
+    change: "update" | "status" | "delete",
+  ): Promise<void> {
+    const text = {
+      update: "Edited a transfer",
+      status: "Changed the status of a transfer",
+      delete: "Deleted a transfer",
+    }[change];
+    await this.actionHistoryService.record(userId, {
+      entityType: "transfer",
+      entityId: transferLegId,
+      action: change === "delete" ? "delete" : "update",
+      description: text,
+    });
+  }
+
   async getLinkedTransaction(
     userId: string,
     transactionId: string,

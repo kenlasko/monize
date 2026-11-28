@@ -110,6 +110,23 @@ function assertTransactionCreateRedoable(action: ActionHistory): void {
 }
 
 /**
+ * Refuses, before anything is written, the undo of a transfer edit, status
+ * change or delete. Those are recorded so that Undo stops at them instead of
+ * reaching the transfer's creation and deleting both legs, but the entry holds
+ * no snapshot of the two legs, their statuses, balances and FX, so it cannot
+ * be reversed. The user edits the transfer back.
+ */
+function throwTransferChangeNotUndoable(): never {
+  throw new ConflictException({
+    message: tr(
+      "errors.actionHistory.undoTransferChangeNotSupported",
+      "This change to a transfer (an edit, a status change or a delete) cannot be undone automatically. Edit the transfer to change it back, or enter it again if it was deleted.",
+    ),
+    errorCode: "UNDO_TRANSFER_CHANGE_NOT_SUPPORTED",
+  });
+}
+
+/**
  * Account columns an undo or redo never writes back from a snapshot.
  *
  * `current_balance` is derived from the ledger: restoring the edit-time figure
@@ -1009,6 +1026,17 @@ export class ActionHistoryService {
     if (action.entityType === "transaction" && action.action === "create") {
       assertTransactionCreateRedoable(action);
     }
+    // The create's entry holds the two leg ids, not the legs: the undo deleted
+    // them, so a redo has nothing to re-insert. Refused, never a silent 201.
+    if (action.entityType === "transfer" && action.action === "create") {
+      throw new ConflictException({
+        message: tr(
+          "errors.actionHistory.redoCreateWithLegs",
+          "This transaction created entries in other accounts, so it cannot be redone. Create it again instead",
+        ),
+        errorCode: "REDO_CREATE_WITH_LEGS",
+      });
+    }
     // A delete that moved rows into another category: the undo moved them back,
     // so the redo moves them again before the delete's reference check.
     const moved =
@@ -1647,6 +1675,9 @@ export class ActionHistoryService {
       case "delete":
         await this.undoTransferDelete(action, manager);
         break;
+      case "update":
+        throwTransferChangeNotUndoable();
+        break;
       default:
         throw new ConflictException(
           tr(
@@ -1702,10 +1733,10 @@ export class ActionHistoryService {
     action: ActionHistory,
     manager: EntityManager,
   ): Promise<void> {
-    if (!action.beforeData) return;
-
-    const { fromTransaction, toTransaction } = action.beforeData;
-    if (!fromTransaction || !toTransaction) return;
+    // A delete recorded without the two legs (every transfer delete today):
+    // nothing to restore, so refuse rather than report success.
+    const { fromTransaction, toTransaction } = action.beforeData ?? {};
+    if (!fromTransaction || !toTransaction) throwTransferChangeNotUndoable();
     await this.assertSnapshotAmountsFit(manager, [
       fromTransaction,
       toTransaction,

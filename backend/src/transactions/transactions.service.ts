@@ -4742,7 +4742,7 @@ export class TransactionsService {
     id: string,
     status: TransactionStatus,
   ): Promise<Transaction> {
-    return this.reconciliationService.updateStatus(
+    const updated = await this.reconciliationService.updateStatus(
       userId,
       id,
       status,
@@ -4750,6 +4750,14 @@ export class TransactionsService {
         this.netWorthService.triggerDebouncedRecalc(accountId, userId),
       this.findOne.bind(this),
     );
+    if (updated.isTransfer && updated.linkedTransactionId) {
+      await this.transferService.recordTransferChangeHistory(
+        userId,
+        id,
+        "status",
+      );
+    }
+    return updated;
   }
 
   async markCleared(
@@ -5252,11 +5260,16 @@ export class TransactionsService {
         parentSplit.id,
       );
     }
-    return this.transferService.removeTransfer(
+    await this.transferService.removeTransfer(
       userId,
       transactionId,
       this.findOne.bind(this),
       actor,
+    );
+    await this.transferService.recordTransferChangeHistory(
+      userId,
+      transactionId,
+      "delete",
     );
   }
 
@@ -5266,7 +5279,7 @@ export class TransactionsService {
    * `DELETE /transactions/:id` route, the AI Assistant and the MCP
    * manage_transactions delete all land here, where the caller does not know
    * up front whether the target is a transfer. Like removeTransfer it records
-   * no action-history entry (INV-TRANSFER-001).
+   * a delete entry whose undo is refused (INV-TRANSFER-001).
    */
   async removeAny(
     userId: string,
@@ -5348,6 +5361,11 @@ export class TransactionsService {
               removeTagIds,
             )
         : undefined,
+    );
+    await this.transferService.recordTransferChangeHistory(
+      userId,
+      transactionId,
+      "update",
     );
 
     if (updateDto.tagIds !== undefined) {
