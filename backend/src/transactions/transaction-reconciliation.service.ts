@@ -277,9 +277,10 @@ export class TransactionReconciliationService {
       userId,
       touchedSecurityIds,
     );
-    // Every status path of a transfer leg (void, cleared, reconcile, the joint
-    // register) lands here, so Undo is stopped at each of them; a no-op write
-    // records nothing.
+    // The single-row status paths of a transfer leg (void, cleared, reconcile,
+    // unreconcile, the joint register) land here, so Undo is stopped at each of
+    // them; a no-op write records nothing. `bulkReconcile` records its own
+    // entry below, and the bulk update's status change its bulk entry.
     if (recordsTransferChange) {
       await this.transferService.recordTransferChangeHistory(
         userId,

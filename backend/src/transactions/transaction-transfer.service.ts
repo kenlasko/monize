@@ -1405,10 +1405,12 @@ export class TransactionTransferService {
     const rows: Record<string, unknown>[] = await withSystemContext(() =>
       withScopedDb(this.dataSource, (m) =>
         m.query(
+          // Every column UpdateTransferDto can write to a leg (tagIds is not a
+          // leg column): a column missing here is an edit that records nothing.
           `SELECT id, user_id, account_id, amount, currency_code, exchange_rate,
                   TO_CHAR(transaction_date, 'YYYY-MM-DD') AS transaction_date,
                   status, payee_id, payee_name, category_id, description,
-                  reference_number
+                  reference_number, created_at
              FROM transactions WHERE id = ANY($1::uuid[])`,
           [[...legIds]],
         ),

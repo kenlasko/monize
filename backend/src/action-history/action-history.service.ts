@@ -685,8 +685,10 @@ const MAX_HISTORY_AGE_DAYS = 30;
  * Module scope rather than instance state, for the same reason
  * `pendingPriceWrites` is (`securities/security-price.service.ts`): the thing
  * that needs to wait is a test helper holding a `DataSource`, not a consumer of
- * this service. Nothing in `src/` waits on this; production keeps exactly the
- * fire-and-forget behaviour it had.
+ * this service. Nothing in `src/` waits on this set. The callers that await
+ * their own write (the transfer entries and the bulk update's entry) do so to
+ * order the history, not to drain the set; every other caller keeps the
+ * fire-and-forget behaviour.
  */
 const pendingHistoryWrites = new Set<Promise<unknown>>();
 
@@ -743,9 +745,11 @@ export class ActionHistoryService {
   }
 
   /**
-   * Record an undo entry. Callers do not await this -- see `pendingHistoryWrites`
-   * above -- so the promise is registered before it is handed back, which is the
-   * only way a teardown can tell the write is still running.
+   * Record an undo entry. Most callers do not await this -- see
+   * `pendingHistoryWrites` above -- so the promise is registered before it is
+   * handed back, which is the only way a teardown can tell the write is still
+   * running. The transfer create and change entries and the bulk update's entry
+   * are awaited, so Undo, which takes the newest entry, cannot run before them.
    */
   record(
     userId: string,
@@ -1032,17 +1036,6 @@ export class ActionHistoryService {
     // before anything is written, as a structural rule run's redo is.
     if (action.entityType === "transaction" && action.action === "create") {
       assertTransactionCreateRedoable(action);
-    }
-    // The create's entry holds the two leg ids, not the legs: the undo deleted
-    // them, so a redo has nothing to re-insert. Refused, never a silent 201.
-    if (action.entityType === "transfer" && action.action === "create") {
-      throw new ConflictException({
-        message: tr(
-          "errors.actionHistory.redoCreateWithLegs",
-          "This transaction created entries in other accounts, so it cannot be redone. Create it again instead",
-        ),
-        errorCode: "REDO_CREATE_WITH_LEGS",
-      });
     }
     // A delete that moved rows into another category: the undo moved them back,
     // so the redo moves them again before the delete's reference check.

@@ -2200,22 +2200,6 @@ describe("ActionHistoryService", () => {
       expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
     });
 
-    it("refuses the redo of a transfer create, before anything is written", async () => {
-      mockRepository.findOne.mockResolvedValue({
-        ...mockAction,
-        entityType: "transfer",
-        action: "create",
-        entityId: "tx-from",
-        isUndone: true,
-        afterData: { fromTransactionId: "tx-from", toTransactionId: "tx-to" },
-      });
-
-      await expect(service.redo(userId)).rejects.toMatchObject({
-        response: { errorCode: "REDO_CREATE_WITH_LEGS" },
-      });
-      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
-    });
-
     it("should return early if afterData is null for transfer create", async () => {
       const transferAction = {
         ...mockAction,

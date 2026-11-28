@@ -19,7 +19,7 @@ import { createTestAccount } from "../helpers/test-factories";
 /**
  * A transfer edit, status change and delete write an action-history entry, so
  * Undo stops at it (refused, 409) instead of reverting the transfer's creation
- * and deleting both legs. Redo of a create is refused, never a silent success.
+ * and deleting both legs.
  */
 describe("Undo after a transfer change (integration)", () => {
   jest.setTimeout(60000);
@@ -125,6 +125,18 @@ describe("Undo after a transfer change (integration)", () => {
     expect(await legCount()).toBe(2);
   });
 
+  it("refuses the undo after an edit of only the created-at time", async () => {
+    const fromId = await createTransfer();
+    await asUser(() =>
+      transactions.updateTransfer(userId, fromId, {
+        createdAt: "2026-01-16T10:00:00.000Z",
+      }),
+    );
+    const settled = await balances();
+    await expectUndoRefusedAndTransferKept(settled);
+    expect(await legCount()).toBe(2);
+  });
+
   it("refuses the undo after a leg is reconciled and keeps the transfer", async () => {
     const fromId = await createTransfer();
     await asUser(() => transactions.reconcile(userId, fromId));
@@ -160,16 +172,5 @@ describe("Undo after a transfer change (integration)", () => {
     expect(settled).toEqual([1000, 1000]);
     await expectUndoRefusedAndTransferKept(settled);
     expect(await legCount()).toBe(0);
-  });
-
-  it("refuses the redo of a transfer create instead of reporting success", async () => {
-    await createTransfer();
-    await asUser(() => history.undo(userId));
-    expect(await legCount()).toBe(0);
-    await expect(asUser(() => history.redo(userId))).rejects.toMatchObject({
-      response: { errorCode: "REDO_CREATE_WITH_LEGS" },
-    });
-    expect(await legCount()).toBe(0);
-    expect(await balances()).toEqual([1000, 1000]);
   });
 });

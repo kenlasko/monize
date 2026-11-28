@@ -8390,6 +8390,47 @@ describe("TransactionsService", () => {
         ).toEqual(["user-2"]);
       });
 
+      it("records an entry for an edit of only the created-at time", async () => {
+        transactionsRepository.findOne
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx });
+        stageSnapshots(
+          { "tx-from": "a", "tx-to": "a" },
+          { "tx-from": "b", "tx-to": "b" },
+        );
+
+        await service.updateTransfer("user-1", "tx-from", {
+          createdAt: "2026-01-15T10:00:00.000Z",
+        });
+
+        expect(transferChangeEntries()).toHaveLength(2);
+      });
+
+      it("still saves, syncs the tags and resolves when the history snapshot fails", async () => {
+        transactionsRepository.findOne
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValue({ ...fromTx });
+        jest
+          .spyOn((service as any).transferService, "snapshotTransferLegs")
+          .mockRejectedValue(new Error("snapshot failed"));
+
+        await expect(
+          service.updateTransfer("user-1", "tx-from", { tagIds: ["tag-1"] }),
+        ).resolves.toBeDefined();
+
+        expect(tagsService.setTransactionTags).toHaveBeenCalledWith(
+          "tx-from",
+          ["tag-1"],
+          "user-1",
+        );
+        expect(transferChangeEntries()).toEqual([]);
+      });
+
       it("records nothing when the save leaves both legs as they were", async () => {
         transactionsRepository.findOne
           .mockResolvedValueOnce({ ...fromTx })

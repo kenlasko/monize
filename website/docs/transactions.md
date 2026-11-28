@@ -428,7 +428,7 @@ Set a transaction's status to **Void** to cancel it while keeping the record. A 
 
 ### Deleting
 
-Click **Delete** on the row to permanently remove a transaction. The account balance is adjusted accordingly. You can undo a deletion right away (see [Undo and Redo](#undo-and-redo)), except for one side of a transfer and a split with a transfer or investment line: undo cannot restore the other account's side, so edit the side that is still there or enter the transaction again.
+Click **Delete** on the row to permanently remove a transaction. The account balance is adjusted accordingly. You can undo a deletion right away (see [Undo and Redo](#undo-and-redo)), except for one side of a transfer and a split with a transfer or investment line: undo cannot restore the other account's side, so edit the side that is still there or enter the transaction again. Deleting a whole transfer from either side cannot be undone either.
 
 > [!CAUTION]
 > If the transaction is part of a linked transfer, deleting it also deletes the linked transaction in the other account.
@@ -546,6 +546,8 @@ Monize tracks your recent actions and lets you undo and redo them using keyboard
 | **Ctrl+Y** (or **Cmd+Y** on Mac) | Redo (alternative shortcut) |
 
 Undo and redo work across all data pages -- transactions, accounts, categories, payees, tags, securities, budgets, scheduled transactions, and custom reports. A toast notification confirms each undo or redo operation. The **Action History** button (the clock icon in the header) lists your recent actions, with **Undo** and **Redo** buttons.
+
+Undo is refused after you edit a transfer, change its status (void, cleared or reconciled) or delete it. Undo always acts on the newest action, so the actions before that change stay out of reach: they cannot be undone either. To change a transfer back, edit it, or enter it again if you deleted it.
 
 > [!NOTE]
 > These shortcuts are disabled when focus is inside a text input field, so they do not interfere with normal text editing.
