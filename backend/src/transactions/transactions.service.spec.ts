@@ -8391,6 +8391,176 @@ describe("TransactionsService", () => {
       );
     });
 
+    describe("history entry for the edit", () => {
+      const transferChangeEntries = () =>
+        ((service as any).actionHistoryService.record as jest.Mock).mock.calls
+          .map(([, params]) => params)
+          .filter((params) => params.entityType === "transfer");
+
+      // The leg snapshot read before the write and the one read after it, per
+      // leg: the owner is whoever holds the leg (the counterpart may be
+      // another user's).
+      const stageSnapshots = (
+        before: Record<string, string>,
+        after: Record<string, string>,
+      ) => {
+        const owners: Record<string, string> = {
+          "tx-from": "user-1",
+          "tx-to": "user-2",
+        };
+        const toMap = (legs: Record<string, string>) =>
+          new Map(
+            Object.entries(legs).map(([id, snapshot]) => [
+              id,
+              { userId: owners[id], snapshot },
+            ]),
+          );
+        jest
+          .spyOn((service as any).transferService, "snapshotTransferLegs")
+          .mockResolvedValueOnce(toMap(before))
+          .mockResolvedValueOnce(toMap(after));
+      };
+
+      beforeEach(() => {
+        ((service as any).actionHistoryService.record as jest.Mock).mockClear();
+      });
+
+      it("records a refused-undo entry for the owner of each leg that changed", async () => {
+        transactionsRepository.findOne
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValueOnce({ ...fromTx, amount: -300 })
+          .mockResolvedValueOnce({ ...toTx, amount: 300 });
+        stageSnapshots(
+          { "tx-from": "a", "tx-to": "a" },
+          { "tx-from": "b", "tx-to": "b" },
+        );
+
+        await service.updateTransfer("user-1", "tx-from", { amount: 300 });
+
+        expect(transferChangeEntries()).toEqual([
+          expect.objectContaining({
+            entityId: "tx-from",
+            action: "update",
+            descriptionKey: "editedTransfer",
+          }),
+          expect.objectContaining({ entityId: "tx-to", action: "update" }),
+        ]);
+      });
+
+      it("records for the counterpart owner alone when only the counterpart leg changed", async () => {
+        transactionsRepository.findOne
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx, description: "x" });
+        stageSnapshots(
+          { "tx-from": "a", "tx-to": "a" },
+          { "tx-from": "a", "tx-to": "b" },
+        );
+
+        await service.updateTransfer("user-1", "tx-from", { description: "x" });
+
+        const record = (service as any).actionHistoryService
+          .record as jest.Mock;
+        expect(
+          record.mock.calls
+            .filter(([, params]) => params.entityType === "transfer")
+            .map(([ownerId]) => ownerId),
+        ).toEqual(["user-2"]);
+      });
+
+      it("records an entry for an edit of only the created-at time", async () => {
+        transactionsRepository.findOne
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx });
+        stageSnapshots(
+          { "tx-from": "a", "tx-to": "a" },
+          { "tx-from": "b", "tx-to": "b" },
+        );
+
+        await service.updateTransfer("user-1", "tx-from", {
+          createdAt: "2026-01-15T10:00:00.000Z",
+        });
+
+        expect(transferChangeEntries()).toHaveLength(2);
+      });
+
+      it("still saves, syncs the tags and resolves when the history snapshot fails", async () => {
+        transactionsRepository.findOne
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValue({ ...fromTx });
+        jest
+          .spyOn((service as any).transferService, "snapshotTransferLegs")
+          .mockRejectedValue(new Error("snapshot failed"));
+
+        await expect(
+          service.updateTransfer("user-1", "tx-from", { tagIds: ["tag-1"] }),
+        ).resolves.toBeDefined();
+
+        expect(tagsService.setTransactionTags).toHaveBeenCalledWith(
+          "tx-from",
+          ["tag-1"],
+          "user-1",
+        );
+        expect(transferChangeEntries()).toEqual([]);
+      });
+
+      it("records nothing when the save leaves both legs as they were", async () => {
+        transactionsRepository.findOne
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx });
+        stageSnapshots(
+          { "tx-from": "a", "tx-to": "a" },
+          { "tx-from": "a", "tx-to": "a" },
+        );
+
+        await service.updateTransfer("user-1", "tx-from", { amount: 200 });
+
+        expect(transferChangeEntries()).toEqual([]);
+      });
+
+      it("records nothing for a tags-only save", async () => {
+        transactionsRepository.findOne
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValueOnce({ ...fromTx })
+          .mockResolvedValueOnce({ ...toTx })
+          .mockResolvedValue({ ...fromTx });
+        stageSnapshots(
+          { "tx-from": "a", "tx-to": "a" },
+          { "tx-from": "a", "tx-to": "a" },
+        );
+
+        await service.updateTransfer("user-1", "tx-from", { tagIds: [] });
+
+        expect(transferChangeEntries()).toEqual([]);
+      });
+
+      it("records nothing when the target is not a transfer", async () => {
+        transactionsRepository.findOne.mockResolvedValue({
+          id: "tx-1",
+          userId: "user-1",
+          isTransfer: false,
+          linkedTransactionId: null,
+          splits: [],
+        });
+
+        await expect(
+          service.updateTransfer("user-1", "tx-1", { amount: 300 }),
+        ).rejects.toThrow();
+
+        expect(transferChangeEntries()).toEqual([]);
+      });
+    });
+
     it("updates accounts without writing payee names (issue #1214)", async () => {
       const newToAccount = {
         ...mockAccount,
@@ -9416,6 +9586,66 @@ describe("TransactionsService", () => {
   });
 
   describe("removeTransfer regular", () => {
+    describe("history entry for the delete", () => {
+      const fromTx = {
+        id: "tx-from",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -200,
+        isTransfer: true,
+        linkedTransactionId: "tx-to",
+        splits: [],
+      };
+      const toTx = {
+        id: "tx-to",
+        userId: "user-2",
+        accountId: "account-2",
+        amount: 200,
+      };
+      const entryOwners = () =>
+        ((service as any).actionHistoryService.record as jest.Mock).mock.calls
+          .filter(([, params]) => params.entityType === "transfer")
+          .map(([ownerId, params]) => [ownerId, params.action]);
+
+      // `survivors`: the legs still present when the delete has finished.
+      const stage = (survivors: string[]) => {
+        ((service as any).actionHistoryService.record as jest.Mock).mockClear();
+        const legs = new Map([
+          ["tx-from", { userId: "user-1", snapshot: "a" }],
+          ["tx-to", { userId: "user-2", snapshot: "a" }],
+        ]);
+        jest
+          .spyOn((service as any).transferService, "snapshotTransferLegs")
+          .mockResolvedValueOnce(legs)
+          .mockResolvedValueOnce(
+            new Map([...legs].filter(([id]) => survivors.includes(id))),
+          );
+        transactionsRepository.findOne.mockResolvedValueOnce(fromTx);
+        transactionsRepository.findOne.mockResolvedValueOnce(toTx);
+        mockQueryRunner.manager.findOne.mockResolvedValueOnce(toTx);
+        splitsRepository.findOne.mockResolvedValue(null);
+      };
+
+      it("records a refused-undo delete entry for the owner of each removed leg", async () => {
+        stage([]);
+
+        await service.removeTransfer("user-1", "tx-from");
+
+        expect(entryOwners()).toEqual([
+          ["user-1", "delete"],
+          ["user-2", "delete"],
+        ]);
+      });
+
+      it("records nothing for the owner of a leg the delete left in place", async () => {
+        stage(["tx-to"]);
+
+        await service.removeTransfer("user-1", "tx-from");
+
+        expect(entryOwners()).toEqual([["user-1", "delete"]]);
+      });
+    });
+
     it("removes both linked transfer transactions and reverts balances", async () => {
       const fromTx = {
         id: "tx-from",

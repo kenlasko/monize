@@ -108,6 +108,7 @@ import {
   PreparedTransfer,
   TransactionTransferService,
   TransferActor,
+  TransferLegSnapshot,
   TransferResult,
   WrittenTransfer,
 } from "./transaction-transfer.service";
@@ -5298,12 +5299,24 @@ export class TransactionsService {
         parentSplit.id,
       );
     }
-    return this.transferService.removeTransfer(
+    // Both legs are snapshotted on the delete's own first read, before it
+    // writes. An entry goes to the owner of each leg it removed: a frozen
+    // cross-owner delete removes the actor's leg only.
+    let before: ReadonlyMap<string, TransferLegSnapshot> | undefined;
+    const removed = await this.transferService.removeTransfer(
       userId,
       transactionId,
-      this.findOne.bind(this),
+      async (uid: string, id: string) => {
+        const leg = await this.findOne(uid, id);
+        if (!before && id === transactionId) {
+          before = await this.snapshotTransferLegsOrNone(leg);
+        }
+        return leg;
+      },
       actor,
     );
+    await this.recordTransferChange(userId, before, "deleted", "delete");
+    return removed;
   }
 
   /**
@@ -5312,7 +5325,7 @@ export class TransactionsService {
    * `DELETE /transactions/:id` route, the AI Assistant and the MCP
    * manage_transactions delete all land here, where the caller does not know
    * up front whether the target is a transfer. Like removeTransfer it records
-   * no action-history entry (INV-TRANSFER-001).
+   * a delete entry whose undo is refused (INV-TRANSFER-001).
    *
    * With `reportRemoved`, returns the ids this delete removed, from the
    * delete's own transaction under its locks: the row and whatever went with
@@ -5390,11 +5403,23 @@ export class TransactionsService {
   ): Promise<TransferResult> {
     const addTagNames = tagChange?.addTagNames ?? [];
     const removeTagIds = tagChange?.removeTagIds ?? [];
-    const result = await this.transferService.updateTransfer(
+    // What the undo engine treats as the transfer: both legs' own columns.
+    // Tags are not part of it, so a tags-only save records no entry. Both legs
+    // are snapshotted on the edit's first read, before it writes, whoever owns
+    // them; an entry is recorded for the owner of each leg that changed.
+    let before: ReadonlyMap<string, TransferLegSnapshot> | undefined;
+    const findOneBefore = async (uid: string, id: string) => {
+      const leg = await this.findOne(uid, id);
+      if (!before && id === transactionId) {
+        before = await this.snapshotTransferLegsOrNone(leg);
+      }
+      return leg;
+    };
+    const result: TransferResult = await this.transferService.updateTransfer(
       userId,
       transactionId,
       updateDto,
-      this.findOne.bind(this),
+      findOneBefore,
       actor,
       addTagNames.length > 0 || removeTagIds.length > 0
         ? (m, target) =>
@@ -5407,7 +5432,7 @@ export class TransactionsService {
             )
         : undefined,
     );
-
+    let final: TransferResult = result;
     if (updateDto.tagIds !== undefined) {
       // Tags are per-user reference data: cross-owner counterpart legs keep
       // their own owner's tags, so only effective-user legs are synced.
@@ -5441,13 +5466,62 @@ export class TransactionsService {
 
       const refresh = (leg: Transaction) =>
         leg.userId === userId ? this.findOne(userId, leg.id) : leg;
-      return {
+      final = {
         fromTransaction: await refresh(result.fromTransaction),
         toTransaction: await refresh(result.toTransaction),
       };
     }
 
-    return result;
+    // After the commit and the tag sync: a failure here must not turn a saved
+    // change into a 500 nor skip the tags.
+    await this.recordTransferChange(userId, before, "changed", "update");
+    return final;
+  }
+
+  /**
+   * The legs of a transfer before a write, for its history entry. A failed
+   * read is logged and gives no snapshot, so no entry: the history must not
+   * stop the change the user asked for.
+   */
+  private async snapshotTransferLegsOrNone(
+    leg: Transaction,
+  ): Promise<ReadonlyMap<string, TransferLegSnapshot> | undefined> {
+    try {
+      return await this.transferService.snapshotTransferLegs(
+        leg.linkedTransactionId ? [leg.id, leg.linkedTransactionId] : [leg.id],
+      );
+    } catch (err) {
+      this.logger.error(
+        `Could not read the transfer legs for action history: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return undefined;
+    }
+  }
+
+  /**
+   * Records the history entry of a committed transfer change for the owner of
+   * each leg it wrote. The change is already saved, so a failure is logged and
+   * swallowed (as `record` swallows its own): it must not reach the caller as
+   * an error for a write that happened.
+   */
+  private async recordTransferChange(
+    userId: string,
+    before: ReadonlyMap<string, TransferLegSnapshot> | undefined,
+    mode: "changed" | "deleted",
+    change: "update" | "delete",
+  ): Promise<void> {
+    if (!before) return;
+    try {
+      await this.transferService.recordTransferChangeHistory(
+        userId,
+        await this.transferService.writtenLegOwners(before, mode),
+        change,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Could not record the transfer ${change} in action history: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   /**
