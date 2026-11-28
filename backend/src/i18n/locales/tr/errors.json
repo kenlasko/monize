@@ -108,6 +108,8 @@
     "undoSplitLineGone": "Geri alınamıyor: bu değişikliğin etiketlerini değiştirdiği bölme satırı artık işlemde değil",
     "undoTagGone": "Geri alınamıyor: bu değişiklikteki bir etiket o zamandan beri silindi",
     "redoCreateWithLegs": "Bu işlem başka hesaplarda kayıtlar oluşturdu, bu yüzden yinelenemez. Bunun yerine işlemi yeniden oluşturun",
+    "undoCrossOwnerTransferNotSupported": "Bu transferin bir tarafı başka bir sahibin hesabında olduğu için geri alınamaz. Bunun yerine transferi silin.",
+    "redoTransferCreateNotSupported": "Bu transfer iki hesapta kayıt oluşturdu, bu yüzden yinelenemez. Bunun yerine transferi yeniden oluşturun",
     "undoAccountGone": "Geri alınamıyor: hesap artık mevcut değil",
     "unsupportedTransferAction": "Desteklenmeyen transfer eylemi: {{ action }}",
     "unsupportedInvestmentAction": "Desteklenmeyen yatırım eylemi: {{ action }}",

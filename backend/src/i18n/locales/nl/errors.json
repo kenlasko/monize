@@ -108,6 +108,8 @@
     "undoSplitLineGone": "Kan niet ongedaan maken: een splitsregel waarvan deze wijziging de labels veranderde, staat niet meer op de transactie",
     "undoTagGone": "Kan niet ongedaan maken: een label van deze wijziging is sindsdien verwijderd",
     "redoCreateWithLegs": "Deze transactie heeft boekingen in andere rekeningen aangemaakt en kan niet opnieuw worden uitgevoerd. Maak de transactie in plaats daarvan opnieuw aan",
+    "undoCrossOwnerTransferNotSupported": "Deze overboeking heeft een kant in een rekening van een andere eigenaar en kan niet ongedaan worden gemaakt. Verwijder de overboeking in plaats daarvan.",
+    "redoTransferCreateNotSupported": "Deze overboeking heeft boekingen in twee rekeningen aangemaakt en kan niet opnieuw worden uitgevoerd. Maak de overboeking in plaats daarvan opnieuw aan",
     "undoAccountGone": "Kan niet ongedaan maken: de rekening bestaat niet meer",
     "unsupportedTransferAction": "Niet-ondersteunde overboekingsactie: {{ action }}",
     "unsupportedInvestmentAction": "Niet-ondersteunde beleggingsactie: {{ action }}",

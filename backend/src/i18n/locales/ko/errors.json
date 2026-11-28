@@ -108,6 +108,8 @@
     "undoSplitLineGone": "실행 취소할 수 없습니다: 이 변경으로 태그가 바뀐 분할 항목이 더 이상 거래에 없습니다",
     "undoTagGone": "실행 취소할 수 없습니다: 이 변경에 관련된 태그가 그 후 삭제되었습니다",
     "redoCreateWithLegs": "이 거래는 다른 계좌에 항목을 만들었으므로 다시 실행할 수 없습니다. 대신 거래를 다시 만드세요",
+    "undoCrossOwnerTransferNotSupported": "이 이체는 다른 소유자의 계좌에 한쪽이 있어 실행 취소할 수 없습니다. 대신 이체를 삭제하세요.",
+    "redoTransferCreateNotSupported": "이 이체는 두 계좌에 항목을 만들었으므로 다시 실행할 수 없습니다. 대신 이체를 다시 만드세요",
     "undoAccountGone": "실행 취소할 수 없습니다: 계정이 더 이상 존재하지 않습니다",
     "unsupportedTransferAction": "지원되지 않는 이체 작업입니다: {{ action }}",
     "unsupportedInvestmentAction": "지원되지 않는 투자 작업입니다: {{ action }}",

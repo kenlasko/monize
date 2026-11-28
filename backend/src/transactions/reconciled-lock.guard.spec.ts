@@ -134,7 +134,7 @@ const ENFORCEMENT_SITES: {
   {
     file: "../action-history/action-history.service.ts",
     fn: "private async undoTransferCreate(",
-    why: "undo of a transfer create (and redo of its delete) deletes both legs",
+    why: "undo of a transfer create deletes both legs",
     beforeWrite: "DELETE FROM transaction_tags",
   },
   {

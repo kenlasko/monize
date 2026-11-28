@@ -108,6 +108,8 @@
     "undoSplitLineGone": "Impossible d'annuler : une ligne de ventilation dont cette modification a changé les étiquettes n'est plus sur la transaction",
     "undoTagGone": "Impossible d'annuler : une étiquette de cette modification a été supprimée depuis",
     "redoCreateWithLegs": "Cette transaction a créé des écritures dans d'autres comptes et ne peut pas être rétablie. Créez-la plutôt à nouveau",
+    "undoCrossOwnerTransferNotSupported": "Ce virement a un côté dans un compte d'un autre propriétaire et ne peut pas être annulé. Supprimez plutôt le virement.",
+    "redoTransferCreateNotSupported": "Ce virement a créé des écritures dans deux comptes et ne peut pas être rétabli. Créez-le plutôt à nouveau",
     "undoAccountGone": "Impossible d'annuler : le compte n'existe plus",
     "unsupportedTransferAction": "Action de virement non prise en charge : {{ action }}",
     "unsupportedInvestmentAction": "Action d'investissement non prise en charge : {{ action }}",

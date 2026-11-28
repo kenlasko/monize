@@ -108,6 +108,8 @@
     "undoSplitLineGone": "No se puede deshacer: una línea de división cuyas etiquetas cambió este cambio ya no está en la transacción",
     "undoTagGone": "No se puede deshacer: una etiqueta de este cambio se ha eliminado desde entonces",
     "redoCreateWithLegs": "Esta transacción creó movimientos en otras cuentas, por lo que no se puede rehacer. Créela de nuevo",
+    "undoCrossOwnerTransferNotSupported": "Esta transferencia tiene un lado en una cuenta de otro propietario, por lo que no se puede deshacer. Elimina la transferencia en su lugar.",
+    "redoTransferCreateNotSupported": "Esta transferencia creó movimientos en dos cuentas, por lo que no se puede rehacer. Créala de nuevo",
     "undoAccountGone": "No se puede deshacer: la cuenta ya no existe",
     "unsupportedTransferAction": "Acción de transferencia no admitida: {{ action }}",
     "unsupportedInvestmentAction": "Acción de inversión no admitida: {{ action }}",

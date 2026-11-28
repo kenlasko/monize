@@ -108,6 +108,8 @@
     "undoSplitLineGone": "Impossibile annullare: una riga di suddivisione di cui questa modifica ha cambiato i tag non è più nella transazione",
     "undoTagGone": "Impossibile annullare: un tag di questa modifica è stato eliminato nel frattempo",
     "redoCreateWithLegs": "Questa transazione ha creato voci in altri conti, quindi non può essere ripristinata. Creala di nuovo",
+    "undoCrossOwnerTransferNotSupported": "Questo trasferimento ha un lato in un conto di un altro proprietario, quindi non può essere annullato. Elimina invece il trasferimento.",
+    "redoTransferCreateNotSupported": "Questo trasferimento ha creato voci in due conti, quindi non può essere ripristinato. Crealo di nuovo",
     "undoAccountGone": "Impossibile annullare: il conto non esiste più",
     "unsupportedTransferAction": "Azione trasferimento non supportata: {{ action }}",
     "unsupportedInvestmentAction": "Azione investimento non supportata: {{ action }}",

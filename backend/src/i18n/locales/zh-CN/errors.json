@@ -108,6 +108,8 @@
     "undoSplitLineGone": "无法撤销：此更改修改过标签的拆分行已不在该交易上",
     "undoTagGone": "无法撤销：此更改涉及的标签之后已被删除",
     "redoCreateWithLegs": "此交易在其他账户中创建了条目,因此无法重做。请改为重新创建该交易",
+    "undoCrossOwnerTransferNotSupported": "这笔转账的一侧在其他所有者的账户中，因此无法撤销。请改为删除这笔转账。",
+    "redoTransferCreateNotSupported": "这笔转账在两个账户中创建了条目，因此无法重做。请改为重新创建",
     "undoAccountGone": "无法撤销：账户已不存在",
     "unsupportedTransferAction": "不支持的转账操作：{{ action }}",
     "unsupportedInvestmentAction": "不支持的投资操作：{{ action }}",

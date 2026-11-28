@@ -108,6 +108,8 @@
     "undoSplitLineGone": "Không thể hoàn tác: dòng chia mà thay đổi này đã sửa thẻ không còn trên giao tác",
     "undoTagGone": "Không thể hoàn tác: một thẻ trong thay đổi này đã bị xóa kể từ đó",
     "redoCreateWithLegs": "Giao dịch này đã tạo các mục ở tài khoản khác nên không thể làm lại. Hãy tạo lại giao dịch",
+    "undoCrossOwnerTransferNotSupported": "Giao dịch chuyển khoản này có một bên ở tài khoản của chủ sở hữu khác nên không thể hoàn tác. Hãy xóa khoản chuyển khoản.",
+    "redoTransferCreateNotSupported": "Giao dịch chuyển khoản này đã tạo các mục ở hai tài khoản nên không thể làm lại. Hãy tạo lại khoản chuyển khoản",
     "undoAccountGone": "Không thể hoàn tác: tài khoản không còn tồn tại",
     "unsupportedTransferAction": "Hành động chuyển tiền không được hỗ trợ: {{ action }}",
     "unsupportedInvestmentAction": "Hành động đầu tư không được hỗ trợ: {{ action }}",

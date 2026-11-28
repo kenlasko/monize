@@ -240,6 +240,35 @@ describe("undo of an investment create honours the reconciled lock (integration,
       expect(await legCount()).toBe(2);
     });
 
+    it("refuses the undo with the cross-owner code when a leg belongs to another owner, both legs staying", async () => {
+      await makeTransfer(false);
+      const other = await createTestUserDirect(dataSource);
+      await dataSource.query(
+        `UPDATE transactions SET user_id = $1 WHERE account_id = $2`,
+        [other.id, otherAccountId],
+      );
+
+      await expect(
+        withUserContext(userId, () => history.undo(userId)),
+      ).rejects.toMatchObject({
+        status: 409,
+        response: { errorCode: "UNDO_CROSS_OWNER_TRANSFER_NOT_SUPPORTED" },
+      });
+
+      expect(await legCount()).toBe(2);
+    });
+
+    it("skips a leg that is already gone and removes the other", async () => {
+      await makeTransfer(false);
+      await dataSource.query(`DELETE FROM transactions WHERE account_id = $1`, [
+        otherAccountId,
+      ]);
+
+      await withUserContext(userId, () => history.undo(userId));
+
+      expect(await legCount()).toBe(0);
+    });
+
     it("undoes it when the lock is off", async () => {
       await makeTransfer(false);
 
