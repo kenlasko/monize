@@ -1413,7 +1413,10 @@ Enforcement         assertReconciledRowsMutable / assertReconciledIdsMutable
                     ActionHistoryService.undoTransactionUpdate (undo
                     and redo of a transaction edit), ActionHistoryService.undoBulkUpdate
                     (undo and redo of a bulk update, every row of the snapshot
-                    locked first) and
+                    locked first),
+                    ActionHistoryService.undoTransferCreate (both legs) and
+                    undoInvestmentCreate (each row's cash transaction), locked
+                    and asked before the first write, and
                     InvestmentTransactionsService.updateEmbeddedSplitParent (the
                     split parent's amount recomputed when an embedded investment
                     row changes). The last three receive an ambient EntityManager
@@ -7885,7 +7888,8 @@ Enforcement         PAYEE_REFERENCE_MOVES (backend/src/payees/payee-references.t
                     tags have ACCOUNT_REFERENCES and TAG_REFERENCES the same way
                     (findAccountReferences, findTagReferences); the undo of a
                     create and the redo of a delete run the entity's finder
-                    first (action-history/undo-references.ts).
+                    first (action-history/undo-references.ts); a budget's finder counts its
+                    CLOSED periods only, since the cascade would erase them.
                     repointPayeeJsonReferences (payee-json-references.ts)
                     rewrites the JSON ids; payee-json-references.spec.ts fails
                     when a rule action type carrying a payeeId is missing from

@@ -7,6 +7,7 @@ import { findSecurityReferences } from "../securities/security-references";
 import { findTagReferences } from "../tags/tag-references";
 import {
   RecordInUseEntry,
+  countReferences,
   recordInUseException,
   recordInUseSummary,
 } from "../common/helpers/record-in-use";
@@ -20,7 +21,9 @@ type Finder = (
 
 /**
  * Entities whose row removal would clear or destroy rows that point at it.
- * `budget` and `custom_report` are absent: their children are part of them.
+ * `custom_report` is absent: its children are part of it. A budget is checked
+ * only for its CLOSED periods (history the user or the period-close cron wrote
+ * later, which the cascade would destroy); the OPEN one is part of the budget.
  * The account's finder counts the loan's own schedule too, so an account undo
  * never drops a schedule that still pays into it. (Loan and mortgage creation
  * records only the schedule's entry today, so this guards a future one.)
@@ -38,6 +41,16 @@ const REFERENCE_CHECKS: Record<
     table: "accounts",
     find: (m, userId, id) =>
       findAccountReferences(m, userId, id, { includeOwnSchedule: true }),
+  },
+  budget: {
+    table: "budgets",
+    find: (m, userId, id) =>
+      countReferences(m, userId, id, [
+        {
+          kind: "budgetPeriods",
+          sql: "SELECT count(*)::int AS count FROM budget_periods p JOIN budgets b ON b.id = p.budget_id WHERE b.user_id = $1 AND p.budget_id = $2 AND p.status = 'CLOSED'",
+        },
+      ]),
   },
   // Named by symbol, as errors.securities.inUse and the UI do.
   security: {

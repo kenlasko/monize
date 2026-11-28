@@ -2133,6 +2133,91 @@ describe("ActionHistoryService", () => {
       expect(mockDataSource.transaction).toHaveBeenCalled();
     });
 
+    it("refuses to undo a transfer create with a reconciled leg under the strict lock", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType: "transfer",
+        action: "create",
+        entityId: "tx-from",
+        afterData: {
+          fromTransactionId: "tx-from",
+          toTransactionId: "tx-to",
+          fromAccountId: "acc-1",
+          toAccountId: "acc-2",
+        },
+      });
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        id: "tx-from",
+        userId,
+        accountId: "acc-1",
+      });
+      mockLockedRows({
+        "tx-from": { account_id: "acc-1", amount: "-100" },
+        "tx-to": { account_id: "acc-2", amount: "100", status: "RECONCILED" },
+      });
+      const routeRepository =
+        mockQueryRunner.manager.getRepository.getMockImplementation();
+      mockQueryRunner.manager.getRepository.mockImplementation(
+        (entity: unknown) =>
+          entity === UserPreference
+            ? {
+                findOne: jest
+                  .fn()
+                  .mockResolvedValue({ lockReconciledTransactions: true }),
+              }
+            : routeRepository(entity),
+      );
+
+      await expect(service.undo(userId)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+    });
+
+    it("refuses to undo an investment create whose cash row is reconciled under the strict lock", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType: "investment_transaction",
+        action: "create",
+        entityId: "inv-1",
+        afterData: { id: "inv-1" },
+      });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce({
+        id: "inv-1",
+        userId,
+        accountId: "acc-1",
+        securityId: null,
+        transactionId: "cash-1",
+        linkedTransactionId: null,
+      });
+      mockLockedRows({
+        "cash-1": {
+          account_id: "acc-1",
+          amount: "-1005",
+          status: "RECONCILED",
+        },
+      });
+      const routeRepository =
+        mockQueryRunner.manager.getRepository.getMockImplementation();
+      mockQueryRunner.manager.getRepository.mockImplementation(
+        (entity: unknown) =>
+          entity === UserPreference
+            ? {
+                findOne: jest
+                  .fn()
+                  .mockResolvedValue({ lockReconciledTransactions: true }),
+              }
+            : routeRepository(entity),
+      );
+
+      await expect(service.undo(userId)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+      expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
+
     it("should undo transfer delete by re-inserting both transactions", async () => {
       const transferAction = {
         ...mockAction,
@@ -4593,6 +4678,29 @@ describe("ActionHistoryService", () => {
           }),
         });
         expect(mockQueryRunner.query).not.toHaveBeenCalled();
+      });
+
+      it("is refused for a transfer create, whose snapshot holds only ids", async () => {
+        mockRepository.findOne.mockResolvedValue({
+          ...mockAction,
+          entityType: "transfer",
+          action: "create",
+          entityId: "tx-from",
+          isUndone: true,
+          afterData: {
+            fromTransactionId: "tx-from",
+            toTransactionId: "tx-to",
+            fromAccountId: "acc-1",
+            toAccountId: "acc-2",
+          },
+        });
+        await expect(service.redo(userId)).rejects.toMatchObject({
+          response: expect.objectContaining({
+            errorCode: "REDO_CREATE_WITH_LEGS",
+          }),
+        });
+        expect(mockQueryRunner.query).not.toHaveBeenCalled();
+        expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
       });
 
       it("is refused for a split with a linked leg", async () => {

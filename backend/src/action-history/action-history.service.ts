@@ -88,6 +88,17 @@ import {
 import { invalidatePortfolioSummary } from "../securities/portfolio-summary-memo";
 import { todayYMD } from "../common/date-utils";
 
+/** The refusal of a create redo whose undo deleted counterpart legs. */
+function refuseRedoCreateWithLegs(): never {
+  throw new ConflictException({
+    message: tr(
+      "errors.actionHistory.redoCreateWithLegs",
+      "This transaction created entries in other accounts, so it cannot be redone. Create it again instead",
+    ),
+    errorCode: "REDO_CREATE_WITH_LEGS",
+  });
+}
+
 /**
  * A create whose snapshot links the row to a counterpart leg (a transfer leg,
  * or a split line with a linked leg) cannot be redone: the undo deleted the
@@ -99,14 +110,7 @@ function assertTransactionCreateRedoable(action: ActionHistory): void {
   const hasLegs =
     (after?.isTransfer === true && !!after?.linkedTransactionId) ||
     (splits as SplitSnapshot[]).some(isLegSplit);
-  if (!hasLegs) return;
-  throw new ConflictException({
-    message: tr(
-      "errors.actionHistory.redoCreateWithLegs",
-      "This transaction created entries in other accounts, so it cannot be redone. Create it again instead",
-    ),
-    errorCode: "REDO_CREATE_WITH_LEGS",
-  });
+  if (hasLegs) refuseRedoCreateWithLegs();
 }
 
 /**
@@ -1009,6 +1013,11 @@ export class ActionHistoryService {
     if (action.entityType === "transaction" && action.action === "create") {
       assertTransactionCreateRedoable(action);
     }
+    // A transfer create's snapshot holds only the leg ids; the undo deleted
+    // both legs, so there is nothing to replay.
+    if (action.entityType === "transfer" && action.action === "create") {
+      refuseRedoCreateWithLegs();
+    }
     // A delete that moved rows into another category: the undo moved them back,
     // so the redo moves them again before the delete's reference check.
     const moved =
@@ -1667,6 +1676,16 @@ export class ActionHistoryService {
     const { fromTransactionId, toTransactionId, fromAccountId, toAccountId } =
       action.afterData;
 
+    // Strict reconciled lock (INV-RECONCILE-001): refuse before any write.
+    const lockedLegs = await lockTransactionRows(
+      manager,
+      [fromTransactionId, toTransactionId].filter(Boolean),
+      action.userId,
+    );
+    await assertReconciledRowsMutable(manager, action.userId, [
+      ...lockedLegs.values(),
+    ]);
+
     // Delete both linked transactions
     for (const txId of [fromTransactionId, toTransactionId]) {
       if (!txId) continue;
@@ -1918,6 +1937,16 @@ export class ActionHistoryService {
       action.userId,
       legs.map((leg) => leg.securityId),
     );
+
+    // Strict reconciled lock (INV-RECONCILE-001): refuse before any write.
+    const lockedCash = await lockTransactionRows(
+      manager,
+      legs.flatMap((leg) => (leg.transactionId ? [leg.transactionId] : [])),
+      action.userId,
+    );
+    await assertReconciledRowsMutable(manager, action.userId, [
+      ...lockedCash.values(),
+    ]);
 
     for (const leg of legs) {
       accountIds.add(leg.accountId);

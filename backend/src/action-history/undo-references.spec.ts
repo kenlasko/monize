@@ -80,10 +80,24 @@ describe("assertNoReferencesBeforeDelete", () => {
     await expect(run("tag", gone)).resolves.toBeUndefined();
     expect(gone.query).toHaveBeenCalledTimes(1);
     // A schedule has no finder: the undo clears a loan's link itself.
-    for (const type of ["budget", "scheduled_transaction"]) {
-      const m = makeManager(5);
-      await expect(run(type, m)).resolves.toBeUndefined();
-      expect(m.query).not.toHaveBeenCalled();
-    }
+    const m = makeManager(5);
+    await expect(run("scheduled_transaction", m)).resolves.toBeUndefined();
+    expect(m.query).not.toHaveBeenCalled();
+  });
+
+  it("refuses the undo of a budget create while it has a CLOSED period", async () => {
+    const m = makeManager(2);
+    const error = await run("budget", m).catch((e) => e);
+    expect(error).toBeInstanceOf(ConflictException);
+    expect(error.getResponse()).toMatchObject({
+      errorCode: "RECORD_IN_USE",
+      errors: [{ kind: "budgetPeriods", count: 2 }],
+    });
+    const counting = m.query.mock.calls.map(([sql]) => sql as string).pop();
+    expect(counting).toContain("p.status = 'CLOSED'");
+  });
+
+  it("allows the undo of a budget that has only an OPEN period", async () => {
+    await expect(run("budget", makeManager(0))).resolves.toBeUndefined();
   });
 });
