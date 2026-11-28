@@ -1,11 +1,8 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale } from 'next-intl';
 import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
-import {
-  previousDay,
-  registerGroupLabel,
-} from '@/components/transactions/register-style-data';
+import { registerGroupLabel } from '@/components/transactions/register-style-data';
 
 interface InvestmentDayHeadingProps {
   /** The trading day the rows below it share, `YYYY-MM-DD`. */
@@ -14,17 +11,18 @@ interface InvestmentDayHeadingProps {
   today: string;
   /**
    * The columns the heading spans: one under the phone's card layout, the
-   * tier table's column count in Folio's desktop ledger (issue #2510).
+   * tier table's column count in Folio's ledger (issue #2510).
    */
   colSpan?: number;
 }
 
 /**
  * The date heading over a day's trades in the brokerage register under Folio
- * (every width: the ledger's date group row, issue #2510) and Pebble (the
- * phone card layout, issue #2508), so the investment tab reads the way the
- * cash register beside it does. The row below drops its own date, since the
- * heading names the day.
+ * (every width: the ledger's date group row, issues #2508, #2510), so the
+ * investment tab reads the way the cash register beside it does. Pebble draws
+ * no table at any width (`InvestmentPebbleRegister` titles its own day
+ * blocks), so it has no heading here. The row below drops its own date, since
+ * the heading names the day.
  *
  * It carries the date alone. The cash register's heading prints the day's
  * closing balance, but a trade register has no running balance, and a day's
@@ -49,30 +47,7 @@ function FolioHeading({ date, today, colSpan = 1 }: InvestmentDayHeadingProps) {
   );
 }
 
-/** Pebble's day title: "Today", "Yesterday", then the date, as its day blocks read. */
-function PebbleHeading({ date, today, colSpan = 1 }: InvestmentDayHeadingProps) {
-  const locale = useLocale();
-  const t = useTranslations('transactions');
-  const title =
-    date === today
-      ? t('list.today')
-      : date === previousDay(today)
-        ? t('list.pebble.yesterday')
-        : registerGroupLabel(date, locale, today);
-  return (
-    <tr className="ui-register-group-row">
-      <th
-        scope="colgroup"
-        colSpan={colSpan}
-        className="px-4 pt-4 pb-2 text-left font-sans text-sm font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
-      >
-        {title}
-      </th>
-    </tr>
-  );
-}
-
-/** Standard keeps the date on each card and draws no heading. */
+/** Standard keeps the date on each row; Pebble never reaches the table. */
 function NoHeading() {
   return null;
 }
@@ -80,7 +55,7 @@ function NoHeading() {
 const VARIANTS: StyleVariants<InvestmentDayHeadingProps> = {
   standard: NoHeading,
   folio: FolioHeading,
-  pebble: PebbleHeading,
+  pebble: NoHeading,
 };
 
 export function InvestmentDayHeading(props: InvestmentDayHeadingProps) {
