@@ -58,7 +58,10 @@ import {
 } from "../../ai-review/ai-review-work.types";
 import { AccountType } from "../../accounts/entities/account.entity";
 import { CategoriesService } from "../../categories/categories.service";
-import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
+import {
+  type LlmQueryDirection,
+  TransactionAnalyticsService,
+} from "../../transactions/transaction-analytics.service";
 import { NetWorthService } from "../../net-worth/net-worth.service";
 import { BudgetReportsService } from "../../budgets/budget-reports.service";
 import { PortfolioService } from "../../securities/portfolio.service";
@@ -510,8 +513,7 @@ export class ToolExecutorService {
     const searchText = input.searchText as string | undefined;
     const minAmount = input.minAmount as number | undefined;
     const maxAmount = input.maxAmount as number | undefined;
-    const direction = input.direction as
-      "expenses" | "income" | "both" | undefined;
+    const direction = input.direction as LlmQueryDirection | undefined;
     const groupBy = input.groupBy as
       "category" | "payee" | "year" | "month" | "week" | "none" | undefined;
     const transfersOnly = input.transfersOnly as boolean | undefined;
@@ -616,8 +618,8 @@ export class ToolExecutorService {
       data.totalIncome === null ||
       data.totalExpenses === null ||
       data.netCashFlow === null
-        ? `Totals withheld: no exchange rate for ${data.missingRatePairs.join(", ")}; add it under Currencies. Converted so far: income ${fig(data.knownIncomeSubtotal)} ${cur}, expenses ${fig(data.knownExpensesSubtotal)} ${cur}`
-        : `Income: ${fig(data.totalIncome)} ${cur}, Expenses: ${fig(data.totalExpenses)} ${cur}, Net: ${fig(data.netCashFlow)} ${cur}`;
+        ? `Totals withheld: no exchange rate for ${data.missingRatePairs.join(", ")}; add it under Currencies. Cash flow converted so far: incoming ${fig(data.knownIncomeSubtotal)} ${cur}, outgoing ${fig(data.knownExpensesSubtotal)} ${cur}`
+        : `Cash flow: incoming ${fig(data.totalIncome)} ${cur}, outgoing ${fig(data.totalExpenses)} ${cur}, Net: ${fig(data.netCashFlow)} ${cur}`;
     const summaryParts = [
       `${data.transactionCount} transactions from ${startDate} to ${endDate}. ${flow}${includesEstimates(data.provisionalCount)}`,
     ];

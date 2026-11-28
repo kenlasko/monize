@@ -1,6 +1,8 @@
 import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { sharedReviewMock } from "../../shared-expenses/__fixtures__/shared-review";
 import { BadRequestException } from "@nestjs/common";
+import { withUserContext } from "../../common/db/with-context";
+import { getRequestTimezone } from "../../common/request-context";
 import { McpTransactionsTools } from "./transactions.tool";
 import { McpWriteLimiter } from "../mcp-write-limiter";
 import { AuthAttemptCounterService } from "../../auth/auth-attempt-counter.service";
@@ -2928,6 +2930,32 @@ describe("McpTransactionsTools", () => {
       );
       expect(bad.isError).toBe(true);
       expect(bad.content[0].text).toContain("not a supported file type");
+    });
+
+    // The transport seeds the user's timezone; a tool's own re-seed of the same
+    // user must not drop it, or todayYMD() falls back to the server's day.
+    it("keeps the request's timezone through the attachment re-seed", async () => {
+      const seen: Array<string | undefined> = [];
+      attachmentPrepService.prepareAttachments.mockImplementation(async () => {
+        seen.push(getRequestTimezone());
+        return [attachmentPreview];
+      });
+      attachmentsService.create.mockImplementation(async () => {
+        seen.push(getRequestTimezone());
+        return { id: "att-1", filename: "receipt.png" };
+      });
+
+      await withUserContext(
+        UUID_USER,
+        () =>
+          handlers["manage_transactions"](
+            createArgs([{ fileData: PNG_B64, fileName: "receipt.png" }]),
+            ctx,
+          ),
+        "Pacific/Kiritimati",
+      );
+
+      expect(seen).toEqual(["Pacific/Kiritimati", "Pacific/Kiritimati"]);
     });
 
     it("creates the transaction and persists inline attachments on direct confirm", async () => {

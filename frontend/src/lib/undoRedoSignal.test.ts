@@ -54,6 +54,16 @@ describe('undoRedoSignal', () => {
     expect(() => notifyUndoRedo()).not.toThrow();
   });
 
+  it('holds Undo on a delete the server refuses to undo (transfer leg, split lines)', () => {
+    for (const code of [
+      'UNDO_DELETED_SPLIT_HAS_TRANSFER_LINE',
+      'UNDO_TRANSFER_LEG_DELETED',
+      'UNDO_BULK_DELETED_SPLIT',
+    ]) {
+      expect(isUndoRefusal(409, code)).toBe(true);
+    }
+  });
+
   it('holds Undo on a scheduled posting the server refuses to undo (issue #2165)', () => {
     for (const code of [
       'SCHEDULED_POSTING_UNDO_LATER_OCCURRENCE',

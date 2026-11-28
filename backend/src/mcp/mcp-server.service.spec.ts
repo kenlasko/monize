@@ -5,6 +5,7 @@ import {
   createMcpHandler,
 } from "@modelcontextprotocol/server";
 import { McpServerService } from "./mcp-server.service";
+import { withUserContext } from "../common/db/with-context";
 import { McpAccountsTools } from "./tools/accounts.tool";
 import { McpTransactionsTools } from "./tools/transactions.tool";
 import { McpCategoriesTools } from "./tools/categories.tool";
@@ -108,6 +109,21 @@ describe("McpServerService", () => {
   it("should create a new McpServer instance", () => {
     const server = service.createServer();
     expect(server).toBeDefined();
+  });
+
+  it("tells the model the user's day, not the server's", () => {
+    // 2026-11-27T12:00Z is already 2026-11-28 in Kiritimati (UTC+14).
+    jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+    try {
+      const instructions = withUserContext(
+        "11111111-1111-4111-8111-111111111111",
+        () => (service.createServer().server as any)._instructions as string,
+        "Pacific/Kiritimati",
+      );
+      expect(instructions).toContain("Today is 2026-11-28.");
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("advertises the backend package.json version (auto-updates with releases)", () => {

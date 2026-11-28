@@ -93,9 +93,9 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
         },
         direction: {
           type: "string",
-          enum: ["expenses", "income", "both"],
+          enum: ["expenses", "outgoing", "income", "both"],
           description:
-            "Filter by direction. Must be EXACTLY one of: 'expenses' (outflows/spending), 'income' (inflows/earnings), or 'both' (default). Do not use 'expense', 'all', 'debit', or any variation.",
+            "Grouped expenses net refunds in expense categories. Outgoing sums debits across categories. Cash-flow summary totals are independent.",
         },
         groupBy: {
           type: "string",

@@ -162,6 +162,68 @@ describe("Undo of an edit of a split with a transfer line (integration)", () => 
     expect(await balances()).toEqual(settled);
   });
 
+  it("refuses the undo of deleting a split with a transfer line, before any write", async () => {
+    const id = await createSplit();
+    await asUser(() => transactions.remove(userId, id));
+    const settled = await balances();
+
+    await expect(settledUndo()).rejects.toMatchObject({
+      response: { errorCode: "UNDO_DELETED_SPLIT_HAS_TRANSFER_LINE" },
+    });
+    expect(await balances()).toEqual(settled);
+    expect(await db.manager.countBy(Transaction, { id })).toBe(0);
+  });
+
+  it("refuses the undo of deleting one leg of a plain transfer, before any write", async () => {
+    await asUser(() =>
+      transactions.createTransfer(userId, {
+        fromAccountId: accountA,
+        toAccountId: accountB,
+        transactionDate: "2026-01-15",
+        amount: 25,
+        fromCurrencyCode: "USD",
+      }),
+    );
+    // The create entry is written fire-and-forget; settle it so the entry
+    // recorded below is the newest one undo takes.
+    await settlePendingHistoryWrites();
+    const [leg] = await db.query(
+      `SELECT id, linked_transaction_id AS "linkedTransactionId"
+         FROM transactions WHERE account_id = $1`,
+      [accountB],
+    );
+    // A recorded single-leg delete exists only in older history entries, so the
+    // row is deleted by SQL and its entry recorded as `remove` once wrote it.
+    await db.query(`DELETE FROM transactions WHERE id = $1`, [leg.id]);
+    await asUser(() =>
+      history.record(userId, {
+        entityType: "transaction",
+        entityId: leg.id,
+        action: "delete",
+        beforeData: {
+          id: leg.id,
+          accountId: accountB,
+          transactionDate: "2026-01-15",
+          amount: 25,
+          currencyCode: "USD",
+          isTransfer: true,
+          linkedTransactionId: leg.linkedTransactionId,
+          splits: [],
+          tagIds: [],
+        },
+        afterData: null,
+        description: "Deleted transaction",
+      }),
+    );
+    const settled = await balances();
+
+    await expect(settledUndo()).rejects.toMatchObject({
+      response: { errorCode: "UNDO_TRANSFER_LEG_DELETED" },
+    });
+    expect(await balances()).toEqual(settled);
+    expect(await db.manager.countBy(Transaction, { id: leg.id })).toBe(0);
+  });
+
   it("refuses the undo of a VOID that reached the legs, with every balance unchanged", async () => {
     const id = await createSplit();
     await asUser(() =>

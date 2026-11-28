@@ -426,7 +426,7 @@ Set a transaction's status to **Void** to cancel it while keeping the record. A 
 
 ### Deleting
 
-Click **Delete** on the row to permanently remove a transaction. The account balance is adjusted accordingly. You can undo a deletion right away (see [Undo and Redo](#undo-and-redo)).
+Click **Delete** on the row to permanently remove a transaction. The account balance is adjusted accordingly. You can undo a deletion right away (see [Undo and Redo](#undo-and-redo)), except for one side of a transfer and a split with a transfer or investment line: undo cannot restore the other account's side, so edit the side that is still there or enter the transaction again.
 
 > [!CAUTION]
 > If the transaction is part of a linked transfer, deleting it also deletes the linked transaction in the other account.

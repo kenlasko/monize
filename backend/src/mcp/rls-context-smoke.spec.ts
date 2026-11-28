@@ -39,6 +39,9 @@ describe("MCP transport RLS context smoke (real withScopedDb)", () => {
       }),
     };
 
+    const timezoneDb = createScopedDbMocks([]);
+    timezoneDb.manager.query.mockResolvedValue([]);
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [McpHttpController],
       providers: [
@@ -55,6 +58,7 @@ describe("MCP transport RLS context smoke (real withScopedDb)", () => {
           provide: ConfigService,
           useValue: { get: jest.fn().mockReturnValue("https://monize.test") },
         },
+        { provide: DataSource, useValue: timezoneDb.dataSource },
       ],
     }).compile();
 

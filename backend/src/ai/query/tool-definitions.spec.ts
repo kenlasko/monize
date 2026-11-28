@@ -96,7 +96,12 @@ describe("FINANCIAL_TOOLS", () => {
         string,
         Record<string, unknown>
       >;
-      expect(props.direction.enum).toEqual(["expenses", "income", "both"]);
+      expect(props.direction.enum).toEqual([
+        "expenses",
+        "outgoing",
+        "income",
+        "both",
+      ]);
     });
 
     it("exposes includeTransactions and transfersOnly flags", () => {
