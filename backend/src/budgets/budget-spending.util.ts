@@ -235,6 +235,28 @@ export function isTransferIncomeLine(bc: BudgetCategory): boolean {
   return isTransferLine(bc) && bc.isIncome;
 }
 
+/**
+ * Whether a plain scheduled transfer would count against the budget once
+ * posted: the budget has an outgoing line for its destination account, or an
+ * outgoing line on its category (an Expense category, or a Transfer category,
+ * docs/specs/transfer-categories.md sections 5 and 6.1). A transfer no line
+ * takes is not the budget's spending.
+ */
+export function transferCountsAgainstBudget(
+  lines: readonly BudgetCategory[],
+  transfer: { transferAccountId: string | null; categoryId: string | null },
+): boolean {
+  return lines.some(
+    (bc) =>
+      !bc.isIncome &&
+      ((isTransferLine(bc) &&
+        bc.transferAccountId === transfer.transferAccountId) ||
+        (!bc.isTransfer &&
+          bc.categoryId !== null &&
+          bc.categoryId === transfer.categoryId)),
+  );
+}
+
 /** What `queryCategorySpending` returns: converted sums plus what is unknown. */
 export interface CategorySpending {
   paceByLine?: ReadonlyMap<string, BudgetPaceInput>;

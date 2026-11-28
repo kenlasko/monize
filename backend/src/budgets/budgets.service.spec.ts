@@ -2027,6 +2027,159 @@ describe("BudgetsService", () => {
       expect(result.safeDailySpend).toBeNull();
     });
 
+    // Audit #2365 (u): a scheduled transfer is a bill only where it would count
+    // against THIS budget once posted: a line for its destination account, or an
+    // outgoing line on its category. Any other transfer (a card or loan payment
+    // included) only moves money between the user's own accounts. An occurrence
+    // out of an account the budget excludes is not tracked at all.
+    describe("scheduled transfers and excluded accounts", () => {
+      const tomorrow = () => addDaysYMD(todayYMD(), 1);
+      const schedule = (over: Record<string, unknown>) => ({
+        id: "st-t",
+        name: "Transfer",
+        amount: -70,
+        isTransfer: true,
+        accountId: "acc-1",
+        transferAccountId: "acc-2",
+        frequency: "MONTHLY",
+        nextDueDate: tomorrow(),
+        categoryId: null,
+        ...over,
+      });
+      const netflix = {
+        id: "st-1",
+        name: "Netflix",
+        amount: -15.99,
+        accountId: "acc-1",
+        frequency: "MONTHLY",
+        nextDueDate: tomorrow(),
+        categoryId: "cat-ent",
+      };
+      const upcoming = async (
+        rows: unknown[],
+        budget: Pick<Budget, "categories" | "config">,
+      ) => {
+        scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            getMany: jest.fn().mockResolvedValue(rows),
+          }),
+        );
+        const bills = await service.getUpcomingBills(
+          "user-1",
+          addDaysYMD(todayYMD(), 7),
+          budget,
+        );
+        return bills.map((b) => [b.id, b.amount, b.amountComplete]);
+      };
+      const line = (over: Partial<BudgetCategory>): BudgetCategory => ({
+        ...mockBudgetCategory,
+        ...over,
+      });
+
+      it("leaves a plain transfer no budget line takes out of the bills", async () => {
+        expect(
+          await upcoming([schedule({}), netflix], {
+            ...mockBudget,
+            categories: [line({ categoryId: "cat-1" })],
+          }),
+        ).toEqual([["st-1", 15.99, true]]);
+      });
+
+      it("counts a transfer to an account the budget has an outgoing transfer line for", async () => {
+        expect(
+          await upcoming([schedule({})], {
+            ...mockBudget,
+            categories: [
+              line({
+                categoryId: null,
+                isTransfer: true,
+                transferAccountId: "acc-2",
+              }),
+            ],
+          }),
+        ).toEqual([["st-t", 70, true]]);
+      });
+
+      it("does not count a transfer from an account the budget has an income transfer line for", async () => {
+        expect(
+          await upcoming([schedule({})], {
+            ...mockBudget,
+            categories: [
+              line({
+                categoryId: null,
+                isTransfer: true,
+                isIncome: true,
+                transferAccountId: "acc-2",
+              }),
+            ],
+          }),
+        ).toEqual([]);
+      });
+
+      it("counts a transfer whose category has an outgoing line in the budget", async () => {
+        expect(
+          await upcoming([schedule({ categoryId: "cat-sav" })], {
+            ...mockBudget,
+            categories: [line({ categoryId: "cat-sav" })],
+          }),
+        ).toEqual([["st-t", 70, true]]);
+      });
+
+      it("drops an occurrence out of an account the budget excludes", async () => {
+        expect(
+          await upcoming(
+            [
+              schedule({ categoryId: "cat-sav", accountId: "acc-x" }),
+              { ...netflix, accountId: "acc-x" },
+              { ...netflix, id: "st-2", accountId: "acc-1" },
+            ],
+            {
+              ...mockBudget,
+              config: { excludedAccountIds: ["acc-x"] },
+              categories: [line({ categoryId: "cat-sav" })],
+            },
+          ),
+        ).toEqual([["st-2", 15.99, true]]);
+      });
+
+      it("keeps a plain transfer out of the velocity totals", async () => {
+        stubVelocityBudget([schedule({}), netflix]);
+
+        const result = await service.getVelocity("user-1", "budget-1");
+
+        expect(result.upcomingBills.map((b) => [b.id, b.amount])).toEqual([
+          ["st-1", 15.99],
+        ]);
+        expect(result.totalUpcomingBills).toBe(15.99);
+        // 600 budgeted - 200 spent - 15.99 upcoming.
+        expect(result.trulyAvailable).toBe(384.01);
+        expect(result.safeDailySpend).toBeCloseTo(
+          384.01 / result.daysRemaining,
+          6,
+        );
+      });
+
+      it("does not withhold the totals for a plain transfer whose amount is unknown", async () => {
+        stubVelocityBudget([
+          { ...staleInvestmentBill(), isTransfer: true },
+          netflix,
+        ]);
+        investmentTransactionsService.resolveSettlementCurrencyPair.mockResolvedValue(
+          { from: "USD", to: "CAD" },
+        );
+        investmentTransactionsService.resolveCashExchangeRateOrNull.mockResolvedValue(
+          null,
+        );
+
+        const result = await service.getVelocity("user-1", "budget-1");
+
+        expect(result.upcomingBills.map((b) => b.id)).toEqual(["st-1"]);
+        expect(result.upcomingBillsComplete).toBe(true);
+        expect(result.totalUpcomingBills).toBe(15.99);
+        expect(result.trulyAvailable).toBe(384.01);
+      });
+    });
+
     // ---- Occurrence selection (issue #1247) ----
 
     it("counts the occurrence's override amount, not the schedule's", async () => {
@@ -3084,6 +3237,7 @@ describe("BudgetsService", () => {
       const result = await service.getUpcomingBills(
         "user-1",
         addDaysYMD(todayYMD(), 7),
+        mockBudget,
       );
 
       expect(result).toHaveLength(2);
@@ -3091,46 +3245,6 @@ describe("BudgetsService", () => {
       expect(result[0].amount).toBe(15.99);
       expect(result[1].name).toBe("Internet");
       expect(result[1].amount).toBe(79.99);
-    });
-
-    // Audit #2365 (u): a plain scheduled transfer moves money between the user's
-    // own accounts, so it is no bill. A transfer into a liability (card, loan) is
-    // the same: budgets count a transfer only through a budget transfer line.
-    it("getUpcomingBills counts a plain scheduled transfer as no spending", async () => {
-      const tomorrow = addDaysYMD(todayYMD(), 1);
-      const stQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([
-          {
-            id: "st-t",
-            name: "To other account",
-            amount: -70,
-            isTransfer: true,
-            transferAccountId: "acc-2",
-            frequency: "MONTHLY",
-            nextDueDate: tomorrow,
-            categoryId: null,
-          },
-          {
-            id: "st-1",
-            name: "Netflix",
-            amount: -15.99,
-            frequency: "MONTHLY",
-            nextDueDate: tomorrow,
-            categoryId: "cat-ent",
-          },
-        ]),
-      });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(stQb);
-
-      const result = await service.getUpcomingBills(
-        "user-1",
-        addDaysYMD(todayYMD(), 7),
-      );
-
-      const transfer = result.find((b) => b.id === "st-t");
-      expect(transfer?.amount ?? 0).toBe(0);
-      expect(transfer?.amountComplete ?? true).toBe(true);
-      expect(result.find((b) => b.id === "st-1")?.amount).toBe(15.99);
     });
 
     // Discussion #1784: a bill still unposted within OVERDUE_CARRY_DAYS is owed
@@ -3161,6 +3275,7 @@ describe("BudgetsService", () => {
       const result = await service.getUpcomingBills(
         "user-1",
         addDaysYMD(todayYMD(), 7),
+        mockBudget,
       );
 
       expect(result.map((bill) => bill.name)).toEqual(["Netflix"]);
@@ -3175,6 +3290,7 @@ describe("BudgetsService", () => {
       const result = await service.getUpcomingBills(
         "user-1",
         addDaysYMD(todayYMD(), 7),
+        mockBudget,
       );
 
       expect(result).toHaveLength(0);

@@ -55,6 +55,8 @@ import {
   resolveCategoryName,
   resolveCategorySpent,
   resolveOutsideTransferIncome,
+  budgetExcludedAccountIds,
+  transferCountsAgainstBudget,
 } from "./budget-spending.util";
 import {
   budgetPaceWindow,
@@ -723,6 +725,7 @@ export class BudgetsService {
   async getUpcomingBills(
     userId: string,
     periodEnd: string,
+    budget: Pick<Budget, "categories" | "config">,
   ): Promise<UpcomingBill[]> {
     const occurrences = await this.occurrences.findOccurrences(
       userId,
@@ -735,25 +738,35 @@ export class BudgetsService {
       { outflowsOnly: true },
     );
 
-    // A split's transfer lines are not spending: the amount is the part that is.
-    // A plain scheduled transfer is not spending at all, whatever account it
-    // pays (a card or loan too: the charge was the spending); the bills page and
-    // calendar still list it as amount due.
-    return occurrences.map((occurrence) => {
-      const spending = occurrence.schedule.isTransfer
-        ? 0
-        : nonTransferAmount(occurrence);
-      return {
-        id: occurrence.scheduledTransactionId,
-        name: occurrence.schedule.name,
-        // Spending, so only where that part is an outflow: a refund beside a
-        // larger transfer line is not a bill (the row's amount DUE is the whole).
-        amount: spending === null ? null : spending < 0 ? -spending : 0,
-        currencyCode: occurrence.currencyCode,
-        amountComplete: spending !== null,
-        dueDate: occurrence.dueDate,
-        categoryId: occurrence.schedule.categoryId,
-      };
+    // Only what the budget tracks is a bill: an occurrence out of an excluded
+    // account is not, and a plain scheduled transfer is spending only where it
+    // would count against this budget once posted (a line for its destination
+    // account or its category). The bills page and calendar still list it.
+    const excluded = new Set(budgetExcludedAccountIds(budget.config));
+    return occurrences.flatMap((occurrence) => {
+      const { schedule } = occurrence;
+      if (excluded.has(schedule.accountId)) return [];
+      if (
+        schedule.isTransfer &&
+        !transferCountsAgainstBudget(budget.categories ?? [], schedule)
+      ) {
+        return [];
+      }
+      // A split's transfer lines are not spending: the amount is the part that is.
+      const spending = nonTransferAmount(occurrence);
+      return [
+        {
+          id: occurrence.scheduledTransactionId,
+          name: schedule.name,
+          // Spending, so only where that part is an outflow: a refund beside a
+          // larger transfer line is not a bill (the row's amount DUE is the whole).
+          amount: spending === null ? null : spending < 0 ? -spending : 0,
+          currencyCode: occurrence.currencyCode,
+          amountComplete: spending !== null,
+          dueDate: occurrence.dueDate,
+          categoryId: schedule.categoryId,
+        },
+      ];
     });
   }
 
@@ -820,7 +833,11 @@ export class BudgetsService {
     const { currentSpent, dailyBurnRate, projectedTotal } = projection;
     const budgetTotal = sumMoney(expenseCategories.map((c) => c.budgeted));
 
-    const upcomingBills = await this.getUpcomingBills(userId, periodEnd);
+    const upcomingBills = await this.getUpcomingBills(
+      userId,
+      periodEnd,
+      budget,
+    );
     // Today on the caller's own clock, so the rate is the one the bills list is
     // showing rather than one from the container's timezone.
     // Every bill converted into the budget's own currency before it joins the
