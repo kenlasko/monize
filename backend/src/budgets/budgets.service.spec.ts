@@ -1846,41 +1846,24 @@ describe("BudgetsService", () => {
       splits: [],
     });
 
-    it("combines a coin budget's figures at its eight places", async () => {
+    it("rounds the converted bills once, not each bill", async () => {
       stubVelocityBudget(
         [1, 2, 3].map((n) => ({
           ...staleInvestmentBill(),
-          id: `st-usd-${n}`,
+          id: `st-cad-${n}`,
           name: `Bill ${n}`,
           amount: -1,
-          currencyCode: "USD",
+          currencyCode: "CAD",
           isInvestment: false,
           investmentAction: null,
         })),
       );
-      budgetsRepository.findOne.mockImplementation(async () => ({
-        ...mockBudget,
-        currencyCode: "BTC",
-        categories: [
-          {
-            ...mockBudgetCategory,
-            id: "bc-1",
-            categoryId: "cat-1",
-            amount: 0.00001234,
-            isIncome: false,
-            category: { name: "Groceries" },
-          },
-        ],
-      }));
-      exchangeRateService.getRateForDate.mockResolvedValue(0.00004115);
+      // Each 1 CAD is 1.25005 USD; rounded alone 1.2501, three of them 3.7503.
+      exchangeRateService.getRateForDate.mockResolvedValue(1.25005);
 
       const result = await service.getVelocity("user-1", "budget-1");
 
-      expect(result.budgetTotal).toBe(0.00001234);
-      expect(result.totalUpcomingBills).toBe(0.00012345);
-      expect(result.trulyAvailable).toBe(
-        Math.round((result.budgetTotal - 200 - 0.00012345) * 1e8) / 1e8,
-      );
+      expect(result.totalUpcomingBills).toBe(3.7502);
     });
 
     it("does not count a split's transfer lines as upcoming spending", async () => {

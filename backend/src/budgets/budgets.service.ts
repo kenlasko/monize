@@ -7,10 +7,6 @@ import {
 import { tr } from "../i18n/translate";
 import { DataSource, In } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
-import {
-  loadCurrencyPlacesForRead,
-  moneyDecimalsForCode,
-} from "../common/currency-places.util";
 import { Budget } from "./entities/budget.entity";
 import {
   BudgetCategory,
@@ -817,19 +813,7 @@ export class BudgetsService {
       daysRemaining,
     );
     const { currentSpent, dailyBurnRate, projectedTotal } = projection;
-    // The budget's own places (four for fiat, up to eight for a coin): every
-    // figure below combines with the bills total, so they all read at them.
-    const budgetPlaces = await withScopedDb(this.dataSource, (m) =>
-      loadCurrencyPlacesForRead(m, [budget.currencyCode]),
-    );
-    const budgetDecimals = moneyDecimalsForCode(
-      budgetPlaces,
-      budget.currencyCode,
-    );
-    const budgetTotal = sumMoney(
-      expenseCategories.map((c) => c.budgeted),
-      budgetDecimals,
-    );
+    const budgetTotal = sumMoney(expenseCategories.map((c) => c.budgeted));
 
     const upcomingBills = await this.getUpcomingBills(userId, periodEnd);
     // Today on the caller's own clock, so the rate is the one the bills list is
@@ -848,6 +832,7 @@ export class BudgetsService {
     // owns the memoized per-pair lookup, the rejecting rate resolver, and both
     // ways a component goes missing. This block used to be written out here and
     // again in the AI/MCP rollup, comments included.
+    // shortcut: budget figures are read at 4 places on every budget surface; coin-precise budgets need getSummary, dashboard-summary and projectBudgetSpending together.
     const billsTotal = await convertingTotal(
       upcomingBills.map((bill) => ({
         amount: bill.amount,
@@ -855,8 +840,6 @@ export class BudgetsService {
       })),
       budget.currencyCode,
       memoizedRateResolver(this.exchangeRates, budget.currencyCode, todayStr),
-      undefined,
-      budgetDecimals,
     );
     const upcomingBillsComplete = billsTotal.total !== null;
     const knownUpcomingBillsSubtotal = billsTotal.knownSubtotal;
@@ -864,19 +847,14 @@ export class BudgetsService {
     const upcomingBillsMissingRates = billsTotal.missingPairs;
 
     const projectedVariance =
-      projectedTotal === null
-        ? null
-        : roundMoney(projectedTotal - budgetTotal, budgetDecimals);
+      projectedTotal === null ? null : roundMoney(projectedTotal - budgetTotal);
     // Available funds still include transactions booked for the whole period.
-    const periodSpent = sumMoney(
-      expenseCategories.map((line) => line.spent),
-      budgetDecimals,
-    );
-    const remaining = roundMoney(budgetTotal - periodSpent, budgetDecimals);
+    const periodSpent = sumMoney(expenseCategories.map((line) => line.spent));
+    const remaining = roundMoney(budgetTotal - periodSpent);
     const trulyAvailable =
       totalUpcomingBills === null
         ? null
-        : roundMoney(remaining - totalUpcomingBills, budgetDecimals);
+        : roundMoney(remaining - totalUpcomingBills);
     const safeDailySpend =
       trulyAvailable === null
         ? null
@@ -908,9 +886,7 @@ export class BudgetsService {
       budgetTotal,
       projectedVariance,
       safeDailySpend:
-        safeDailySpend === null
-          ? null
-          : roundMoney(safeDailySpend, budgetDecimals),
+        safeDailySpend === null ? null : roundMoney(safeDailySpend),
       daysElapsed,
       daysRemaining,
       totalDays,
