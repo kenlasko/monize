@@ -2861,7 +2861,9 @@ export class ActionHistoryService {
    * The snapshot of a deleted budget holds its buckets and lines (the periods
    * cascaded away and are not recorded). Buckets go first: a line points at
    * one. A category or account deleted since is cleared on the line, as the
-   * foreign key's SET NULL would have done had the budget stayed.
+   * foreign key's SET NULL would have done had the budget stayed. The
+   * referents are locked (FOR KEY SHARE) before the decision, so one deleted
+   * between the read and the insert cannot fail the insert (CONC-011).
    */
   private async restoreBudgetChildren(
     manager: EntityManager,
@@ -2876,7 +2878,7 @@ export class ActionHistoryService {
           ? []
           : (
               await manager.query(
-                `SELECT id FROM ${table} WHERE user_id = $1 AND id = ANY($2)`,
+                `SELECT id FROM ${table} WHERE user_id = $1 AND id = ANY($2) FOR KEY SHARE`,
                 [action.userId, ids],
               )
             ).map((r: { id: string }) => r.id),

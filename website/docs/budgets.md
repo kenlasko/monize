@@ -465,4 +465,6 @@ Unticking **Active** stops the daily alert checks for the budget without deletin
 
 ## Deleting a Budget
 
-Click **Delete** on the budget dashboard and confirm. Deleting a budget removes all of its data, including its periods and alerts; your transactions and categories are not affected. This cannot be undone.
+Click **Delete** on the budget dashboard and confirm. Deleting a budget removes all of its data, including its periods and alerts; your transactions and categories are not affected.
+
+**Undo** brings the budget back with its category lines and buckets, but not its closed periods or alerts. **Redo** of the delete is refused if you added a period, or added or changed a line or bucket, after the restore. **Undo** of creating a budget is refused once the budget has periods, lines or buckets; delete the budget instead.

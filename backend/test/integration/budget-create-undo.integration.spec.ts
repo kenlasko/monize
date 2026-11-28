@@ -14,7 +14,10 @@ import {
   createIntegrationModule,
   createTestUserDirect,
 } from "../helpers/integration-setup";
-import { createTestCategory } from "../helpers/test-factories";
+import {
+  createTestAccount,
+  createTestCategory,
+} from "../helpers/test-factories";
 
 /**
  * Audit #2365 (c, d): undoing the creation of a budget deleted, through the
@@ -214,6 +217,51 @@ describe("Undo of a budget creation (integration)", () => {
       expect(await count("budgets")).toBe(1);
       expect(await count("budget_categories")).toBe(1);
       expect(await count("budget_periods")).toBe(1);
+    });
+
+    it("refuses the redo after a restored line was edited", async () => {
+      await deleteBudgetWithLinesAndBucket();
+      await asUser(() => history.undo(userId));
+      await db.query(`UPDATE budget_categories SET amount = 999`);
+
+      const refusal = await asUser(() => history.redo(userId)).catch((e) => e);
+
+      expect(refusal).toBeInstanceOf(ConflictException);
+      expect((refusal as ConflictException).getResponse()).toMatchObject({
+        errorCode: "REDO_BUDGET_HAS_HISTORY",
+      });
+      expect(await count("budgets")).toBe(1);
+      expect(await count("budget_categories")).toBe(1);
+    });
+
+    it("restores the line's bucket link, and nulls a category and an account deleted since", async () => {
+      const budget = await createBudget();
+      const accountId = (await createTestAccount(db, userId)).id;
+      await addBucket(budget.id);
+      await addLine(budget.id);
+      await db.query(
+        `INSERT INTO budget_categories (budget_id, is_transfer, transfer_account_id, amount)
+         VALUES ($1, true, $2, 100)`,
+        [budget.id, accountId],
+      );
+      await db.query(
+        `UPDATE budget_categories SET bucket_id = (SELECT id FROM budget_buckets)
+          WHERE category_id IS NOT NULL`,
+      );
+      await asUser(() => budgets.remove(userId, budget.id));
+      await settlePendingHistoryWrites();
+      await db.query(`DELETE FROM categories WHERE id = $1`, [categoryId]);
+      await db.query(`DELETE FROM accounts WHERE id = $1`, [accountId]);
+
+      await asUser(() => history.undo(userId));
+
+      const rows = await db.query(
+        `SELECT category_id, transfer_account_id, bucket_id FROM budget_categories ORDER BY amount`,
+      );
+      expect(rows).toHaveLength(2);
+      expect(rows.every((r: any) => r.category_id === null)).toBe(true);
+      expect(rows.every((r: any) => r.transfer_account_id === null)).toBe(true);
+      expect(rows.filter((r: any) => r.bucket_id !== null)).toHaveLength(1);
     });
   });
 });

@@ -91,8 +91,8 @@ describe("assertNoReferencesBeforeDelete", () => {
     /** Answers the lock with a name, then the three counts in order. */
     function budgetManager(
       periods: number,
-      lines: string[],
-      buckets: string[],
+      lines: (string | Record<string, unknown>)[],
+      buckets: (string | Record<string, unknown>)[],
       locked = true,
     ) {
       return {
@@ -104,9 +104,13 @@ describe("assertNoReferencesBeforeDelete", () => {
             return Promise.resolve([{ periods }]);
           }
           if (sql.includes("FROM budget_categories")) {
-            return Promise.resolve(lines.map((id) => ({ id })));
+            return Promise.resolve(
+              lines.map((l) => (typeof l === "string" ? { id: l } : l)),
+            );
           }
-          return Promise.resolve(buckets.map((id) => ({ id })));
+          return Promise.resolve(
+            buckets.map((b) => (typeof b === "string" ? { id: b } : b)),
+          );
         }),
       };
     }
@@ -152,6 +156,44 @@ describe("assertNoReferencesBeforeDelete", () => {
       await expect(
         redoOf(budgetManager(0, ["l"], ["b"]), snapshot),
       ).resolves.toBeUndefined();
+    });
+
+    it("compares numbers by value, text from the database against the snapshot", async () => {
+      const snapshot = {
+        categories: [{ id: "l", amount: 500, notes: null }],
+        buckets: [{ id: "b", targetValue: 50 }],
+      };
+      await expect(
+        redoOf(
+          budgetManager(
+            0,
+            [{ id: "l", amount: "500.00000000", notes: null }],
+            [{ id: "b", target_value: "50.00000000" }],
+          ),
+          snapshot,
+        ),
+      ).resolves.toBeUndefined();
+    });
+
+    it.each([
+      ["an edited line", [{ id: "l", amount: "600.00000000" }], ["b"]],
+      ["an edited bucket", ["l"], [{ id: "b", target_value: "60" }]],
+    ])("refuses the redo of a delete with %s", async (_n, lines, buckets) => {
+      const snapshot = {
+        categories: [{ id: "l", amount: 500 }],
+        buckets: [{ id: "b", targetValue: 50 }],
+      };
+      // Rows given as bare ids carry no values: only the edited one differs.
+      const m = budgetManager(
+        0,
+        lines.map((l) =>
+          typeof l === "string" ? { id: l, amount: "500" } : l,
+        ),
+        buckets.map((b) =>
+          typeof b === "string" ? { id: b, target_value: "50" } : b,
+        ),
+      );
+      expect(await code(redoOf(m, snapshot))).toBe("REDO_BUDGET_HAS_HISTORY");
     });
 
     it.each([

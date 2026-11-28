@@ -92,12 +92,68 @@ export async function assertNoReferencesBeforeDelete(
   );
 }
 
-/** Ids of the child rows a budget snapshot holds. */
-function snapshotIds(snapshot: unknown, key: string): Set<string> {
-  const rows = (snapshot as Record<string, unknown> | null)?.[key];
-  return new Set(
-    Array.isArray(rows) ? rows.map((r) => (r as { id: string }).id) : [],
+/** The columns of a restored line or bucket a person can edit: [column, snapshot key]. */
+const LINE_FIELDS: [string, string][] = [
+  ["category_id", "categoryId"],
+  ["transfer_account_id", "transferAccountId"],
+  ["is_transfer", "isTransfer"],
+  ["category_group", "categoryGroup"],
+  ["amount", "amount"],
+  ["is_income", "isIncome"], // income-flag-ok: the line's own direction column
+  ["rollover_type", "rolloverType"],
+  ["rollover_cap", "rolloverCap"],
+  ["flex_group", "flexGroup"],
+  ["alert_warn_percent", "alertWarnPercent"],
+  ["alert_critical_percent", "alertCriticalPercent"],
+  ["notes", "notes"],
+  ["sort_order", "sortOrder"],
+  ["bucket_id", "bucketId"],
+];
+const BUCKET_FIELDS: [string, string][] = [
+  ["name", "name"],
+  ["target_type", "targetType"],
+  ["target_value", "targetValue"],
+  ["carry_over", "carryOver"],
+  ["carry_cap", "carryCap"],
+  ["sort_order", "sortOrder"],
+];
+
+/** A numeric column comes back as text and a snapshot holds a number: compare the numbers. */
+const comparable = (v: unknown): unknown =>
+  v === undefined || v === null
+    ? null
+    : typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v))
+      ? Number(v)
+      : v;
+
+/**
+ * How many of `rows` (the table's current rows) the snapshot does not hold
+ * or holds with other values: a row added, or edited, after the restore.
+ */
+function changedRows(
+  rows: Record<string, unknown>[],
+  snapshot: unknown,
+  key: string,
+  fields: [string, string][],
+): number {
+  const held = (snapshot as Record<string, unknown> | null)?.[key];
+  const byId = new Map<string, Record<string, unknown>>(
+    Array.isArray(held)
+      ? held.map((r) => [
+          (r as { id: string }).id,
+          r as Record<string, unknown>,
+        ])
+      : [],
   );
+  return rows.filter((row) => {
+    const was = byId.get(row.id as string);
+    return (
+      !was ||
+      fields.some(
+        ([column, field]) => comparable(row[column]) !== comparable(was[field]),
+      )
+    );
+  }).length;
 }
 
 /**
@@ -113,7 +169,10 @@ function snapshotIds(snapshot: unknown, key: string): Set<string> {
  * user made.
  *
  * A redo of a delete expects the lines and buckets its snapshot restored
- * (`afterData` once inverted); periods are never restored, so any is new.
+ * (`afterData` once inverted), with the values it held: one edited since would
+ * be deleted and the next undo would bring the old values back. Periods are
+ * never restored, so any is new. shortcut: the budget row itself is not
+ * compared (a rename after the restore is lost), upgrade if that matters.
  */
 async function assertBudgetRemovable(
   action: ActionHistory,
@@ -129,24 +188,20 @@ async function assertBudgetRemovable(
     `SELECT count(*)::int AS periods FROM budget_periods WHERE budget_id = $1`,
     [action.entityId],
   );
-  const lines: { id: string }[] = await manager.query(
-    `SELECT id FROM budget_categories WHERE budget_id = $1`,
+  const lines: Record<string, unknown>[] = await manager.query(
+    `SELECT * FROM budget_categories WHERE budget_id = $1`,
     [action.entityId],
   );
-  const buckets: { id: string }[] = await manager.query(
-    `SELECT id FROM budget_buckets WHERE budget_id = $1`,
+  const buckets: Record<string, unknown>[] = await manager.query(
+    `SELECT * FROM budget_buckets WHERE budget_id = $1`,
     [action.entityId],
   );
-  const knownLines = isRedo
-    ? snapshotIds(action.afterData, "categories")
-    : new Set<string>();
-  const knownBuckets = isRedo
-    ? snapshotIds(action.afterData, "buckets")
-    : new Set<string>();
+  // The undo of a create expects none (the snapshot holds the row alone).
+  const snapshot = isRedo ? action.afterData : null;
   const added =
     Number(periods) +
-    lines.filter((r) => !knownLines.has(r.id)).length +
-    buckets.filter((r) => !knownBuckets.has(r.id)).length;
+    changedRows(lines, snapshot, "categories", LINE_FIELDS) +
+    changedRows(buckets, snapshot, "buckets", BUCKET_FIELDS);
   if (added === 0) return;
   const name = locked[0].name;
   throw new ConflictException(
