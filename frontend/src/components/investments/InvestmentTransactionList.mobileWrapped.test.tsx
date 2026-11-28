@@ -46,6 +46,18 @@ vi.mock('@/hooks/useExchangeRates', () => ({
   useExchangeRates: () => ({ defaultCurrency: 'CAD' }),
 }));
 
+// The UI style, for the Folio and Pebble date headings (issue #2508);
+// `renderForStyle` stays real so each style draws its own.
+const style = vi.hoisted(() => ({ value: 'standard' as 'standard' | 'folio' | 'pebble' }));
+vi.mock('@/hooks/useUiStyle', async (orig) => ({
+  ...(await orig<typeof import('@/hooks/useUiStyle')>()),
+  useUiStyle: () => style.value,
+}));
+
+vi.mock('@/hooks/useFinancialToday', () => ({
+  useFinancialToday: () => '2024-01-16',
+}));
+
 const PHONE_QUERY = '(max-width: 639px)';
 
 const originalMatchMedia = window.matchMedia;
@@ -595,5 +607,87 @@ describe('the investment card with a hidden column', () => {
     expect(grid.children).toHaveLength(3);
     expect(within(row).getByText('Total')).toBeInTheDocument();
     expect(within(row).getByText('Pending')).toBeInTheDocument();
+  });
+});
+
+describe('the investment register on a phone under Folio and Pebble (issue #2508)', () => {
+  // Two trades on Jan 16 (today, under the mocked calendar) and one on Jan 15,
+  // newest first as the server orders this register.
+  const days = [
+    makeTx({ id: 'a', transactionDate: '2024-01-16' }),
+    makeTx({ id: 'b', transactionDate: '2024-01-16', action: 'SELL' }),
+    makeTx({ id: 'c', transactionDate: '2024-01-15' }),
+  ];
+  const headings = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll('tbody th[scope="colgroup"]')).map((th) => th.textContent);
+
+  beforeEach(() => {
+    localStorage.clear();
+    useDensityStore.setState({ densities: { investments: 'normal' } });
+    setPhoneViewport(true);
+  });
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+    style.value = 'standard';
+  });
+
+  it('heads each day with its date in Folio, and drops the date from the cards', () => {
+    style.value = 'folio';
+    const { container } = renderList({ transactions: days });
+    expect(headings(container)).toEqual(['Tuesday, January 16', 'Monday, January 15']);
+    const groups = container.querySelectorAll('tbody th[scope="colgroup"]');
+    groups.forEach((th) => {
+      expect(th.className).toBe('ui-register-group');
+      // One column, as every row of the wrapped layout spans.
+      expect(th.getAttribute('colspan')).toBe('1');
+    });
+    // A heading before the first row of each day: a, (b), then c.
+    const rows = bodyRows(container);
+    expect(rows).toHaveLength(5);
+    expect(rows[0].querySelector('th')).not.toBeNull();
+    expect(rows[3].querySelector('th')).not.toBeNull();
+    // The card carries Folio's grouped marker, which styles the heading as
+    // the phone's eyebrow, and no date of its own.
+    expect(container.querySelectorAll('.ui-register-card-grouped')).toHaveLength(3);
+    expect(screen.queryByText('2024-01-16')).toBeNull();
+    expect(screen.queryByText('2024-01-15')).toBeNull();
+  });
+
+  it('titles Pebble days as its day blocks do, with Today and Yesterday', () => {
+    style.value = 'pebble';
+    const { container } = renderList({ transactions: days });
+    expect(headings(container)).toEqual(['Today', 'Yesterday']);
+    expect(screen.queryByText('2024-01-15')).toBeNull();
+  });
+
+  it('prints no figure beside the date: a trade register has no running balance', () => {
+    style.value = 'folio';
+    const { container } = renderList({ transactions: days });
+    container.querySelectorAll('tbody th[scope="colgroup"]').forEach((th) => {
+      expect(th.textContent).not.toMatch(/\$/);
+    });
+  });
+
+  it('keeps the date on every card and draws no heading in Standard', () => {
+    const { container } = renderList({ transactions: days });
+    expect(headings(container)).toEqual([]);
+    expect(screen.getAllByText('2024-01-16')).toHaveLength(2);
+    expect(container.querySelector('.ui-register-card-grouped')).toBeNull();
+  });
+
+  it('keeps the tier table, its Date column and no headings at Compact density', () => {
+    style.value = 'folio';
+    useDensityStore.setState({ densities: { investments: 'compact' } });
+    const { container } = renderList({ transactions: days });
+    expect(headings(container)).toEqual([]);
+    expect(screen.getAllByText('2024-01-16')).toHaveLength(2);
+  });
+
+  it('keeps the tier table and no headings on a desktop width', () => {
+    style.value = 'pebble';
+    setPhoneViewport(false);
+    const { container } = renderList({ transactions: days });
+    expect(headings(container)).toEqual([]);
   });
 });
