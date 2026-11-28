@@ -51,7 +51,7 @@ import { occurrenceKind } from '@/lib/scheduled-kind';
 import {
   estimatedTypicalAmount,
   nextOccurrenceDueDate,
-  scheduleSpending,
+  scheduleEffectiveAmount,
 } from '@/lib/scheduled-effective-amount';
 import { monthlyEquivalent } from '@/lib/frequency';
 import { projectPayrollOccurrence, type FutureTransaction } from '@/lib/forecast';
@@ -112,7 +112,7 @@ interface OverrideEditorState {
  * unpriceable bill stays a bill rather than becoming a zero-amount reminder.
  */
 function billKind(st: ScheduledTransaction) {
-  return occurrenceKind(scheduleSpending(st), st);
+  return occurrenceKind(scheduleEffectiveAmount(st), st);
 }
 
 export default function BillsPage() {
@@ -633,7 +633,7 @@ function BillsContent() {
     for (const t of scheduledTransactions) {
       // The amount this schedule would post today, not the persisted snapshot:
       // for an FX-sensitive schedule that scalar was calculated at an older rate.
-      const effectiveAmount = scheduleSpending(t);
+      const effectiveAmount = scheduleEffectiveAmount(t);
       // An estimated bill's monthly equivalent is its typical month over the
       // year ahead, not the next month's seasonal figure (issue #2096).
       const typical = estimatedTypicalAmount(t, financialToday);

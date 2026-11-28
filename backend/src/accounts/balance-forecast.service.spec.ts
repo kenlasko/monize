@@ -597,7 +597,11 @@ describe("BalanceForecastService", () => {
         ],
       });
       const arrange = (principal: number | null) => {
-        accountsRepo.findOne.mockResolvedValue({ ...chequing, id: "acc-2" });
+        accountsRepo.findOne.mockResolvedValue({
+          ...chequing,
+          id: "acc-2",
+          name: "Mortgage",
+        });
         stubBalances("1000");
         dataSource.query.mockResolvedValueOnce([{ id: "st-split" }]);
         scheduledRepo.find.mockResolvedValue([splitSchedule]);
@@ -624,12 +628,42 @@ describe("BalanceForecastService", () => {
         });
       });
 
+      it("keeps an override's own stated lines, with no gap", async () => {
+        arrange(null);
+        overridesRepo.find.mockResolvedValue([
+          {
+            id: "ovr-1",
+            scheduledTransactionId: "st-split",
+            originalDate: "2024-08-20",
+            overrideDate: "2024-08-20",
+            amount: -100,
+            isSplit: true,
+            splits: [
+              { categoryId: null, transferAccountId: null, amount: -10 },
+              { categoryId: null, transferAccountId: "acc-2", amount: -90 },
+            ],
+          },
+        ]);
+        const result = await service.getBalanceForecast("user-1", "acc-2", 60);
+        // 07-20 is the template's 70; 08-20 states its own 90, so no principal
+        // is needed and nothing is withheld.
+        expect(result.complete).toBe(true);
+        expect(result.points).toContainEqual({
+          date: "2024-08-20",
+          balance: 1160,
+        });
+      });
+
       it("reports a gap when the projection cannot give the principal", async () => {
         arrange(null);
         const result = await service.getBalanceForecast("user-1", "acc-2", 60);
         expect(result.complete).toBe(false);
-        expect(result.gaps.map((g) => g.scheduledTransactionId)).toEqual([
-          "st-split",
+        expect(result.gaps).toEqual([
+          expect.objectContaining({
+            scheduledTransactionId: "st-split",
+            reason: "unknownLoanPrincipal",
+            accountName: "Mortgage",
+          }),
         ]);
       });
     });

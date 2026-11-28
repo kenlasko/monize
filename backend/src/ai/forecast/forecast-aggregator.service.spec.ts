@@ -635,6 +635,31 @@ describe("ForecastAggregatorService", () => {
       expect(result.scheduledTransactions[0].isIncome).toBe(false);
     });
 
+    it("nets a coin's transfer line at the coin's own places", async () => {
+      mockScheduledTransactionRepo.find.mockResolvedValue([
+        {
+          id: "st-btc",
+          name: "BTC bill",
+          amount: -0.00013345,
+          currencyCode: "BTC",
+          frequency: "MONTHLY",
+          nextDueDate: new Date("2026-03-01"),
+          category: null,
+          isTransfer: false,
+          isSplit: true,
+          splits: [
+            { transferAccountId: null, amount: -0.00012345 },
+            { transferAccountId: "acc-2", amount: -0.00001 },
+          ],
+        },
+      ]);
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      // Four places would have rounded this to 0.0001.
+      expect(result.scheduledTransactions[0].amount).toBe(0.00012345);
+    });
+
     it("leaves out a split made only of transfer lines", async () => {
       mockScheduledTransactionRepo.find.mockResolvedValue([
         {

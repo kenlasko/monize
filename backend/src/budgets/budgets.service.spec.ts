@@ -1866,8 +1866,9 @@ describe("BudgetsService", () => {
           },
         ],
       });
-      // -30 beside a -70 transfer line is a 30 bill; +500 beside a -600 line is
-      // a refund, which is not a bill at all.
+      // Both are due as the whole -100, but velocity counts SPENDING: -30
+      // beside a -70 transfer line is 30; +500 beside a -600 line is a refund,
+      // which spends nothing.
       stubVelocityBudget([
         splitBill("st-loan", [-30, -70]),
         splitBill("st-refund", [500, -600]),
@@ -1877,6 +1878,7 @@ describe("BudgetsService", () => {
 
       expect(result.upcomingBills.map((b) => [b.name, b.amount])).toEqual([
         ["st-loan", 30],
+        ["st-refund", 0],
       ]);
       expect(result.totalUpcomingBills).toBe(30);
     });

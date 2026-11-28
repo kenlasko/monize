@@ -59,7 +59,8 @@
     "untitledTransaction": "交易",
     "tooltipEstimated": "（估算）",
     "unavailableUnknownEstimates": "暫時無法顯示此預測：其中某張帳單的估算金額未知，而預計餘額建立在之前的每一天之上。請輸入該次發生的金額，或在帳單上關閉「估算」。",
-    "unknownEstimateItem": "{name}：{reason}"
+    "unknownEstimateItem": "{name}：{reason}",
+    "unavailableUnknownLoanCredits": "暫時無法顯示此預測：下一次發生之後，貸款還款中有多少進入貸款取決於貸款餘額，而預測餘額在此無法得出。受影響：{names}。"
   },
   "calendar": {
     "days": {

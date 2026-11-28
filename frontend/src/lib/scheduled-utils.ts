@@ -1,5 +1,5 @@
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
-import { nextOccurrenceSpending } from '@/lib/scheduled-effective-amount';
+import { nextOccurrenceEffectiveAmount } from '@/lib/scheduled-effective-amount';
 
 export interface NextScheduledItem {
   date: string;
@@ -28,7 +28,7 @@ export function getUpcomingScheduled(
   return scheduled
     .filter((st) => st.isActive && predicate(st))
     .map((st) => {
-      const effective = nextOccurrenceSpending(st);
+      const effective = nextOccurrenceEffectiveAmount(st);
       return {
         date: (st.nextOverride?.overrideDate ?? st.nextDueDate).split('T')[0],
         amount: effective.amount,

@@ -120,6 +120,22 @@ describe('scheduledKind', () => {
       expect(occurrenceKind({ amount: null }, { amount: -1000 })).toBe('bill');
     });
 
+    it('calls a split made only of transfer lines a transfer, never a reminder', () => {
+      const schedule = {
+        amount: -100,
+        isSplit: true,
+        splits: [{ transferAccountId: 'acc-2' }, { transferAccountId: 'acc-3' }],
+      };
+      expect(occurrenceKind({ amount: -100, directionAmount: -100 }, schedule)).toBe('transfer');
+      // A split with a category line is still a bill.
+      expect(
+        occurrenceKind(
+          { amount: -100, directionAmount: -100 },
+          { ...schedule, splits: [{ transferAccountId: null }, { transferAccountId: 'acc-2' }] },
+        ),
+      ).toBe('bill');
+    });
+
     it('still calls a transfer a transfer, whatever the direction says', () => {
       expect(
         occurrenceKind(

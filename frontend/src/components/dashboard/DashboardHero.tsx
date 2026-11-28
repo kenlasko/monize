@@ -8,7 +8,7 @@ import { parseLocalDate } from '@/lib/utils';
 import {
   nextOccurrenceAutoPosts,
   nextOccurrenceDueDate,
-  nextOccurrenceSpending,
+  nextOccurrenceEffectiveAmount,
 } from '@/lib/scheduled-effective-amount';
 import { occurrenceKind } from '@/lib/scheduled-kind';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
@@ -183,7 +183,7 @@ function heroNextUp(scheduledTransactions: readonly ScheduledTransaction[], toda
   if (!next) return null;
   const dueDate = nextOccurrenceDueDate(next);
   const days = differenceInDays(parseLocalDate(dueDate), today);
-  const effective = nextOccurrenceSpending(next);
+  const effective = nextOccurrenceEffectiveAmount(next);
   return {
     id: next.id,
     name: next.name,

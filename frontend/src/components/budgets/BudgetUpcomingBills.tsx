@@ -40,6 +40,21 @@ interface BudgetUpcomingBillsProps {
   formatCurrency: (amount: number, currencyCode?: string) => string;
 }
 
+// What is DUE is the whole amount (the rows); what counts against the budget
+// is SPENDING, the part that is not a transfer line, and only where that part
+// is an outflow. This panel shows each schedule's NEXT occurrence only, so
+// its `nextOverride` is the governing one and the template's lines the rest.
+function getSpending(st: ScheduledTransaction) {
+  const spending = withoutTransferLines(
+    nextOccurrenceEffectiveAmount(st),
+    templateTransferLineTotal(st, st.nextOverride),
+  );
+  // The occurrence's own spending part, not the template's sign: an inflow
+  // (a refund beside a larger transfer line) spends nothing.
+  const spent = spending.amount;
+  return spent !== null && spent > 0 ? { ...spending, amount: 0 } : spending;
+}
+
 export function BudgetUpcomingBills({
   scheduledTransactions,
   currentSpent,
@@ -57,15 +72,8 @@ export function BudgetUpcomingBills({
   // was computed at whatever FX rate was current when it was written, so an
   // FX-sensitive schedule made this panel disagree with the cash-flow forecast
   // -- and with what the posting will actually book.
-  // Without a split's transfer lines, which are not spending: the kind, the
-  // row and the total all read this one figure, so they add up. This panel
-  // shows each schedule's NEXT occurrence only, so its `nextOverride` is the
-  // governing one and the template's lines are the rest.
   const getEffective = (st: ScheduledTransaction) =>
-    withoutTransferLines(
-      nextOccurrenceEffectiveAmount(st),
-      templateTransferLineTotal(st, st.nextOverride),
-    );
+    nextOccurrenceEffectiveAmount(st);
 
   const upcomingBills = useMemo(() => {
     return scheduledTransactions
@@ -77,15 +85,7 @@ export function BudgetUpcomingBills({
         // contributes 0 to the total below -- the placeholder is not a claim
         // about what the payment will cost. Deposits and transfers are not
         // budgeted spending and stay out.
-        const effective = getEffective(st);
-        // A split made only of transfer lines has nothing left to spend.
-        if (
-          effective.amount === 0 &&
-          templateTransferLineTotal(st, st.nextOverride) !== 0
-        ) {
-          return false;
-        }
-        const kind = occurrenceKind(effective, st);
+        const kind = occurrenceKind(getEffective(st), st);
         // `unknown` is kept: the server could not derive the direction, so this
         // occurrence MIGHT be a bill, and dropping it would leave the panel's
         // total looking complete while a possible payment went uncounted. Its
@@ -116,7 +116,7 @@ export function BudgetUpcomingBills({
     () =>
       sumEffectiveOccurrences(
         upcomingBills,
-        getEffective,
+        getSpending,
         (amount, from) => convert(amount, from, displayCurrency),
         Math.abs,
       ),

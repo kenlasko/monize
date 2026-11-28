@@ -4,7 +4,7 @@ import type { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 import {
   nextOccurrenceDueDate,
-  nextOccurrenceSpending,
+  nextOccurrenceEffectiveAmount,
   occurrenceSettlementAccountId,
 } from '@/lib/scheduled-effective-amount';
 import { occurrenceKind } from '@/lib/scheduled-kind';
@@ -36,7 +36,7 @@ export function useBillsOutlook(
     const strip = buildUpcomingStrip(occurrences, today);
     const first = occurrences[0];
     if (!first) return { strip, next: null };
-    const effective = nextOccurrenceSpending(first);
+    const effective = nextOccurrenceEffectiveAmount(first);
     const settlementId = occurrenceSettlementAccountId(first, accountsById);
     const account = settlementId
       ? (accountsById.get(settlementId)?.name ??

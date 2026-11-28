@@ -59,7 +59,8 @@
     "untitledTransaction": "İşlem",
     "tooltipEstimated": "(tahmini)",
     "unavailableUnknownEstimates": "Bu tahmin henüz gösterilemiyor: içindeki bir faturanın tahmini tutarı bilinmiyor ve öngörülen bakiye önceki her günün üzerine kurulur. O tekrarın tutarını girin veya faturada Tahmin et seçeneğini kapatın.",
-    "unknownEstimateItem": "{name}: {reason}"
+    "unknownEstimateItem": "{name}: {reason}",
+    "unavailableUnknownLoanCredits": "Bu tahmin henüz gösterilemiyor: bir sonraki tekrardan sonra, kredi ödemesinin ne kadarının krediye gittiği kredi bakiyesine bağlıdır ve öngörülen bakiye bunu burada hesaplayamaz. Etkilenenler: {names}."
   },
   "calendar": {
     "days": {

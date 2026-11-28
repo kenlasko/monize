@@ -131,6 +131,8 @@ export interface MultiAccountForecastResult {
   missingCurrencies: string[];
   /** See `ForecastResult.unknownEstimates`. */
   unknownEstimates?: string[];
+  /** See `ForecastResult.unknownLoanCredits`. */
+  unknownLoanCredits?: string[];
 }
 
 /**
@@ -151,6 +153,12 @@ export interface ForecastResult {
    * Absent means none.
    */
   unknownEstimates?: string[];
+  /**
+   * The ids of loan bills whose credit to the loan account is unknown after
+   * the next occurrence (the principal is priced per occurrence by the server).
+   * `points` is empty when it is not. Absent means none.
+   */
+  unknownLoanCredits?: string[];
 }
 
 export const FORECAST_PERIOD_DAYS: Record<ForecastPeriod, number> = {
@@ -721,23 +729,28 @@ function isTransfer(transaction: ScheduledTransaction): boolean {
 }
 
 /**
- * A line credit the client cannot price is withheld, as the backend reports it.
- * It is in the SOURCE's currency and arrives in the target's at a rate fixed
- * when it posts (`crossCurrencyTransfer`). Into a loan the server prices each
- * occurrence's principal itself and the client has no per-occurrence principal:
- * only the next occurrence (index 0) carries the template's or the override's
- * line; every later one is unknown. The series is withheld through the file's
- * missing-rate mechanism.
+ * Why the credit of a split's transfer line into `target` cannot be stated, or
+ * `null` when it can (the backend reports the same cases).
+ *  - `crossCurrency`: the line is in the SOURCE's currency and arrives in the
+ *    target's at a rate fixed when it posts (`crossCurrencyTransfer`).
+ *  - `loan`: the server prices a managed loan bill's principal per occurrence
+ *    and the client has none, so only the next occurrence (index 0) carries the
+ *    template's or the override's line; every later one is unknown. A schedule
+ *    the server does not re-price (an investment, or a foreign-currency one it
+ *    declines) keeps its chart.
  */
-function withholdUnpricedLineCredit(
+function unpricedLineCredit(
   tx: ScheduledTransaction,
   target: Account,
   occIndex: number,
-  missing: Set<string>,
-): void {
-  const crossCurrency = !!tx.currencyCode && tx.currencyCode !== target.currencyCode;
-  const laterLoanBill = occIndex > 0 && LOAN_LIKE_ACCOUNT_TYPES.has(target.accountType);
-  if (crossCurrency || laterLoanBill) missing.add(tx.currencyCode);
+): 'crossCurrency' | 'loan' | null {
+  if (tx.currencyCode && tx.currencyCode !== target.currencyCode) return 'crossCurrency';
+  const repricedByServer =
+    !tx.isInvestment && !(tx.originalCurrencyCode && tx.originalAmount != null);
+  if (occIndex > 0 && repricedByServer && LOAN_LIKE_ACCOUNT_TYPES.has(target.accountType)) {
+    return 'loan';
+  }
+  return null;
 }
 
 /** Whether a split schedule's template or any override sends a transfer line to `accountId`. */
@@ -1060,6 +1073,7 @@ export function buildForecast(
   // therefore contributes nothing and sets the flag.
   const missingRateCurrencies = new Set<string>();
   const unknownEstimates = new Set<string>();
+  const unknownLoanCredits = new Set<string>();
   const conv = (amount: number, acctId: string): number => {
     if (!convertAmount) return amount;
     const currency = accountCurrencyMap.get(acctId);
@@ -1126,8 +1140,11 @@ export function buildForecast(
       // Split transfer lines: the target gets the negated line amount; in the
       // all-accounts view the lines are internal and cancel, so only the rest counts.
       const lines = occ.transferLines ?? [];
+      // Lines and the amount they come out of are in the SOURCE's currency:
+      // net them at its precision, then convert.
+      const sourceDecimals = moneyDecimalsForCurrency(tx.currencyCode ?? accountCurrencyMap.get(tx.accountId));
       const lineSum = (to?: string) =>
-        sumMoney(lines.filter(l => to === undefined || l.accountId === to).map(l => l.amount), unitDecimals);
+        sumMoney(lines.filter(l => to === undefined || l.accountId === to).map(l => l.amount), sourceDecimals);
       // An occurrence whose lines do not reach this account (an override
       // restated them) touches it not at all, so it must not withhold its series.
       if (lineInbound && !lines.some(l => l.accountId === accountId)) continue;
@@ -1152,13 +1169,13 @@ export function buildForecast(
       // rate fixed when it posts, which is not known here (the backend reports
       // the same case as `crossCurrencyTransfer`): withhold, never relabel it.
       const targetAccount = accountsById.get(accountId as string);
-      if (lineInbound && targetAccount) {
-        withholdUnpricedLineCredit(tx, targetAccount, occIndex, missingRateCurrencies);
-      }
+      const unpriced = lineInbound && targetAccount ? unpricedLineCredit(tx, targetAccount, occIndex) : null;
+      if (unpriced === 'crossCurrency') missingRateCurrencies.add(tx.currencyCode);
+      if (unpriced === 'loan') unknownLoanCredits.add(tx.id);
       const signed = lineInbound
         ? -lineSum(accountId as string)
         : accountId === 'all' && lines.length > 0
-          ? sumMoney([occ.amount, -lineSum()], unitDecimals)
+          ? sumMoney([occ.amount, -lineSum()], sourceDecimals)
           : isInbound
             ? -occ.amount
             : occ.amount;
@@ -1218,11 +1235,12 @@ export function buildForecast(
   // A running balance cannot be partially right: report the whole series as
   // unavailable when any leg of it needed a rate we do not have, or an
   // estimate nobody can work out yet.
-  if (missingRateCurrencies.size > 0 || unknownEstimates.size > 0) {
+  if (missingRateCurrencies.size > 0 || unknownEstimates.size > 0 || unknownLoanCredits.size > 0) {
     return {
       points: [],
       missingCurrencies: [...missingRateCurrencies],
       unknownEstimates: [...unknownEstimates],
+      ...(unknownLoanCredits.size > 0 && { unknownLoanCredits: [...unknownLoanCredits] }),
     };
   }
   return { points: dataPoints, missingCurrencies: [], unknownEstimates: [] };
@@ -1281,6 +1299,7 @@ export function buildMultiAccountForecast(
   // withheld below rather than reported as a shorter, wrong series.
   const missingRateCurrencies = new Set<string>();
   const unknownEstimates = new Set<string>();
+  const unknownLoanCredits = new Set<string>();
   const conv = (amount: number, currencyCode: string): number => {
     if (!convertAmount) return amount;
     const converted = convertAmount(amount, currencyCode);
@@ -1331,12 +1350,14 @@ export function buildMultiAccountForecast(
         const lineTotal = lineInbound
           ? sumMoney(
               (occ.transferLines ?? []).filter(l => l.accountId === account.id).map(l => l.amount),
-              lineDecimals(account),
+              moneyDecimalsForCurrency(transaction.currencyCode ?? account.currencyCode),
             )
           : 0;
         // Lines that do not reach this account (an override restated them) leave it alone.
         if (lineInbound && !(occ.transferLines ?? []).some(l => l.accountId === account.id)) continue;
-        if (lineInbound) withholdUnpricedLineCredit(transaction, account, occIndex, missingRateCurrencies);
+        const unpriced = lineInbound ? unpricedLineCredit(transaction, account, occIndex) : null;
+        if (unpriced === 'crossCurrency') missingRateCurrencies.add(transaction.currencyCode);
+        if (unpriced === 'loan') unknownLoanCredits.add(transaction.id);
         // Unresolved current FX for an investment occurrence withholds the whole
         // result (issue #1167), the same as a missing display-currency rate. The
         // flag is per-occurrence (F5-2).
@@ -1418,12 +1439,13 @@ export function buildMultiAccountForecast(
     }
   }
 
-  if (missingRateCurrencies.size > 0 || unknownEstimates.size > 0) {
+  if (missingRateCurrencies.size > 0 || unknownEstimates.size > 0 || unknownLoanCredits.size > 0) {
     return {
       points: [],
       series: [],
       missingCurrencies: [...missingRateCurrencies],
       unknownEstimates: [...unknownEstimates],
+      ...(unknownLoanCredits.size > 0 && { unknownLoanCredits: [...unknownLoanCredits] }),
     };
   }
 
@@ -1514,9 +1536,7 @@ export function getProjectedBalanceAtDate(
         const lines = (occ.transferLines ?? []).filter(l => l.accountId === account.id);
         if (lines.length === 0) continue;
         // Arrives at a rate fixed when it posts: unknown, as in `buildForecast`.
-        const unpriced = new Set<string>();
-        withholdUnpricedLineCredit(tx, account, occIndex, unpriced);
-        if (occ.unknown || unpriced.size > 0) return null;
+        if (occ.unknown || unpricedLineCredit(tx, account, occIndex) !== null) return null;
         units += toUnits(-sumMoney(lines.map(l => l.amount), decimals), decimals);
         continue;
       }

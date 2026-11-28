@@ -47,9 +47,23 @@ export function scheduledKind(st: {
  */
 export function occurrenceKind(
   occurrence: { amount: number | null; directionAmount?: number | null },
-  schedule: { amount: number | string; isTransfer?: boolean },
+  schedule: {
+    amount: number | string;
+    isTransfer?: boolean;
+    isSplit?: boolean;
+    splits?: { transferAccountId?: string | null }[] | null;
+  },
 ): ScheduledKind {
   if (schedule.isTransfer) return 'transfer';
+  // A split made only of transfer lines moves money between the user's own
+  // accounts: a transfer, never a reminder of 0.
+  if (
+    schedule.isSplit &&
+    schedule.splits?.length &&
+    schedule.splits.every((line) => !!line.transferAccountId)
+  ) {
+    return 'transfer';
+  }
   if (occurrence.directionAmount !== undefined) {
     if (occurrence.directionAmount === null) return 'unknown';
     return scheduledKind({ amount: occurrence.directionAmount });

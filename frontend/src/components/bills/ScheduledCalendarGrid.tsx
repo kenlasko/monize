@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { useTranslations } from 'next-intl';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { SCHEDULED_KIND_CHIP_CLASSES, occurrenceKind } from '@/lib/scheduled-kind';
-import { scheduleSpending } from '@/lib/scheduled-effective-amount';
+import { scheduleEffectiveAmount } from '@/lib/scheduled-effective-amount';
 import type { ScheduledCalendarDay } from '@/lib/scheduled-calendar';
 
 const WEEKDAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
@@ -18,7 +18,7 @@ const WEEKDAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
  * unpriceable bill stays a bill rather than becoming a zero-amount reminder.
  */
 function chipKind(st: ScheduledTransaction) {
-  return occurrenceKind(scheduleSpending(st), st);
+  return occurrenceKind(scheduleEffectiveAmount(st), st);
 }
 
 interface ScheduledCalendarGridProps {

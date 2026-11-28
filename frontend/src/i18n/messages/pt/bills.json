@@ -59,7 +59,8 @@
     "untitledTransaction": "Transação",
     "tooltipEstimated": "(estimado)",
     "unavailableUnknownEstimates": "Esta previsão ainda não pode ser mostrada: o montante estimado de uma fatura incluída é desconhecido, e um saldo projetado baseia-se em cada dia anterior. Introduza o montante dessa ocorrência ou desative Estimar na fatura.",
-    "unknownEstimateItem": "{name}: {reason}"
+    "unknownEstimateItem": "{name}: {reason}",
+    "unavailableUnknownLoanCredits": "Esta previsão ainda não pode ser mostrada: após a próxima ocorrência, a parte de um pagamento de empréstimo que vai para o empréstimo depende do saldo do empréstimo, que um saldo projetado não consegue calcular aqui. Afetados: {names}."
   },
   "calendar": {
     "days": {

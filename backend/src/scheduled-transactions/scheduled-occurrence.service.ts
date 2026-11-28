@@ -177,24 +177,11 @@ export interface ResolvedScheduledOccurrence extends EffectiveScheduledOccurrenc
  * The signed sum of an occurrence's transfer lines (negative: money leaves the
  * source account into another of the user's accounts).
  */
-export function transferLineTotal(o: ResolvedScheduledOccurrence): number {
+function transferLineTotal(o: ResolvedScheduledOccurrence): number {
   return sumMoney(
     o.transferLines.map((l) => l.amount),
     o.moneyDecimals,
   );
-}
-
-/**
- * The signed amount that decides whether the occurrence is an outflow: the
- * direction less the split's transfer lines, which are not spending. `null`
- * when it cannot be derived.
- */
-export function spendingDirection(
-  o: ResolvedScheduledOccurrence,
-): number | null {
-  if (o.transferLines.length === 0) return o.directionAmount;
-  if (o.transferLinesUnknown || o.directionAmount === null) return null;
-  return sumMoney([o.directionAmount, -transferLineTotal(o)], o.moneyDecimals);
 }
 
 /**
@@ -434,10 +421,6 @@ export class ScheduledOccurrenceService {
                 AND s.kind = :investmentKind
                 AND s.investment_action IS NOT NULL
             ) OR EXISTS (
-              SELECT 1 FROM scheduled_transaction_splits s
-              WHERE s.scheduled_transaction_id = st.id
-                AND s.transfer_account_id IS NOT NULL
-            ) OR EXISTS (
               SELECT 1 FROM scheduled_transaction_overrides ovr
               WHERE ovr.scheduled_transaction_id = st.id
                 AND (ovr.amount IS NOT NULL OR ovr.is_split = true)
@@ -477,11 +460,9 @@ export class ScheduledOccurrenceService {
     // consumer's total is withheld either way, and dropping it would hide a
     // possible outflow behind a total that still looked complete.
     const outflows = keepManual(
-      occurrences.filter((candidate) => {
-        // The direction of the part that is spending, not of the transfer lines.
-        const o = { directionAmount: spendingDirection(candidate) };
-        return o.directionAmount === null || o.directionAmount < 0;
-      }),
+      occurrences.filter(
+        (o) => o.directionAmount === null || o.directionAmount < 0,
+      ),
     );
     if (window.maxOccurrences === undefined) return outflows;
 
@@ -616,7 +597,14 @@ export class ScheduledOccurrenceService {
     return occurrences.flatMap((occurrence) => {
       if (!projected(occurrence)) return [occurrence];
       const projection = projections.get(occurrence.scheduledTransactionId);
-      const priced = withLoanAmount(occurrence, projection);
+      const own = overridesBySchedule
+        .get(occurrence.scheduledTransactionId)
+        ?.find((o) => o.id === occurrence.overrideId);
+      const priced = withLoanAmount(
+        occurrence,
+        projection,
+        own?.isSplit === true && !!own.splits?.length,
+      );
       return priced === null ? [] : [priced];
     });
   }
@@ -647,6 +635,8 @@ export class ScheduledOccurrenceService {
 function withLoanAmount(
   occurrence: ResolvedScheduledOccurrence,
   projection: LoanOccurrencesProjection | null | undefined,
+  /** An override states this occurrence's own split lines: they stand as stated. */
+  ownLines: boolean,
 ): ResolvedScheduledOccurrence | null {
   if (projection === undefined) return occurrence;
   if (projection !== null && projection.status !== "priced") return occurrence;
@@ -684,6 +674,20 @@ function withLoanAmount(
   // override on a settled debt) leaves the credit unknown, which the forecast
   // reports as a gap rather than crediting the template's figure.
   const loanId = projection?.loanAccountId;
+  // Only an occurrence whose effective lines include the loan line has a credit
+  // to price; an override's own stated lines keep what they state.
+  const hasLoanLine =
+    !ownLines &&
+    !!loanId &&
+    occurrence.transferLines.some((l) => l.transferAccountId === loanId);
+  if (!hasLoanLine) {
+    return {
+      ...occurrence,
+      amount: signed,
+      directionAmount: signed,
+      complete: true,
+    };
+  }
   const principalKnown =
     !!row && !!loanId && row.principal !== null && row.extraPrincipal !== null;
   const transferLines =

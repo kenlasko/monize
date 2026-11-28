@@ -2348,6 +2348,17 @@ describe('buildMultiAccountForecast', () => {
       expect(result.points).toEqual([]);
     });
 
+    it('keeps the chart for a loan schedule the server does not re-price', () => {
+      const loan = { ...savings, accountType: 'MORTGAGE' } as Account;
+      const foreign = splitTx({
+        frequency: 'WEEKLY',
+        originalCurrencyCode: 'USD',
+        originalAmount: -80,
+      } as any);
+      const result = buildMultiAccountForecast([chequing, loan], [foreign], 'month', ['acc-1', 'acc-2']);
+      expect(result.points.length).toBeGreaterThan(0);
+    });
+
     it('credits a loan only for its next occurrence and withholds the series after it', () => {
       const loan = { ...savings, accountType: 'MORTGAGE' } as Account;
       const result = buildMultiAccountForecast(

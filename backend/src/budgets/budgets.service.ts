@@ -741,7 +741,9 @@ export class BudgetsService {
       return {
         id: occurrence.scheduledTransactionId,
         name: occurrence.schedule.name,
-        amount: spending === null ? null : Math.abs(spending),
+        // Spending, so only where that part is an outflow: a refund beside a
+        // larger transfer line is not a bill (the row's amount DUE is the whole).
+        amount: spending === null ? null : spending < 0 ? -spending : 0,
         currencyCode: occurrence.currencyCode,
         amountComplete: spending !== null,
         dueDate: occurrence.dueDate,

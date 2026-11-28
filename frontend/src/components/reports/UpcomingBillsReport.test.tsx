@@ -244,79 +244,21 @@ describe('UpcomingBillsReport', () => {
     expect(card?.textContent).not.toContain('2400');
   });
 
-  it('counts only the non-transfer lines of a split in the totals', async () => {
+  it('shows a split\'s whole amount as due, in the totals and the row', async () => {
+    // Amount due is what the occurrence posts: the loan's principal line is part
+    // of the payment ($2,000 mortgage = $1,500 principal + $500 interest).
     mockGetAll.mockResolvedValue([
       makeTransaction({
-        id: 'st-1', name: 'Loan payment', amount: -100, nextDueDate: '2026-02-20',
+        id: 'st-1', name: 'Mortgage', amount: -2000, nextDueDate: '2026-02-20',
         isSplit: true,
-        splits: [{ transferAccountId: null, amount: -30 }, { transferAccountId: 'acc-2', amount: -70 }],
+        splits: [{ transferAccountId: null, amount: -500 }, { transferAccountId: 'acc-2', amount: -1500 }],
       }),
     ]);
     render(<UpcomingBillsReport />);
     await waitFor(() => {
       expect(screen.getByText('This Month')).toBeInTheDocument();
     });
-    const card = screen.getByText('This Month').parentElement;
-    expect(card?.textContent).toContain('$30');
-    expect(card?.textContent).not.toContain('$100');
-  });
-
-  it("uses the server occurrence's effective transfer lines, not the template's", async () => {
-    // The template has a -70 transfer line, but this occurrence's override
-    // dropped it (`transferLineTotal: 0`): the whole -100 is spending.
-    const st = makeTransaction({
-      id: 'st-1', name: 'Loan payment', amount: -100, nextDueDate: '2026-02-20',
-      isSplit: true,
-      splits: [{ transferAccountId: null, amount: -30 }, { transferAccountId: 'acc-2', amount: -70 }],
-    });
-    mockGetAll.mockResolvedValue([st]);
-    mockGetOccurrences.mockResolvedValue([
-      { ...occurrencesFrom([st])[0], transferLineTotal: 0 },
-    ]);
-    render(<UpcomingBillsReport />);
-    await waitFor(() => {
-      expect(screen.getByText('This Month')).toBeInTheDocument();
-    });
-    expect(screen.getByText('This Month').parentElement?.textContent).toContain('$100');
-  });
-
-  it('treats spending as unknown when the server could not price the transfer lines', async () => {
-    const st = makeTransaction({
-      id: 'st-1', name: 'Loan payment', amount: -100, nextDueDate: '2026-02-20',
-      isSplit: true,
-      splits: [{ transferAccountId: null, amount: -30 }, { transferAccountId: 'acc-2', amount: -70 }],
-    });
-    mockGetAll.mockResolvedValue([st]);
-    mockGetOccurrences.mockResolvedValue([
-      { ...occurrencesFrom([st])[0], transferLineTotal: null },
-    ]);
-    render(<UpcomingBillsReport />);
-    await waitFor(() => {
-      expect(screen.getByText('This Month')).toBeInTheDocument();
-    });
-    // Neither the whole -100 nor the template's lines stand in for it.
-    expect(screen.getByText('This Month').parentElement?.textContent).not.toMatch(/\$\\s?\\d/);
-  });
-
-  it('classifies a split by its non-transfer part (refund +500 beside a -600 transfer line)', async () => {
-    const st = makeTransaction({
-      id: 'st-1', name: 'Refund', amount: -100, nextDueDate: '2026-02-20',
-      isSplit: true,
-      splits: [{ transferAccountId: null, amount: 500 }, { transferAccountId: 'acc-2', amount: -600 }],
-    });
-    mockGetAll.mockResolvedValue([st]);
-    render(<UpcomingBillsReport />);
-    await waitFor(() => {
-      expect(screen.getByText('This Month')).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByText('List'));
-    await waitFor(() => expect(screen.getAllByText('Refund').length).toBeGreaterThan(0));
-    expect(screen.getByText('This Month').parentElement?.textContent).toContain('$500');
-    // The row shows that same 500, coloured as a deposit rather than as the
-    // bill the whole -100 reads as.
-    const row = screen.getAllByText('$500').find((el) => el.className.includes('font-medium'));
-    expect(row?.className).toContain('green');
-    expect(screen.queryByText('$100')).not.toBeInTheDocument();
+    expect(screen.getByText('This Month').parentElement?.textContent).toContain('$2000');
   });
 
   it('renders summary cards and view controls with data', async () => {

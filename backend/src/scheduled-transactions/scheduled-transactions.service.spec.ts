@@ -1519,43 +1519,6 @@ describe("ScheduledTransactionsService", () => {
     });
   });
 
-  describe("findEffectiveOccurrences", () => {
-    it("exposes the signed sum of a split's transfer lines", async () => {
-      const rows = [
-        makeScheduled({
-          id: "s-loan",
-          amount: -100,
-          isSplit: true,
-          splits: [
-            { id: "sp-1", kind: "category", amount: -30 },
-            {
-              id: "sp-2",
-              kind: "category",
-              amount: -70,
-              transferAccountId: "acc-2",
-            },
-          ] as never,
-        }),
-        makeScheduled({ id: "s-plain", amount: -50 }),
-      ];
-      scheduledRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder(rows));
-
-      const result = await service.findEffectiveOccurrences(userId, {
-        through: "2099-01-01",
-        maxPerSchedule: 1,
-      });
-
-      expect(
-        result
-          .map((o) => [o.scheduledTransactionId, o.transferLineTotal])
-          .sort(),
-      ).toEqual([
-        ["s-loan", -70],
-        ["s-plain", 0],
-      ]);
-    });
-  });
-
   describe("getLlmUpcomingBillsAndDeposits", () => {
     it("classifies bills, deposits, transfers, and investments", async () => {
       const rows = [
@@ -1600,33 +1563,6 @@ describe("ScheduledTransactionsService", () => {
       expect(result.totalUpcomingDeposits).toBe(3000);
     });
 
-    it("nets a coin's transfer line at the coin's own places", async () => {
-      const rows = [
-        makeScheduled({
-          id: "s-btc",
-          name: "BTC bill",
-          amount: -0.00013345,
-          currencyCode: "BTC",
-          isSplit: true,
-          splits: [
-            { id: "sp-1", kind: "category", amount: -0.00012345 },
-            {
-              id: "sp-2",
-              kind: "category",
-              amount: -0.00001,
-              transferAccountId: "acc-2",
-            },
-          ] as never,
-        }),
-      ];
-      scheduledRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder(rows));
-
-      const result = await service.getLlmUpcomingBillsAndDeposits(userId);
-
-      // Four places would have rounded this to -0.0001.
-      expect(result.items[0].amount).toBe(-0.00012345);
-    });
-
     it("publishes a split made only of transfer lines as a transfer with what it moves", async () => {
       const rows = [
         makeScheduled({
@@ -1652,35 +1588,19 @@ describe("ScheduledTransactionsService", () => {
       expect(result.totalUpcomingBills).toBe(0);
     });
 
-    it("does not count a split's transfer lines as a bill or a deposit", async () => {
+    it("publishes a split's whole amount as due, transfer lines included", async () => {
       const rows = [
         makeScheduled({
           id: "s-loan",
-          name: "Loan payment",
-          amount: -100,
+          name: "Mortgage",
+          amount: -2000,
           isSplit: true,
           splits: [
-            { id: "sp-1", kind: "category", amount: -30 },
+            { id: "sp-1", kind: "category", amount: -500 },
             {
               id: "sp-2",
               kind: "category",
-              amount: -70,
-              transferAccountId: "acc-2",
-            },
-          ] as never,
-        }),
-        // A refund of +500 beside a -600 transfer line is a 500 deposit, not a bill.
-        makeScheduled({
-          id: "s-refund",
-          name: "Refund",
-          amount: -100,
-          isSplit: true,
-          splits: [
-            { id: "sp-3", kind: "category", amount: 500 },
-            {
-              id: "sp-4",
-              kind: "category",
-              amount: -600,
+              amount: -1500,
               transferAccountId: "acc-2",
             },
           ] as never,
@@ -1690,8 +1610,8 @@ describe("ScheduledTransactionsService", () => {
 
       const result = await service.getLlmUpcomingBillsAndDeposits(userId);
 
-      expect(result.totalUpcomingBills).toBe(30);
-      expect(result.totalUpcomingDeposits).toBe(500);
+      expect(result.items[0]).toMatchObject({ kind: "bill", amount: -2000 });
+      expect(result.totalUpcomingBills).toBe(2000);
     });
 
     it("classifies an item from its occurrence, not the stored parent sign", async () => {

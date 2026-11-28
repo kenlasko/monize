@@ -14,9 +14,15 @@ import { FIAT_MONEY_DECIMALS, roundMoney } from "../common/round.util";
  *  - `unknownEstimate` -- an estimated schedule (issue #2096) whose history
  *    estimate is unknown: no payment to estimate from, or, with a pair, a
  *    payment in a currency with no current rate.
+ *  - `unknownLoanPrincipal` -- a loan bill whose projection states the payment
+ *    but not how much of it is principal, so the credit to the loan account
+ *    (`accountName`) is unknown.
  */
 export type BalanceForecastGapReason =
-  "unresolvedSettlementRate" | "crossCurrencyTransfer" | "unknownEstimate";
+  | "unresolvedSettlementRate"
+  | "crossCurrencyTransfer"
+  | "unknownEstimate"
+  | "unknownLoanPrincipal";
 
 /** One schedule the projection could not price, and why. */
 export interface BalanceForecastGap {
@@ -26,6 +32,8 @@ export interface BalanceForecastGap {
   /** The pair behind the gap, when there is one to name. */
   fromCurrency: string | null;
   toCurrency: string | null;
+  /** The account whose credit is unknown, for `unknownLoanPrincipal`. */
+  accountName?: string | null;
 }
 
 /**
@@ -73,6 +81,7 @@ export interface ForecastOccurrenceInput {
   gapReason?: BalanceForecastGapReason;
   gapFromCurrency?: string | null;
   gapToCurrency?: string | null;
+  gapAccountName?: string | null;
 }
 
 export interface ForecastPoint {
@@ -185,6 +194,7 @@ export function accumulateForecastDeltas(
       reason: o.gapReason ?? "unresolvedSettlementRate",
       fromCurrency: o.gapFromCurrency ?? null,
       toCurrency: o.gapToCurrency ?? null,
+      ...(o.gapAccountName !== undefined && { accountName: o.gapAccountName }),
     });
   };
 

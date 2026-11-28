@@ -31,11 +31,7 @@ import { exportToCsv } from '@/lib/csv-export';
 import { useReportData } from '@/hooks/useReportData';
 import { ReportError } from '@/components/reports/ReportError';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
-import {
-  sumEffectiveOccurrences,
-  templateTransferLineTotal,
-  withoutTransferLines,
-} from '@/lib/scheduled-effective-amount';
+import { sumEffectiveOccurrences } from '@/lib/scheduled-effective-amount';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { isComplete, type ConvertedTotal } from '@/lib/currency-total';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -160,40 +156,14 @@ export function UpcomingBillsReport() {
       const scheduledTransaction = byId.get(occurrence.scheduledTransactionId);
       if (!scheduledTransaction) return [];
       const dueDate = parseLocalDate(occurrence.dueDate);
-      // The server's effective lines for THIS occurrence; null is "could not be
-      // priced" (spending unknown). An older backend sends none: use the
-      // template's lines, or the override that governs this occurrence.
-      const override = [
-        ...(scheduledTransaction.futureOverrides ?? []),
-        ...(scheduledTransaction.nextOverride ? [scheduledTransaction.nextOverride] : []),
-      ].find((o) => o.originalDate.split('T')[0] === occurrence.originalDate);
-      const transferLineTotal =
-        occurrence.transferLineTotal === undefined
-          ? templateTransferLineTotal(scheduledTransaction, override)
-          : occurrence.transferLineTotal;
-      // Row, colour, totals and CSV all read this one figure: the part that is
-      // real income or spending, without the split's transfer lines.
-      const spending =
-        transferLineTotal === null
-          ? { amount: null, directionAmount: occurrence.directionAmount }
-          : withoutTransferLines(
-              {
-                amount: occurrence.amount,
-                currencyCode: occurrence.currencyCode,
-                // An older backend sends none: the amount decides, as occurrenceKind does.
-                directionAmount:
-                  occurrence.directionAmount === undefined ? occurrence.amount : occurrence.directionAmount,
-              },
-              transferLineTotal,
-            );
       return [
         {
           scheduledTransaction,
           dueDate,
           autoPosts: occurrence.autoPosts ?? scheduledTransaction.autoPost,
-          amount: spending.amount,
+          amount: occurrence.amount,
           currencyCode: occurrence.currencyCode,
-          directionAmount: spending.directionAmount,
+          directionAmount: occurrence.directionAmount,
           estimated: occurrence.estimated === true,
           isOverdue: dueDate < today,
         },
@@ -256,9 +226,11 @@ export function UpcomingBillsReport() {
         ? { value: 0, missingCurrencies: [], excludedCount: 1 }
         : sumEffectiveOccurrences(
             bills.filter((b) => !b.scheduledTransaction.isTransfer),
-            (b) => {
-              return { amount: b.amount, currencyCode: b.currencyCode, complete: b.amount !== null };
-            },
+            (b) => ({
+              amount: b.amount,
+              currencyCode: b.currencyCode,
+              complete: b.amount !== null,
+            }),
             convertToDefault,
             Math.abs,
           );

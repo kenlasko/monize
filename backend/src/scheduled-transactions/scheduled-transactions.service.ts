@@ -64,7 +64,6 @@ import {
   ResolvedScheduledOccurrence,
   ScheduledOccurrenceService,
   nonTransferAmount,
-  transferLineTotal,
 } from "./scheduled-occurrence.service";
 import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
 import {
@@ -395,14 +394,6 @@ export interface ScheduledOccurrenceReadModel {
   accountId: string;
   transferAccountId: string | null;
   isTransfer: boolean;
-  /**
-   * The signed sum of the occurrence's EFFECTIVE split transfer lines, in
-   * `currencyCode` (an override's own lines when it restates them). A client
-   * counts `amount - transferLineTotal` as spending; 0 without such a line.
-   * `null` when the lines could not be priced (a loan bill with no stated
-   * principal): the spending is unknown.
-   */
-  transferLineTotal: number | null;
 }
 
 const INVESTMENT_RELATIONS = [
@@ -2750,9 +2741,6 @@ export class ScheduledTransactionsService {
       accountId: occurrence.schedule.accountId,
       transferAccountId: occurrence.schedule.transferAccountId ?? null,
       isTransfer: !!occurrence.schedule.isTransfer,
-      transferLineTotal: occurrence.transferLinesUnknown
-        ? null
-        : transferLineTotal(occurrence),
     }));
   }
 
@@ -5831,12 +5819,13 @@ function classifyScheduledKind(
   const row = occurrence.schedule;
   if (row.isTransfer) return "transfer";
   if (row.isInvestment) return "investment";
-  // A split's transfer lines are not spending: the side is the non-transfer
-  // part's, and a split made only of transfer lines is a transfer.
-  const spending =
-    occurrence.transferLines.length > 0 ? nonTransferAmount(occurrence) : null;
-  if (spending !== null) {
-    return spending < 0 ? "bill" : spending > 0 ? "deposit" : "transfer";
+  // A split made only of transfer lines moves money between the user's own
+  // accounts: a transfer, never a bill of 0.
+  if (
+    occurrence.transferLines.length > 0 &&
+    nonTransferAmount(occurrence) === 0
+  ) {
+    return "transfer";
   }
   if (occurrence.directionAmount === null) return "unknown";
   return occurrence.directionAmount < 0 ? "bill" : "deposit";
@@ -5868,13 +5857,8 @@ function toLlmScheduledItem(
     accountName: row.account?.name ?? "",
     payeeName: row.payee?.name ?? row.payeeName ?? null,
     categoryName: row.category?.name ?? null,
-    // Without the split's transfer lines: the rollups sum this. A split made
-    // only of transfer lines is a transfer and publishes what it moves.
-    amount:
-      occurrence.transferLines.length > 0 && nonTransferAmount(occurrence) === 0
-        ? occurrence.amount
-        : nonTransferAmount(occurrence),
-    amountComplete: occurrence.complete && !occurrence.transferLinesUnknown,
+    amount: occurrence.amount,
+    amountComplete: occurrence.complete,
     amountEstimated: occurrence.estimated,
     estimateStatus: occurrence.estimateStatus,
     currency: occurrence.currencyCode,

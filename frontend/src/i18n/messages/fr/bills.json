@@ -59,7 +59,8 @@
     "untitledTransaction": "Transaction",
     "tooltipEstimated": "(estimé)",
     "unavailableUnknownEstimates": "Cette prévision ne peut pas encore être affichée : le montant estimé d'une facture qu'elle contient est inconnu, et un solde prévu s'appuie sur chaque jour qui précède. Saisissez le montant de cette occurrence, ou désactivez Estimer sur la facture.",
-    "unknownEstimateItem": "{name} : {reason}"
+    "unknownEstimateItem": "{name} : {reason}",
+    "unavailableUnknownLoanCredits": "Cette prévision ne peut pas encore être affichée : après sa prochaine occurrence, la part d'un paiement de prêt qui va au prêt dépend du solde du prêt, qu'un solde projeté ne peut pas calculer ici. Concernés : {names}."
   },
   "calendar": {
     "days": {

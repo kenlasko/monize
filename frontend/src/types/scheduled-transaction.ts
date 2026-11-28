@@ -582,12 +582,4 @@ export interface ScheduledOccurrence {
   accountId: string;
   transferAccountId: string | null;
   isTransfer: boolean;
-  /**
-   * The signed sum of this occurrence's effective split transfer lines, in
-   * `currencyCode` (negative: out of the source account). Real income or
-   * spending is `amount - transferLineTotal`. `null`: the lines could not be
-   * priced, so the spending is unknown. Absent on an older backend: read the
-   * template's lines then (`templateTransferLineTotal`).
-   */
-  transferLineTotal?: number | null;
 }

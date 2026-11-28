@@ -168,23 +168,6 @@ export function nextOccurrenceEffectiveAmount(
 }
 
 /**
- * `nextOccurrenceEffectiveAmount` without the split's transfer lines: the part
- * that is real income or spending, for a surface that totals, classifies or
- * shows a bill. The template's lines and `nextOverride`'s are read.
- */
-export function nextOccurrenceSpending(st: ScheduledTransaction): EffectiveScheduledAmount {
-  return withoutTransferLines(
-    nextOccurrenceEffectiveAmount(st),
-    templateTransferLineTotal(st, st.nextOverride),
-  );
-}
-
-/** `scheduleEffectiveAmount` without the split's transfer lines (see above). */
-export function scheduleSpending(st: ScheduledTransaction): EffectiveScheduledAmount {
-  return withoutTransferLines(scheduleEffectiveAmount(st), templateTransferLineTotal(st));
-}
-
-/**
  * Whether an occurrence governed by `override` (or by none) is priced from the
  * schedule's history estimate (issue #2096, docs/specs/scheduled-amount-estimate.md
  * section 6): an override that states an amount, or carries its own split

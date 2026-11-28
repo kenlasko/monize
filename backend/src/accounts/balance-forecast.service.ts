@@ -220,9 +220,9 @@ export class BalanceForecastService {
       const gap =
         isLineTarget && occurrence.transferLinesUnknown
           ? ({
-              reason: "unresolvedSettlementRate",
+              reason: "unknownLoanPrincipal",
               from: null,
-              to: occurrence.currencyCode,
+              to: null,
             } as const)
           : this.gapFor(occurrence, account, isTransferTarget);
       const landing = forecastLanding(occurrence.dueDate, today);
@@ -238,6 +238,9 @@ export class BalanceForecastService {
         gapReason: gap?.reason,
         gapFromCurrency: gap?.from ?? null,
         gapToCurrency: gap?.to ?? null,
+        ...(gap?.reason === "unknownLoanPrincipal" && {
+          gapAccountName: account.name,
+        }),
       });
     }
 

@@ -11,11 +11,14 @@
  *  - `unknownEstimate` -- an estimated bill (issue #2096) whose estimate is
  *    unknown: no payment to estimate from, or, with a pair, a payment in a
  *    currency with no current rate.
+ *  - `unknownLoanPrincipal` -- a loan bill whose principal for an occurrence is
+ *    not stated, so the credit to the loan account (`accountName`) is unknown.
  */
 export type BalanceForecastGapReason =
   | 'unresolvedSettlementRate'
   | 'crossCurrencyTransfer'
-  | 'unknownEstimate';
+  | 'unknownEstimate'
+  | 'unknownLoanPrincipal';
 
 /** One schedule the projection could not price, and why. */
 export interface BalanceForecastGap {
@@ -24,6 +27,8 @@ export interface BalanceForecastGap {
   reason: BalanceForecastGapReason;
   fromCurrency: string | null;
   toCurrency: string | null;
+  /** The account whose credit is unknown, for `unknownLoanPrincipal`. */
+  accountName?: string | null;
 }
 
 /**

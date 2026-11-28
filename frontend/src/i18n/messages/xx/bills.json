@@ -59,7 +59,8 @@
     "untitledTransaction": "[XX-Transaction-XX]",
     "tooltipEstimated": "[XX-(estimated)-XX]",
     "unavailableUnknownEstimates": "[XX-This forecast cannot be shown yet: the estimated amount of a bill in it is unknown, and a projected balance builds on every day before it. Enter that occurrence's amount, or turn off Estimate on the bill.-XX]",
-    "unknownEstimateItem": "[XX-{name}: {reason}-XX]"
+    "unknownEstimateItem": "[XX-{name}: {reason}-XX]",
+    "unavailableUnknownLoanCredits": "[XX-This forecast cannot be shown yet: after its next occurrence, how much of a loan payment goes to the loan depends on the loan's balance, which a projected balance cannot work out here. Affected: {names}.-XX]"
   },
   "calendar": {
     "days": {

@@ -59,7 +59,8 @@
     "untitledTransaction": "Transazione",
     "tooltipEstimated": "(stimato)",
     "unavailableUnknownEstimates": "Questa previsione non può ancora essere mostrata: l'importo stimato di una bolletta inclusa è sconosciuto, e un saldo previsto si basa su ogni giorno precedente. Inserisci l'importo di quell'occorrenza oppure disattiva Stima sulla bolletta.",
-    "unknownEstimateItem": "{name}: {reason}"
+    "unknownEstimateItem": "{name}: {reason}",
+    "unavailableUnknownLoanCredits": "Questa previsione non può ancora essere mostrata: dopo la prossima occorrenza, la quota di una rata di prestito che va al prestito dipende dal saldo del prestito, che un saldo proiettato non può calcolare qui. Interessati: {names}."
   },
   "calendar": {
     "days": {

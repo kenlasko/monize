@@ -59,7 +59,8 @@
     "untitledTransaction": "Buchung",
     "tooltipEstimated": "(geschätzt)",
     "unavailableUnknownEstimates": "Diese Prognose kann noch nicht angezeigt werden: Der geschätzte Betrag einer Rechnung darin ist unbekannt, und ein prognostizierter Saldo baut auf jedem Tag davor auf. Geben Sie den Betrag dieses Termins ein oder schalten Sie Schätzen bei der Rechnung aus.",
-    "unknownEstimateItem": "{name}: {reason}"
+    "unknownEstimateItem": "{name}: {reason}",
+    "unavailableUnknownLoanCredits": "Diese Prognose kann noch nicht angezeigt werden: Wie viel einer Darlehensrate nach der nächsten Fälligkeit in das Darlehen fließt, hängt vom Darlehenssaldo ab, den ein prognostizierter Kontostand hier nicht ermitteln kann. Betroffen: {names}."
   },
   "calendar": {
     "days": {
