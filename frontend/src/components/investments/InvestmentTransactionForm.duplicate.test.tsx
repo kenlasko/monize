@@ -413,6 +413,33 @@ describe('the history button on a new investment transaction', () => {
     await waitFor(() => expect(getSelectByLabel('Brokerage Account').value).toBe('a4'));
   });
 
+  it('gives a share count only to a row that moved shares', async () => {
+    api.getTransactions.mockResolvedValue({
+      data: [
+        row({ id: 'tx-div', quantity: 0, description: 'Zero-share dividend' }),
+        row({
+          id: 'tx-buy',
+          action: 'BUY',
+          quantity: 12,
+          price: 10,
+          totalAmount: 120,
+          description: 'Twelve shares',
+        }),
+      ],
+      pagination: { page: 1, limit: 5, total: 2, totalPages: 1, hasMore: false },
+    } as any);
+    await act(async () => {
+      render(<InvestmentTransactionForm accounts={accounts} defaultAccountId="a1" />);
+    });
+
+    await openHistory('Show recent transactions for this account');
+
+    const dividend = (await screen.findByText('Zero-share dividend')).closest('button')!;
+    const buy = screen.getByText('Twelve shares').closest('button')!;
+    expect(dividend).not.toHaveTextContent(/shares/);
+    expect(buy).toHaveTextContent(/12.* shares/);
+  });
+
   it('marks a voided row as void', async () => {
     api.getTransactions.mockResolvedValue({
       data: [row({ id: 'tx-void', status: TransactionStatus.VOID, description: 'Entered by mistake' })],

@@ -154,7 +154,10 @@ export function RecentInvestmentTransactionsPopover({
           <ul>
             {transactions.map((tx) => {
               const actionInfo = actionInfoFor(tx.action);
-              const hasShares = tx.quantity !== null && tx.quantity !== undefined;
+              // A row that moved no shares (a dividend, interest) says nothing
+              // about shares: its stored quantity is absent or zero.
+              const hasShares =
+                tx.quantity !== null && tx.quantity !== undefined && Number(tx.quantity) !== 0;
               const accountName = accountId ? undefined : accountNameFor(tx.accountId);
               // Struck through and dimmed, as the register draws a VOID row:
               // it records something that did not happen.
