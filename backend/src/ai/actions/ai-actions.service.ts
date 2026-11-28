@@ -621,7 +621,10 @@ export class AiActionsService {
           descriptor.rows[i],
           removedIds,
         );
-        ids.push(id);
+        // A delete row id listed twice counts once.
+        if (descriptor.operation !== "delete" || !ids.includes(id)) {
+          ids.push(id);
+        }
       } catch {
         skipped.push({ index: i, reason: this.bulkRowInvalidReason() });
       }
@@ -660,6 +663,8 @@ export class AiActionsService {
           for (const gone of await this.transactionsService.removeAny(
             userId,
             r.transactionId,
+            undefined,
+            { reportRemoved: true },
           )) {
             removedIds.add(gone);
           }

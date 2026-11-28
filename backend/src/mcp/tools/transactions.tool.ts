@@ -54,6 +54,7 @@ import {
   requireScope,
   toolResult,
   toolError,
+  safeErrorMessage,
   safeToolError,
 } from "../mcp-context";
 import {
@@ -110,6 +111,10 @@ type ManageOperation = "create" | "update" | "delete";
  */
 const RECONCILED_CONFIRM_NOTE =
   "\nWarning: this transaction is reconciled. Changing it will affect a completed reconciliation.";
+
+/** Appended to the delete prompt of one leg of a plain transfer. */
+const TRANSFER_PAIR_CONFIRM_NOTE =
+  "\nThis is one leg of a transfer: the transfer's other leg, in the other account, is deleted too.";
 
 /** What deleting a split-transfer leg removes, as lines of an MCP confirmation prompt. */
 function splitLineConfirmNote(splitLine: {
@@ -1813,7 +1818,7 @@ export class McpTransactionsTools {
         ctx,
         userId,
         action,
-        `Delete this transaction?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}${preview.splitLine ? splitLineConfirmNote(preview.splitLine) : ""}${preview.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`,
+        `Delete this transaction?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}${preview.splitLine ? splitLineConfirmNote(preview.splitLine) : ""}${preview.transferPair ? TRANSFER_PAIR_CONFIRM_NOTE : ""}${preview.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`,
       );
       if (isAsk(outcome)) return outcome.ask;
       if (outcome === "relay") return toolResult(RELAY_PREVIEW_SHOWN);
@@ -1873,13 +1878,16 @@ export class McpTransactionsTools {
     ) {
       return toolResult(RELAY_PREVIEW_SHOWN);
     }
+    const transferLegCount = bulk.previewRows.filter(
+      (row) => row.transferPair,
+    ).length;
     const splitLegCount = bulk.previewRows.filter(
       (row) => row.splitLine,
     ).length;
     const confirmation = await confirmWrite(
       server,
       ctx,
-      `Delete ${bulk.okRows.length} transaction(s)?${bulk.skipped.length ? ` (${bulk.skipped.length} skipped)` : ""}${splitLegCount ? `\n${splitLegCount} of them ${splitLegCount === 1 ? "is a transfer line" : "are transfer lines"} of split transactions: only that line is removed from each split, and the split is re-totalled.` : ""}`,
+      `Delete ${bulk.okRows.length} transaction(s)?${bulk.skipped.length ? ` (${bulk.skipped.length} skipped)` : ""}${splitLegCount ? `\n${splitLegCount} of them ${splitLegCount === 1 ? "is a transfer line" : "are transfer lines"} of split transactions: only that line is removed from each split, and the split is re-totalled.` : ""}${transferLegCount ? `\n${transferLegCount} of them ${transferLegCount === 1 ? "is a transfer leg" : "are transfer legs"}: the other leg of each transfer is deleted too.` : ""}`,
       action.descriptor,
     );
     if (isAsk(confirmation)) return confirmation.ask;
@@ -1900,16 +1908,22 @@ export class McpTransactionsTools {
           for (const gone of await this.transactionsService.removeAny(
             userId,
             row.transactionId,
+            undefined,
+            { reportRemoved: true },
           )) {
             removedIds.add(gone);
           }
         } catch (err) {
-          skipped.push({ index: bulk.okIndex[i], reason: this.reason(err) });
+          skipped.push({
+            index: bulk.okIndex[i],
+            reason: safeErrorMessage(err),
+          });
           continue;
         }
         await this.writeLimiter.record(userId, "delete_transaction");
       }
-      ids.push(row.transactionId);
+      // A row id listed twice counts once.
+      if (!ids.includes(row.transactionId)) ids.push(row.transactionId);
     }
     return toolResult({ ids, count: ids.length, skipped });
   }
@@ -1956,13 +1970,24 @@ export class McpTransactionsTools {
         }
         continue;
       }
-      const id = await this.commitCard(userId, card, removedIds);
-      if (id) ids.push(id);
+      let id: string | null;
+      try {
+        id = await this.commitCard(userId, card, removedIds);
+      } catch (err) {
+        // Best-effort per card, like the bulk loop: the ids already committed
+        // stay in the result. The index is the card's place in this run.
+        skipped.push({ index, reason: safeErrorMessage(err) });
+        continue;
+      }
+      // A delete card for a row id listed twice counts once.
+      if (id && !(card.type === "delete_transaction" && ids.includes(id))) {
+        ids.push(id);
+      }
     }
     // A declined delete whose row went with an accepted card's delete (the
     // other leg of its transfer) is gone: say so, not that it survived.
     for (const id of declinedDeletes) {
-      if (removedIds.has(id)) ids.push(id);
+      if (removedIds.has(id) && !ids.includes(id)) ids.push(id);
     }
     return toolResult({ ids, count: ids.length, skipped });
   }
@@ -1974,7 +1999,7 @@ export class McpTransactionsTools {
       case "update_transfer":
         return `${card.type === "create_transfer" ? "Create" : "Edit"} transfer?\nFrom: ${p.fromAccountName}\nTo: ${p.toAccountName}\nAmount: ${p.amount} ${p.currencyCode}${tagConfirmNote(p)}`;
       case "delete_transaction":
-        return `Delete this transaction?\nAccount: ${p.accountName}${p.splitLine ? splitLineConfirmNote(p.splitLine) : ""}${p.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`;
+        return `Delete this transaction?\nAccount: ${p.accountName}${p.splitLine ? splitLineConfirmNote(p.splitLine) : ""}${p.transferPair ? TRANSFER_PAIR_CONFIRM_NOTE : ""}${p.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`;
       case "update_transaction":
         return `Apply this transaction edit?\nAccount: ${p.accountName}\nAmount: ${p.amount} ${p.currencyCode}${fxConfirmNote(p)}${tagConfirmNote(p)}${p.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`;
       default:
@@ -2056,6 +2081,8 @@ export class McpTransactionsTools {
           for (const gone of await this.transactionsService.removeAny(
             userId,
             d.transactionId,
+            undefined,
+            { reportRemoved: true },
           )) {
             removedIds.add(gone);
           }

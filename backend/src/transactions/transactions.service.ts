@@ -553,6 +553,11 @@ export interface DeleteTransactionPreview {
    * it, never the split itself.
    */
   splitLine?: { payeeName: string | null; transactionDate: string };
+  /**
+   * Set when the target is one leg of a plain transfer: the delete removes the
+   * transfer's other leg too, in the other account.
+   */
+  transferPair?: true;
 }
 
 export { TransferResult };
@@ -1946,6 +1951,9 @@ export class TransactionsService {
               transactionDate: splitParent.transactionDate,
             },
           }
+        : {}),
+      ...(existing.isTransfer && existing.linkedTransactionId && !splitParent
+        ? { transferPair: true as const }
         : {}),
       accountName: existing.account?.name ?? "",
       amount: Number(existing.amount),
@@ -4467,6 +4475,12 @@ export class TransactionsService {
         accountIds: Set<string>;
         securityIds: Set<string>;
       };
+      /**
+       * Return the ids this delete removed (the row, a split parent's legs, a
+       * leg's parent). Off by default: it costs three reads inside the
+       * transaction, and only the AI and MCP selections use the answer.
+       */
+      reportRemoved?: boolean;
     },
   ): Promise<string[]> {
     const transaction = await this.findOne(userId, id);
@@ -4554,9 +4568,10 @@ export class TransactionsService {
       // Every row this delete can take with it, snapshotted under the lock: a
       // split parent's transfer legs, or, for a leg, its parent and the
       // parent's other legs.
+      // Only read when the caller asked for the ids (`reportRemoved`).
       const splitOwnerId = locked.isSplit ? id : parentSplit?.transactionId;
       const candidateIds = new Set<string>([id]);
-      if (splitOwnerId) {
+      if (options?.reportRemoved && splitOwnerId) {
         candidateIds.add(splitOwnerId);
         for (const line of await m.find(TransactionSplit, {
           where: { transactionId: splitOwnerId },
@@ -4567,7 +4582,9 @@ export class TransactionsService {
           }
         }
       }
-      const rowsBefore = await ownRowIds(m, userId, candidateIds);
+      const rowsBefore = options?.reportRemoved
+        ? await ownRowIds(m, userId, candidateIds)
+        : new Set<string>();
 
       if (locked.isSplit) {
         // Transfer-target and brokerage accounts this split's cleanup moved join
@@ -4592,10 +4609,12 @@ export class TransactionsService {
       }
 
       const deleted = await m.delete(Transaction, { id, userId });
-      removedIds = removedBetween(
-        rowsBefore,
-        await ownRowIds(m, userId, rowsBefore),
-      );
+      if (options?.reportRemoved) {
+        removedIds = removedBetween(
+          rowsBefore,
+          await ownRowIds(m, userId, rowsBefore),
+        );
+      }
       if ((deleted.affected ?? 0) === 0) {
         // The row was removed by the parent cleanup above (a split counterpart
         // cascade). Reversing its amount again would double-count.
@@ -5295,17 +5314,19 @@ export class TransactionsService {
    * up front whether the target is a transfer. Like removeTransfer it records
    * no action-history entry (INV-TRANSFER-001).
    *
-   * Returns the ids this delete removed, from the delete's own transaction
-   * under its locks: the row and whatever went with it (a transfer's mirror, a
-   * split parent's transfer legs). Never another owner's row. A caller deleting
-   * a selection row by row skips a selected id already in the union of these,
-   * so the second leg of a transfer is not deleted twice (a 404 after the
-   * first delete wrote). A mirror that was not removed is not reported.
+   * With `reportRemoved`, returns the ids this delete removed, from the
+   * delete's own transaction under its locks: the row and whatever went with
+   * it (a transfer's mirror, a split parent's transfer legs). Never another
+   * owner's row. A caller deleting a selection row by row skips a selected id
+   * already in the union of these, so the second leg of a transfer is not
+   * deleted twice (a 404 after the first delete wrote). A mirror that was not
+   * removed is not reported. Without it the result is empty.
    */
   async removeAny(
     userId: string,
     transactionId: string,
     actor?: TransferActor,
+    options?: { reportRemoved?: boolean },
   ): Promise<string[]> {
     // Only the two columns the routing needs; a miss falls through to
     // remove(), whose findOne throws the not-found error.
@@ -5315,10 +5336,13 @@ export class TransactionsService {
         select: ["id", "isTransfer", "linkedTransactionId"],
       }),
     );
-    if (row?.isTransfer && row.linkedTransactionId) {
-      return this.removeTransfer(userId, transactionId, actor);
-    }
-    return this.remove(userId, transactionId);
+    const removed =
+      row?.isTransfer && row.linkedTransactionId
+        ? await this.removeTransfer(userId, transactionId, actor)
+        : options?.reportRemoved
+          ? await this.remove(userId, transactionId, { reportRemoved: true })
+          : await this.remove(userId, transactionId);
+    return options?.reportRemoved ? removed : [];
   }
 
   /**

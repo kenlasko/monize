@@ -2238,9 +2238,29 @@ describe("AiActionsService", () => {
       transactions.removeAny.mockResolvedValueOnce([TX, ACC2]);
       const result = await deleteBatch("act-batch-mirror");
       expect(transactions.removeAny).toHaveBeenCalledTimes(1);
-      expect(transactions.removeAny).toHaveBeenCalledWith(USER, TX);
+      expect(transactions.removeAny).toHaveBeenCalledWith(USER, TX, undefined, {
+        reportRemoved: true,
+      });
       expect(result.count).toBe(2);
       expect(result.skipped).toHaveLength(0);
+    });
+
+    it("counts a delete row id listed twice once", async () => {
+      transactions.removeAny.mockResolvedValueOnce([TX]);
+      const result = await service.confirm(
+        USER,
+        dtoFor({
+          type: "batch_actions",
+          userId: USER,
+          actionId: "act-batch-dup",
+          expiresAt: Date.now() + 60_000,
+          operation: "delete",
+          rows: [{ transactionId: TX }, { transactionId: TX }],
+        } as import("./ai-action.types").BatchActionsDescriptor),
+      );
+      expect(transactions.removeAny).toHaveBeenCalledTimes(1);
+      expect(result.ids).toEqual([TX]);
+      expect(result.count).toBe(1);
     });
 
     it("deletes the second row itself when the first delete failed", async () => {
@@ -2249,7 +2269,12 @@ describe("AiActionsService", () => {
         .mockResolvedValueOnce([TX, ACC2]);
       const result = await deleteBatch("act-batch-mirror-fail");
       expect(transactions.removeAny).toHaveBeenCalledTimes(2);
-      expect(transactions.removeAny).toHaveBeenLastCalledWith(USER, ACC2);
+      expect(transactions.removeAny).toHaveBeenLastCalledWith(
+        USER,
+        ACC2,
+        undefined,
+        { reportRemoved: true },
+      );
       expect(result.count).toBe(1);
       expect(result.skipped).toHaveLength(1);
     });

@@ -1,6 +1,6 @@
 import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { sharedReviewMock } from "../../shared-expenses/__fixtures__/shared-review";
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, ConflictException } from "@nestjs/common";
 import { withUserContext } from "../../common/db/with-context";
 import { getRequestTimezone } from "../../common/request-context";
 import { McpTransactionsTools } from "./transactions.tool";
@@ -2277,7 +2277,12 @@ describe("McpTransactionsTools", () => {
         ctx,
       );
       expect(transactionsService.removeAny).toHaveBeenCalledTimes(1);
-      expect(transactionsService.removeAny).toHaveBeenCalledWith("u1", "t1");
+      expect(transactionsService.removeAny).toHaveBeenCalledWith(
+        "u1",
+        "t1",
+        undefined,
+        { reportRemoved: true },
+      );
       expect((result.structuredContent as any).ids).toEqual(["t1", "t2"]);
     });
 
@@ -2312,11 +2317,13 @@ describe("McpTransactionsTools", () => {
         description: null,
         currencyCode: "USD",
       });
-      actionBuilder.buildDeleteTransaction.mockReturnValue({
-        type: "delete_transaction",
-        preview: { accountName: "Checking" },
-        descriptor: { type: "delete_transaction", transactionId: "t1" },
-      });
+      for (const id of ["t1", "t2"]) {
+        actionBuilder.buildDeleteTransaction.mockReturnValueOnce({
+          type: "delete_transaction",
+          preview: { accountName: "Checking" },
+          descriptor: { type: "delete_transaction", transactionId: id },
+        });
+      }
       const result = await handlers["manage_transactions"](
         {
           operation: "delete",
@@ -2328,6 +2335,79 @@ describe("McpTransactionsTools", () => {
       expect(transactionsService.removeAny).toHaveBeenCalledTimes(2);
       const parsed = result.structuredContent as any;
       expect(parsed.count).toBe(2);
+    });
+
+    it("counts a row id listed twice once in individual delete mode", async () => {
+      relayService.emitPendingAction.mockResolvedValue(false);
+      acceptingClient();
+      prepService.prepareDelete.mockResolvedValue({ transactionId: "t1" });
+      actionBuilder.buildDeleteTransaction.mockReturnValue({
+        type: "delete_transaction",
+        preview: { accountName: "Checking" },
+        descriptor: { type: "delete_transaction", transactionId: "t1" },
+      });
+      transactionsService.removeAny.mockResolvedValueOnce(["t1"]);
+      const result = await handlers["manage_transactions"](
+        {
+          operation: "delete",
+          items: [{ transactionId: "t1" }, { transactionId: "t1" }],
+          approvalMode: "individual",
+        },
+        ctx,
+      );
+      expect(transactionsService.removeAny).toHaveBeenCalledTimes(1);
+      expect((result.structuredContent as any).ids).toEqual(["t1"]);
+    });
+
+    it("skips an individual card whose commit fails, keeping the committed ids", async () => {
+      relayService.emitPendingAction.mockResolvedValue(false);
+      acceptingClient();
+      prepService.prepareDelete.mockResolvedValue({ transactionId: "t1" });
+      for (const id of ["t1", "t2"]) {
+        actionBuilder.buildDeleteTransaction.mockReturnValueOnce({
+          type: "delete_transaction",
+          preview: { accountName: "Checking" },
+          descriptor: { type: "delete_transaction", transactionId: id },
+        });
+      }
+      transactionsService.removeAny
+        .mockResolvedValueOnce(["t1"])
+        .mockRejectedValueOnce(new Error("connection string leaked"));
+      const result = await handlers["manage_transactions"](
+        {
+          operation: "delete",
+          items: [{ transactionId: "t1" }, { transactionId: "t2" }],
+          approvalMode: "individual",
+        },
+        ctx,
+      );
+      const parsed = result.structuredContent as any;
+      expect(parsed.ids).toEqual(["t1"]);
+      expect(parsed.skipped).toEqual([
+        { index: 1, reason: "An error occurred while processing your request" },
+      ]);
+    });
+
+    it("names the transfer's other leg in the delete prompt of a transfer leg", async () => {
+      relayService.emitPendingAction.mockResolvedValue(false);
+      acceptingClient();
+      prepService.prepareDelete.mockResolvedValue({ transactionId: "t1" });
+      actionBuilder.buildDeleteTransaction.mockReturnValue({
+        type: "delete_transaction",
+        preview: { accountName: "Checking", transferPair: true },
+        descriptor: { type: "delete_transaction", transactionId: "t1" },
+      });
+      await handlers["manage_transactions"](
+        {
+          operation: "delete",
+          items: [{ transactionId: "t1" }, { transactionId: "t2" }],
+          approvalMode: "individual",
+        },
+        ctx,
+      );
+      expect(elicitInput.mock.calls[0][0].message).toContain(
+        "other leg, in the other account, is deleted too",
+      );
     });
 
     it("does not repeat an individual delete card whose row went with an earlier card", async () => {
@@ -2423,6 +2503,55 @@ describe("McpTransactionsTools", () => {
       expect((result.structuredContent as any).ids).toEqual(["t1"]);
     });
 
+    it("counts a row id listed twice once in a bulk delete", async () => {
+      relayService.emitPendingAction.mockResolvedValue(false);
+      acceptingClient();
+      prepService.prepareDeleteBulk.mockResolvedValue({
+        okRows: [{ transactionId: "t1" }, { transactionId: "t1" }],
+        previewRows: [{ status: "ok" }, { status: "ok" }],
+        okIndex: [0, 1],
+        skipped: [],
+      });
+      transactionsService.removeAny.mockResolvedValueOnce(["t1"]);
+      const result = await handlers["manage_transactions"](
+        {
+          operation: "delete",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            transactionId: `t${i + 1}`,
+          })),
+        },
+        ctx,
+      );
+      expect(transactionsService.removeAny).toHaveBeenCalledTimes(1);
+      expect((result.structuredContent as any).ids).toEqual(["t1"]);
+    });
+
+    it("keeps the message of a 4xx refusal as a bulk row's skip reason", async () => {
+      relayService.emitPendingAction.mockResolvedValue(false);
+      acceptingClient();
+      prepService.prepareDeleteBulk.mockResolvedValue({
+        okRows: [{ transactionId: "t1" }],
+        previewRows: [{ status: "ok" }],
+        okIndex: [3],
+        skipped: [],
+      });
+      transactionsService.removeAny.mockRejectedValueOnce(
+        new ConflictException("This transaction is reconciled."),
+      );
+      const result = await handlers["manage_transactions"](
+        {
+          operation: "delete",
+          items: Array.from({ length: 6 }, (_, i) => ({
+            transactionId: `t${i + 1}`,
+          })),
+        },
+        ctx,
+      );
+      expect((result.structuredContent as any).skipped).toEqual([
+        { index: 3, reason: "This transaction is reconciled." },
+      ]);
+    });
+
     it("skips a bulk delete row that fails and still reports the ids deleted", async () => {
       relayService.emitPendingAction.mockResolvedValue(false);
       acceptingClient();
@@ -2434,7 +2563,7 @@ describe("McpTransactionsTools", () => {
       });
       transactionsService.removeAny
         .mockResolvedValueOnce(["t1"])
-        .mockRejectedValueOnce(new Error("locked"));
+        .mockRejectedValueOnce(new Error("relation accounts does not exist"));
       const result = await handlers["manage_transactions"](
         {
           operation: "delete",
@@ -2447,7 +2576,10 @@ describe("McpTransactionsTools", () => {
       const parsed = result.structuredContent as any;
       expect(result.isError).toBeFalsy();
       expect(parsed.ids).toEqual(["t1"]);
-      expect(parsed.skipped).toEqual([{ index: 1, reason: "locked" }]);
+      // A non-HTTP error is not passed on.
+      expect(parsed.skipped).toEqual([
+        { index: 1, reason: "An error occurred while processing your request" },
+      ]);
     });
 
     it("commits an individual create_transfer card via confirmWrite", async () => {
