@@ -14,6 +14,19 @@ function config(
   };
 }
 
+function investmentConfig(): CsvColumnMappingConfig {
+  return config({
+    amount: 6,
+    payee: undefined,
+    investmentMode: true,
+    actionColumn: 1,
+    securityColumn: 2,
+    quantityColumn: 3,
+    priceColumn: 4,
+    commissionColumn: 5,
+  });
+}
+
 describe("parseCsv amounts", () => {
   it("reads a trailing minus, the Unicode minus and a currency code", () => {
     const csv =
@@ -109,6 +122,40 @@ describe("parseCsv amounts", () => {
     expect(result.unreadableAmountRows).toEqual([
       { rowNumber: 2, rawAmount: "ten dollars", date: "2026-01-15", payee: "" },
     ]);
+  });
+
+  it.each([
+    ["commission", "N/A"],
+    ["commission", "1,2.3"],
+    ["commission", "1.2.3"],
+    ["quantity", "1.2.3"],
+    ["price", "1,2.3"],
+  ])(
+    "reports an unreadable investment %s %j, never imports it",
+    (field, bad) => {
+      const cells = { quantity: "1", price: "10", commission: "5" };
+      cells[field as keyof typeof cells] = `"${bad}"`;
+      const csv =
+        "Date,Action,Symbol,Quantity,Price,Commission,Amount\n" +
+        `01/15/2026,Buy,AAPL,${cells.quantity},${cells.price},${cells.commission},15\n`;
+      const result = parseCsv(csv, investmentConfig());
+
+      expect(result.transactions).toHaveLength(0);
+      expect(result.unreadableAmountRows).toEqual([
+        { rowNumber: 2, rawAmount: bad, date: "2026-01-15", payee: "" },
+      ]);
+    },
+  );
+
+  it("reads a grouped commission and a blank commission as 0", () => {
+    const csv =
+      "Date,Action,Symbol,Quantity,Price,Commission,Amount\n" +
+      '01/15/2026,Buy,AAPL,1,10,"1,234.56",1244.56\n' +
+      "01/16/2026,Buy,AAPL,1,10,,10\n";
+    const result = parseCsv(csv, investmentConfig());
+
+    expect(result.unreadableAmountRows).toEqual([]);
+    expect(result.transactions.map((t) => t.commission)).toEqual([1234.56, 0]);
   });
 
   it("returns an empty list for an empty file", () => {

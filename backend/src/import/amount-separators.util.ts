@@ -34,7 +34,13 @@ export function normalizeAmountSeparators(value: string): string {
   const dotCount = countOf(value, ".");
 
   if (commaCount > 0 && dotCount > 0) {
-    return value.lastIndexOf(",") > value.lastIndexOf(".")
+    const decimalIsComma = value.lastIndexOf(",") > value.lastIndexOf(".");
+    const [integer, ...rest] = value.split(decimalIsComma ? "," : ".");
+    // "1,2.3" or "1.2,3.4": a second decimal or a malformed group is no number.
+    if (rest.length !== 1 || !isGrouped(integer, decimalIsComma ? "." : ",")) {
+      return value;
+    }
+    return decimalIsComma
       ? value.replace(/\./g, "").replace(",", ".")
       : value.replace(/,/g, "");
   }
@@ -46,12 +52,22 @@ export function normalizeAmountSeparators(value: string): string {
     return isGrouping ? value.replace(",", "") : value.replace(",", ".");
   }
   if (commaCount > 1) {
-    return value.replace(/,/g, "");
+    return isGrouped(value, ",") ? value.replace(/,/g, "") : value;
   }
   if (dotCount > 1) {
-    return value.replace(/\./g, "");
+    return isGrouped(value, ".") ? value.replace(/\./g, "") : value;
   }
   return value;
+}
+
+/** Digits in a leading group of 1-3, then groups of 2-3 (US, European, lakh). */
+function isGrouped(integer: string, separator: string): boolean {
+  return integer
+    .replace(/^[-+]/, "")
+    .split(separator)
+    .every((group, i) =>
+      i === 0 ? /^\d{1,3}$/.test(group) : /^\d{2,3}$/.test(group),
+    );
 }
 
 function countOf(value: string, separator: string): number {

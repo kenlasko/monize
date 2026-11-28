@@ -1245,8 +1245,18 @@ function readRowAmount(
     const value = parseCsvAmount(text);
     return value === null ? { value: 0, unreadable: text.trim() } : { value };
   };
+  // Investment quantity, price and commission are amounts too: text that does
+  // not read is reported, never imported as 0 or a guessed number.
+  const investmentUnreadable = config.investmentMode
+    ? [config.quantityColumn, config.priceColumn, config.commissionColumn]
+        .map((column) => read(column).unreadable)
+        .find((text) => text !== undefined)
+    : undefined;
   if (config.amount !== undefined) {
-    const { value: rawAmount, unreadable } = read(config.amount);
+    const { value: rawAmount, unreadable: amountUnreadable } = read(
+      config.amount,
+    );
+    const unreadable = amountUnreadable ?? investmentUnreadable;
     return {
       amount: config.reverseSign ? -rawAmount : rawAmount,
       rawAmount,
@@ -1256,7 +1266,8 @@ function readRowAmount(
   if (config.debit !== undefined || config.credit !== undefined) {
     const credit = read(config.credit);
     const debit = read(config.debit);
-    const unreadable = credit.unreadable ?? debit.unreadable;
+    const unreadable =
+      credit.unreadable ?? debit.unreadable ?? investmentUnreadable;
     // Strip sign from debit and negate -- debit is always an outflow
     return {
       amount:
@@ -1265,7 +1276,13 @@ function readRowAmount(
       ...(unreadable !== undefined ? { unreadable } : {}),
     };
   }
-  return { amount: 0, rawAmount: 0 };
+  return {
+    amount: 0,
+    rawAmount: 0,
+    ...(investmentUnreadable !== undefined
+      ? { unreadable: investmentUnreadable }
+      : {}),
+  };
 }
 
 /**
