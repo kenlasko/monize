@@ -5,8 +5,12 @@ import { ScheduledTransaction } from "../scheduled-transactions/entities/schedul
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { Warranty } from "../warranties/entities/warranty.entity";
 import {
+  CountedReference,
   RecordInUseEntry,
+  RULES_JSON,
   countReferences,
+  countReferencesById,
+  jsonIdListSql,
 } from "../common/helpers/record-in-use";
 import { affectedRowCount } from "../common/db/query-result";
 import { PayeeAlias } from "./entities/payee-alias.entity";
@@ -169,6 +173,9 @@ export type PayeeReferenceKind =
 
 const countRows = (table: string) =>
   `SELECT count(*)::int AS count FROM ${table} WHERE user_id = $1 AND payee_id = $2`;
+/** The same count for every payee at once: `$1` the user, rows of `id`, `count`. */
+const countRowsById = (table: string) =>
+  `SELECT payee_id AS id, count(*)::int AS count FROM ${table} WHERE user_id = $1 AND payee_id IS NOT NULL GROUP BY payee_id`;
 
 /**
  * How a delete counts each column of `PAYEE_REFERENCE_MOVES` (typed to the same
@@ -178,33 +185,44 @@ const countRows = (table: string) =>
  */
 const PAYEE_REFERENCE_COUNTS: Record<
   CountedColumn,
-  { kind: PayeeReferenceKind; sql: string; ids?: boolean }
+  CountedReference & { kind: PayeeReferenceKind }
 > = {
   "transactions.payee_id": {
     kind: "transactions",
     sql: countRows("transactions"),
+    listSql: countRowsById("transactions"),
   },
   "scheduled_transactions.payee_id": {
     kind: "scheduledTransactions",
     sql: countRows("scheduled_transactions"),
+    listSql: countRowsById("scheduled_transactions"),
   },
-  "warranties.payee_id": { kind: "warranties", sql: countRows("warranties") },
+  "warranties.payee_id": {
+    kind: "warranties",
+    sql: countRows("warranties"),
+    listSql: countRowsById("warranties"),
+  },
   "email_receipt_parsers.payee_id": {
     kind: "emailReceiptParsers",
     sql: countRows("email_receipt_parsers"),
+    listSql: countRowsById("email_receipt_parsers"),
   },
   "accounts.overpayment_payee_id": {
     kind: "loanOverpaymentPayee",
     sql: "SELECT id FROM accounts WHERE user_id = $1 AND overpayment_payee_id = $2",
+    listSql:
+      "SELECT overpayment_payee_id AS id, count(*)::int AS count FROM accounts WHERE user_id = $1 AND overpayment_payee_id IS NOT NULL GROUP BY overpayment_payee_id",
     ids: true,
   },
   "shared_people.payee_id": {
     kind: "sharedPeople",
     sql: countRows("shared_people"),
+    listSql: countRowsById("shared_people"),
   },
   "shared_postings.payee_id": {
     kind: "sharedPostings",
     sql: countRows("shared_postings"),
+    listSql: countRowsById("shared_postings"),
   },
 };
 
@@ -214,8 +232,30 @@ const PAYEE_REFERENCE_COUNTS: Record<
  * LIKE wildcard and is unique, so a text match is exact.
  * shortcut: matches the id anywhere in the JSON text; fine for UUIDs.
  */
-const RULES_SQL =
-  "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (condition::text LIKE $2 OR actions::text LIKE $2)";
+const PAYEE_RULES_REFERENCE: CountedReference = {
+  kind: "rules",
+  like: true,
+  sql: "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (lower(condition::text) LIKE $2 OR lower(actions::text) LIKE $2)",
+  listSql: jsonIdListSql({ ...RULES_JSON, target: "payees" }),
+};
+
+/**
+ * How many rows point at each of the user's payees, by the same references
+ * `findPayeeReferences` refuses a delete for, so the list's count and the 409
+ * agree.
+ */
+export function countPayeeUsage(
+  m: EntityManager,
+  userId: string,
+): Promise<Map<string, number>> {
+  return countReferencesById(
+    m,
+    userId,
+    [...Object.values(PAYEE_REFERENCE_COUNTS), PAYEE_RULES_REFERENCE].map(
+      (c) => c.listSql,
+    ),
+  );
+}
 
 /**
  * Every kind of row that still points at the payee, with a count above zero.
@@ -229,6 +269,6 @@ export function findPayeeReferences(
   // A UUID is valid in either case; JSON keeps it lowercase and LIKE is exact.
   return countReferences(m, userId, payeeId.toLowerCase(), [
     ...Object.values(PAYEE_REFERENCE_COUNTS),
-    { kind: "rules", sql: RULES_SQL, like: true },
+    PAYEE_RULES_REFERENCE,
   ]);
 }

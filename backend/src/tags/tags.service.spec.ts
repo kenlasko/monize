@@ -365,6 +365,8 @@ describe("TagsService", () => {
           scheduled: "2",
           scheduled_splits: "1",
           securities: "5",
+          rules: "6",
+          reports: "7",
         },
       ]);
 
@@ -374,7 +376,25 @@ describe("TagsService", () => {
         scheduledTransactions: 2,
         scheduledSplits: 1,
         securities: 5,
+        rules: 6,
+        customReports: 7,
       });
+    });
+
+    it("binds the lowercase id once for every count", async () => {
+      tagsRepository.findOne.mockResolvedValue(mockTag);
+      mockManager.query.mockResolvedValue([{}]);
+
+      await service.getDeleteImpact(
+        userId,
+        "ABCDEF12-0000-4000-8000-00000000AAAA",
+      );
+
+      expect(mockManager.query).toHaveBeenCalledWith(expect.any(String), [
+        "abcdef12-0000-4000-8000-00000000aaaa",
+        "%abcdef12-0000-4000-8000-00000000aaaa%",
+        userId,
+      ]);
     });
 
     it("throws NotFoundException when tag does not exist", async () => {
@@ -387,43 +407,29 @@ describe("TagsService", () => {
   });
 
   describe("getAllTransactionCounts()", () => {
-    it("returns transaction counts keyed by tag ID", async () => {
-      const ttQueryBuilder = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        innerJoin: jest.fn().mockReturnThis(),
-        groupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue([
-          { tag_id: "tag-1", count: "5" },
-          { tag_id: "tag-2", count: "3" },
-        ]),
-      };
-      transactionTagsRepository.createQueryBuilder.mockReturnValue(
-        ttQueryBuilder,
-      );
+    it("sums every reference per tag ID, schedules' tag_ids included", async () => {
+      mockManager.query
+        .mockResolvedValueOnce([{ id: "tag-1", count: 5 }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          { id: "tag-1", count: 1 },
+          { id: "tag-2", count: 3 },
+        ])
+        .mockResolvedValue([]);
 
       const result = await service.getAllTransactionCounts(userId);
 
-      expect(result).toEqual({ "tag-1": 5, "tag-2": 3 });
-      expect(ttQueryBuilder.innerJoin).toHaveBeenCalledWith(
-        Tag,
-        "t",
-        "t.id = tt.tag_id AND t.user_id = :userId",
-        { userId },
+      expect(result).toEqual({ "tag-1": 6, "tag-2": 3 });
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining("FROM scheduled_transactions"),
+        [userId],
       );
     });
 
-    it("returns empty object when no tags have transactions", async () => {
-      const ttQueryBuilder = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        innerJoin: jest.fn().mockReturnThis(),
-        groupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue([]),
-      };
-      transactionTagsRepository.createQueryBuilder.mockReturnValue(
-        ttQueryBuilder,
-      );
+    it("returns empty object when no tags have references", async () => {
+      mockManager.query.mockResolvedValue([]);
 
       const result = await service.getAllTransactionCounts(userId);
 

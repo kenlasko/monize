@@ -26,13 +26,17 @@
       "title": "Eliminar etiqueta",
       "withUsesMessage": "¿Seguro que quieres eliminar \"{name}\"? La etiqueta se quitará de: {places}. Nada más cambia en ellos. Esta acción no se puede deshacer.",
       "simpleMessage": "¿Seguro que quieres eliminar \"{name}\"? No se usa en ningún sitio. Esta acción no se puede deshacer.",
+      "namedMessage": "¿Seguro que quiere eliminar \"{name}\"? Aún la nombran {places}. No se modifican y apuntarán a una etiqueta eliminada. Esta acción no se puede deshacer.",
+      "alsoNamed": "Además, aún la nombran {places}. No se modifican y apuntarán a una etiqueta eliminada.",
       "unknownMessage": "No se pudo comprobar dónde se usa \"{name}\". Si la eliminas, se quitará de cada transacción, línea de división, transacción programada y valor que la use. Esta acción no se puede deshacer.",
       "kinds": {
         "transactions": "{count, plural, one {# transacción} other {# transacciones}}",
         "transactionSplits": "{count, plural, one {# línea de división de transacción} other {# líneas de división de transacción}}",
         "scheduledTransactions": "{count, plural, one {# transacción programada} other {# transacciones programadas}}",
         "scheduledSplits": "{count, plural, one {# línea de división programada} other {# líneas de división programadas}}",
-        "securities": "{count, plural, one {# valor} other {# valores}}"
+        "securities": "{count, plural, one {# valor} other {# valores}}",
+        "rules": "{count, plural, one {# regla} other {# reglas}}",
+        "customReports": "{count, plural, one {# informe guardado} other {# informes guardados}}"
       }
     },
     "toasts": {
@@ -54,7 +58,7 @@
     "header": {
       "name": "Nombre",
       "icon": "Icono",
-      "transactions": "Transacciones",
+      "count": "Cantidad",
       "actions": "Acciones"
     }
   },

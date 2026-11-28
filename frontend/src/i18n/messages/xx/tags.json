@@ -26,13 +26,17 @@
       "title": "[XX-Delete Tag-XX]",
       "withUsesMessage": "[XX-Are you sure you want to delete \"{name}\"? The tag will be removed from: {places}. Nothing else on them changes. This action cannot be undone.-XX]",
       "simpleMessage": "[XX-Are you sure you want to delete \"{name}\"? It is not used anywhere. This action cannot be undone.-XX]",
+      "namedMessage": "[XX-Are you sure you want to delete \"{name}\"? It is still named by {places}. They are not changed and will point at a deleted tag. This action cannot be undone.-XX]",
+      "alsoNamed": "[XX-It is also still named by {places}. They are not changed and will point at a deleted tag.-XX]",
       "unknownMessage": "[XX-Could not check where \"{name}\" is used. If you delete it, it is removed from every transaction, split line, scheduled transaction and security that uses it. This action cannot be undone.-XX]",
       "kinds": {
         "transactions": "[XX-{count, plural, one {# transaction} other {# transactions}}-XX]",
         "transactionSplits": "[XX-{count, plural, one {# transaction split line} other {# transaction split lines}}-XX]",
         "scheduledTransactions": "[XX-{count, plural, one {# scheduled transaction} other {# scheduled transactions}}-XX]",
         "scheduledSplits": "[XX-{count, plural, one {# scheduled split line} other {# scheduled split lines}}-XX]",
-        "securities": "[XX-{count, plural, one {# security} other {# securities}}-XX]"
+        "securities": "[XX-{count, plural, one {# security} other {# securities}}-XX]",
+        "rules": "[XX-{count, plural, one {# rule} other {# rules}}-XX]",
+        "customReports": "[XX-{count, plural, one {# saved report} other {# saved reports}}-XX]"
       }
     },
     "toasts": {
@@ -54,7 +58,7 @@
     "header": {
       "name": "[XX-Name-XX]",
       "icon": "[XX-Icon-XX]",
-      "transactions": "[XX-Transactions-XX]",
+      "count": "[XX-Count-XX]",
       "actions": "[XX-Actions-XX]"
     }
   },

@@ -6,6 +6,7 @@ import { Category } from '@/types/category';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { categoriesApi } from '@/lib/categories';
+import type { CategoryUsage } from '@/lib/categories';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 
 interface DeleteCategoryDialogProps {
@@ -26,7 +27,9 @@ export function DeleteCategoryDialog({
 }: DeleteCategoryDialogProps) {
   const t = useTranslations('categories');
   const tc = useTranslations('common');
-  const [transactionCount, setTransactionCount] = useState<number | null>(null);
+  const [usage, setUsage] = useState<CategoryUsage | null>(null);
+  // The lookup failed: usage is unknown, which is not the same as unused.
+  const [usageFailed, setUsageFailed] = useState(false);
   const [reassignTo, setReassignTo] = useState<string>('');
 
   // Reset state during render when category changes
@@ -35,20 +38,35 @@ export function DeleteCategoryDialog({
   if (categoryId !== prevCategoryId) {
     setPrevCategoryId(categoryId);
     if (categoryId) {
-      setTransactionCount(null);
+      setUsage(null);
+      setUsageFailed(false);
       setReassignTo('');
     }
   }
 
-  const isLoading = isOpen && categoryId !== null && transactionCount === null;
+  const isLoading = isOpen && categoryId !== null && usage === null && !usageFailed;
 
+  // Every open starts from "unknown" (the render-time reset above, which also
+  // runs on a reopen of the same category) and one lookup answers it. A late
+  // answer from an earlier open is dropped, so it cannot overwrite this one.
   useEffect(() => {
-    if (isOpen && category) {
-      categoriesApi
-        .getTransactionCount(category.id)
-        .then(setTransactionCount)
-        .catch(() => setTransactionCount(0));
-    }
+    if (!isOpen || !category) return;
+    let current = true;
+    categoriesApi
+      .getUsage(category.id)
+      .then((result) => {
+        if (!current) return;
+        setUsageFailed(false);
+        setUsage(result);
+      })
+      .catch(() => {
+        if (!current) return;
+        setUsage(null);
+        setUsageFailed(true);
+      });
+    return () => {
+      current = false;
+    };
   }, [isOpen, category]);
 
   // Get available categories to reassign to (excluding current and its children)
@@ -75,7 +93,9 @@ export function DeleteCategoryDialog({
 
   // Nothing to move: a plain delete, which an acting delegate may also run.
   const handleConfirm = () => {
-    onConfirm(transactionCount ? reassignTo || null : undefined);
+    // Only rows a reassign moves are offered a target; anything else that
+    // uses the category stays, so a plain delete lets the server list it.
+    onConfirm(!usageFailed && usage?.movableCount ? reassignTo || null : undefined);
   };
 
   // Don't render if no category (Modal handles isOpen check)
@@ -96,12 +116,17 @@ export function DeleteCategoryDialog({
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400 dark:border-gray-500 mr-2"></div>
           {t('deleteDialog.checkingUsage')}
         </div>
-      ) : transactionCount && transactionCount > 0 ? (
+      ) : usageFailed ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {t('deleteDialog.usageUnknown')}
+        </p>
+      ) : usage && usage.count > 0 ? (
         <div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {t('deleteDialog.usedBy', { count: transactionCount })}
+            {t('deleteDialog.usedBy', { count: usage.count })}
           </p>
 
+          {usage.movableCount > 0 && (
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t('deleteDialog.reassignLabel')}
@@ -127,6 +152,7 @@ export function DeleteCategoryDialog({
               })}
             </select>
           </div>
+          )}
         </div>
       ) : (
         <p className="text-sm text-gray-500 dark:text-gray-400">

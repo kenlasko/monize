@@ -93,10 +93,11 @@
   "deleteDialog": {
     "title": "\"{name}\" kategorisini sil",
     "checkingUsage": "Kullanım kontrol ediliyor...",
-    "usedBy": "Bu kategori {count, plural, one {# öğe} other {# öğe}} tarafından kullanılıyor (işlemler ve/veya zamanlanmış faturalar ve mevduatlar).",
+    "usedBy": "Bu kategori {count, plural, one {# kayıtta} other {# kayıtta}} kullanılıyor: işlemler, planlı fatura ve para yatırmalar, bütçeler, kurallar, raporlar ve daha fazlası.",
     "reassignLabel": "Yeniden ata:",
     "leaveUncategorized": "Kategorisiz bırak",
     "safeToDelete": "Bu kategori kullanılmıyor. Güvenle silinebilir.",
+    "usageUnknown": "Bu kategorinin nerede kullanıldığı kontrol edilemedi. Hâlâ kullanılıyorsa silme reddedilir ve hiçbir şey değişmez.",
     "cannotUndo": "Bu işlem geri alınamaz."
   },
   "validation": {

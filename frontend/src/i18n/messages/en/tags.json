@@ -26,13 +26,17 @@
       "title": "Delete Tag",
       "withUsesMessage": "Are you sure you want to delete \"{name}\"? The tag will be removed from: {places}. Nothing else on them changes. This action cannot be undone.",
       "simpleMessage": "Are you sure you want to delete \"{name}\"? It is not used anywhere. This action cannot be undone.",
+      "namedMessage": "Are you sure you want to delete \"{name}\"? It is still named by {places}. They are not changed and will point at a deleted tag. This action cannot be undone.",
+      "alsoNamed": "It is also still named by {places}. They are not changed and will point at a deleted tag.",
       "unknownMessage": "Could not check where \"{name}\" is used. If you delete it, it is removed from every transaction, split line, scheduled transaction and security that uses it. This action cannot be undone.",
       "kinds": {
         "transactions": "{count, plural, one {# transaction} other {# transactions}}",
         "transactionSplits": "{count, plural, one {# transaction split line} other {# transaction split lines}}",
         "scheduledTransactions": "{count, plural, one {# scheduled transaction} other {# scheduled transactions}}",
         "scheduledSplits": "{count, plural, one {# scheduled split line} other {# scheduled split lines}}",
-        "securities": "{count, plural, one {# security} other {# securities}}"
+        "securities": "{count, plural, one {# security} other {# securities}}",
+        "rules": "{count, plural, one {# rule} other {# rules}}",
+        "customReports": "{count, plural, one {# saved report} other {# saved reports}}"
       }
     },
     "toasts": {
@@ -54,7 +58,7 @@
     "header": {
       "name": "Name",
       "icon": "Icon",
-      "transactions": "Transactions",
+      "count": "Count",
       "actions": "Actions"
     }
   },

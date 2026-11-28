@@ -33,6 +33,8 @@ export interface Category {
   isSystem: boolean;
   createdAt: string;
   transactionCount?: number;
+  /** Every row the delete guard refuses for (schedules, budget lines, ...); the list shows this. */
+  usageCount?: number;
 }
 
 /**

@@ -93,10 +93,11 @@
   "deleteDialog": {
     "title": "删除 \"{name}\"",
     "checkingUsage": "检查使用情况...",
-    "usedBy": "此分类被 {count, plural, one {# 项} other {# 项}}（交易和/或定期账单及存款）使用。",
+    "usedBy": "此分类被 {count, plural, other {# 条记录}}使用：交易、计划账单和存款、预算、规则、报表等。",
     "reassignLabel": "重新分配至：",
     "leaveUncategorized": "保留未分类",
     "safeToDelete": "此分类未被使用，可以安全删除。",
+    "usageUnknown": "无法检查此分类在哪里被使用。如果仍有内容在使用它，删除将被拒绝，且不会有任何更改。",
     "cannotUndo": "此操作无法撤销。"
   },
   "validation": {

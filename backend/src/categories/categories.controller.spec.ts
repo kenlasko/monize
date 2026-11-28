@@ -33,7 +33,7 @@ describe("CategoriesController", () => {
       findOne: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
-      getTransactionCount: jest.fn(),
+      getUsage: jest.fn(),
       reassignTransactions: jest.fn(),
     };
     mockCategoryDetailService = {
@@ -123,6 +123,19 @@ describe("CategoriesController", () => {
       expect(mockCategoriesService.findAll).toHaveBeenCalledWith(
         "user-1",
         true,
+        { withUsage: false },
+      );
+    });
+
+    it("asks for usage counts only when the usage flag is set", () => {
+      mockCategoriesService.findAll!.mockReturnValue("categories");
+
+      controller.findAll(mockReq, false, true);
+
+      expect(mockCategoriesService.findAll).toHaveBeenCalledWith(
+        "user-1",
+        false,
+        { withUsage: true },
       );
     });
 
@@ -134,6 +147,7 @@ describe("CategoriesController", () => {
       expect(mockCategoriesService.findAll).toHaveBeenCalledWith(
         "user-1",
         false,
+        { withUsage: false },
       );
     });
   });
@@ -324,14 +338,14 @@ describe("CategoriesController", () => {
     });
   });
 
-  describe("getTransactionCount()", () => {
-    it("delegates to categoriesService.getTransactionCount with userId and id", () => {
-      mockCategoriesService.getTransactionCount!.mockReturnValue("count");
+  describe("getUsage()", () => {
+    it("delegates to categoriesService.getUsage with userId and id", () => {
+      mockCategoriesService.getUsage!.mockReturnValue("count");
 
-      const result = controller.getTransactionCount(mockReq, "cat-1");
+      const result = controller.getUsage(mockReq, "cat-1");
 
       expect(result).toBe("count");
-      expect(mockCategoriesService.getTransactionCount).toHaveBeenCalledWith(
+      expect(mockCategoriesService.getUsage).toHaveBeenCalledWith(
         "user-1",
         "cat-1",
       );

@@ -235,6 +235,7 @@ vi.mock('@/components/payees/PayeeList', () => ({
       {payees.map((p: any) => (
         <div key={p.id} data-testid={`payee-${p.id}`}>
           {p.name}
+          <span data-testid={`usage-${p.id}`}>{p.usageCount ?? 'none'}</span>
           <button data-testid={`edit-${p.id}`} onClick={() => onEdit(p)}>Edit</button>
           <button data-testid={`delete-${p.id}`} onClick={() => onDelete(p.id)}>Delete</button>
           <button data-testid={`reactivate-${p.id}`} onClick={() => onReactivate(p.id)}>Reactivate</button>
@@ -483,6 +484,20 @@ describe('PayeesPage', () => {
       });
     });
 
+    it('orders the Count column by usageCount, the figure the list shows', async () => {
+      // Used only by schedules: no transactions, but the most records.
+      mockGetAllPayees.mockResolvedValue([
+        { ...mockPayees[0], usageCount: 50 },
+        { id: 'p-9', name: 'Landlord', defaultCategoryId: null, defaultCategory: null, transactionCount: 0, usageCount: 99, isActive: true },
+      ]);
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('sort-by-count'));
+      await waitFor(() => expect(screen.getByTestId('sort-info')).toHaveTextContent('count desc'));
+      const ids = screen.getAllByTestId(/^payee-p-/).map((el) => el.getAttribute('data-testid'));
+      expect(ids).toEqual(['payee-p-9', 'payee-p-1']);
+    });
+
     it('sorts by category in asc order by default', async () => {
       render(<PayeesPage />);
       await waitFor(() => {
@@ -716,6 +731,17 @@ describe('PayeesPage', () => {
         expect(mockReactivatePayee).toHaveBeenCalledWith('p-1');
         expect(toast.success).toHaveBeenCalledWith('Payee "Grocery Store" reactivated');
       });
+    });
+
+    it('keeps the list-only counts of a reactivated payee', async () => {
+      mockGetAllPayees.mockResolvedValue([{ ...mockPayees[0], usageCount: 7 }]);
+      // The response is the bare payee row, without usageCount.
+      mockReactivatePayee.mockResolvedValue({ id: 'p-1', name: 'Grocery Store', isActive: true });
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('usage-p-1')).toHaveTextContent('7'));
+      await act(async () => { fireEvent.click(screen.getByTestId('reactivate-p-1')); });
+      await waitFor(() => expect(mockReactivatePayee).toHaveBeenCalledWith('p-1'));
+      expect(screen.getByTestId('usage-p-1')).toHaveTextContent('7');
     });
 
     it('shows error toast when reactivate fails', async () => {

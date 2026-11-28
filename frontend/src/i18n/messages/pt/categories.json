@@ -93,10 +93,11 @@
   "deleteDialog": {
     "title": "Eliminar \"{name}\"",
     "checkingUsage": "A verificar utilização...",
-    "usedBy": "Esta categoria é utilizada por {count, plural, one {# item} other {# itens}} (transações e/ou faturas e depósitos agendados).",
+    "usedBy": "Esta categoria é usada por {count, plural, one {# registo} other {# registos}}: transações, contas e depósitos agendados, orçamentos, regras, relatórios e mais.",
     "reassignLabel": "Reatribuir a:",
     "leaveUncategorized": "Deixar sem categoria",
     "safeToDelete": "Esta categoria não está em uso. Pode ser eliminada com segurança.",
+    "usageUnknown": "Não foi possível verificar onde esta categoria é usada. Se algo ainda a usar, a eliminação é recusada e nada muda.",
     "cannotUndo": "Esta ação não pode ser desfeita."
   },
   "validation": {

@@ -26,13 +26,17 @@
       "title": "刪除標籤",
       "withUsesMessage": "確定要刪除「{name}」嗎？此標籤將從以下位置移除：{places}。這些項目的其他內容不會改變。此操作無法復原。",
       "simpleMessage": "確定要刪除「{name}」嗎？此標籤未在任何地方使用。此操作無法復原。",
+      "namedMessage": "確定要刪除「{name}」嗎？它仍被 {places} 引用。這些內容不會被修改，並將指向已刪除的標籤。此操作無法復原。",
+      "alsoNamed": "它還被 {places} 引用。這些內容不會被修改，並將指向已刪除的標籤。",
       "unknownMessage": "無法檢查「{name}」的使用位置。刪除後，它將從所有使用它的交易、拆分行、排程交易和證券中移除。此操作無法復原。",
       "kinds": {
         "transactions": "{count, plural, other {# 筆交易}}",
         "transactionSplits": "{count, plural, other {# 條交易拆分行}}",
         "scheduledTransactions": "{count, plural, other {# 筆排程交易}}",
         "scheduledSplits": "{count, plural, other {# 條排程拆分行}}",
-        "securities": "{count, plural, other {# 檔證券}}"
+        "securities": "{count, plural, other {# 檔證券}}",
+        "rules": "{count, plural, other {# 條規則}}",
+        "customReports": "{count, plural, other {# 份已儲存的報表}}"
       }
     },
     "toasts": {
@@ -54,7 +58,7 @@
     "header": {
       "name": "名稱",
       "icon": "圖示",
-      "transactions": "交易",
+      "count": "數量",
       "actions": "動作"
     }
   },

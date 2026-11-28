@@ -26,13 +26,17 @@
       "title": "Usuń tag",
       "withUsesMessage": "Czy na pewno usunąć \"{name}\"? Tag zostanie usunięty z: {places}. Nic innego w tych pozycjach się nie zmieni. Tej czynności nie można cofnąć.",
       "simpleMessage": "Czy na pewno usunąć \"{name}\"? Nie jest nigdzie używany. Tej czynności nie można cofnąć.",
+      "namedMessage": "Czy na pewno usunąć \"{name}\"? Nadal wymieniają go: {places}. Nie zostaną zmienione i będą wskazywać usunięty tag. Tej czynności nie można cofnąć.",
+      "alsoNamed": "Nadal wymieniają go także: {places}. Nie zostaną zmienione i będą wskazywać usunięty tag.",
       "unknownMessage": "Nie udało się sprawdzić, gdzie używany jest \"{name}\". Po usunięciu zostanie usunięty z każdej transakcji, linii podziału, zaplanowanej transakcji i papieru wartościowego, które go używają. Tej czynności nie można cofnąć.",
       "kinds": {
         "transactions": "{count, plural, one {# transakcji} other {# transakcji}}",
         "transactionSplits": "{count, plural, one {# linii podziału transakcji} other {# linii podziału transakcji}}",
         "scheduledTransactions": "{count, plural, one {# zaplanowanej transakcji} other {# zaplanowanych transakcji}}",
         "scheduledSplits": "{count, plural, one {# zaplanowanej linii podziału} other {# zaplanowanych linii podziału}}",
-        "securities": "{count, plural, one {# papieru wartościowego} other {# papierów wartościowych}}"
+        "securities": "{count, plural, one {# papieru wartościowego} other {# papierów wartościowych}}",
+        "rules": "{count, plural, one {# reguły} other {# reguł}}",
+        "customReports": "{count, plural, one {# zapisanego raportu} other {# zapisanych raportów}}"
       }
     },
     "toasts": {
@@ -54,7 +58,7 @@
     "header": {
       "name": "Nazwa",
       "icon": "Ikona",
-      "transactions": "Transakcje",
+      "count": "Liczba",
       "actions": "Akcje"
     }
   },

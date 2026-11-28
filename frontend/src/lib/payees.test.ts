@@ -35,6 +35,22 @@ describe('payeesApi', () => {
     expect(result).toHaveLength(1);
   });
 
+  it('getAll with usage is fetched fresh every time, never cached', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    await payeesApi.getAll('all', { withUsage: true });
+    await payeesApi.getAll('all', { withUsage: true });
+    const usageCalls = vi.mocked(apiClient.get).mock.calls.filter(
+      ([, config]) => (config as { params?: { usage?: boolean } } | undefined)?.params?.usage,
+    );
+    expect(usageCalls).toHaveLength(2);
+  });
+
+  it('getAll asks for usage counts only with withUsage', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    await payeesApi.getAll('all', { withUsage: true });
+    expect(apiClient.get).toHaveBeenCalledWith('/payees', { params: { status: 'all', usage: true } });
+  });
+
   it('getById fetches /payees/:id', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: { id: 'p-1' } });
     await payeesApi.getById('p-1');

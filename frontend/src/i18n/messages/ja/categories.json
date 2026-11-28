@@ -93,10 +93,11 @@
   "deleteDialog": {
     "title": "「{name}」を削除",
     "checkingUsage": "使用状況を確認中...",
-    "usedBy": "このカテゴリは {count, plural, one {# 件} other {# 件}}（取引またはスケジュール済み請求・入金）で使用されています。",
+    "usedBy": "このカテゴリは {count, plural, other {# 件}}で使われています: 取引、予定の支払いと入金、予算、ルール、レポートなど。",
     "reassignLabel": "再割り当て先：",
     "leaveUncategorized": "未分類のままにする",
     "safeToDelete": "このカテゴリは使用されていません。安全に削除できます。",
+    "usageUnknown": "このカテゴリがどこで使われているか確認できませんでした。まだ使われている場合は、削除は拒否され、何も変更されません。",
     "cannotUndo": "この操作は取り消せません。"
   },
   "validation": {

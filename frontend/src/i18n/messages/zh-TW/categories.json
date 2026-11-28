@@ -93,10 +93,11 @@
   "deleteDialog": {
     "title": "刪除「{name}」",
     "checkingUsage": "正在檢查使用狀況...",
-    "usedBy": "此類別已被 {count, plural, one {# 個項目} other {# 個項目}} 使用（交易和/或排程帳單與存款）。",
+    "usedBy": "此分類被 {count, plural, other {# 筆記錄}}使用：交易、排程帳單與存款、預算、規則、報表等。",
     "reassignLabel": "重新指定至：",
     "leaveUncategorized": "不分類",
     "safeToDelete": "此類別目前未使用，可以安全刪除。",
+    "usageUnknown": "無法檢查此分類在哪裡被使用。若仍有內容在使用它，刪除將被拒絕，且不會有任何變更。",
     "cannotUndo": "此操作無法復原。"
   },
   "validation": {

@@ -74,7 +74,7 @@ const mockGetAll = vi.fn().mockResolvedValue([]);
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
-const none = { transactions: 0, transactionSplits: 0, scheduledTransactions: 0, scheduledSplits: 0, securities: 0 };
+const none = { transactions: 0, transactionSplits: 0, scheduledTransactions: 0, scheduledSplits: 0, securities: 0, rules: 0, customReports: 0 };
 const mockGetDeleteImpact = vi.fn().mockResolvedValue(none);
 const mockGetAllTransactionCounts = vi.fn().mockResolvedValue({});
 
@@ -514,6 +514,8 @@ describe('TagsPage', () => {
       scheduledTransactions: 2,
       scheduledSplits: 3,
       securities: 1,
+      rules: 2,
+      customReports: 1,
     });
     await openDelete();
     const text = screen.getByTestId('dialog-message').textContent;
@@ -522,6 +524,19 @@ describe('TagsPage', () => {
     expect(text).toContain('2 scheduled transactions');
     expect(text).toContain('3 scheduled split lines');
     expect(text).toContain('1 security');
+    // Rules and reports are not cleaned by the delete: their own sentence.
+    expect(text).toMatch(/removed from: .*1 security\. Nothing else/);
+    expect(text).toMatch(/also still named by 2 rules, 1 saved report\. They are not changed and will point at a deleted tag/);
+    expect(text).not.toMatch(/removed from:[^.]*rules/);
+  });
+
+  it('does not call a tag used only in a rule unused', async () => {
+    mockGetDeleteImpact.mockResolvedValue({ ...none, rules: 1 });
+    await openDelete();
+    const text = screen.getByTestId('dialog-message').textContent;
+    expect(text).toContain('It is still named by 1 rule');
+    expect(text).toContain('will point at a deleted tag');
+    expect(text).not.toMatch(/not used anywhere|removed from/);
   });
 
   it('lists only the kinds that are in use', async () => {

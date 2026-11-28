@@ -188,7 +188,7 @@ export class TagToolPrepService {
     // list_tags' useCount (uses to date) measures.
     return withScopedDb(this.dataSource, async (m) => {
       const tag = await this.resolve(m, userId, row.name);
-      const n = await countTagReferences(m, tag.id);
+      const n = await countTagReferences(m, userId, tag.id);
       return {
         tagId: tag.id,
         name: tag.name,

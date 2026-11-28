@@ -150,6 +150,8 @@ describe("CategoriesService", () => {
       [ScheduledTransactionSplit, scheduledSplitsRepository],
       [UserPreference, preferencesRepository],
     ]));
+    // The list's usage counts (`countCategoryUsage`) read raw rows.
+    txManager.query.mockResolvedValue([]);
     txManager.update.mockResolvedValue({ affected: 0 });
     txManager.find.mockResolvedValue([]);
     // Mirror real TypeORM: save/remove require an explicit entity target
@@ -534,11 +536,39 @@ describe("CategoriesService", () => {
       transactionsRepository.createQueryBuilder.mockReturnValue(directCountsQb);
       splitsRepository.createQueryBuilder.mockReturnValue(splitCountsQb);
 
-      const result = await service.findAll("user-1");
+      // Every reference the delete refuses for is summed into usageCount.
+      txManager.query.mockResolvedValueOnce([{ id: "cat-2", count: 4 }]);
+
+      const result = await service.findAll("user-1", false, {
+        withUsage: true,
+      });
 
       expect(result).toHaveLength(2);
       expect(result[0].transactionCount).toBe(5);
       expect(result[1].transactionCount).toBe(0);
+      expect(result[0].usageCount).toBe(0);
+      expect(result[1].usageCount).toBe(4);
+    });
+
+    it("leaves usageCount and its queries out unless the list asks", async () => {
+      const catQb = createMockQueryBuilder({
+        getMany: jest
+          .fn()
+          .mockResolvedValue([{ ...mockCategory, id: "cat-1" }]),
+      });
+      categoriesRepository.createQueryBuilder.mockReturnValue(catQb);
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({ getRawMany: jest.fn().mockResolvedValue([]) }),
+      );
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({ getRawMany: jest.fn().mockResolvedValue([]) }),
+      );
+      txManager.query.mockClear();
+
+      const result = await service.findAll("user-1");
+
+      expect(result[0]).not.toHaveProperty("usageCount");
+      expect(txManager.query).not.toHaveBeenCalled();
     });
 
     it("filters out system categories by default", async () => {
@@ -1863,59 +1893,54 @@ describe("CategoriesService", () => {
     });
   });
 
-  describe("getTransactionCount", () => {
-    /** Answers the scheduled-split and override counts by their SQL. */
-    const answerCounts = (splits: number, overrides: number) =>
-      txManager.query.mockImplementation((sql: string) =>
-        Promise.resolve([
-          {
-            count: sql.includes("scheduled_transaction_overrides")
-              ? overrides
-              : splits,
-          },
-        ]),
-      );
-
-    it("returns sum of all transaction types, including changed occurrences", async () => {
+  describe("getUsage", () => {
+    it("sums every kind the delete guard counts, subcategories aside", async () => {
       categoriesRepository.findOne.mockResolvedValue(mockCategory);
-      transactionsRepository.count.mockResolvedValue(5);
-      splitsRepository.createQueryBuilder.mockReturnValue(
-        createMockQueryBuilder({
-          getCount: jest.fn().mockResolvedValue(3),
-        }),
-      );
-      scheduledTransactionsRepository.count.mockResolvedValue(2);
-      answerCounts(1, 4);
+      // Each guard query answers by its SQL: transactions, a budget, children.
+      txManager.query.mockImplementation((sql: string) => {
+        if (sql.includes("FROM transactions WHERE")) {
+          return Promise.resolve([{ count: 5 }]);
+        }
+        if (sql.includes("FROM budget_categories")) {
+          return Promise.resolve([{ count: 2 }]);
+        }
+        if (sql.includes("parent_id = $2")) {
+          return Promise.resolve([{ count: 9 }]);
+        }
+        return Promise.resolve([]);
+      });
 
-      const result = await service.getTransactionCount("user-1", "CAT-1");
+      const result = await service.getUsage("user-1", "CAT-1");
 
-      expect(result).toBe(15);
-      // Overrides are matched by category_id or the id inside the splits JSON,
-      // by the lowercase id; no id list is bound.
+      // Transactions (5) move on a reassign; the budget line (2) does not.
+      expect(result).toEqual({ count: 7, movableCount: 5 });
       expect(txManager.query).toHaveBeenCalledWith(
-        expect.stringContaining("o.splits::text LIKE"),
+        expect.stringContaining("FROM budget_categories"),
         ["user-1", "cat-1"],
       );
     });
 
-    it("counts a category used only by a changed occurrence", async () => {
+    it("counts a category used only by a budget line", async () => {
       categoriesRepository.findOne.mockResolvedValue(mockCategory);
-      transactionsRepository.count.mockResolvedValue(0);
-      splitsRepository.createQueryBuilder.mockReturnValue(
-        createMockQueryBuilder({ getCount: jest.fn().mockResolvedValue(0) }),
+      txManager.query.mockImplementation((sql: string) =>
+        Promise.resolve(
+          sql.includes("FROM budget_categories") ? [{ count: 1 }] : [],
+        ),
       );
-      scheduledTransactionsRepository.count.mockResolvedValue(0);
-      answerCounts(0, 1);
 
-      expect(await service.getTransactionCount("user-1", "cat-1")).toBe(1);
+      // Nothing a reassign could move: the dialog must not offer a target.
+      expect(await service.getUsage("user-1", "cat-1")).toEqual({
+        count: 1,
+        movableCount: 0,
+      });
     });
 
     it("throws NotFoundException for nonexistent category", async () => {
       categoriesRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.getTransactionCount("user-1", "nope"),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getUsage("user-1", "nope")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -2323,34 +2348,17 @@ describe("CategoriesService", () => {
   });
 
   describe("cross-user data isolation", () => {
-    it("getTransactionCount split count query joins through transaction to filter by userId", async () => {
+    it("getUsage split count query joins through transaction to filter by userId", async () => {
       categoriesRepository.findOne.mockResolvedValue(mockCategory);
-      transactionsRepository.count.mockResolvedValue(0);
-
-      const splitQb = createMockQueryBuilder({
-        getCount: jest.fn().mockResolvedValue(0),
-      });
-      splitsRepository.createQueryBuilder.mockReturnValue(splitQb);
-
-      const scheduledQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([]),
-      });
-      scheduledTransactionsRepository.count.mockResolvedValue(0);
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
-        scheduledQb,
-      );
       txManager.query.mockResolvedValue([{ count: 0 }]);
 
-      await service.getTransactionCount("user-1", "cat-1");
+      await service.getUsage("user-1", "cat-1");
 
-      // Verify split count joins through transaction table to filter by userId
-      expect(splitQb.innerJoin).toHaveBeenCalledWith(
-        "split.transaction",
-        "transaction",
-      );
-      expect(splitQb.andWhere).toHaveBeenCalledWith(
-        "transaction.userId = :userId",
-        { userId: "user-1" },
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /FROM transaction_splits s JOIN transactions t .*t\.user_id = \$1/,
+        ),
+        ["user-1", "cat-1"],
       );
     });
 

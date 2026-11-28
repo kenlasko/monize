@@ -100,13 +100,24 @@ export class PayeesController {
     enum: ["active", "inactive", "all"],
     description: "Filter by active status (default: all)",
   })
+  @ApiQuery({
+    name: "usage",
+    required: false,
+    type: Boolean,
+    description:
+      "Add usageCount: every record a delete would refuse for (the Payees page)",
+  })
   @ApiResponse({ status: 200, description: "List of payees", type: [Payee] })
   @AllowDelegate()
   findAll(
     @Request() req,
     @Query("status") status?: "active" | "inactive" | "all",
+    @Query("usage", new ParseBoolPipe({ optional: true }))
+    usage?: boolean,
   ): Promise<Payee[]> {
-    return this.payeesService.findAll(req.user.id, status);
+    return this.payeesService.findAll(req.user.id, status, {
+      withUsage: usage || false,
+    });
   }
 
   @Get("search")

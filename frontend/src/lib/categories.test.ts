@@ -27,6 +27,22 @@ describe('categoriesApi', () => {
     expect(result).toHaveLength(1);
   });
 
+  it('getAll with usage is fetched fresh every time, never cached', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    await categoriesApi.getAll({ withUsage: true });
+    await categoriesApi.getAll({ withUsage: true });
+    const usageCalls = vi.mocked(apiClient.get).mock.calls.filter(
+      ([, config]) => (config as { params?: { usage?: boolean } } | undefined)?.params?.usage,
+    );
+    expect(usageCalls).toHaveLength(2);
+  });
+
+  it('getAll asks for usage counts only with withUsage', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    await categoriesApi.getAll({ withUsage: true });
+    expect(apiClient.get).toHaveBeenCalledWith('/categories', { params: { usage: true } });
+  });
+
   it('getById fetches /categories/:id', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: { id: 'cat-1' } });
     await categoriesApi.getById('cat-1');
@@ -57,11 +73,11 @@ describe('categoriesApi', () => {
     expect(apiClient.delete).toHaveBeenCalledWith('/categories/cat-1');
   });
 
-  it('getTransactionCount fetches count', async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: 42 });
-    const result = await categoriesApi.getTransactionCount('cat-1');
+  it('getUsage fetches the count and what a reassign moves', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { count: 42, movableCount: 40 } });
+    const result = await categoriesApi.getUsage('cat-1');
     expect(apiClient.get).toHaveBeenCalledWith('/categories/cat-1/transaction-count');
-    expect(result).toBe(42);
+    expect(result).toEqual({ count: 42, movableCount: 40 });
   });
 
   it('reassignTransactions posts reassignment', async () => {

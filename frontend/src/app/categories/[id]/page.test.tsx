@@ -78,7 +78,7 @@ vi.mock('@/lib/categories', () => ({
     getAll: (...args: unknown[]) => mockGetAllCategories(...args),
     update: (...args: unknown[]) => mockUpdateCategory(...args),
     delete: (...args: unknown[]) => mockDeleteCategory(...args),
-    getTransactionCount: (...args: unknown[]) => mockGetTransactionCount(...args),
+    getUsage: (...args: unknown[]) => mockGetTransactionCount(...args),
     reassignTransactions: (...args: unknown[]) => mockReassignTransactions(...args),
   },
 }));
@@ -409,7 +409,7 @@ describe('CategoryDetailPage', () => {
   });
 
   it('deletes the category and leaves for the list', async () => {
-    mockGetTransactionCount.mockResolvedValue(0);
+    mockGetTransactionCount.mockResolvedValue({ count: 0, movableCount: 0 });
     mockDeleteCategory.mockResolvedValue(undefined);
 
     await renderPage();
@@ -428,7 +428,7 @@ describe('CategoryDetailPage', () => {
   });
 
   it('reassigns and deletes in one DELETE request when the category has transactions', async () => {
-    mockGetTransactionCount.mockResolvedValue(3);
+    mockGetTransactionCount.mockResolvedValue({ count: 3, movableCount: 3 });
     mockDeleteCategory.mockResolvedValue(undefined);
 
     await renderPage();

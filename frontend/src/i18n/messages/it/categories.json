@@ -93,10 +93,11 @@
   "deleteDialog": {
     "title": "Elimina \"{name}\"",
     "checkingUsage": "Verifica utilizzo...",
-    "usedBy": "Questa categoria è utilizzata da {count, plural, one {# elemento} other {# elementi}} (transazioni e/o fatture e versamenti pianificati).",
+    "usedBy": "Questa categoria è usata da {count, plural, one {# elemento} other {# elementi}}: transazioni, pagamenti e incassi programmati, budget, regole, report e altro.",
     "reassignLabel": "Riassegna a:",
     "leaveUncategorized": "Lascia senza categoria",
     "safeToDelete": "Questa categoria non è in uso. Può essere eliminata in sicurezza.",
+    "usageUnknown": "Impossibile verificare dove viene usata questa categoria. Se qualcosa la usa ancora, l'eliminazione viene rifiutata e nulla cambia.",
     "cannotUndo": "Questa azione non può essere annullata."
   },
   "validation": {

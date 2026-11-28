@@ -26,6 +26,7 @@ import {
   LlmTagsResult,
 } from "./tag-llm-shape";
 import { searchIncludes } from "../common/helpers/search-match";
+import { countTagUsage } from "./tag-references";
 
 export interface TagDeleteImpact {
   transactions: number;
@@ -33,22 +34,42 @@ export interface TagDeleteImpact {
   scheduledTransactions: number;
   scheduledSplits: number;
   securities: number;
+  /** Rules and saved reports keep the tag id in JSON; a delete leaves it dangling. */
+  rules: number;
+  customReports: number;
 }
 
-/** Counts every row that carries the tag, void and future-dated ones included. */
+/**
+ * Counts every row that carries the tag, void and future-dated ones included.
+ * Every count is scoped to `userId` in SQL, not left to RLS: the link tables
+ * go through the user's tag row, the rest through their own `user_id`.
+ */
 export async function countTagReferences(
   m: EntityManager,
+  userId: string,
   tagId: string,
 ): Promise<TagDeleteImpact> {
+  // A UUID is valid in either case; JSON keeps it lowercase, so every
+  // parameter below is the lowercase form.
+  const id = tagId.toLowerCase();
   const [row] = await m.query(
     `SELECT
-       (SELECT COUNT(*) FROM transaction_tags WHERE tag_id = $1) AS transactions,
-       (SELECT COUNT(*) FROM transaction_split_tags WHERE tag_id = $1) AS splits,
+       (SELECT COUNT(*) FROM transaction_tags x JOIN tags g ON g.id = x.tag_id
+         WHERE g.user_id = $3 AND x.tag_id = $1) AS transactions,
+       (SELECT COUNT(*) FROM transaction_split_tags x JOIN tags g ON g.id = x.tag_id
+         WHERE g.user_id = $3 AND x.tag_id = $1) AS splits,
        (SELECT COUNT(*) FROM scheduled_transactions
-         WHERE tag_ids @> to_jsonb($1::text)) AS scheduled,
-       (SELECT COUNT(*) FROM scheduled_transaction_split_tags WHERE tag_id = $1) AS scheduled_splits,
-       (SELECT COUNT(*) FROM security_tags WHERE tag_id = $1) AS securities`,
-    [tagId],
+         WHERE user_id = $3 AND tag_ids @> to_jsonb($1::text)) AS scheduled,
+       (SELECT COUNT(*) FROM scheduled_transaction_split_tags x JOIN tags g ON g.id = x.tag_id
+         WHERE g.user_id = $3 AND x.tag_id = $1) AS scheduled_splits,
+       (SELECT COUNT(*) FROM security_tags x JOIN tags g ON g.id = x.tag_id
+         WHERE g.user_id = $3 AND x.tag_id = $1) AS securities,
+       (SELECT COUNT(*) FROM transaction_rules
+         WHERE user_id = $3 AND (lower(condition::text) LIKE $2 OR lower(actions::text) LIKE $2)) AS rules,
+       (SELECT COUNT(*) FROM custom_reports
+         WHERE user_id = $3 AND lower(filters::text) LIKE $2) AS reports`,
+    // A UUID has no LIKE wildcard.
+    [id, `%${id}%`, userId],
   );
   return {
     transactions: Number(row.transactions),
@@ -56,6 +77,8 @@ export async function countTagReferences(
     scheduledTransactions: Number(row.scheduled),
     scheduledSplits: Number(row.scheduled_splits),
     securities: Number(row.securities),
+    rules: Number(row.rules),
+    customReports: Number(row.reports),
   };
 }
 
@@ -289,32 +312,18 @@ export class TagsService {
    */
   async getDeleteImpact(userId: string, id: string): Promise<TagDeleteImpact> {
     await this.findOne(userId, id);
-    return withScopedDb(this.dataSource, (m) => countTagReferences(m, id));
+    return withScopedDb(this.dataSource, (m) =>
+      countTagReferences(m, userId, id),
+    );
   }
 
   async getAllTransactionCounts(
     userId: string,
   ): Promise<Record<string, number>> {
-    const rows: Array<{ tag_id: string; count: string }> = await withScopedDb(
-      this.dataSource,
-      (m) =>
-        m
-          .getRepository(TransactionTag)
-          .createQueryBuilder("tt")
-          .select("tt.tag_id", "tag_id")
-          .addSelect("COUNT(*)", "count")
-          .innerJoin(Tag, "t", "t.id = tt.tag_id AND t.user_id = :userId", {
-            userId,
-          })
-          .groupBy("tt.tag_id")
-          .getRawMany(),
+    const usage = await withScopedDb(this.dataSource, (m) =>
+      countTagUsage(m, userId),
     );
-
-    const counts: Record<string, number> = {};
-    for (const row of rows) {
-      counts[row.tag_id] = Number(row.count);
-    }
-    return counts;
+    return Object.fromEntries(usage);
   }
 
   /**

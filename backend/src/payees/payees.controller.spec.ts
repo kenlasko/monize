@@ -129,7 +129,18 @@ describe("PayeesController", () => {
       expect(mockPayeesService.findAll).toHaveBeenCalledWith(
         "user-1",
         "active",
+        { withUsage: false },
       );
+    });
+
+    it("asks for usage counts only when the usage flag is set", async () => {
+      mockPayeesService.findAll.mockResolvedValue([]);
+
+      await controller.findAll(mockReq, "all", true);
+
+      expect(mockPayeesService.findAll).toHaveBeenCalledWith("user-1", "all", {
+        withUsage: true,
+      });
     });
 
     it("delegates to payeesService.findAll with undefined status", async () => {
@@ -142,6 +153,7 @@ describe("PayeesController", () => {
       expect(mockPayeesService.findAll).toHaveBeenCalledWith(
         "user-1",
         undefined,
+        { withUsage: false },
       );
     });
   });

@@ -27,6 +27,8 @@ export interface TagDeleteImpact {
   scheduledTransactions: number;
   scheduledSplits: number;
   securities: number;
+  rules: number;
+  customReports: number;
 }
 
 export interface CreateTagData {

@@ -3,6 +3,7 @@
 import { type CategoryType, categoryTypeOf } from '@/lib/category-type';
 import { useState, useMemo, useCallback, memo } from 'react';
 import { useTranslations } from 'next-intl';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useRouter } from 'next/navigation';
 import { TagIcon } from '@heroicons/react/24/outline';
 import { Category } from '@/types/category';
@@ -148,6 +149,7 @@ const CategoryRow = memo(function CategoryRow({
   isHighlighted,
   wrapped = false,
 }: CategoryRowProps) {
+  const { formatNumber } = useNumberFormat();
   const t = useTranslations('categories');
   const tc = useTranslations('common');
   const rowRef = useScrollIntoViewWhen<HTMLTableRowElement>(!!isHighlighted);
@@ -217,7 +219,7 @@ const CategoryRow = memo(function CategoryRow({
               <div className="text-right whitespace-nowrap">
                 <CellLabel>{t('list.colCount')}</CellLabel>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {category.transactionCount ?? 0}
+                  {formatNumber(category.usageCount ?? category.transactionCount ?? 0, 0)}
                 </div>
               </div>
               <div className="col-span-2 flex items-start gap-3 min-w-0">
@@ -254,7 +256,7 @@ const CategoryRow = memo(function CategoryRow({
         <CategoryTypePill category={category} density={density} />
       </td>
       <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell`}>
-        {category.transactionCount ?? 0}
+        {formatNumber(category.usageCount ?? category.transactionCount ?? 0, 0)}
       </td>
       {density === 'normal' && (
         <td className={`${cellPadding}`}>
@@ -381,7 +383,10 @@ export function CategoryList({
       toast.success(t('toasts.deleted'));
       if (onDelete) {
         onDelete(deleteCategory.id);
-      } else {
+      }
+      // A reassign changed the target's count too, which dropping the row
+      // does not show.
+      if (!onDelete || reassignToCategoryId !== undefined) {
         onRefresh();
       }
     } catch (error) {
@@ -407,7 +412,7 @@ export function CategoryList({
         // Income, then Expense, then Transfer when ascending
         comparison = TYPE_SORT_ORDER[categoryTypeOf(a)] - TYPE_SORT_ORDER[categoryTypeOf(b)];
       } else if (sortField === 'count') {
-        comparison = (a.transactionCount ?? 0) - (b.transactionCount ?? 0);
+        comparison = (a.usageCount ?? a.transactionCount ?? 0) - (b.usageCount ?? b.transactionCount ?? 0);
       }
       return sortDirection === 'asc' ? comparison : -comparison;
     });

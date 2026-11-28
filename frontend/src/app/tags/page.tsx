@@ -30,12 +30,18 @@ import { searchIncludes } from '@/lib/helpers/search-match';
 
 const logger = createLogger('Tags');
 
+// What the delete removes the tag from, and what only names it: a rule or a
+// saved report keeps its dangling id, so it is told apart from the first.
+const NAMED_IMPACT_KINDS: readonly (keyof TagDeleteImpact)[] = ['rules', 'customReports'];
+
 const DELETE_IMPACT_KEYS = {
   transactions: 'transactions',
   transactionSplits: 'transactionSplits',
   scheduledTransactions: 'scheduledTransactions',
   scheduledSplits: 'scheduledSplits',
   securities: 'securities',
+  rules: 'rules',
+  customReports: 'customReports',
 } as const;
 
 export default function TagsPage() {
@@ -135,11 +141,18 @@ function TagsContent() {
   const deleteMessage = (() => {
     const name = deleteTag?.name ?? '';
     if (deleteImpactFailed || !deleteImpact) return t('page.delete.unknownMessage', { name });
-    const parts = (Object.keys(DELETE_IMPACT_KEYS) as (keyof TagDeleteImpact)[])
-      .filter(kind => deleteImpact[kind] > 0)
-      .map(kind => t(`page.delete.kinds.${DELETE_IMPACT_KEYS[kind]}`, { count: deleteImpact[kind] }));
-    if (parts.length === 0) return t('page.delete.simpleMessage', { name });
-    return t('page.delete.withUsesMessage', { name, places: parts.join(', ') });
+    const placesOf = (kinds: (keyof TagDeleteImpact)[]) =>
+      kinds
+        .filter(kind => deleteImpact[kind] > 0)
+        .map(kind => t(`page.delete.kinds.${DELETE_IMPACT_KEYS[kind]}`, { count: deleteImpact[kind] }))
+        .join(', ');
+    const allKinds = Object.keys(DELETE_IMPACT_KEYS) as (keyof TagDeleteImpact)[];
+    const removedFrom = placesOf(allKinds.filter(kind => !NAMED_IMPACT_KINDS.includes(kind)));
+    const namedBy = placesOf([...NAMED_IMPACT_KINDS]);
+    if (!removedFrom && !namedBy) return t('page.delete.simpleMessage', { name });
+    if (!removedFrom) return t('page.delete.namedMessage', { name, places: namedBy });
+    const base = t('page.delete.withUsesMessage', { name, places: removedFrom });
+    return namedBy ? `${base} ${t('page.delete.alsoNamed', { places: namedBy })}` : base;
   })();
 
   const handleConfirmDelete = async () => {

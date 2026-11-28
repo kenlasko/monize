@@ -80,11 +80,19 @@ export const payeesApi = {
   },
 
   // Get all payees (optionally filtered by status)
-  getAll: async (status?: PayeeStatusFilter): Promise<Payee[]> => {
+  // `withUsage` adds usageCount (what a delete refuses for); only the Payees
+  // page, which shows it, asks.
+  getAll: async (status?: PayeeStatusFilter, options: { withUsage?: boolean } = {}): Promise<Payee[]> => {
     const cacheKey = `payees:all:${status || 'default'}`;
-    const params: Record<string, string> = {};
+    const params: Record<string, string | boolean> = {};
     if (status) {
       params.status = status;
+    }
+    // The usage variant is never cached: a new rule, schedule or warranty
+    // changes it without touching a payee, so a cached copy would lie.
+    if (options.withUsage === true) {
+      const response = await apiClient.get<Payee[]>('/payees', { params: { ...params, usage: true } });
+      return response.data;
     }
     return dedupe(
       cacheKey,

@@ -26,13 +26,17 @@
       "title": "Eliminar etiqueta",
       "withUsesMessage": "Tem a certeza de que quer eliminar \"{name}\"? A etiqueta será removida de: {places}. Mais nada muda nesses itens. Esta ação não pode ser anulada.",
       "simpleMessage": "Tem a certeza de que quer eliminar \"{name}\"? Não é usada em lado nenhum. Esta ação não pode ser anulada.",
+      "namedMessage": "Tem a certeza de que quer eliminar \"{name}\"? Ainda é referida por {places}. Não são alterados e vão apontar para uma etiqueta eliminada. Esta ação não pode ser anulada.",
+      "alsoNamed": "Também ainda é referida por {places}. Não são alterados e vão apontar para uma etiqueta eliminada.",
       "unknownMessage": "Não foi possível verificar onde \"{name}\" é usada. Se a eliminar, será removida de todas as transações, linhas de divisão, transações agendadas e valores mobiliários que a usam. Esta ação não pode ser anulada.",
       "kinds": {
         "transactions": "{count, plural, one {# transação} other {# transações}}",
         "transactionSplits": "{count, plural, one {# linha de divisão de transação} other {# linhas de divisão de transação}}",
         "scheduledTransactions": "{count, plural, one {# transação agendada} other {# transações agendadas}}",
         "scheduledSplits": "{count, plural, one {# linha de divisão agendada} other {# linhas de divisão agendadas}}",
-        "securities": "{count, plural, one {# valor mobiliário} other {# valores mobiliários}}"
+        "securities": "{count, plural, one {# valor mobiliário} other {# valores mobiliários}}",
+        "rules": "{count, plural, one {# regra} other {# regras}}",
+        "customReports": "{count, plural, one {# relatório guardado} other {# relatórios guardados}}"
       }
     },
     "toasts": {
@@ -54,7 +58,7 @@
     "header": {
       "name": "Nome",
       "icon": "Ícone",
-      "transactions": "Transações",
+      "count": "Contagem",
       "actions": "Ações"
     }
   },

@@ -107,6 +107,13 @@ export class CategoriesController {
     type: Boolean,
     description: "Include system categories",
   })
+  @ApiQuery({
+    name: "usage",
+    required: false,
+    type: Boolean,
+    description:
+      "Add usageCount: every record a delete would refuse for (the Categories page)",
+  })
   @ApiResponse({
     status: 200,
     description: "List of categories retrieved successfully",
@@ -117,8 +124,12 @@ export class CategoriesController {
     @Request() req,
     @Query("includeSystem", new ParseBoolPipe({ optional: true }))
     includeSystem?: boolean,
+    @Query("usage", new ParseBoolPipe({ optional: true }))
+    usage?: boolean,
   ) {
-    return this.categoriesService.findAll(req.user.id, includeSystem || false);
+    return this.categoriesService.findAll(req.user.id, includeSystem || false, {
+      withUsage: usage || false,
+    });
   }
 
   @Get("tree")
@@ -317,16 +328,19 @@ export class CategoriesController {
 
   @Get(":id/transaction-count")
   @AllowDelegate()
-  @ApiOperation({ summary: "Get the count of transactions using a category" })
+  @ApiOperation({
+    summary:
+      "Get how many records use a category (every reference a delete refuses for) and how many of them a reassign moves",
+  })
   @ApiParam({ name: "id", description: "Category UUID" })
   @ApiResponse({
     status: 200,
-    description: "Transaction count retrieved successfully",
+    description: "Usage retrieved successfully: { count, movableCount }",
   })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({ status: 404, description: "Category not found" })
-  getTransactionCount(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
-    return this.categoriesService.getTransactionCount(req.user.id, id);
+  getUsage(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.categoriesService.getUsage(req.user.id, id);
   }
 
   @Post(":id/reassign")

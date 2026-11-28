@@ -26,13 +26,17 @@
       "title": "Supprimer l'étiquette",
       "withUsesMessage": "Voulez-vous vraiment supprimer \"{name}\" ? Le tag sera retiré de : {places}. Rien d'autre ne change sur ces éléments. Cette action est irréversible.",
       "simpleMessage": "Voulez-vous vraiment supprimer \"{name}\" ? Il n'est utilisé nulle part. Cette action est irréversible.",
+      "namedMessage": "Voulez-vous vraiment supprimer \"{name}\" ? Elle est encore citée par {places}. Ils ne sont pas modifiés et pointeront vers une étiquette supprimée. Cette action est irréversible.",
+      "alsoNamed": "Elle est aussi encore citée par {places}. Ils ne sont pas modifiés et pointeront vers une étiquette supprimée.",
       "unknownMessage": "Impossible de vérifier où \"{name}\" est utilisé. Si vous le supprimez, il sera retiré de chaque transaction, ligne de ventilation, transaction planifiée et titre qui l'utilise. Cette action est irréversible.",
       "kinds": {
         "transactions": "{count, plural, one {# transaction} other {# transactions}}",
         "transactionSplits": "{count, plural, one {# ligne de ventilation de transaction} other {# lignes de ventilation de transaction}}",
         "scheduledTransactions": "{count, plural, one {# transaction planifiée} other {# transactions planifiées}}",
         "scheduledSplits": "{count, plural, one {# ligne de ventilation planifiée} other {# lignes de ventilation planifiées}}",
-        "securities": "{count, plural, one {# titre} other {# titres}}"
+        "securities": "{count, plural, one {# titre} other {# titres}}",
+        "rules": "{count, plural, one {# règle} other {# règles}}",
+        "customReports": "{count, plural, one {# rapport enregistré} other {# rapports enregistrés}}"
       }
     },
     "toasts": {
@@ -54,7 +58,7 @@
     "header": {
       "name": "Nom",
       "icon": "Icône",
-      "transactions": "Transactions",
+      "count": "Nombre",
       "actions": "Actions"
     }
   },

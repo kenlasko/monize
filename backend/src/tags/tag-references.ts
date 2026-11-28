@@ -1,8 +1,12 @@
 import { EntityManager } from "typeorm";
 import {
   RecordInUseEntry,
-  ReferenceCount,
+  CountedReference,
+  REPORTS_JSON,
+  RULES_JSON,
   countReferences,
+  countReferencesById,
+  jsonIdListSql,
 } from "../common/helpers/record-in-use";
 
 /** What still uses a tag: one entry per kind of row carrying it. */
@@ -27,46 +31,64 @@ export const TAG_REFERENCES = {
     policy: "clear",
     kind: "transactions",
     sql: "SELECT count(*)::int AS count FROM transaction_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 AND x.tag_id = $2",
+    listSql:
+      "SELECT g.id, count(*)::int AS count FROM transaction_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 GROUP BY g.id",
   },
   "transaction_split_tags.tag_id": {
     policy: "clear",
     kind: "transactions",
     sql: "SELECT count(*)::int AS count FROM transaction_split_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 AND x.tag_id = $2",
+    listSql:
+      "SELECT g.id, count(*)::int AS count FROM transaction_split_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 GROUP BY g.id",
   },
   "scheduled_transaction_split_tags.tag_id": {
     policy: "clear",
     kind: "scheduledTransactions",
     sql: "SELECT count(*)::int AS count FROM scheduled_transaction_split_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 AND x.tag_id = $2",
+    listSql:
+      "SELECT g.id, count(*)::int AS count FROM scheduled_transaction_split_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 GROUP BY g.id",
   },
   "security_tags.tag_id": {
     policy: "clear",
     kind: "securities",
     sql: "SELECT count(*)::int AS count FROM security_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 AND x.tag_id = $2",
+    listSql:
+      "SELECT g.id, count(*)::int AS count FROM security_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 GROUP BY g.id",
   },
 } as const satisfies Record<
   string,
-  { policy: "clear"; kind: TagReferenceKind; sql: string }
+  { policy: "clear"; kind: TagReferenceKind; sql: string; listSql: string }
 >;
 
 /**
- * Tag ids kept in JSON have no foreign key. shortcut: matches the id anywhere
- * in the JSON text; fine for UUIDs. `$2` is the LIKE pattern.
+ * Tag ids kept in JSON have no foreign key. shortcut: the per-record count
+ * matches the lowercased id anywhere in the lowercased JSON text (as the list does); fine for UUIDs. `$2` is the LIKE
+ * pattern.
  */
-const JSON_SQL: ReferenceCount[] = [
+const JSON_REFERENCES: readonly CountedReference[] = [
   {
     kind: "scheduledTransactions",
-    sql: "SELECT count(*)::int AS count FROM scheduled_transactions WHERE user_id = $1 AND tag_ids::text LIKE $2",
     like: true,
+    sql: "SELECT count(*)::int AS count FROM scheduled_transactions WHERE user_id = $1 AND lower(tag_ids::text) LIKE $2",
+    listSql: jsonIdListSql({
+      from: "scheduled_transactions s",
+      rowId: "s.id",
+      userColumn: "s.user_id",
+      text: "s.tag_ids::text",
+      target: "tags",
+    }),
   },
   {
     kind: "rules",
-    sql: "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (condition::text LIKE $2 OR actions::text LIKE $2)",
     like: true,
+    sql: "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (lower(condition::text) LIKE $2 OR lower(actions::text) LIKE $2)",
+    listSql: jsonIdListSql({ ...RULES_JSON, target: "tags" }),
   },
   {
     kind: "customReports",
-    sql: "SELECT count(*)::int AS count FROM custom_reports WHERE user_id = $1 AND filters::text LIKE $2",
     like: true,
+    sql: "SELECT count(*)::int AS count FROM custom_reports WHERE user_id = $1 AND lower(filters::text) LIKE $2",
+    listSql: jsonIdListSql({ ...REPORTS_JSON, target: "tags" }),
   },
 ];
 
@@ -83,6 +105,21 @@ export function findTagReferences(
   // A UUID is valid in either case; JSON keeps it lowercase and LIKE is exact.
   return countReferences(m, userId, tagId.toLowerCase(), [
     ...Object.values(TAG_REFERENCES),
-    ...JSON_SQL,
+    ...JSON_REFERENCES,
+  ]);
+}
+
+/**
+ * How many rows carry each of the user's tags, by the same references
+ * `findTagReferences` counts (link tables, schedules' `tag_ids`, rules,
+ * reports), so the list's count includes a tag used only on a schedule.
+ */
+export function countTagUsage(
+  m: EntityManager,
+  userId: string,
+): Promise<Map<string, number>> {
+  return countReferencesById(m, userId, [
+    ...Object.values(TAG_REFERENCES).map((r) => r.listSql),
+    ...JSON_REFERENCES.map((r) => r.listSql),
   ]);
 }

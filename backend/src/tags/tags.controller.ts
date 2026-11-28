@@ -49,10 +49,13 @@ export class TagsController {
 
   @Get("transaction-counts")
   @AllowDelegate()
-  @ApiOperation({ summary: "Get transaction counts for all tags" })
+  @ApiOperation({
+    summary:
+      "Get how many records reference each tag (links, schedules, securities, rules, saved reports)",
+  })
   @ApiResponse({
     status: 200,
-    description: "Transaction counts retrieved successfully",
+    description: "Reference counts retrieved successfully",
   })
   getAllTransactionCounts(@Request() req) {
     return this.tagsService.getAllTransactionCounts(req.user.id);

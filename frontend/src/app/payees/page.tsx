@@ -77,7 +77,7 @@ function PayeesContent() {
     const run = async () => {
       try {
         const [payeesData, categoriesData] = await Promise.all([
-          payeesApi.getAll('all'),
+          payeesApi.getAll('all', { withUsage: true }),
           categoriesApi.getAll(),
         ]);
         setPayees(payeesData);
@@ -157,7 +157,8 @@ function PayeesContent() {
     try {
       const reactivated = await payeesApi.reactivatePayee(payeeId);
       toast.success(t('page.toasts.reactivated', { name: reactivated.name }));
-      setPayees(prev => prev.map(p => p.id === reactivated.id ? reactivated : p));
+      // The response carries no list-only counts; keep the ones the row had.
+      setPayees(prev => prev.map(p => p.id === reactivated.id ? { ...p, ...reactivated } : p));
     } catch (error) {
       toast.error(getErrorMessage(error, t('page.toasts.reactivateFailed')));
       logger.error(error);
@@ -241,7 +242,8 @@ function PayeesContent() {
         const catB = b.defaultCategory ? (categoryLabelMap.get(b.defaultCategory.id) ?? b.defaultCategory.name) : '';
         comparison = catA.localeCompare(catB, undefined, { sensitivity: 'base' });
       } else if (sortField === 'count') {
-        comparison = (a.transactionCount ?? 0) - (b.transactionCount ?? 0);
+        // The column shows usageCount, so it is what orders (and pages) the list.
+        comparison = (a.usageCount ?? a.transactionCount ?? 0) - (b.usageCount ?? b.transactionCount ?? 0);
       } else if (sortField === 'aliases') {
         comparison = (a.aliasCount ?? 0) - (b.aliasCount ?? 0);
       } else if (sortField === 'lastUsed') {

@@ -16,7 +16,6 @@ import {
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Payee } from "../payees/entities/payee.entity";
-import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
 import { ActionHistoryService } from "../action-history/action-history.service";
@@ -32,7 +31,10 @@ import {
   recordInUseSummary,
 } from "../common/helpers/record-in-use";
 import { UNCATEGORIZED } from "./dto/remove-category-query.dto";
-import { findCategoryReferences } from "./category-references";
+import {
+  countCategoryUsage,
+  findCategoryReferences,
+} from "./category-references";
 import { qualifiedCategoryName } from "./category-name.util";
 import { searchIncludes } from "../common/helpers/search-match";
 import {
@@ -211,7 +213,10 @@ export class CategoriesService {
   async findAll(
     userId: string,
     includeSystem = false,
-  ): Promise<(Category & { transactionCount: number })[]> {
+    // The usage counts cost a query per reference kind; only the list pages
+    // that show them ask (`GET /categories?usage=true`).
+    options: { withUsage?: boolean } = {},
+  ): Promise<(Category & { transactionCount: number; usageCount?: number })[]> {
     const categoriesWithCounts = await withScopedDb(
       this.dataSource,
       async (m) => {
@@ -258,9 +263,15 @@ export class CategoriesService {
         const countMap = toCountMap(directCounts, { keyField: "categoryId" });
         toCountMap(splitCounts, { keyField: "categoryId", into: countMap });
 
+        // What the delete refuses for, so the list never reads 0 on a 409.
+        const usageMap = options.withUsage
+          ? await countCategoryUsage(m, userId)
+          : undefined;
+
         return categories.map((category) => ({
           ...category,
           transactionCount: countMap.get(category.id) || 0,
+          ...(usageMap && { usageCount: usageMap.get(category.id) || 0 }),
         }));
       },
     );
@@ -865,51 +876,33 @@ export class CategoriesService {
     });
   }
 
-  async getTransactionCount(
+  /**
+   * How many records use the category, as the delete guard counts them
+   * (`findCategoryReferences`: transactions, schedules and their changed
+   * occurrences, budgets, rules and the rest), so the delete dialog and the
+   * 409 agree. Its subcategories are refused on their own and not counted.
+   * `movableCount` is the part a reassign moves (`reassignCategoryRows`:
+   * transactions, splits, schedules and their lines and overrides); the other
+   * kinds stay and make the delete refuse, so no reassign target helps them.
+   */
+  async getUsage(
     userId: string,
     categoryId: string,
-  ): Promise<number> {
+  ): Promise<{ count: number; movableCount: number }> {
     await this.findOne(userId, categoryId);
 
     return withScopedDb(this.dataSource, async (m) => {
-      const transactionCount = await m
-        .getRepository(Transaction)
-        .count({ where: { userId, categoryId } });
-      const splitCount = await m
-        .getRepository(TransactionSplit)
-        .createQueryBuilder("split")
-        .innerJoin("split.transaction", "transaction")
-        .where("split.categoryId = :categoryId", { categoryId })
-        .andWhere("transaction.userId = :userId", { userId })
-        .getCount();
-      const scheduledCount = await m.getRepository(ScheduledTransaction).count({
-        where: { userId, categoryId },
-      });
-      // Joins, not an id list: a user's ids can exceed the 65535 bind limit.
-      const lowerId = categoryId.toLowerCase();
-      const [{ count: scheduledSplitCount }] = await m.query(
-        `SELECT count(*)::int AS count FROM scheduled_transaction_splits s
-           JOIN scheduled_transactions t ON t.id = s.scheduled_transaction_id
-          WHERE t.user_id = $1 AND s.category_id = $2`,
-        [userId, lowerId],
+      const used = (await findCategoryReferences(m, userId, categoryId)).filter(
+        (r) => r.kind !== "subcategories",
       );
-      // Overrides keep a category of their own and one per split line in JSON;
-      // `reassignCategoryRows` moves both, so the dialog must offer the move.
-      const [{ count: overrideCount }] = await m.query(
-        `SELECT count(*)::int AS count FROM scheduled_transaction_overrides o
-           JOIN scheduled_transactions t ON t.id = o.scheduled_transaction_id
-          WHERE t.user_id = $1
-            AND (o.category_id = $2 OR o.splits::text LIKE '%' || $2::text || '%')`,
-        [userId, lowerId],
-      );
-
-      return (
-        transactionCount +
-        splitCount +
-        scheduledCount +
-        Number(scheduledSplitCount) +
-        Number(overrideCount)
-      );
+      const total = (kinds?: string[]) =>
+        used
+          .filter((r) => !kinds || kinds.includes(r.kind))
+          .reduce((n, r) => n + r.count, 0);
+      return {
+        count: total(),
+        movableCount: total(["transactions", "scheduledTransactions"]),
+      };
     });
   }
 

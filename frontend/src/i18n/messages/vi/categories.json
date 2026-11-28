@@ -93,10 +93,11 @@
   "deleteDialog": {
     "title": "Xóa \"{name}\"",
     "checkingUsage": "Đang kiểm tra mức độ sử dụng...",
-    "usedBy": "Danh mục này được dùng bởi {count, plural, one {# mục} other {# mục}} (giao dịch và/hoặc hóa đơn & tiền gửi theo lịch).",
+    "usedBy": "Danh mục này được dùng bởi {count, plural, other {# bản ghi}}: giao dịch, hóa đơn & khoản gửi theo lịch, ngân sách, quy tắc, báo cáo và hơn nữa.",
     "reassignLabel": "Phân công lại cho:",
     "leaveUncategorized": "Để chưa phân loại",
     "safeToDelete": "Danh mục này chưa được sử dụng. Có thể xóa an toàn.",
+    "usageUnknown": "Không thể kiểm tra danh mục này được dùng ở đâu. Nếu vẫn còn nơi dùng, việc xóa sẽ bị từ chối và không có gì thay đổi.",
     "cannotUndo": "Hành động này không thể hoàn tác."
   },
   "validation": {

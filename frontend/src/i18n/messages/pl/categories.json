@@ -93,10 +93,11 @@
   "deleteDialog": {
     "title": "Usuń \"{name}\"",
     "checkingUsage": "Sprawdzanie uzycia...",
-    "usedBy": "Ta kategoria jest używana przez {count, plural, one {# element} few {# elementy} many {# elementów} other {# elementu}} (transakcje i/lub zaplanowane rachunki oraz wpłaty).",
+    "usedBy": "Ta kategoria jest używana w {count, plural, one {# rekordzie} other {# rekordach}}: transakcjach, zaplanowanych rachunkach i wpłatach, budżetach, regułach, raportach i innych.",
     "reassignLabel": "Przypisz ponownie do:",
     "leaveUncategorized": "Pozostaw bez kategorii",
     "safeToDelete": "Ta kategoria nie jest uzywana. Mozna ja bezpiecznie usunąć.",
+    "usageUnknown": "Nie udało się sprawdzić, gdzie ta kategoria jest używana. Jeśli coś jej jeszcze używa, usunięcie zostanie odrzucone i nic się nie zmieni.",
     "cannotUndo": "Tej operacji nie można cofnąć."
   },
   "validation": {

@@ -52,6 +52,8 @@ export interface Payee {
   isActive: boolean;
   createdAt: string;
   transactionCount?: number;
+  /** Every row the delete guard refuses for (schedules, warranties, ...); the list shows this. */
+  usageCount?: number;
   lastUsedDate?: string | null;
   aliasCount?: number;
   uncategorizedCount?: number;

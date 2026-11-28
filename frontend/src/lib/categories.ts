@@ -14,6 +14,12 @@ export interface ImportDefaultsOptions {
   language?: string;
 }
 
+/** `count`: every record a delete refuses for; `movableCount`: the part a reassign moves. */
+export interface CategoryUsage {
+  count: number;
+  movableCount: number;
+}
+
 export const categoriesApi = {
   // Create category
   create: async (data: CreateCategoryData): Promise<Category> => {
@@ -22,8 +28,15 @@ export const categoriesApi = {
     return response.data;
   },
 
-  // Get all categories
-  getAll: async (): Promise<Category[]> => {
+  // Get all categories. `withUsage` adds usageCount (what a delete refuses
+  // for); only the Categories page, which shows it, asks.
+  getAll: async (options: { withUsage?: boolean } = {}): Promise<Category[]> => {
+    // The usage variant is never cached: a new rule, budget line or schedule
+    // changes it without touching a category, so a cached copy would lie.
+    if (options.withUsage === true) {
+      const response = await apiClient.get<Category[]>('/categories', { params: { usage: true } });
+      return response.data;
+    }
     return dedupe(
       'categories:all',
       async () => {
@@ -73,9 +86,9 @@ export const categoriesApi = {
     invalidateCache('budgets:');
   },
 
-  // Get transaction count for a category
-  getTransactionCount: async (id: string): Promise<number> => {
-    const response = await apiClient.get<number>(`/categories/${id}/transaction-count`);
+  // How many records use a category, and how many of them a reassign moves
+  getUsage: async (id: string): Promise<CategoryUsage> => {
+    const response = await apiClient.get<CategoryUsage>(`/categories/${id}/transaction-count`);
     return response.data;
   },
 
