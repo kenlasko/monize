@@ -794,6 +794,14 @@ describe("NetWorthController", () => {
         controller.getMonthlyNetWorth(mockReq, "2024-01-01", "bad"),
       ).rejects.toThrow(/endDate/);
     });
+    it("refuses a repeated endDate key (an array) before it reaches the service", async () => {
+      await expect(
+        controller.getMonthlyNetWorth(mockReq, undefined, [
+          "2024-01-01",
+        ] as unknown as string),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(mockNetWorthService.getMonthlyNetWorth).not.toHaveBeenCalled();
+    });
   });
 
   describe("getMonthlyInvestments edge cases", () => {
