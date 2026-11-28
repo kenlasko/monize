@@ -3817,7 +3817,7 @@ describe("ImportService", () => {
         unreadableAmountRows: [
           {
             rowNumber: 4,
-            field: "commission",
+            field: "amount",
             rawAmount: "12.34 pending",
             date: "2026-01-16",
             payee: "Cafe",
@@ -3833,9 +3833,7 @@ describe("ImportService", () => {
 
       expect(result.unreadableAmounts).toEqual({
         count: 1,
-        rows: [
-          { rowNumber: 4, rawAmount: "12.34 pending", field: "commission" },
-        ],
+        rows: [{ rowNumber: 4, rawAmount: "12.34 pending", field: "amount" }],
       });
     });
   });
@@ -4002,7 +4000,7 @@ describe("ImportService", () => {
         unreadableAmountRows: [
           {
             rowNumber: 3,
-            field: "quantity",
+            field: "amount",
             rawAmount: "N/A",
             date: "2026-03-02",
             payee: "Cafe",
@@ -4037,7 +4035,7 @@ describe("ImportService", () => {
         reason: "unreadableAmount",
         rowNumber: 3,
         rawAmount: "N/A",
-        field: "quantity",
+        field: "amount",
       });
     });
 

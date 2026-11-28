@@ -213,8 +213,6 @@ describe("parseCsv amounts", () => {
   });
 
   it.each([
-    ["Dividend,AAPL,N/A,,,12.50", "quantity"],
-    ["Dividend,AAPL,,N/A,,12.50", "price"],
     ["Shares In,AAPL,3,1.2.3,,", "price"],
     ["Add Shares,AAPL,3,N/A,,", "price"],
   ])("reports an unreadable cell on %s", (cells, field) => {
@@ -227,17 +225,20 @@ describe("parseCsv amounts", () => {
     expect(result.unreadableAmountRows?.map((r) => r.field)).toEqual([field]);
   });
 
-  it("reads blank quantity and price on a dividend as unknown", () => {
-    const result = parseCsv(
-      HEADER + "01/15/2026,Dividend,AAPL,,,,12.50\n",
-      investmentConfig(),
-    );
+  it.each(["", "N/A"])(
+    "reads a %j quantity and price on a dividend as unknown and imports it",
+    (cell) => {
+      const result = parseCsv(
+        HEADER + `01/15/2026,Dividend,AAPL,${cell},${cell},,12.50\n`,
+        investmentConfig(),
+      );
 
-    expect(result.unreadableAmountRows).toEqual([]);
-    expect(
-      result.transactions.map((t) => [t.amount, t.quantity, t.price]),
-    ).toEqual([[12.5, 0, 0]]);
-  });
+      expect(result.unreadableAmountRows).toEqual([]);
+      expect(
+        result.transactions.map((t) => [t.amount, t.quantity, t.price]),
+      ).toEqual([[12.5, 0, 0]]);
+    },
+  );
 
   it("returns an empty list for an empty file", () => {
     expect(parseCsv("", config()).unreadableAmountRows).toEqual([]);

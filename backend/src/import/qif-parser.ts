@@ -1293,11 +1293,11 @@ export function parseQifFull(
       } else if (code === "L") {
         // The limit keeps the lenient read it always had (the leading number,
         // so "5000.00 CAD" is 5000): it is account metadata, not a posted amount.
-        // Only the number is normalised: a currency word or "(CAD)" around it
-        // is dropped, and a limit that is still not a plain number is unknown.
-        const limitText = normalizeAmountSeparators(
-          value.replace(/[^\d.,+-]/g, ""),
-        );
+        // The first numeric token is the limit, whatever text surrounds it
+        // ("Fr. 5000", "5000 (2 cards)", "1,000,000 CAD"); it is normalised
+        // like any amount, and a token that is not a plain number is unknown.
+        const token = value.match(/[-+]?\d[\d.,]*/)?.[0].replace(/[.,]+$/, "");
+        const limitText = token ? normalizeAmountSeparators(token) : "";
         pendingAccountLimit = isPlainAmount(limitText)
           ? parseFloat(limitText)
           : null;

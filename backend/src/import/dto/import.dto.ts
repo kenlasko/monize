@@ -348,7 +348,9 @@ export class CsvUnreadableAmountRowDto {
   })
   rowNumber: number;
 
-  @ApiProperty({ description: "The amount field as the file gave it" })
+  @ApiProperty({
+    description: "The cell named by `field`, as the file gave it",
+  })
   rawAmount: string;
 
   @ApiPropertyOptional({
@@ -505,7 +507,7 @@ export class ImportSkippedRowDto {
 
   @ApiPropertyOptional({
     description:
-      "The amount field as the file gave it; set for `unreadableAmount`, whose `amount` is 0 because the file's text gives none",
+      "The cell named by `field`, as the file gave it; set for `unreadableAmount`, whose `amount` is 0 because the file's text gives none",
   })
   rawAmount?: string;
 

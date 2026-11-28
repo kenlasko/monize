@@ -1088,18 +1088,19 @@ function buildInvestmentRow(params: {
     return { rejectReason: "missingSecurity" };
   }
 
-  // Truth table: text that does not read is reported where the action uses the
-  // cell. Q: every action but cash. C: buy, sell, reinvest. P: dividend,
-  // interest, capital gain and the inflows (a basis); for buy, sell and
-  // reinvest only once the amount could not derive it (in the cases below).
-  // A blank cell is unknown everywhere.
+  // Truth table: text that does not read is reported where the action needs the
+  // cell. Q: every action but cash and the income actions, whose Q and P are
+  // optional detail (unreadable reads as unknown). C: buy, sell, reinvest. P:
+  // the inflows (a basis); for buy, sell and reinvest only once the amount
+  // could not derive it (in the cases below). A blank cell is unknown.
   const tradeAction =
     canonical === "buy" || canonical === "sell" || canonical === "reinvest";
-  const incomeAction =
+  const optionalDetail =
     canonical === "dividend" ||
     canonical === "interest" ||
-    canonical === "capitalGain";
-  const cashAction = canonical === "cashIn" || canonical === "cashOut";
+    canonical === "capitalGain" ||
+    canonical === "cashIn" ||
+    canonical === "cashOut";
   const unreadableCell = (
     field: NonNullable<InvestmentRowOutcome["unreadable"]>["field"],
     c: { unreadable?: string },
@@ -1109,8 +1110,8 @@ function buildInvestmentRow(params: {
       : { unreadable: { field, text: c.unreadable } };
   const unreadablePrice = () => unreadableCell("price", priceCell);
   const earlyUnreadable =
-    (cashAction ? null : unreadableCell("quantity", quantityCell)) ??
-    (incomeAction || canonical === "transferIn" || canonical === "addShares"
+    (optionalDetail ? null : unreadableCell("quantity", quantityCell)) ??
+    (canonical === "transferIn" || canonical === "addShares"
       ? unreadablePrice()
       : null) ??
     (tradeAction ? unreadableCell("commission", commissionCell) : null);

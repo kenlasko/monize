@@ -126,10 +126,12 @@ Q = quantity, P = price, A = |row amount|, C = commission (default 0).
 (`N/A`, `1,2.3`, `1.2.3`) is never read as unknown or 0 where the action uses it:
 the row is left out as an unreadable amount (`unreadableAmountRows`, with the
 column) and listed by line, as for the amount column. Where the action uses the
-cell: Q for every action but cash; C for buy/reinvest/sell; P for dividend,
-interest, capitalGain, transferIn and addShares, and for buy/reinvest/sell only
-when P cannot be derived from A (a derived P <= 0 included). A cell the action
-does not use (P on a split, C on a dividend) is ignored. Rules per row:
+cell: Q for every action but cash and the income actions; C for
+buy/reinvest/sell; P for transferIn and addShares, and for buy/reinvest/sell
+only when P cannot be derived from A (a derived P <= 0 included). A cell the
+action does not need (P on a split, C on a dividend) is ignored, and on
+dividend, interest and capitalGain the optional Q and P read as unknown when
+unreadable, so the row still imports. Rules per row:
 
 | Action | Q | P | A | Outcome |
 |---|---|---|---|---|
@@ -226,8 +228,8 @@ Parser (`csv-parser.spec.ts`):
 - Unreadable cells (`csv-parser-amounts.spec.ts`): `N/A`, `1,2.3` and `1.2.3`
   in C or Q report the row with its column; an unreadable P on a buy with an
   amount derives P, with no usable amount reports `price`; blank cells stay
-  unknown; an unreadable Q or P on a dividend, and P on transferIn/addShares,
-  report the row.
+  unknown; an unreadable P on transferIn/addShares reports the row, while an
+  unreadable Q or P on a dividend imports it with both unknown.
 - Mixed fixture (buys + sells + dividend + deposit + fee + one bogus action):
   correct codes, bogus value in `cashFallbackValues` booked by sign, counts
   correct, rejected rows absent from `transactions[]`.
