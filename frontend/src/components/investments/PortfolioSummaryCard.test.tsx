@@ -777,6 +777,57 @@ describe('PortfolioSummaryCard', () => {
     });
   });
 
+  describe('each caption follows its own figure (audit #2365 p)', () => {
+    // Only the net invested could not convert: the summary-wide valuationComplete
+    // is false, but the portfolio value, the gain and its percent are known.
+    const netInvestedOnly = () =>
+      makeSummary({
+        totalNetInvested: null,
+        knownNetInvestedSubtotal: 30000,
+        totalGainOverNetInvested: null,
+        knownGainOverNetInvestedSubtotal: 20000,
+        knownPortfolioValueSubtotal: 50000,
+        knownGainLossSubtotal: 5000,
+        knownGainLossPercentSubtotal: 12.5,
+        fxComplete: false,
+        valuationComplete: false,
+        missingRatePairs: ['EUR->CAD'],
+        netInvestedMissingRatePairs: ['EUR->CAD'],
+        portfolioValueMissingRatePairs: [],
+      });
+
+    it('labels the headline a total and shows no gain caption while only net invested is withheld', () => {
+      render(<PortfolioSummaryCard summary={netInvestedOnly()} isLoading={false} />);
+
+      expect(screen.getByText('Total Portfolio Value')).toBeInTheDocument();
+      expect(screen.queryByText('Portfolio Value (partial)')).not.toBeInTheDocument();
+      expect(screen.queryByText('Over priced holdings only')).not.toBeInTheDocument();
+    });
+
+    it('labels the headline partial and captions the gain when the value and the gain are withheld', () => {
+      render(
+        <PortfolioSummaryCard
+          summary={makeSummary({
+            totalPortfolioValue: null,
+            knownPortfolioValueSubtotal: 50000,
+            totalGainLoss: null,
+            knownGainLossSubtotal: 5000,
+            totalGainLossPercent: null,
+            knownGainLossPercentSubtotal: 12.5,
+            pricesComplete: false,
+            valuationComplete: false,
+            unpricedSecurityIds: ['sec-u'],
+            holdings: [{ securityId: 'sec-u', symbol: 'UNPRICED' }],
+          })}
+          isLoading={false}
+        />,
+      );
+
+      expect(screen.getByText('Portfolio Value (partial)')).toBeInTheDocument();
+      expect(screen.getAllByText('Over priced holdings only').length).toBe(2);
+    });
+  });
+
   describe('gain over the priced holdings (A26-M38)', () => {
     // Priced A: value 100,000, cost 80,000. Unpriced B: cost 50,000. The server's
     // gain is +20,000 / +25% over A; value less every cost read -30,000.

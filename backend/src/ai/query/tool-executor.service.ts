@@ -2797,7 +2797,7 @@ export class ToolExecutorService {
         : "";
     return {
       data,
-      summary: `${data.holdingCount} holding${data.holdingCount === 1 ? "" : "s"}, ${data.totalPortfolioValue === null ? `known portfolio value (a subtotal, the total is unknown) ${fig(data.knownPortfolioValueSubtotal)}` : `total portfolio value ${fig(data.totalPortfolioValue)}`} ${cur}, unrealized gain/loss ${data.totalGainLoss === null ? "over the valued holdings only " : ""}${sign}${fig(gainLoss)} ${cur} ${
+      summary: `${data.holdingCount} holding${data.holdingCount === 1 ? "" : "s"}, ${data.totalPortfolioValue === null ? `known portfolio value (a subtotal, the total is unknown) ${fig(data.knownPortfolioValueSubtotal)}` : `total portfolio value ${fig(data.totalPortfolioValue)}`} ${cur}, unrealized gain/loss ${data.totalGainLoss === null ? "over the valued holdings only " : ""}${sign}${fig(gainLoss)} ${cur}${
         data.totalGainLossPercent === null
           ? ` (${sign}${data.knownGainLossPercentSubtotal.toFixed(2)}% over the valued holdings)`
           : ` (${sign}${data.totalGainLossPercent.toFixed(2)}%)`

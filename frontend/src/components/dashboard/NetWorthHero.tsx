@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { netWorthApi } from '@/lib/net-worth';
 import { resolveRangePreset } from '@/lib/date-range';
 import { useFinancialToday } from '@/hooks/useFinancialToday';
-import { summaryTotal } from '@/lib/net-worth-completeness';
+import { summaryFigure } from '@/lib/portfolio-headline';
 import { isComplete } from '@/lib/currency-total';
 import { moneyDecimalsForCurrency } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -103,11 +103,7 @@ export function NetWorthHero({
   // The securities alone: the cash beside them is not invested.
   const heldTotal =
     hasInvestments && portfolioValuation
-      ? summaryTotal(
-          portfolioValuation.totalHoldingsValue,
-          portfolioValuation.knownHoldingsValueSubtotal,
-          portfolioValuation,
-        )
+      ? summaryFigure(portfolioValuation, 'holdingsValue')
       : null;
   const invested =
     hasInvestments && portfolioValuation && heldTotal

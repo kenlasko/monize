@@ -64,15 +64,12 @@ type SortColumnsByField = TableSortColumnsByField<HoldingsSortField, SortColumn>
 interface GroupedHoldingsListProps {
   holdingsByAccount: AccountHoldings[];
   isLoading: boolean;
-  /** The portfolio's value, or `null` while it is not known (no summary yet, or a failed one). */
-  totalPortfolioValue: number | null;
   /**
-   * False when `totalPortfolioValue` is a known subtotal rather than the whole
-   * portfolio (a missing price or FX rate). A share of a subtotal is not a
-   * share of the portfolio, so the "% Port" column reads unknown then
-   * (review #1133). Absent reads as complete.
+   * The portfolio's value, or `null` while it is not known: no summary yet, a failed
+   * one, or a total the server withheld because a price or rate is missing. A share of
+   * a known subtotal is not a share of the portfolio, so "% Port" reads unknown then.
    */
-  valuationComplete?: boolean;
+  totalPortfolioValue: number | null;
   /**
    * Required: the symbol and the cash row render as links whatever is passed,
    * so a caller that left these out drew links that did nothing (issue #2255).
@@ -85,7 +82,6 @@ export function GroupedHoldingsList({
   holdingsByAccount,
   isLoading,
   totalPortfolioValue,
-  valuationComplete,
   onSecurityClick,
   onCashClick,
 }: GroupedHoldingsListProps) {
@@ -220,7 +216,6 @@ export function GroupedHoldingsList({
   // conversion surfaces here rather than being silently dropped.
   const getPortfolioPercent = (value: number | null, currencyCode?: string): string => {
     if (value === null || totalPortfolioValue === null || totalPortfolioValue === 0) return '-';
-    if (valuationComplete === false) return '-';
     let converted = value;
     if (currencyCode && currencyCode !== defaultCurrency) {
       const rate = getRate(currencyCode, defaultCurrency);

@@ -77,6 +77,10 @@ const summaryOf = (over: Partial<PortfolioSummary> = {}): PortfolioSummary => ({
   knownGainLossSubtotal: 20_000,
   knownGainLossPercentSubtotal: 0,
   portfolioValueMissingRatePairs: [],
+  cashMissingRatePairs: [],
+  holdingsValueMissingRatePairs: [],
+  costBasisMissingRatePairs: [],
+  netInvestedMissingRatePairs: [],
   totalGainLossPercent: 25,
   gainCostBasis: 80_000,
   unpricedCostBasis: 0,
@@ -609,10 +613,29 @@ describe("PortfolioMovementAlertService", () => {
     ]);
   });
 
+  it("still measures the move when only the cost basis is incomplete", async () => {
+    // The movement compares the portfolio value, so a missing dated cost rate
+    // (summary-wide `valuationComplete: false`) must not withhold it.
+    const { service, notify } = setup({
+      summary: summaryOf({
+        totalPortfolioValue: 80_000,
+        totalCostBasis: null,
+        costBasisMissingRatePairs: ["CAD->USD"],
+        fxComplete: false,
+        valuationComplete: false,
+      }),
+    });
+
+    await service.run();
+
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
+
   it("withholds everything, including the baseline, on an incomplete valuation", async () => {
     const { service, notify, baselineWrites } = setup({
       summary: summaryOf({
-        totalPortfolioValue: 110_000,
+        totalPortfolioValue: null,
+        knownPortfolioValueSubtotal: 110_000,
         pricesComplete: false,
         valuationComplete: false,
         unpricedSecurityIds: [SECURITY],

@@ -342,6 +342,16 @@ export interface PortfolioSummary {
    */
   portfolioValueMissingRatePairs: string[];
   /**
+   * The pairs behind each other total alone, so a surface names the cause of
+   * the figure it marks partial and not the summary's whole list: a CHF cash
+   * balance with no rate does not make the cost basis or an unpriced holding's
+   * value a CHF problem.
+   */
+  cashMissingRatePairs: string[];
+  holdingsValueMissingRatePairs: string[];
+  costBasisMissingRatePairs: string[];
+  netInvestedMissingRatePairs: string[];
+  /**
    * False when a held position has no current price, which also makes every
    * `total*` field above a subtotal.
    *
@@ -1374,6 +1384,8 @@ export class PortfolioService {
     const portfolioComplete = cashResult.fxComplete && holdingsValueComplete;
     // The gain pairs each value with its own cost, so it needs both sides.
     const gainComplete = holdingsValueComplete && costBasisComplete;
+    const sortedPairs = (pairs: readonly string[]) =>
+      [...new Set(pairs)].sort();
     const portfolioValueMissingRatePairs = [
       ...new Set([
         ...cashResult.missingRatePairs,
@@ -1415,6 +1427,14 @@ export class PortfolioService {
         fxComplete: missingRatePairs.length === 0,
         missingRatePairs,
         portfolioValueMissingRatePairs,
+        cashMissingRatePairs: sortedPairs(cashResult.missingRatePairs),
+        holdingsValueMissingRatePairs: sortedPairs(
+          holdingsAggregates.holdingsValue.missingPairs,
+        ),
+        costBasisMissingRatePairs: sortedPairs(
+          holdingsAggregates.costBasis.missingPairs,
+        ),
+        netInvestedMissingRatePairs: sortedPairs(netInvestedAgg.missingPairs),
         pricesComplete: holdingsResult.pricesComplete,
         unpricedSecurityIds: holdingsResult.unpricedSecurityIds,
         valuationComplete:

@@ -41,11 +41,11 @@ import { useTranslations } from 'next-intl';
 import { useMainAccountName } from '@/hooks/useMainAccountName';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
+import { summaryFigure } from '@/lib/portfolio-headline';
 import { usePartialTotalNote } from '@/hooks/usePartialTotalNote';
 import {
   partialTotalFor,
   portfolioPartialTotal,
-  summaryTotal,
   type PortfolioCompleteness,
 } from '@/lib/net-worth-completeness';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -262,11 +262,7 @@ export function InvestmentPerformanceReport() {
     // A withheld total (null) prints as its known subtotal, each marked partial
     // from ITS OWN total: the value from the value aggregate, the cost from the
     // cost aggregate. Unknown outright is null, never 0.
-    const valueTotal = summaryTotal(
-      portfolio.totalPortfolioValue,
-      portfolio.knownPortfolioValueSubtotal,
-      portfolio,
-    );
+    const valueTotal = summaryFigure(portfolio, 'portfolioValue');
     // An older backend sends no subtotals; the cost is then short only of a
     // cost with no rate, which is `fxComplete` alone.
     const costTotal =
@@ -274,7 +270,7 @@ export function InvestmentPerformanceReport() {
         ? portfolio.totalCostBasis === null
           ? null
           : partialTotalFor(portfolio.totalCostBasis, portfolio.fxComplete, portfolio.missingRatePairs)
-        : summaryTotal(portfolio.totalCostBasis, portfolio.knownCostBasisSubtotal, portfolio);
+        : summaryFigure(portfolio, 'costBasis');
     return {
       totalPortfolioValue: valueTotal?.value ?? null,
       totalCostBasis: costTotal?.value ?? null,

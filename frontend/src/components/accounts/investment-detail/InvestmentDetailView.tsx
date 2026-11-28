@@ -222,7 +222,6 @@ export function InvestmentDetailView({ account, refreshKey = 0 }: InvestmentDeta
           singleAccountCurrency={currency}
           holdingsByAccount={summary?.holdingsByAccount}
           accountIds={accountIds}
-          valuationComplete={summary?.valuationComplete}
         />
         <InvestmentValueChart
           accountIds={accountIds}
@@ -235,7 +234,6 @@ export function InvestmentDetailView({ account, refreshKey = 0 }: InvestmentDeta
         holdingsByAccount={summary?.holdingsByAccount ?? []}
         isLoading={isLoading}
         totalPortfolioValue={summary?.totalPortfolioValue ?? null}
-        valuationComplete={summary?.valuationComplete}
         onSecurityClick={(securityId) => router.push(`/securities/${securityId}`)}
         onCashClick={(cashAccountId) => router.push(`/transactions?accountId=${cashAccountId}`)}
       />

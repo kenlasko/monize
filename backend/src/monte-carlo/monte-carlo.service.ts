@@ -1074,17 +1074,23 @@ export class MonteCarloService {
       // non-finite number, so a portfolio with one unresolvable currency pair
       // handed over a perfectly finite figure short by whatever could not be
       // converted, and the simulation ran from it (review finding FR-005).
-      if (!summary.valuationComplete) {
+      // The figure's own signal: the portfolio value and the cash weight are
+      // known only when their totals are, whatever a cost or net-invested gap
+      // says about the summary as a whole.
+      if (
+        summary.totalPortfolioValue === null ||
+        summary.totalCashValue === null
+      ) {
         this.logger.warn(
-          `Current portfolio value for accounts ${accountIds.join(",")} is incomplete (${[...summary.missingRatePairs, ...summary.unpricedSecurityIds.map((id) => `unpriced:${id}`)].join(", ")}); reporting it as unavailable`,
+          `Current portfolio value for accounts ${accountIds.join(",")} is incomplete (${[...summary.portfolioValueMissingRatePairs, ...summary.unpricedSecurityIds.map((id) => `unpriced:${id}`)].join(", ")}); reporting it as unavailable`,
         );
-        return unknown(summary.missingRatePairs);
+        return unknown(summary.portfolioValueMissingRatePairs);
       }
 
       const value = summary.totalPortfolioValue;
       // A non-finite aggregate means some component was unusable, which is a
       // failure to value rather than a value of zero.
-      if (value === null || !Number.isFinite(value)) {
+      if (!Number.isFinite(value)) {
         this.logger.warn(
           `Current portfolio value for accounts ${accountIds.join(",")} is not finite; reporting it as unavailable`,
         );

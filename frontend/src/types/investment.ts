@@ -455,6 +455,11 @@ export interface PortfolioSummary {
   missingRatePairs?: string[];
   /** The pairs behind `totalPortfolioValue` alone (cash and holdings value), i.e. what the allocation misses. */
   portfolioValueMissingRatePairs?: string[];
+  /** The pairs behind each other total alone: what a figure marked partial should name. */
+  cashMissingRatePairs?: string[];
+  holdingsValueMissingRatePairs?: string[];
+  costBasisMissingRatePairs?: string[];
+  netInvestedMissingRatePairs?: string[];
   /** False when a held position has no current price. */
   pricesComplete?: boolean;
   /** Securities held in a non-zero quantity with no current price. */

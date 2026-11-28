@@ -19,8 +19,9 @@ import {
 } from '@/lib/incomplete-data-ranges';
 import { gainLossColor } from '@/lib/format';
 import { PartialTotal } from '@/components/ui/PartialTotal';
-import { partialTotalFor, summaryTotal, totalOrSubtotal } from '@/lib/net-worth-completeness';
-import { portfolioHeadline } from '@/lib/portfolio-headline';
+import { isPortfolioPartial, partialTotalFor, totalOrSubtotal } from '@/lib/net-worth-completeness';
+import { isComplete } from '@/lib/currency-total';
+import { portfolioHeadline, summaryFigure, type SummaryFigure } from '@/lib/portfolio-headline';
 import { PortfolioHeadline } from './variants/PortfolioHeadline';
 
 interface PortfolioSummaryCardProps {
@@ -286,7 +287,7 @@ export function PortfolioSummaryCard({
   const incompleteLabel = t('portfolioSummary.incompleteHeading');
   const gainTotal = converted
     ? gainPartial
-    : summaryTotal(summary.totalGainLoss, summary.knownGainLossSubtotal, summary);
+    : summaryFigure(summary, 'gain');
   const gainLossVal =
     converted?.gainLoss ?? totalOrSubtotal(summary.totalGainLoss, summary.knownGainLossSubtotal);
   const gainLossPercentVal =
@@ -306,19 +307,15 @@ export function PortfolioSummaryCard({
       olderBackendGain());
   const percentTotal = converted
     ? gainPartial
-    : summaryTotal(summary.totalGainLossPercent, summary.knownGainLossPercentSubtotal, summary);
+    : summaryFigure(summary, 'gainPercent');
   const totalGainTotal = converted
     ? null
-    : summaryTotal(summary.totalGainOverNetInvested, summary.knownGainOverNetInvestedSubtotal, summary);
+    : summaryFigure(summary, 'gainOverNetInvested');
   // One figure of the values grid: the foreign-account sum, else the server's
   // total or its known subtotal under the partial marker, else unknown.
-  const figure = (
-    own: number | undefined,
-    total: number | null | undefined,
-    known: number | undefined,
-  ) => {
+  const figure = (own: number | undefined, which: SummaryFigure) => {
     if (own !== undefined) return fmtVal(own);
-    const t = summaryTotal(total, known, summary);
+    const t = summaryFigure(summary, which);
     if (t === null) return <UnknownAmount reasonText={incompleteLabel} />;
     return (
       <PartialTotal total={t} displayCurrency={gainDisplayCurrency}>
@@ -327,6 +324,10 @@ export function PortfolioSummaryCard({
     );
   };
   const headline = portfolioHeadline(summary, foreignCurrency);
+  // Each caption follows its own figure, not the summary-wide flag.
+  const headlinePartial = headline !== null && isPortfolioPartial(headline.completeness);
+  const gainIsPartial = gainTotal !== null && !isComplete(gainTotal);
+  const percentIsPartial = percentTotal !== null && !isComplete(percentTotal);
   const twr = summary.timeWeightedReturn;
   // A withheld return names its cause, as the chart's does: "n/a" with no cause
   // is a dead end, and the server sends the reasons precisely so the card can
@@ -386,7 +387,7 @@ export function PortfolioSummaryCard({
         ) : (
         <PortfolioHeadline
           label={
-            valuationIncomplete
+            headlinePartial
               ? t('portfolioSummary.knownPortfolioSubtotal')
               : t('portfolioSummary.totalPortfolioValue')
           }
@@ -394,7 +395,7 @@ export function PortfolioSummaryCard({
           foreignCurrency={foreignCurrency}
           valueText={fmtVal(headline.value)}
           approx={
-            foreignCurrency && defaultTotal !== null && !valuationIncomplete
+            foreignCurrency && defaultTotal !== null && !headlinePartial
               ? `\u2248 ${formatCurrency(defaultTotal, defaultCurrency)} ${defaultCurrency}`
               : null
           }
@@ -426,7 +427,7 @@ export function PortfolioSummaryCard({
                 <InfoTooltip placement="top" text={t('portfolioSummary.holdingsValueTooltip')} />
               </div>
               <div className="ui-sum-fig text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {figure(converted?.holdings, summary.totalHoldingsValue, summary.knownHoldingsValueSubtotal)}
+                {figure(converted?.holdings, 'holdingsValue')}
               </div>
             </div>
             <div>
@@ -435,7 +436,7 @@ export function PortfolioSummaryCard({
                 <InfoTooltip placement="top" text={t('portfolioSummary.cashBalanceTooltip')} />
               </div>
               <div className="ui-sum-fig text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {figure(converted?.cash, summary.totalCashValue, summary.knownCashValueSubtotal)}
+                {figure(converted?.cash, 'cash')}
               </div>
             </div>
             <div>
@@ -465,7 +466,7 @@ export function PortfolioSummaryCard({
                 <InfoTooltip placement="top" text={t('portfolioSummary.netInvestedTooltip')} />
               </div>
               <div className="ui-sum-fig text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {figure(converted?.netInvested, summary.totalNetInvested, summary.knownNetInvestedSubtotal)}
+                {figure(converted?.netInvested, 'netInvested')}
               </div>
             </div>
             <div>
@@ -478,7 +479,7 @@ export function PortfolioSummaryCard({
                 />
               </div>
               <div className="ui-sum-fig text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {figure(converted?.costBasis, summary.totalCostBasis, summary.knownCostBasisSubtotal)}
+                {figure(converted?.costBasis, 'costBasis')}
               </div>
             </div>
             <div>
@@ -495,7 +496,7 @@ export function PortfolioSummaryCard({
                   </PartialTotal>
                 )}
               </div>
-              {valuationIncomplete && (
+              {gainIsPartial && (
                 <div className="text-xs text-amber-700 dark:text-amber-300">
                   {t('portfolioSummary.gainPartialCaption')}
                 </div>
@@ -524,7 +525,7 @@ export function PortfolioSummaryCard({
                   </PartialTotal>
                 )}
               </div>
-              {valuationIncomplete && (
+              {percentIsPartial && (
                 <div className="text-xs text-amber-700 dark:text-amber-300">
                   {t('portfolioSummary.gainPartialCaption')}
                 </div>

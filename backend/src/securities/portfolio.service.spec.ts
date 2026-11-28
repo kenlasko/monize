@@ -1655,6 +1655,12 @@ describe("PortfolioService", () => {
       expect(result.totalHoldingsValue).toBe(5000);
       expect(result.totalCostBasis).toBe(4000);
       expect(result.totalGainLoss).toBe(1000);
+      // Each figure names its own pairs: the cash gap is not the holdings' or
+      // the cost's.
+      expect(result.cashMissingRatePairs).toEqual(["EUR->CAD"]);
+      expect(result.holdingsValueMissingRatePairs).toEqual([]);
+      expect(result.costBasisMissingRatePairs).toEqual([]);
+      expect(result.portfolioValueMissingRatePairs).toEqual(["EUR->CAD"]);
       const allocation = await service.getAssetAllocation(userId);
       expect(allocation.valuationComplete).toBe(false);
       expect(allocation.missingRatePairs).toEqual(["EUR->CAD"]);
@@ -1689,6 +1695,9 @@ describe("PortfolioService", () => {
       // The gain needs both sides, so it is withheld with its percent.
       expect(result.totalGainLoss).toBeNull();
       expect(result.totalGainLossPercent).toBeNull();
+      expect(result.costBasisMissingRatePairs).toEqual(["USD->CAD"]);
+      expect(result.holdingsValueMissingRatePairs).toEqual([]);
+      expect(result.portfolioValueMissingRatePairs).toEqual([]);
       const allocation = await service.getAssetAllocation(userId);
       expect(allocation.valuationComplete).toBe(true);
       expect(allocation.missingRatePairs).toEqual([]);
@@ -2076,6 +2085,10 @@ describe("PortfolioService", () => {
           knownGainLossSubtotal: 900.55,
           knownGainLossPercentSubtotal: 0,
           portfolioValueMissingRatePairs: [],
+          cashMissingRatePairs: [],
+          holdingsValueMissingRatePairs: [],
+          costBasisMissingRatePairs: [],
+          netInvestedMissingRatePairs: [],
           totalGainLossPercent: 10.123456,
           gainCostBasis: 9000.1234,
           unpricedCostBasis: 0,
@@ -2240,6 +2253,10 @@ describe("PortfolioService", () => {
         knownGainLossSubtotal: 0,
         knownGainLossPercentSubtotal: 0,
         portfolioValueMissingRatePairs: [],
+        cashMissingRatePairs: [],
+        holdingsValueMissingRatePairs: [],
+        costBasisMissingRatePairs: [],
+        netInvestedMissingRatePairs: [],
         totalGainLossPercent: 0,
         gainCostBasis: 0,
         unpricedCostBasis: 0,
@@ -2288,6 +2305,10 @@ describe("PortfolioService", () => {
         knownGainLossSubtotal: 0,
         knownGainLossPercentSubtotal: 0,
         portfolioValueMissingRatePairs: [],
+        cashMissingRatePairs: [],
+        holdingsValueMissingRatePairs: [],
+        costBasisMissingRatePairs: [],
+        netInvestedMissingRatePairs: [],
         totalGainLossPercent: 0,
         gainCostBasis: 0,
         unpricedCostBasis: 0,
@@ -2332,6 +2353,10 @@ describe("PortfolioService", () => {
         knownGainLossSubtotal: 0,
         knownGainLossPercentSubtotal: 0,
         portfolioValueMissingRatePairs: [],
+        cashMissingRatePairs: [],
+        holdingsValueMissingRatePairs: [],
+        costBasisMissingRatePairs: [],
+        netInvestedMissingRatePairs: [],
         totalGainLossPercent: 0,
         gainCostBasis: 0,
         unpricedCostBasis: 0,
@@ -2397,6 +2422,10 @@ describe("PortfolioService", () => {
         knownGainLossSubtotal: 300,
         knownGainLossPercentSubtotal: 0,
         portfolioValueMissingRatePairs: [],
+        cashMissingRatePairs: [],
+        holdingsValueMissingRatePairs: [],
+        costBasisMissingRatePairs: [],
+        netInvestedMissingRatePairs: [],
         totalGainLossPercent: 20,
         gainCostBasis: 1500,
         unpricedCostBasis: 0,
@@ -5539,6 +5568,10 @@ describe("PortfolioService", () => {
         knownGainLossSubtotal: 0,
         knownGainLossPercentSubtotal: 0,
         portfolioValueMissingRatePairs: [],
+        cashMissingRatePairs: [],
+        holdingsValueMissingRatePairs: [],
+        costBasisMissingRatePairs: [],
+        netInvestedMissingRatePairs: [],
         totalGainLossPercent: 0,
         gainCostBasis: 0,
         unpricedCostBasis: 0,

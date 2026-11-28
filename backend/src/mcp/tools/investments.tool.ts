@@ -132,9 +132,9 @@ export class McpInvestmentsTools {
         description:
           "Portfolio overview: holdings, cost basis, gains and allocation, " +
           "with a per-account breakdown in holdingsByAccount (use it for one " +
-          "account's holdings too). Check valuationComplete before quoting a " +
-          "total: false means a price or rate was missing and the figure is a " +
-          "subtotal. includeLookThrough adds country and asset-class exposure.",
+          "account's holdings too). A total* is null when unknown; the " +
+          "partial sum is the matching known*Subtotal. includeLookThrough " +
+          "adds country and asset-class exposure.",
         inputSchema: z.object({
           accountNames: z
             .array(z.string().max(100))

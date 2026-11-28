@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { portfolioHeadline } from './portfolio-headline';
+import { portfolioHeadline, summaryFigure } from './portfolio-headline';
 import type { PortfolioSummary } from '@/types/investment';
 
 const account = (overrides: Record<string, unknown>) =>
@@ -96,5 +96,58 @@ describe('portfolioHeadline with a withheld total', () => {
 
   it('is unknown, never 0, when neither the total nor the subtotal is there', () => {
     expect(portfolioHeadline(summary({ totalPortfolioValue: null }), null)).toBeNull();
+  });
+});
+
+describe('summaryFigure names the causes of its own figure', () => {
+  // A CHF cash balance has no rate AND a holding is unpriced: two different
+  // gaps, two different figures.
+  const both = summary({
+    totalCashValue: null,
+    knownCashValueSubtotal: 0,
+    totalHoldingsValue: null,
+    knownHoldingsValueSubtotal: 500,
+    totalCostBasis: 800,
+    knownCostBasisSubtotal: 800,
+    totalPortfolioValue: null,
+    knownPortfolioValueSubtotal: 500,
+    missingRatePairs: ['CHF->USD'],
+    cashMissingRatePairs: ['CHF->USD'],
+    holdingsValueMissingRatePairs: [],
+    costBasisMissingRatePairs: [],
+    portfolioValueMissingRatePairs: ['CHF->USD'],
+    unpricedSecurityIds: ['sec-1'],
+    pricesComplete: false,
+    fxComplete: false,
+    valuationComplete: false,
+  });
+
+  it('cash names the CHF pair and no unpriced holding', () => {
+    expect(summaryFigure(both, 'cash')).toEqual({
+      value: 0,
+      missingCurrencies: ['CHF'],
+      excludedCount: 1,
+    });
+  });
+
+  it('holdings value counts the unpriced holding and no pair', () => {
+    expect(summaryFigure(both, 'holdingsValue')).toEqual({
+      value: 500,
+      missingCurrencies: [],
+      excludedCount: 1,
+    });
+  });
+
+  it('portfolio value names both causes; the cost basis is complete', () => {
+    expect(summaryFigure(both, 'portfolioValue')).toEqual({
+      value: 500,
+      missingCurrencies: ['CHF'],
+      excludedCount: 2,
+    });
+    expect(summaryFigure(both, 'costBasis')).toEqual({
+      value: 800,
+      missingCurrencies: [],
+      excludedCount: 0,
+    });
   });
 });

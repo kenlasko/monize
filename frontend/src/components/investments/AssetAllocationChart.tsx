@@ -144,13 +144,6 @@ interface AssetAllocationChartProps {
    * tagged holdings.
    */
   enableTagGrouping?: boolean;
-  /**
-   * False when the portfolio valuation is incomplete (a missing price or FX
-   * rate). The percentages here are then shares of the known subtotal, not of the
-   * whole portfolio, so the chart says so rather than presenting them as
-   * definitive (recheck RR5-005). Absent reads as complete.
-   */
-  valuationComplete?: boolean;
 }
 
 export function AssetAllocationChart({
@@ -161,7 +154,6 @@ export function AssetAllocationChart({
   titleSuffix,
   accountIds,
   enableTagGrouping = true,
-  valuationComplete,
 }: AssetAllocationChartProps) {
   const t = useTranslations('investments');
   const format = useFormatter();
@@ -574,9 +566,7 @@ export function AssetAllocationChart({
   // each carries its own flag; absent (an older backend) reads as complete.
   const knownValueOnly =
     (effectiveGroupBy === 'security' &&
-      (valuationComplete === false ||
-        activeAllocation?.valuationComplete === false ||
-        foreignAggregateIncomplete)) ||
+      (activeAllocation?.valuationComplete === false || foreignAggregateIncomplete)) ||
     ((isTagView || isTagKeyView) && activeAllocation?.valuationComplete === false);
   // What is missing, by name: the server's symbols for holdings with no price
   // (never an id) and the pairs with no rate.

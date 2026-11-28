@@ -689,10 +689,11 @@ describe("MonteCarloService", () => {
 
     it("names a missing cash pair when the summary is incomplete", async () => {
       portfolioService.getPortfolioSummary.mockResolvedValue({
-        totalPortfolioValue: 200000,
-        totalCashValue: 100000,
+        totalPortfolioValue: null,
+        totalCashValue: null,
         fxComplete: false,
         missingRatePairs: ["EUR->USD"],
+        portfolioValueMissingRatePairs: ["EUR->USD"],
         pricesComplete: true,
         unpricedSecurityIds: [],
         valuationComplete: false,
@@ -1365,9 +1366,12 @@ describe("MonteCarloService", () => {
         buildScenario({ useCurrentBalance: true }),
       );
       portfolioService.getPortfolioSummary.mockResolvedValueOnce({
-        totalPortfolioValue: 100,
+        totalPortfolioValue: null,
+        totalCashValue: null,
+        knownPortfolioValueSubtotal: 100,
         fxComplete: false,
         missingRatePairs: ["EUR->USD"],
+        portfolioValueMissingRatePairs: ["EUR->USD"],
         pricesComplete: true,
         unpricedSecurityIds: [],
         valuationComplete: false,
@@ -1387,9 +1391,12 @@ describe("MonteCarloService", () => {
         buildScenario({ useCurrentBalance: true }),
       );
       portfolioService.getPortfolioSummary.mockResolvedValueOnce({
-        totalPortfolioValue: 100,
+        totalPortfolioValue: null,
+        totalCashValue: 0,
+        knownPortfolioValueSubtotal: 100,
         fxComplete: true,
         missingRatePairs: [],
+        portfolioValueMissingRatePairs: [],
         pricesComplete: false,
         unpricedSecurityIds: ["sec-2"],
         valuationComplete: false,
@@ -1398,6 +1405,32 @@ describe("MonteCarloService", () => {
       await expect(service.runSaved(userId, "scn-1")).rejects.toThrow(
         /could not be determined/,
       );
+    });
+
+    it("still runs when only the cost basis is incomplete: the value is its own signal", async () => {
+      // `valuationComplete` is summary-wide and a missing dated cost rate makes it
+      // false, but the starting value and the cash weight are known.
+      scenariosRepository.findOne.mockResolvedValueOnce(
+        buildScenario({ useCurrentBalance: true }),
+      );
+      portfolioService.getPortfolioSummary.mockResolvedValueOnce({
+        totalPortfolioValue: 100,
+        totalCashValue: 10,
+        totalCostBasis: null,
+        costBasisMissingRatePairs: ["CAD->EUR"],
+        fxComplete: false,
+        missingRatePairs: ["CAD->EUR"],
+        portfolioValueMissingRatePairs: [],
+        pricesComplete: true,
+        unpricedSecurityIds: [],
+        valuationComplete: false,
+      });
+      scenariosRepository.save.mockImplementationOnce((s) =>
+        Promise.resolve(s),
+      );
+
+      const result = await service.runSaved(userId, "scn-1");
+      expect(result).toBeDefined();
     });
 
     it("still runs from a genuinely empty portfolio", async () => {

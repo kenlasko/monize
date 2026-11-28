@@ -162,8 +162,12 @@ allocation endpoints (`/portfolio/allocation`, `/by-tag`, `/by-tag-key`) carry
 `totalValue` (null while incomplete), `knownSubtotal`, `valuationComplete`,
 `missingRatePairs`, `unpricedSecurityIds` and `unpricedSymbols`, derived from
 the cash and holdings-value aggregates only. The shared AI/MCP shape has the
-same nulls. Clients print the subtotal under a partial marker from whether the
-figure's own total is null. The net-worth `assets` / `liabilities` / `netWorth`
+same nulls. Each figure's own causes travel with it (`cashMissingRatePairs`,
+`holdingsValueMissingRatePairs`, `costBasisMissingRatePairs`,
+`netInvestedMissingRatePairs`, `portfolioValueMissingRatePairs`), so a surface
+names the cash gap on the cash and the unpriced holding on the value. Clients
+print the subtotal under a partial marker from whether the figure's own total is
+null, never from the summary-wide `valuationComplete`. The net-worth `assets` / `liabilities` / `netWorth`
 fields remain stage 1.
 
 Stage 1 is therefore strictly better than the previous behaviour and does not

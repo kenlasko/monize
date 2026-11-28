@@ -476,7 +476,6 @@ function InvestmentsContent() {
               holdingsByAccount={data.portfolioSummary?.holdingsByAccount}
               titleSuffix={accountFilterLabel}
               accountIds={data.selectedAccountIds}
-              valuationComplete={data.portfolioSummary?.valuationComplete}
             />
           </div>
 
@@ -522,7 +521,6 @@ function InvestmentsContent() {
               holdingsByAccount={data.portfolioSummary?.holdingsByAccount || []}
               isLoading={data.isSummaryLoading}
               totalPortfolioValue={data.portfolioSummary?.totalPortfolioValue ?? null}
-              valuationComplete={data.portfolioSummary?.valuationComplete}
               onSecurityClick={data.handleSecurityClick}
               onCashClick={data.handleCashClick}
             />

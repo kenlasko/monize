@@ -180,7 +180,7 @@ export class PortfolioMovementAlertService {
       baseline.currency === currency &&
       capturedOn != null &&
       baselinePositions != null &&
-      summary.valuationComplete === true;
+      summary.totalPortfolioValue !== null;
     const baselineDate = comparable ? capturedOn : null;
 
     const flow =
@@ -217,7 +217,7 @@ export class PortfolioMovementAlertService {
     }
 
     const inputs: MovementInputs = {
-      mvComplete: summary.valuationComplete === true,
+      mvComplete: summary.totalPortfolioValue !== null,
       // Read only when `mvComplete`, which is when the total is known.
       mvToday: summary.totalPortfolioValue ?? 0,
       latePrice: { complete: late.complete, value: late.total },
