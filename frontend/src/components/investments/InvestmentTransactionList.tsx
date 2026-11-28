@@ -31,6 +31,7 @@ import { useLongPress, type LongPressRowHandlers } from '@/hooks/useLongPress';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useUiStyle } from '@/hooks/useUiStyle';
 import { InvestmentDayHeading } from '@/components/investments/variants/InvestmentDayHeading';
+import { InvestmentPebbleRegister } from '@/components/investments/variants/InvestmentPebbleRegister';
 import { RowActions } from '@/components/ui/row-actions/RowActions';
 import { RowActionSheet } from '@/components/ui/row-actions/RowActionSheet';
 import { DensityToggle } from '@/components/ui/DensityToggle';
@@ -182,10 +183,16 @@ interface InvestmentTransactionRowProps {
    */
   wrapped?: boolean;
   /**
-   * The wrapped card sits under a date heading (Folio and Pebble on a phone,
-   * `InvestmentDayHeading`), so it drops its own date (issue #2508).
+   * The row sits under a date heading (`InvestmentDayHeading`: Folio at every
+   * width, Pebble on a phone), so it drops its own date: the card's, and the
+   * tier row's Date cell (issues #2508, #2510).
    */
   groupedByDate?: boolean;
+  /**
+   * Folio's ledger: the status reads as its single-letter mark, which the
+   * legend under the table explains, as in the cash register.
+   */
+  ledger?: boolean;
 }
 
 const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
@@ -207,6 +214,7 @@ const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
   hidden,
   wrapped = false,
   groupedByDate = false,
+  ledger = false,
 }: InvestmentTransactionRowProps) {
   const tc = useTranslations('common');
   const actionInfoFor = useInvestmentActionInfo();
@@ -239,7 +247,8 @@ const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
     return (
       <tr
         {...getRowHandlers(tx)}
-        className={`group hover:bg-gray-100 dark:hover:bg-gray-800 select-none bg-white dark:bg-gray-900 ${onEdit ? 'cursor-pointer' : ''} ${isVoid ? 'opacity-50' : ''}`}
+        data-band={index % 2}
+        className={`ui-register-row group hover:bg-gray-100 dark:hover:bg-gray-800 select-none bg-white dark:bg-gray-900 ${onEdit ? 'cursor-pointer' : ''} ${isVoid ? 'opacity-50' : ''}`}
       >
         <td className="p-0">
           {/* The inset is this table's own `cellPadding` -- the `wide` scale
@@ -275,11 +284,14 @@ const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
   return (
     <tr
       {...getRowHandlers(tx)}
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${onEdit ? 'cursor-pointer' : ''} ${isVoid ? 'opacity-50' : ''}`}
+      data-band={index % 2}
+      className={`ui-register-row group hover:bg-gray-100 dark:hover:bg-gray-800 select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${onEdit ? 'cursor-pointer' : ''} ${isVoid ? 'opacity-50' : ''}`}
     >
-      <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${voidText}`}>
-        {formatDate(tx.transactionDate)}
-      </td>
+      {!groupedByDate && (
+        <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${voidText}`}>
+          {formatDate(tx.transactionDate)}
+        </td>
+      )}
       <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 hidden lg:table-cell`}>
         <span title={accountName}>{accountName || '-'}</span>
       </td>
@@ -312,7 +324,7 @@ const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
           />
         </td>
       )}
-      <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100 ${voidText}`}>
+      <td className={`${cellPadding} ui-register-money whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100 ${voidText}`}>
         <InvestmentTotalValue
           tx={tx}
           formatCurrency={formatCurrency}
@@ -323,7 +335,7 @@ const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
         <td className={`${cellPadding} whitespace-nowrap text-center hidden lg:table-cell`}>
           <StatusCellButton
             status={tx.status}
-            dense={density === 'dense'}
+            dense={density === 'dense' || ledger}
             onCycle={() => onCycleStatus(tx)}
           />
         </td>
@@ -495,12 +507,17 @@ export function InvestmentTransactionList({
   // the `accounts` they pass, so neither has a column the card cannot carry.
   const isMobile = useIsMobile();
   const wrapped = isMobile && density === 'normal';
-  // Folio and Pebble head each day's cards with its date on a phone, as the
-  // cash register beside this one does (issue #2508); the server orders this
-  // register by date, so a change of date is a new day. Standard keeps the
-  // date on each card.
+  // Folio and Pebble draw this register the way they draw the cash register
+  // beside it (issues #2508, #2510). Folio is a ledger at every width: rules,
+  // green bars and the date as a group row over each day's trades, with no
+  // Date column. Pebble groups the day's trades into white blocks
+  // (`InvestmentPebbleRegister`) from `sm` up; a phone keeps this table, its
+  // Normal-density cards under a day title. The server orders this register
+  // by date, so a change of date is a new day. Standard is unchanged.
   const uiStyle = useUiStyle();
-  const groupedByDate = wrapped && uiStyle !== 'standard';
+  const ledger = uiStyle === 'folio';
+  const pebbleList = uiStyle === 'pebble' && !isMobile;
+  const groupedByDate = ledger || (wrapped && uiStyle === 'pebble');
 
   // The stored `investmentRegister` set (one per table kind), so the
   // Investments page and the account detail page's register panel follow the
@@ -540,9 +557,11 @@ export function InvestmentTransactionList({
     />
   );
 
-  // Eight data columns less the hidden ones, plus Actions when this surface
-  // offers any. Loop invariant, so it is resolved once rather than per row.
-  const colCount = 8 - hiddenColumns.size + (onDelete || onEdit || onDuplicate ? 1 : 0);
+  // Eight data columns less the hidden ones (and the Date column a group row
+  // replaces), plus Actions when this surface offers any. Loop invariant, so
+  // it is resolved once rather than per row.
+  const colCount =
+    8 - hiddenColumns.size - (groupedByDate ? 1 : 0) + (onDelete || onEdit || onDuplicate ? 1 : 0);
 
   if (isLoading) {
     return (
@@ -663,7 +682,8 @@ export function InvestmentTransactionList({
         {!ownsPaging && (
           <div className="ml-auto flex items-center gap-2">
             {columnChooser}
-            <DensityToggle view={densityView} size="md" />
+            {/* Pebble's block list has no row density to set. */}
+            {!pebbleList && <DensityToggle view={densityView} size="md" />}
           </div>
         )}
         </div>
@@ -750,7 +770,7 @@ export function InvestmentTransactionList({
 
       {ownsPaging && (
         <ListTopToolbar
-          densityView={densityView}
+          densityView={pebbleList ? undefined : densityView}
           viewToggle={viewModeToggle}
           currentPage={currentPage}
           totalPages={totalPages}
@@ -763,8 +783,24 @@ export function InvestmentTransactionList({
       )}
 
       {/* Brokerage Transactions Table */}
+      {pebbleList ? (
+        <InvestmentPebbleRegister
+          transactions={transactions}
+          today={today}
+          futureBoundaryIndex={futureBoundaryIndex}
+          accountMap={accountMap}
+          defaultCurrency={defaultCurrency}
+          formatCurrency={formatCurrency}
+          formatQuantity={formatQuantity}
+          getRowHandlers={getRowHandlers}
+          onEdit={onEdit}
+          onCycleStatus={handleCycleStatus}
+          hidden={hiddenColumns}
+          emptyText={t('transactionList.noTransactionsFiltered')}
+        />
+      ) : (
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <table className={`min-w-full divide-y divide-gray-200 dark:divide-gray-700 ${ledger ? 'ui-register' : ''}`}>
           {/* On a phone the wrapped card labels its own values, so the column
               header goes with the columns. Unlike the cash register and the
               list tables, there is nothing in this header row to keep: it
@@ -777,9 +813,11 @@ export function InvestmentTransactionList({
           {!wrapped && (
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
-                {t('transactionList.dateColumn')}
-              </th>
+              {!groupedByDate && (
+                <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                  {t('transactionList.dateColumn')}
+                </th>
+              )}
               <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell`}>
                 {t('transactionList.accountColumn')}
               </th>
@@ -799,7 +837,7 @@ export function InvestmentTransactionList({
                   {t('transactionList.priceColumn')}
                 </th>
               )}
-              <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+              <th className={`${headerPadding} ui-register-money text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
                 {t('transactionList.totalColumn')}
               </th>
               {isVisible('status') && (
@@ -844,7 +882,11 @@ export function InvestmentTransactionList({
                   )}
                   {groupedByDate &&
                     (index === 0 || transactions[index - 1].transactionDate !== tx.transactionDate) && (
-                      <InvestmentDayHeading date={tx.transactionDate} today={today} />
+                      <InvestmentDayHeading
+                        date={tx.transactionDate}
+                        today={today}
+                        colSpan={wrapped ? 1 : colCount}
+                      />
                     )}
                   <InvestmentTransactionRow
                     tx={tx}
@@ -865,6 +907,7 @@ export function InvestmentTransactionList({
                     hidden={hiddenColumns}
                     wrapped={wrapped}
                     groupedByDate={groupedByDate}
+                    ledger={ledger}
                   />
                 </Fragment>
               );
@@ -872,6 +915,15 @@ export function InvestmentTransactionList({
           </tbody>
         </table>
       </div>
+      )}
+      {/* Folio's ledger prints each status as its mark; the legend reads them,
+          as under the cash register. Absent with the Status column. */}
+      {ledger && !wrapped && isVisible('status') && (
+        <p className="ui-register-legend">
+          <span><span className="ui-register-mark">{tStatus('list.folio.markCleared')}</span> {tStatus('list.folio.legendCleared')}</span>
+          <span><span className="ui-register-mark">{tStatus('list.folio.markReconciled')}</span> {tStatus('list.folio.legendReconciled')}</span>
+        </p>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
