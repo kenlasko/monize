@@ -163,7 +163,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
   // withheld total (a missing rate, or the row limit) is the known part, marked.
   const metric = report?.config.metric;
   const formatValue = (value: number) =>
-    metric === MetricType.COUNT ? formatNumber(value, 0) : formatCurrency(value);
+    metric === MetricType.COUNT ? formatNumber(value, 0) : formatCurrency(value, result?.currency);
   // A plain "Total" does not say whether a both-direction figure is a signed
   // net or a sum of unsigned category amounts, so the headline names it.
   const measure = report ? customReportMeasure(report, result?.signedTotal) : null;
@@ -359,6 +359,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
               groupBy={result.groupBy as GroupByType}
               onDataPointClick={handleDataPointClick}
               tableColumns={result.tableColumns}
+              currency={result.currency}
               metric={metric}
               totalRowValue={summaryTotal?.value}
               totalRowCount={signedTotal ? result.summary.count : undefined}
