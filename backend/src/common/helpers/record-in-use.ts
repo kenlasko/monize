@@ -87,6 +87,12 @@ export async function countReferences(
  * Per-record totals for a list: each `listSql` takes the user as `$1` and
  * returns `id` and `count` rows for that user's records; the counts are summed
  * per id. The grouped twin of `countReferences`, which counts one record.
+ *
+ * shortcut: under an acting delegate, `shared_people` and `shared_postings`
+ * (policy: current user AND real user) read 0 rows, so a record used only by
+ * them lists as unused for a delegate, while the delete, owner-only for such
+ * rows, still counts them. Mark the count partial in the response if the
+ * delegate list ever needs to be exact.
  */
 export async function countReferencesById(
   m: EntityManager,

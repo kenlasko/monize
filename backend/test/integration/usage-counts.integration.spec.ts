@@ -274,4 +274,39 @@ describe("usage counts agree with the delete guard (integration)", () => {
       ),
     ).toEqual({ count: 1, movableCount: 1 });
   });
+
+  it("matches an upper-case id in a rule the same way in the list and the guard", async () => {
+    const category = await createTestCategory(db, userId);
+    const [tag] = await db.query(
+      `INSERT INTO tags (user_id, name) VALUES ($1, 'U') RETURNING id`,
+      [userId],
+    );
+    await db.query(
+      `INSERT INTO transaction_rules (user_id, name, position, condition, actions)
+       VALUES ($1, 'r', 1, '{}'::jsonb, $2::jsonb)`,
+      [
+        userId,
+        JSON.stringify([
+          {
+            categoryId: category.id.toUpperCase(),
+            tagId: tag.id.toUpperCase(),
+          },
+        ]),
+      ],
+    );
+
+    expect(await guardCount(findCategoryReferences, category.id)).toBe(1);
+    expect((await listedCategory(category.id))?.usageCount).toBe(1);
+    // The delete impact reads the id in either case, too.
+    for (const id of [tag.id, tag.id.toUpperCase()]) {
+      const impact = await withUserContext(userId, () =>
+        tags.getDeleteImpact(userId, id),
+      );
+      expect(impact.rules).toBe(1);
+    }
+    const counts = await withUserContext(userId, () =>
+      tags.getAllTransactionCounts(userId),
+    );
+    expect(counts[tag.id]).toBe(1);
+  });
 });

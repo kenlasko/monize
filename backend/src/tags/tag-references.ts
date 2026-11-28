@@ -62,14 +62,14 @@ export const TAG_REFERENCES = {
 
 /**
  * Tag ids kept in JSON have no foreign key. shortcut: the per-record count
- * matches the id anywhere in the JSON text; fine for UUIDs. `$2` is the LIKE
+ * matches the lowercased id anywhere in the lowercased JSON text (as the list does); fine for UUIDs. `$2` is the LIKE
  * pattern.
  */
 const JSON_REFERENCES: readonly CountedReference[] = [
   {
     kind: "scheduledTransactions",
     like: true,
-    sql: "SELECT count(*)::int AS count FROM scheduled_transactions WHERE user_id = $1 AND tag_ids::text LIKE $2",
+    sql: "SELECT count(*)::int AS count FROM scheduled_transactions WHERE user_id = $1 AND lower(tag_ids::text) LIKE $2",
     listSql: jsonIdListSql({
       from: "scheduled_transactions s",
       rowId: "s.id",
@@ -81,13 +81,13 @@ const JSON_REFERENCES: readonly CountedReference[] = [
   {
     kind: "rules",
     like: true,
-    sql: "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (condition::text LIKE $2 OR actions::text LIKE $2)",
+    sql: "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (lower(condition::text) LIKE $2 OR lower(actions::text) LIKE $2)",
     listSql: jsonIdListSql({ ...RULES_JSON, target: "tags" }),
   },
   {
     kind: "customReports",
     like: true,
-    sql: "SELECT count(*)::int AS count FROM custom_reports WHERE user_id = $1 AND filters::text LIKE $2",
+    sql: "SELECT count(*)::int AS count FROM custom_reports WHERE user_id = $1 AND lower(filters::text) LIKE $2",
     listSql: jsonIdListSql({ ...REPORTS_JSON, target: "tags" }),
   },
 ];

@@ -178,7 +178,7 @@ describe('the payees list on a phone', () => {
     // are the two the card omits.)
     const text = rows[0].textContent ?? '';
     expect(text).toContain('Walmart');
-    expect(text).toContain('12345');
+    expect(text).toContain('12,345');
     expect(text).toContain('Groceries');
     expect(text).toContain('Active');
     expect(text).toContain('2026-08-30');
@@ -563,7 +563,7 @@ describe('the payees list on a phone', () => {
     // A locale that groups with a (thin) space would otherwise break a figure
     // in two, and none of them is truncated: a silently cut count is worse than
     // a crowded one.
-    for (const value of ['12345', '3', '2026-08-30']) {
+    for (const value of ['12,345', '3', '2026-08-30']) {
       const node = within(row).getByText(value);
       expect(node.className).toContain('whitespace-nowrap');
       expect(node.className).not.toContain('truncate');

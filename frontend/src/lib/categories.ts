@@ -31,13 +31,16 @@ export const categoriesApi = {
   // Get all categories. `withUsage` adds usageCount (what a delete refuses
   // for); only the Categories page, which shows it, asks.
   getAll: async (options: { withUsage?: boolean } = {}): Promise<Category[]> => {
-    const withUsage = options.withUsage === true;
+    // The usage variant is never cached: a new rule, budget line or schedule
+    // changes it without touching a category, so a cached copy would lie.
+    if (options.withUsage === true) {
+      const response = await apiClient.get<Category[]>('/categories', { params: { usage: true } });
+      return response.data;
+    }
     return dedupe(
-      withUsage ? 'categories:all:usage' : 'categories:all',
+      'categories:all',
       async () => {
-        const response = await apiClient.get<Category[]>('/categories', {
-          params: withUsage ? { usage: true } : undefined,
-        });
+        const response = await apiClient.get<Category[]>('/categories');
         return response.data;
       },
       300_000, // 5 min - categories rarely change

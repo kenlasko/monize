@@ -49,6 +49,9 @@ export async function countTagReferences(
   userId: string,
   tagId: string,
 ): Promise<TagDeleteImpact> {
+  // A UUID is valid in either case; JSON keeps it lowercase, so every
+  // parameter below is the lowercase form.
+  const id = tagId.toLowerCase();
   const [row] = await m.query(
     `SELECT
        (SELECT COUNT(*) FROM transaction_tags x JOIN tags g ON g.id = x.tag_id
@@ -62,11 +65,11 @@ export async function countTagReferences(
        (SELECT COUNT(*) FROM security_tags x JOIN tags g ON g.id = x.tag_id
          WHERE g.user_id = $3 AND x.tag_id = $1) AS securities,
        (SELECT COUNT(*) FROM transaction_rules
-         WHERE user_id = $3 AND (condition::text LIKE $2 OR actions::text LIKE $2)) AS rules,
+         WHERE user_id = $3 AND (lower(condition::text) LIKE $2 OR lower(actions::text) LIKE $2)) AS rules,
        (SELECT COUNT(*) FROM custom_reports
-         WHERE user_id = $3 AND filters::text LIKE $2) AS reports`,
-    // A UUID is lowercase in JSON and has no LIKE wildcard.
-    [tagId, `%${tagId.toLowerCase()}%`, userId],
+         WHERE user_id = $3 AND lower(filters::text) LIKE $2) AS reports`,
+    // A UUID has no LIKE wildcard.
+    [id, `%${id}%`, userId],
   );
   return {
     transactions: Number(row.transactions),

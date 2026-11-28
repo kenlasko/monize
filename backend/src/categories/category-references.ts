@@ -59,7 +59,7 @@ export const CATEGORY_REFERENCES = {
   "scheduled_transaction_overrides.category_id": {
     policy: "refuse",
     kind: "scheduledTransactions",
-    sql: "SELECT count(*)::int AS count FROM scheduled_transaction_overrides o JOIN scheduled_transactions t ON t.id = o.scheduled_transaction_id WHERE t.user_id = $1 AND (o.category_id = $2 OR o.splits::text LIKE '%' || $2::text || '%')",
+    sql: "SELECT count(*)::int AS count FROM scheduled_transaction_overrides o JOIN scheduled_transactions t ON t.id = o.scheduled_transaction_id WHERE t.user_id = $1 AND (o.category_id = $2 OR lower(o.splits::text) LIKE '%' || lower($2::text) || '%')",
     listSql: jsonIdListSql({
       from: "scheduled_transaction_overrides o JOIN scheduled_transactions st ON st.id = o.scheduled_transaction_id",
       rowId: "o.id",
@@ -171,13 +171,13 @@ const CATEGORY_OTHER_REFERENCES: readonly CountedReference[] = [
   {
     kind: "rules",
     like: true,
-    sql: "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (condition::text LIKE $2 OR actions::text LIKE $2)",
+    sql: "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (lower(condition::text) LIKE $2 OR lower(actions::text) LIKE $2)",
     listSql: jsonIdListSql({ ...RULES_JSON, target: "categories" }),
   },
   {
     kind: "customReports",
     like: true,
-    sql: "SELECT count(*)::int AS count FROM custom_reports WHERE user_id = $1 AND filters::text LIKE $2",
+    sql: "SELECT count(*)::int AS count FROM custom_reports WHERE user_id = $1 AND lower(filters::text) LIKE $2",
     listSql: jsonIdListSql({ ...REPORTS_JSON, target: "categories" }),
   },
 ];

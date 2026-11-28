@@ -242,7 +242,8 @@ function PayeesContent() {
         const catB = b.defaultCategory ? (categoryLabelMap.get(b.defaultCategory.id) ?? b.defaultCategory.name) : '';
         comparison = catA.localeCompare(catB, undefined, { sensitivity: 'base' });
       } else if (sortField === 'count') {
-        comparison = (a.transactionCount ?? 0) - (b.transactionCount ?? 0);
+        // The column shows usageCount, so it is what orders (and pages) the list.
+        comparison = (a.usageCount ?? a.transactionCount ?? 0) - (b.usageCount ?? b.transactionCount ?? 0);
       } else if (sortField === 'aliases') {
         comparison = (a.aliasCount ?? 0) - (b.aliasCount ?? 0);
       } else if (sortField === 'lastUsed') {

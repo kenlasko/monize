@@ -484,6 +484,20 @@ describe('PayeesPage', () => {
       });
     });
 
+    it('orders the Count column by usageCount, the figure the list shows', async () => {
+      // Used only by schedules: no transactions, but the most records.
+      mockGetAllPayees.mockResolvedValue([
+        { ...mockPayees[0], usageCount: 50 },
+        { id: 'p-9', name: 'Landlord', defaultCategoryId: null, defaultCategory: null, transactionCount: 0, usageCount: 99, isActive: true },
+      ]);
+      render(<PayeesPage />);
+      await waitFor(() => expect(screen.getByTestId('payee-list')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('sort-by-count'));
+      await waitFor(() => expect(screen.getByTestId('sort-info')).toHaveTextContent('count desc'));
+      const ids = screen.getAllByTestId(/^payee-p-/).map((el) => el.getAttribute('data-testid'));
+      expect(ids).toEqual(['payee-p-9', 'payee-p-1']);
+    });
+
     it('sorts by category in asc order by default', async () => {
       render(<PayeesPage />);
       await waitFor(() => {

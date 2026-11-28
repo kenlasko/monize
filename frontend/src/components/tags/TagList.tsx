@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback, memo } from 'react';
 import { useTranslations } from 'next-intl';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { Tag } from '@/types/tag';
 import { getIconComponent } from '@/components/ui/IconPicker';
 import { useTableDensity, type DensityLevel } from '@/hooks/useTableDensity';
@@ -70,6 +71,7 @@ const TagRow = memo(function TagRow({
   getRowHandlers,
 }: TagRowProps) {
   const tc = useTranslations('common');
+  const { formatNumber } = useNumberFormat();
 
   const handleTagClick = useCallback(() => {
     onTagClick?.(tag);
@@ -120,7 +122,7 @@ const TagRow = memo(function TagRow({
           say beyond its name (the icon is decoration), and a one-figure column
           fits beside the name where the four-cell card it replaced did not. */}
       <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400`}>
-        {transactionCount}
+        {formatNumber(transactionCount, 0)}
       </td>
       <td className={`${cellPadding} whitespace-nowrap text-right text-sm font-medium hidden min-[480px]:table-cell sticky right-0 ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} group-hover:bg-gray-100 dark:group-hover:bg-gray-800`}>
         <RowActions actions={actions} density={density} />

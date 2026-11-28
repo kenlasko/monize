@@ -235,7 +235,7 @@ const PAYEE_REFERENCE_COUNTS: Record<
 const PAYEE_RULES_REFERENCE: CountedReference = {
   kind: "rules",
   like: true,
-  sql: "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (condition::text LIKE $2 OR actions::text LIKE $2)",
+  sql: "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (lower(condition::text) LIKE $2 OR lower(actions::text) LIKE $2)",
   listSql: jsonIdListSql({ ...RULES_JSON, target: "payees" }),
 };
 

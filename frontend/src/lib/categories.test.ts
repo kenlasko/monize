@@ -23,8 +23,18 @@ describe('categoriesApi', () => {
   it('getAll fetches /categories', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: [{ id: 'cat-1' }] });
     const result = await categoriesApi.getAll();
-    expect(apiClient.get).toHaveBeenCalledWith('/categories', { params: undefined });
+    expect(apiClient.get).toHaveBeenCalledWith('/categories');
     expect(result).toHaveLength(1);
+  });
+
+  it('getAll with usage is fetched fresh every time, never cached', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    await categoriesApi.getAll({ withUsage: true });
+    await categoriesApi.getAll({ withUsage: true });
+    const usageCalls = vi.mocked(apiClient.get).mock.calls.filter(
+      ([, config]) => (config as { params?: { usage?: boolean } } | undefined)?.params?.usage,
+    );
+    expect(usageCalls).toHaveLength(2);
   });
 
   it('getAll asks for usage counts only with withUsage', async () => {

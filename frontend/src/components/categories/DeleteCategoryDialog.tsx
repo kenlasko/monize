@@ -46,13 +46,27 @@ export function DeleteCategoryDialog({
 
   const isLoading = isOpen && categoryId !== null && usage === null && !usageFailed;
 
+  // Every open starts from "unknown" (the render-time reset above, which also
+  // runs on a reopen of the same category) and one lookup answers it. A late
+  // answer from an earlier open is dropped, so it cannot overwrite this one.
   useEffect(() => {
-    if (isOpen && category) {
-      categoriesApi
-        .getUsage(category.id)
-        .then(setUsage)
-        .catch(() => setUsageFailed(true));
-    }
+    if (!isOpen || !category) return;
+    let current = true;
+    categoriesApi
+      .getUsage(category.id)
+      .then((result) => {
+        if (!current) return;
+        setUsageFailed(false);
+        setUsage(result);
+      })
+      .catch(() => {
+        if (!current) return;
+        setUsage(null);
+        setUsageFailed(true);
+      });
+    return () => {
+      current = false;
+    };
   }, [isOpen, category]);
 
   // Get available categories to reassign to (excluding current and its children)
@@ -81,7 +95,7 @@ export function DeleteCategoryDialog({
   const handleConfirm = () => {
     // Only rows a reassign moves are offered a target; anything else that
     // uses the category stays, so a plain delete lets the server list it.
-    onConfirm(usage?.movableCount ? reassignTo || null : undefined);
+    onConfirm(!usageFailed && usage?.movableCount ? reassignTo || null : undefined);
   };
 
   // Don't render if no category (Modal handles isOpen check)

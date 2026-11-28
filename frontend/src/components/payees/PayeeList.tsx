@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback, memo } from 'react';
 import { useTranslations } from 'next-intl';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useRouter } from 'next/navigation';
 import { Payee } from '@/types/payee';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -243,6 +244,7 @@ const PayeeRow = memo(function PayeeRow({
 }: PayeeRowProps) {
   const t = useTranslations('payees');
   const tc = useTranslations('common');
+  const { formatNumber } = useNumberFormat();
   const rowRef = useScrollIntoViewWhen<HTMLTableRowElement>(!!isHighlighted);
   const actions = useMemo(
     () => buildPayeeActions(
@@ -321,7 +323,7 @@ const PayeeRow = memo(function PayeeRow({
               <div className="text-right">
                 <CellLabel>{t('list.columns.count')}</CellLabel>
                 <div className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                  {payee.usageCount ?? payee.transactionCount ?? 0}
+                  {formatNumber(payee.usageCount ?? payee.transactionCount ?? 0, 0)}
                 </div>
               </div>
               <div className="text-right">
@@ -435,7 +437,7 @@ const PayeeRow = memo(function PayeeRow({
         />
       </td>
       <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell`}>
-        {payee.usageCount ?? payee.transactionCount ?? 0}
+        {formatNumber(payee.usageCount ?? payee.transactionCount ?? 0, 0)}
       </td>
       <td className={`${cellPadding} whitespace-nowrap text-center text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell`}>
         {payee.aliasCount ?? 0}

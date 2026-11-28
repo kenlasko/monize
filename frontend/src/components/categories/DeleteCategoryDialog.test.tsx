@@ -84,6 +84,45 @@ describe('DeleteCategoryDialog', () => {
     expect(onConfirm).toHaveBeenLastCalledWith(null);
   });
 
+  it('forgets a failed lookup when reopened and the next one succeeds', async () => {
+    vi.mocked(categoriesApi.getUsage)
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce({ count: 3, movableCount: 3 });
+    const { rerender } = render(
+      <DeleteCategoryDialog isOpen={true} category={categories[0]} categories={categories} onConfirm={onConfirm} onCancel={onCancel} />
+    );
+    await screen.findByText(/Could not check where this category is used/);
+    rerender(
+      <DeleteCategoryDialog isOpen={false} category={categories[0]} categories={categories} onConfirm={onConfirm} onCancel={onCancel} />
+    );
+    rerender(
+      <DeleteCategoryDialog isOpen={true} category={categories[0]} categories={categories} onConfirm={onConfirm} onCancel={onCancel} />
+    );
+    expect(await screen.findByRole('combobox')).toBeInTheDocument();
+    expect(screen.queryByText(/Could not check where this category is used/)).not.toBeInTheDocument();
+  });
+
+  it('forgets a known count when reopened and the next lookup fails', async () => {
+    vi.mocked(categoriesApi.getUsage)
+      .mockResolvedValueOnce({ count: 3, movableCount: 3 })
+      .mockRejectedValueOnce(new Error('boom'));
+    const { rerender } = render(
+      <DeleteCategoryDialog isOpen={true} category={categories[0]} categories={categories} onConfirm={onConfirm} onCancel={onCancel} />
+    );
+    await screen.findByRole('combobox');
+    rerender(
+      <DeleteCategoryDialog isOpen={false} category={categories[0]} categories={categories} onConfirm={onConfirm} onCancel={onCancel} />
+    );
+    rerender(
+      <DeleteCategoryDialog isOpen={true} category={categories[0]} categories={categories} onConfirm={onConfirm} onCancel={onCancel} />
+    );
+    await screen.findByText(/Could not check where this category is used/);
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    // The old count must not turn into a reassignment the lookup no longer backs.
+    expect(onConfirm).toHaveBeenLastCalledWith(undefined);
+  });
+
   it('shows safe delete message when no transactions', async () => {
     render(
       <DeleteCategoryDialog isOpen={true} category={categories[0]} categories={categories} onConfirm={onConfirm} onCancel={onCancel} />

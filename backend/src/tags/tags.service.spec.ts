@@ -381,6 +381,22 @@ describe("TagsService", () => {
       });
     });
 
+    it("binds the lowercase id once for every count", async () => {
+      tagsRepository.findOne.mockResolvedValue(mockTag);
+      mockManager.query.mockResolvedValue([{}]);
+
+      await service.getDeleteImpact(
+        userId,
+        "ABCDEF12-0000-4000-8000-00000000AAAA",
+      );
+
+      expect(mockManager.query).toHaveBeenCalledWith(expect.any(String), [
+        "abcdef12-0000-4000-8000-00000000aaaa",
+        "%abcdef12-0000-4000-8000-00000000aaaa%",
+        userId,
+      ]);
+    });
+
     it("throws NotFoundException when tag does not exist", async () => {
       tagsRepository.findOne.mockResolvedValue(null);
 
