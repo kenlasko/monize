@@ -1174,6 +1174,14 @@ Enforcement         AccountsService.delete runs one transaction: the account's
                     backend/src/scheduled-transactions/scheduled-transaction-override.service.ts):
                     it either commits before the delete's count or waits and finds
                     the account gone.
+                    The delete also refuses on rows that keep an account id with
+                    no foreign key: transaction_rules (condition, actions),
+                    custom_reports.filters and investment_reports.config
+                    (matched as text, LIKE), and monte_carlo_scenarios.account_ids
+                    (a UUID[], matched with ANY). Nothing locks the account row
+                    for a save of one of these, so a save that names the account
+                    while the delete runs is not blocked: it can commit after
+                    the count and leave a dangling id.
                     The list's canDelete and GET /accounts/:id/can-delete read the
                     same counts, so the delete action is not offered for a refused
                     account.

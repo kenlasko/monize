@@ -198,6 +198,8 @@ The results show the **Median final** value, the **10th–90th percentile** rang
 
 ![A Monte Carlo simulation, with its projected portfolio value and the odds of running out](images/report-monte-carlo.png)
 
+A closed account that a saved scenario still names appears in the **Investment accounts** picker marked "(closed)", so you can remove it; Monize refuses to delete an account while a scenario names it.
+
 Click **Save scenario** to keep the inputs, or **Save as...** to keep them under a new name. After a run, **Edit inputs** reopens the inputs and **Run again** reruns the scenario. To compare scenarios, click **Compare** under the Scenarios list, tick two to four scenarios, and click **Compare selected**: the comparison page runs them side by side and offers **Download CSV**.
 
 #### GEM Strategy
@@ -359,6 +361,8 @@ An **Investment Report** is a table of your holdings with the columns you choose
 | **Report Date** | **As of date** -- leave empty to always value the report on the latest market day |
 
 ![The Create Investment Report page, with its column chooser](images/report-investment-builder.png)
+
+A report with no account selected covers all accounts. A closed account that a saved report still names appears in its account picker marked "(closed)", so you can remove it; Monize refuses to delete an account while a report names it.
 
 Saved investment reports appear under the **Investment** category. When viewing one, you can change the accounts and the **As of date**, switch the **Currency** between each holding's own currency and your home currency, refresh prices, and export to CSV.
 

@@ -29,6 +29,14 @@ vi.mock('@/lib/monte-carlo', async (importOriginal) => ({
   monteCarloApi: mockApi,
 }));
 
+vi.mock('@/lib/accounts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/accounts')>();
+  return {
+    ...actual,
+    accountsApi: { ...actual.accountsApi, getAll: vi.fn().mockResolvedValue([]) },
+  };
+});
+
 vi.mock('@/lib/pdf-export', () => ({
   exportToPdf: vi.fn().mockResolvedValue(undefined),
 }));
@@ -280,6 +288,26 @@ describe('MonteCarloReport', () => {
       expect(await screen.findByText('Contribution phase')).toBeInTheDocument();
       expect(screen.getByText('Withdrawal phase')).toBeInTheDocument();
       expect(screen.getByText('Return assumptions')).toBeInTheDocument();
+    });
+
+    it('lists a closed account a saved scenario names so it can be removed', async () => {
+      const { accountsApi } = await import('@/lib/accounts');
+      // Like the real endpoint, closed rows come back only when inactive ones are asked for.
+      vi.mocked(accountsApi.getAll).mockImplementationOnce((async (includeInactive?: boolean) =>
+        includeInactive
+          ? [
+              { id: 'old-1', name: 'Old Brokerage', currencyCode: 'CAD', isClosed: true },
+              { id: 'old-2', name: 'Other Closed', currencyCode: 'CAD', isClosed: true },
+            ]
+          : []) as never);
+      mockApi.list.mockResolvedValueOnce([
+        scenario({ id: 'saved-2', name: 'Uses closed', accountIds: ['old-1'] }),
+      ]);
+      await renderReport();
+      fireEvent.click(await screen.findByRole('button', { name: /Uses closed/i }));
+      expect(await screen.findByText('Old Brokerage (CAD) (closed)')).toBeInTheDocument();
+      expect(accountsApi.getAll).toHaveBeenCalledWith(true);
+      expect(screen.queryByText(/Other Closed/)).not.toBeInTheDocument();
     });
 
     it('lists saved scenarios in the sidebar and loads one when clicked', async () => {

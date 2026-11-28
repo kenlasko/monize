@@ -1143,6 +1143,8 @@
       "loanFees": "loan fees",
       "loanAccounts": "loan accounts",
       "customReports": "custom reports",
+      "monteCarloScenarios": "Monte Carlo scenarios",
+      "investmentReports": "investment reports",
       "subcategories": "subcategories",
       "holdings": "holdings",
       "investmentTransactions": "investment transactions",

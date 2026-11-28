@@ -305,6 +305,8 @@
       "loanFees": "{count, plural, one {# комиссия по кредиту} few {# комиссии по кредиту} many {# комиссий по кредиту} other {# комиссии по кредиту}}",
       "loanAccounts": "{count, plural, one {# кредитный счёт} few {# кредитных счёта} many {# кредитных счетов} other {# кредитного счёта}}",
       "customReports": "{count, plural, one {# пользовательский отчёт} few {# пользовательских отчёта} many {# пользовательских отчётов} other {# пользовательского отчёта}}",
+      "monteCarloScenarios": "{count, plural, one {# сценарий Монте-Карло} few {# сценария Монте-Карло} many {# сценариев Монте-Карло} other {# сценария Монте-Карло}}",
+      "investmentReports": "{count, plural, one {# инвестиционный отчёт} few {# инвестиционных отчёта} many {# инвестиционных отчётов} other {# инвестиционного отчёта}}",
       "holdings": "{count, plural, one {# позиция} few {# позиции} many {# позиций} other {# позиции}}",
       "investmentTransactions": "{count, plural, one {# инвестиционная транзакция} few {# инвестиционные транзакции} many {# инвестиционных транзакций} other {# инвестиционной транзакции}}",
       "gemStrategies": "{count, plural, one {# стратегия GEM} few {# стратегии GEM} many {# стратегий GEM} other {# стратегии GEM}}",

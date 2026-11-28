@@ -585,6 +585,7 @@
       },
       "optionalHeading": "Opcjonalnie usuń także:",
       "accountsOption": "Konta",
+      "accountsOptionDetail": "Usuwa też raporty inwestycyjne i scenariusze Monte Carlo, które wskazują jakieś konto.",
       "categoriesOption": "Kategorie",
       "payeesOption": "Odbiorcy",
       "currencyPreferencesOption": "Preferencje walut",

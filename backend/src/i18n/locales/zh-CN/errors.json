@@ -1143,6 +1143,8 @@
       "loanFees": "贷款费用",
       "loanAccounts": "贷款账户",
       "customReports": "自定义报表",
+      "monteCarloScenarios": "蒙特卡洛情景",
+      "investmentReports": "投资报表",
       "subcategories": "子类别",
       "holdings": "持仓",
       "investmentTransactions": "投资交易",

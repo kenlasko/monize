@@ -585,6 +585,7 @@
       },
       "optionalHeading": "Дополнительно можно удалить:",
       "accountsOption": "Счета",
+      "accountsOptionDetail": "Также удаляет инвестиционные отчёты и сценарии Монте-Карло, в которых указан счёт.",
       "categoriesOption": "Категории",
       "payeesOption": "Получатели",
       "currencyPreferencesOption": "Настройки валюты",

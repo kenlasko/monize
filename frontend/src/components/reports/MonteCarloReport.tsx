@@ -64,6 +64,7 @@ const logger = createLogger('MonteCarloReport');
 
 export function MonteCarloReport() {
   const t = useTranslations('reports');
+  const tSecurity = useTranslations('securityDetail');
   const foreignCurrencyLabel = useForeignCurrencyLabel();
   const { formatCurrency, formatCurrencyLabel, formatNumber, formatPercent, defaultCurrency } = useNumberFormat();
   const { formatDate } = useDateFormat();
@@ -217,11 +218,17 @@ export function MonteCarloReport() {
 
   const accountOptions = useMemo(
     () =>
-      accounts.map((a) => ({
-        value: a.id,
-        label: foreignCurrencyLabel(a.name, a.currencyCode),
-      })),
-    [accounts, foreignCurrencyLabel],
+      accounts
+        .filter((a) => !a.isClosed || form.accountIds.includes(a.id))
+        .map((a) => ({
+          value: a.id,
+          label: a.isClosed
+            ? tSecurity('accounts.closedSuffix', {
+                name: foreignCurrencyLabel(a.name, a.currencyCode),
+              })
+            : foreignCurrencyLabel(a.name, a.currencyCode),
+        })),
+    [accounts, form.accountIds, foreignCurrencyLabel, tSecurity],
   );
 
   const chartData = useMemo(() => {

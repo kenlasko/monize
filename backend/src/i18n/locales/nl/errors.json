@@ -1143,6 +1143,8 @@
       "loanFees": "leningvergoedingen",
       "loanAccounts": "leningrekeningen",
       "customReports": "aangepaste rapporten",
+      "monteCarloScenarios": "Monte Carlo-scenario's",
+      "investmentReports": "beleggingsrapporten",
       "subcategories": "subcategorieën",
       "holdings": "posities",
       "investmentTransactions": "beleggingstransacties",

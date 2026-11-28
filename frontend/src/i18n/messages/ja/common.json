@@ -305,6 +305,8 @@
       "loanFees": "{count, plural, other {#件のローン手数料}}",
       "loanAccounts": "{count, plural, other {#件のローン口座}}",
       "customReports": "{count, plural, other {#件のカスタムレポート}}",
+      "monteCarloScenarios": "{count, plural, other {#件のモンテカルロシナリオ}}",
+      "investmentReports": "{count, plural, other {#件の投資レポート}}",
       "holdings": "{count, plural, other {#件の保有銘柄}}",
       "investmentTransactions": "{count, plural, other {#件の投資取引}}",
       "gemStrategies": "{count, plural, other {#件のGEM戦略}}",

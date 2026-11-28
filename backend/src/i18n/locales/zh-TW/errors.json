@@ -1143,6 +1143,8 @@
       "loanFees": "貸款費用",
       "loanAccounts": "貸款帳戶",
       "customReports": "自訂報表",
+      "monteCarloScenarios": "蒙特卡羅情境",
+      "investmentReports": "投資報表",
       "subcategories": "子類別",
       "holdings": "持倉",
       "investmentTransactions": "投資交易",

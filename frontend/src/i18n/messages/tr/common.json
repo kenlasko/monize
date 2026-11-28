@@ -305,6 +305,8 @@
       "loanFees": "{count, plural, other {# kredi ücreti}}",
       "loanAccounts": "{count, plural, other {# kredi hesabı}}",
       "customReports": "{count, plural, other {# özel rapor}}",
+      "monteCarloScenarios": "{count, plural, other {# Monte Carlo senaryosu}}",
+      "investmentReports": "{count, plural, other {# yatırım raporu}}",
       "holdings": "{count, plural, other {# pozisyon}}",
       "investmentTransactions": "{count, plural, other {# yatırım işlemi}}",
       "gemStrategies": "{count, plural, other {# GEM stratejisi}}",

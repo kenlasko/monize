@@ -305,6 +305,8 @@
       "loanFees": "[XX-{count, plural, one {# loan fee} other {# loan fees}}-XX]",
       "loanAccounts": "[XX-{count, plural, one {# loan account} other {# loan accounts}}-XX]",
       "customReports": "[XX-{count, plural, one {# custom report} other {# custom reports}}-XX]",
+      "monteCarloScenarios": "[XX-{count, plural, one {# Monte Carlo scenario} other {# Monte Carlo scenarios}}-XX]",
+      "investmentReports": "[XX-{count, plural, one {# investment report} other {# investment reports}}-XX]",
       "holdings": "[XX-{count, plural, one {# holding} other {# holdings}}-XX]",
       "investmentTransactions": "[XX-{count, plural, one {# investment transaction} other {# investment transactions}}-XX]",
       "gemStrategies": "[XX-{count, plural, one {# GEM strategy} other {# GEM strategies}}-XX]",

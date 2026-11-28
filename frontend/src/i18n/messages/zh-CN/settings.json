@@ -585,6 +585,7 @@
       },
       "optionalHeading": "可选择同时删除：",
       "accountsOption": "账户",
+      "accountsOptionDetail": "同时删除指定了账户的投资报表和蒙特卡洛情景。",
       "categoriesOption": "分类",
       "payeesOption": "收款人",
       "currencyPreferencesOption": "货币偏好",

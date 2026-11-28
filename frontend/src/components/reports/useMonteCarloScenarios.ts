@@ -18,6 +18,7 @@ import {
 } from '@/lib/monte-carlo-cache';
 import { showErrorToast } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
+import { accountsApi } from '@/lib/accounts';
 
 const logger = createLogger('useMonteCarloScenarios');
 
@@ -29,6 +30,8 @@ export interface BrokerageAccount {
   id: string;
   name: string;
   currencyCode: string;
+  /** Set only on a closed account a saved scenario still names. */
+  isClosed?: boolean;
 }
 
 export const DEFAULT_INPUTS: MonteCarloScenarioInputs = {
@@ -201,7 +204,21 @@ export function useMonteCarloScenarios() {
           monteCarloApi.brokerageAccounts(),
           monteCarloApi.list(),
         ]);
-        setAccounts(accs);
+        // The brokerage list leaves out closed accounts; a scenario that still names one
+        // needs it listed so it can be removed.
+        const known = new Set(accs.map((a) => a.id));
+        const missing = new Set(scns.flatMap((s) => s.accountIds).filter((id) => !known.has(id)));
+        let closed: BrokerageAccount[] = [];
+        if (missing.size > 0) {
+          try {
+            closed = (await accountsApi.getAll(true))
+              .filter((a) => a.isClosed && missing.has(a.id))
+              .map((a) => ({ id: a.id, name: a.name, currencyCode: a.currencyCode, isClosed: true }));
+          } catch (err) {
+            logger.error('Failed to load closed accounts:', err);
+          }
+        }
+        setAccounts([...accs, ...closed]);
         setScenarios(scns);
         // Auto-restore the last-active scenario after a page refresh so the
         // user doesn't have to re-pick it from the sidebar each time. We

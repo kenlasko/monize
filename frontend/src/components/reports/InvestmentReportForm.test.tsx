@@ -35,7 +35,22 @@ vi.mock('@/components/ui/DateInput', () => ({
   ),
 }));
 vi.mock('@/components/ui/MultiSelect', () => ({
-  MultiSelect: ({ label }: { label?: string }) => <div>{label}</div>,
+  MultiSelect: ({
+    label,
+    options,
+  }: {
+    label?: string;
+    options?: { value: string; label: string }[];
+  }) => (
+    <div>
+      {label}
+      {options?.map((o) => (
+        <span key={o.value} data-testid="account-option">
+          {o.label}
+        </span>
+      ))}
+    </div>
+  ),
 }));
 vi.mock('./InvestmentReportColumnChooser', () => ({
   InvestmentReportColumnChooser: () => <div data-testid="column-chooser" />,
@@ -149,6 +164,30 @@ describe('InvestmentReportForm', () => {
     await renderForm();
     // The account predicate runs across all branches without throwing.
     expect(await screen.findByText('Accounts')).toBeInTheDocument();
+  });
+
+  it('keeps a closed account in the list only while the report names it', async () => {
+    const { accountsApi } = await import('@/lib/accounts');
+    const accounts = [
+      { id: 'a1', name: 'Open One', accountType: 'INVESTMENT', accountSubType: null, isClosed: false },
+      { id: 'a4', name: 'Old Named', accountType: 'INVESTMENT', accountSubType: null, isClosed: true },
+      { id: 'a5', name: 'Old Unnamed', accountType: 'INVESTMENT', accountSubType: null, isClosed: true },
+    ] as never;
+    // Like the real endpoint, closed rows come back only when inactive ones are asked for.
+    vi.mocked(accountsApi.getAll).mockImplementationOnce((async (includeInactive?: boolean) =>
+      includeInactive ? accounts : []) as never);
+    const report = {
+      id: 'r1',
+      name: 'Existing',
+      groupBy: 'NONE',
+      config: { columns: ['symbol'], accountIds: ['a4'] },
+    } as never;
+    await act(async () => {
+      render(<InvestmentReportForm report={report} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+    });
+    const labels = (await screen.findAllByTestId('account-option')).map((e) => e.textContent);
+    expect(labels).toEqual(['Open One', 'Old Named (closed)']);
+    expect(accountsApi.getAll).toHaveBeenCalledWith(true);
   });
 
   it('captures the chosen as-of date on submit', async () => {

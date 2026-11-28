@@ -585,6 +585,7 @@
       },
       "optionalHeading": "За бажанням також видалити:",
       "accountsOption": "Рахунки",
+      "accountsOptionDetail": "Також видаляє інвестиційні звіти та сценарії Монте-Карло, у яких указано рахунок.",
       "categoriesOption": "Категорії",
       "payeesOption": "Одержувачі платежів",
       "currencyPreferencesOption": "Налаштування валют",

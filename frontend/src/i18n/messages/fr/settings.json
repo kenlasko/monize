@@ -585,6 +585,7 @@
       },
       "optionalHeading": "Supprimer également en option :",
       "accountsOption": "Comptes",
+      "accountsOptionDetail": "Supprime aussi les rapports d'investissement et les scénarios Monte Carlo qui nomment un compte.",
       "categoriesOption": "Catégories",
       "payeesOption": "Bénéficiaires",
       "currencyPreferencesOption": "Préférences de devise",

@@ -305,6 +305,8 @@
       "loanFees": "{count, plural, one {# ऋण शुल्क} other {# ऋण शुल्क}}",
       "loanAccounts": "{count, plural, one {# ऋण खाता} other {# ऋण खाते}}",
       "customReports": "{count, plural, one {# कस्टम रिपोर्ट} other {# कस्टम रिपोर्ट}}",
+      "monteCarloScenarios": "{count, plural, one {# मोंटे कार्लो परिदृश्य} other {# मोंटे कार्लो परिदृश्य}}",
+      "investmentReports": "{count, plural, one {# निवेश रिपोर्ट} other {# निवेश रिपोर्ट}}",
       "holdings": "{count, plural, one {# होल्डिंग} other {# होल्डिंग}}",
       "investmentTransactions": "{count, plural, one {# निवेश लेन-देन} other {# निवेश लेन-देन}}",
       "gemStrategies": "{count, plural, one {# GEM रणनीति} other {# GEM रणनीतियाँ}}",

@@ -1143,6 +1143,8 @@
       "loanFees": "комиссии по кредиту",
       "loanAccounts": "кредитных счёта",
       "customReports": "пользовательских отчёта",
+      "monteCarloScenarios": "сценария Монте-Карло",
+      "investmentReports": "инвестиционных отчёта",
       "subcategories": "подкатегории",
       "holdings": "позиции",
       "investmentTransactions": "инвестиционные транзакции",

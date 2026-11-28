@@ -585,6 +585,7 @@
       },
       "optionalHeading": "Opsional juga hapus:",
       "accountsOption": "Akun",
+      "accountsOptionDetail": "Juga menghapus laporan investasi dan skenario Monte Carlo yang menyebut sebuah akun.",
       "categoriesOption": "Kategori",
       "payeesOption": "Penerima",
       "currencyPreferencesOption": "Preferensi mata uang",

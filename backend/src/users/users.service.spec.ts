@@ -2348,6 +2348,45 @@ describe("UsersService", () => {
       ).toBe(false);
     });
 
+    it("deletes investment reports and Monte Carlo scenarios with the accounts they name", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+
+      await service.deleteData("user-1", {
+        password: "CorrectPass123!",
+        deleteAccounts: true,
+      });
+      const queries = mockQueryRunner.query.mock.calls.map(
+        (c: unknown[]) => c[0] as string,
+      );
+      const accounts = queries.findIndex((q) =>
+        q.includes("DELETE FROM accounts"),
+      );
+      // Only rows naming an account go; one naming none stays valid.
+      const guards = {
+        investment_reports: "jsonb_array_length(",
+        monte_carlo_scenarios: "cardinality(account_ids) > 0",
+      };
+      for (const [table, guard] of Object.entries(guards)) {
+        const i = queries.findIndex((q) => q.includes(`DELETE FROM ${table}`));
+        expect(i).toBeGreaterThanOrEqual(0);
+        expect(i).toBeLessThan(accounts);
+        expect(queries[i]).toContain(guard);
+        expect(queries[i]).toContain("> 0");
+      }
+
+      mockQueryRunner.query.mockClear();
+      await service.deleteData("user-1", { password: "CorrectPass123!" });
+      const kept = mockQueryRunner.query.mock.calls.map(
+        (c: unknown[]) => c[0] as string,
+      );
+      expect(kept.some((q) => q.includes("monte_carlo_scenarios"))).toBe(false);
+      expect(kept.some((q) => q.includes("investment_reports"))).toBe(false);
+    });
+
     it("passes userId to all deletion queries", async () => {
       const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
       usersRepository.findOne.mockResolvedValue({

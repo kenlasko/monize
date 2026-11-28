@@ -305,6 +305,8 @@
       "loanFees": "{count, plural, one {# leningvergoeding} other {# leningvergoedingen}}",
       "loanAccounts": "{count, plural, one {# leningrekening} other {# leningrekeningen}}",
       "customReports": "{count, plural, one {# aangepast rapport} other {# aangepaste rapporten}}",
+      "monteCarloScenarios": "{count, plural, one {# Monte Carlo-scenario} other {# Monte Carlo-scenario's}}",
+      "investmentReports": "{count, plural, one {# beleggingsrapport} other {# beleggingsrapporten}}",
       "holdings": "{count, plural, one {# positie} other {# posities}}",
       "investmentTransactions": "{count, plural, one {# beleggingstransactie} other {# beleggingstransacties}}",
       "gemStrategies": "{count, plural, one {# GEM-strategie} other {# GEM-strategieën}}",

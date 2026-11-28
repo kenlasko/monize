@@ -1143,6 +1143,8 @@
       "loanFees": "comisiones de préstamo",
       "loanAccounts": "cuentas de préstamo",
       "customReports": "informes personalizados",
+      "monteCarloScenarios": "escenarios de Monte Carlo",
+      "investmentReports": "informes de inversión",
       "subcategories": "subcategorías",
       "holdings": "posiciones",
       "investmentTransactions": "transacciones de inversión",
