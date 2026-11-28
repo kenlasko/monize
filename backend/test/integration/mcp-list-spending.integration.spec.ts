@@ -158,6 +158,77 @@ describe("list_transactions grouped spending through MCP (USD)", () => {
     },
   );
 
+  it.each([100, 150])(
+    "compares a %i refund using the same categories for every payee",
+    async (refund) => {
+      for (const debit of [-30, -30, -40])
+        await post(debit, { payeeName: "Shop" });
+      await post(refund, { payeeName: "Returns desk" });
+      const other = (
+        await createTestCategory(db, userId, {
+          name: "Earnings",
+          isIncome: true,
+        })
+      ).id;
+      await post(300, { categoryId: other, payeeName: "Shop" });
+      const args = {
+        period1Start: "2026-10-01",
+        period1End: "2026-10-31",
+        period2Start: startDate,
+        period2End: endDate,
+        direction: "expenses",
+      } as const;
+      const service = tools.get(TransactionAnalyticsService);
+      const compare = (groupBy: "category" | "payee") =>
+        withUserContext(userId, () =>
+          service.getLlmPeriodComparison(userId, { ...args, groupBy }),
+        );
+      const byCategory = await compare("category");
+      const byPayee = await compare("payee");
+      expect(byCategory.period2.total).toBe(100 - refund);
+      expect(byPayee.period2.total).toBe(100 - refund);
+      expect(byPayee.comparison).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ label: "Shop", period2Amount: 100 }),
+          expect.objectContaining({
+            label: "Other (aggregated)",
+            period2Amount: -refund,
+          }),
+        ]),
+      );
+    },
+  );
+
+  it("keeps a single split payee anonymous across its qualifying categories", async () => {
+    const second = (await createTestCategory(db, userId, { name: "Home" })).id;
+    const parent = await post(60, {
+      isSplit: true,
+      categoryId: null,
+      payeeName: "Private",
+    });
+    await db.manager.save(TransactionSplit, [
+      { transactionId: parent.id, categoryId, amount: 15 },
+      { transactionId: parent.id, categoryId, amount: 15 },
+      { transactionId: parent.id, categoryId: second, amount: 30 },
+    ]);
+    const byPayee = await withUserContext(userId, () =>
+      tools.get(TransactionAnalyticsService).getLlmPeriodComparison(userId, {
+        period1Start: "2026-10-01",
+        period1End: "2026-10-31",
+        period2Start: startDate,
+        period2End: endDate,
+        direction: "expenses",
+        groupBy: "payee",
+      }),
+    );
+    expect(byPayee.comparison).toEqual([
+      expect.objectContaining({
+        label: "Other (aggregated)",
+        period2Amount: -60,
+      }),
+    ]);
+  });
+
   it("keeps the December refund signed when November holds the purchase", async () => {
     await post(-100);
     await post(30, { transactionDate: "2026-12-02" });

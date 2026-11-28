@@ -2861,11 +2861,19 @@ export class TransactionAnalyticsService {
         amountExpr = `ABS(${SPLIT_AMOUNT})`;
       }
 
+      const payeeExpenses = groupBy === "payee" && direction === "expenses";
       if (groupBy === "payee") {
         qb.select("COALESCE(t.payeeName, 'Unknown')", "label")
           .addSelect(`SUM(${amountExpr})`, "total")
           .addSelect("COUNT(*)", "count")
           .groupBy("t.payeeName");
+        if (payeeExpenses) {
+          const splitParent = "CASE WHEN ts.id IS NOT NULL THEN t.id END";
+          qb.addSelect(`${SPLIT_CATEGORY_ID}::text`, "categoryId")
+            .addGroupBy(`${SPLIT_CATEGORY_ID}::text`)
+            .addSelect(splitParent, "splitParent")
+            .addGroupBy(splitParent);
+        }
       } else {
         // Same rule as the grouped breakdown: identity is the category id, and
         // the label carries the parent so a comparison never puts two different
@@ -2894,12 +2902,14 @@ export class TransactionAnalyticsService {
         endDate,
       );
       const categories =
-        groupBy === "category"
+        groupBy === "category" || payeeExpenses
           ? await this.loadReportCategories(m, userId)
           : undefined;
+      const categoryKey = (row: RawGroupRow) => row.categoryId ?? "";
+      const payeeKey = (row: RawGroupRow) => row.label;
       let groups = this.foldGroups(
         rows,
-        (r) => (groupBy === "payee" ? r.label : (r.categoryId ?? "")),
+        groupBy === "payee" && !payeeExpenses ? payeeKey : categoryKey,
         reporting,
         rates,
       );
@@ -2912,6 +2922,22 @@ export class TransactionAnalyticsService {
               categories?.typeById.get(g.first.categoryId),
             ),
         );
+        if (payeeExpenses) {
+          // Select the same spending categories before attributing their rows
+          // to payees. Several qualifying lines of one split count as one
+          // transaction towards disclosure of its payee.
+          const included = new Set(groups.map((g) => categoryKey(g.first)));
+          const parents = new Set<string>();
+          const eligible = rows
+            .filter((row) => included.has(categoryKey(row)))
+            .map((row) => {
+              if (!row.splitParent) return row;
+              const count = parents.has(row.splitParent) ? 0 : 1;
+              parents.add(row.splitParent);
+              return { ...row, count };
+            });
+          groups = this.foldGroups(eligible, payeeKey, reporting, rates);
+        }
       }
       let items: ComparisonItem[] = groups.map((g) => ({
         label:
