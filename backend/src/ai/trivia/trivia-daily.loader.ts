@@ -304,9 +304,13 @@ export class TriviaDailyLoader {
       { from: today, through: addDaysYMD(today, BILL_DAYS_AHEAD) },
       { outflowsOnly: true },
     );
-    const places = await withScopedDb(this.dataSource, (m) =>
-      loadCurrencyPlacesForRead(m, [currency]),
-    );
+    // No occurrence, nothing to total: skip the places read.
+    const places =
+      occurrences.length === 0
+        ? new Map<string, number>()
+        : await withScopedDb(this.dataSource, (m) =>
+            loadCurrencyPlacesForRead(m, [currency]),
+          );
     const { total } = await convertingTotal(
       occurrences.map((o) => ({
         amount: o.amount === null ? null : Math.abs(o.amount),
