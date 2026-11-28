@@ -299,6 +299,7 @@
     "unreadableDatesGoBack": "如果檔案中的日期採用其他順序，請返回欄位對應步驟並選擇檔案使用的日期格式。",
     "unreadableAmountsNotice": "{count, plural, other {# 列}}的金額無法讀取，將不會匯入：",
     "unreadableAmountRow": "第 {line} 列：「{rawAmount}」",
+    "unreadableAmountRowField": "第 {line} 列，{field, select, quantity {數量} price {價格} commission {佣金} other {金額}}：「{rawAmount}」",
     "unreadableAmountsMore": "...以及另外 {count} 列",
     "unreadableAmountsGoBack": "請檢查金額欄是否對應正確，或在檔案中更正這些列後重新匯入。",
     "unreadableAmountLine": "第 {line} 行：\"{rawAmount}\"",

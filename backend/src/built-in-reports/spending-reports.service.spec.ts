@@ -1652,8 +1652,8 @@ describe("SpendingReportsService", () => {
       expect(result.data[1].totalSpending).toBe(120);
     });
 
-    it("limits categories to top 10 across all months", async () => {
-      const manyCategories: Category[] = Array.from({ length: 12 }, (_, i) => ({
+    it("limits the chart to ten categories while keeping refunds in the monthly total", async () => {
+      const manyCategories: Category[] = Array.from({ length: 11 }, (_, i) => ({
         id: `cat-${i}`,
         userId: mockUserId,
         parentId: null,
@@ -1674,7 +1674,7 @@ describe("SpendingReportsService", () => {
         category_id: c.id,
         currency_code: "USD",
         tx_date: FIXTURE_TX_DATE,
-        total: `${(12 - i) * 10}.00`,
+        total: i === 10 ? "-150.00" : "10.00",
       }));
 
       scopedManager.query.mockResolvedValue(rawResults);
@@ -1687,6 +1687,7 @@ describe("SpendingReportsService", () => {
       );
 
       expect(result.data[0].categories).toHaveLength(10);
+      expect(result.data[0].totalSpending).toBe(-50);
     });
 
     it("sorts months in ascending order", async () => {

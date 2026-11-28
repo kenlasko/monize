@@ -134,6 +134,7 @@
       "carriedIn": "Carried in:",
       "carriedOut": "Carried out:"
     },
+    "noPositiveFunding": "Usage requires positive funding.",
     "overallUsage": "Overall Budget Usage",
     "expenseCategories": "Expense Categories",
     "incomeCategories": "Income Categories",

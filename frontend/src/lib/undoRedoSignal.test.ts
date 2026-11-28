@@ -65,6 +65,10 @@ describe('undoRedoSignal', () => {
     }
   });
 
+  it('holds Undo on a budget creation whose budget gained periods or lines', () => {
+    expect(isUndoRefusal(409, 'UNDO_BUDGET_HAS_HISTORY')).toBe(true);
+  });
+
   it('holds Undo on a scheduled posting the server refuses to undo (issue #2165)', () => {
     for (const code of [
       'SCHEDULED_POSTING_UNDO_LATER_OCCURRENCE',

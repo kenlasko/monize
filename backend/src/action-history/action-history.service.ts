@@ -22,6 +22,11 @@ import { ActionHistory } from "./entities/action-history.entity";
 import { assertUndoCurrencyKind } from "./undo-currency-kind";
 import { assertNoReferencesBeforeDelete } from "./undo-references";
 import {
+  BUDGET_BUCKET_COLUMNS,
+  BUDGET_LINE_COLUMNS,
+  restoreBudgetChildren,
+} from "./budget-undo";
+import {
   moveListedRows,
   movedRowsOf,
   redoMovedRows,
@@ -639,6 +644,8 @@ const ALLOWED_COLUMNS: Record<string, Set<string>> = {
     "created_at",
     "updated_at",
   ]),
+  budget_buckets: BUDGET_BUCKET_COLUMNS,
+  budget_categories: BUDGET_LINE_COLUMNS,
   custom_reports: new Set([
     "id",
     "user_id",
@@ -2655,6 +2662,11 @@ export class ActionHistoryService {
           // Ensure userId is set from the action
           data.userId = action.userId;
           await this.reinsertEntity(manager, tableName, data);
+          if (tableName === "budgets") {
+            await restoreBudgetChildren(manager, action, (table, row) =>
+              this.reinsertEntity(manager, table, row),
+            );
+          }
         }
         break;
       default:

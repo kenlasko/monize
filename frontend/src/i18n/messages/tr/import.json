@@ -299,6 +299,7 @@
     "unreadableDatesGoBack": "Dosya tarihleri başka bir sırayla yazıyorsa sütun eşleştirme adımına geri dönün ve dosyanın kullandığı tarih biçimini seçin.",
     "unreadableAmountsNotice": "{count, plural, other {# satırın}} tutarı okunamıyor ve içe aktarılmayacak:",
     "unreadableAmountRow": "Satır {line}: \"{rawAmount}\"",
+    "unreadableAmountRowField": "Satır {line}, {field, select, quantity {adet} price {fiyat} commission {komisyon} other {tutar}}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...ve {count} tane daha",
     "unreadableAmountsGoBack": "Tutar sütunlarının doğru eşlendiğini kontrol edin ya da bu satırları dosyada düzeltip yeniden içe aktarın.",
     "unreadableAmountLine": "Satır {line}: \"{rawAmount}\"",

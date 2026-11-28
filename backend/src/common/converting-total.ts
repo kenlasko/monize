@@ -1,6 +1,6 @@
 import { FxAggregate } from "./fx-aggregate";
 import { resolveFxRateOrNull } from "./fx-entry.util";
-import { roundMoney } from "./round.util";
+import { FIAT_MONEY_DECIMALS } from "./round.util";
 
 /** The rate ladder this module needs; `ExchangeRateService` satisfies it. */
 export interface FxRateSource {
@@ -83,13 +83,16 @@ export function memoizedRateResolver(
  *
  * `sign` maps each amount into the bucket's own convention (bills are reported as
  * positive magnitudes). It is applied BEFORE conversion, which is equivalent for
- * a positive rate and keeps the rounding at one scale.
+ * a positive rate, and the one rounding happens when the total is read.
  */
 export async function convertingTotal(
   items: readonly ConvertibleAmount[],
   into: string,
   rateFor: (from: string) => Promise<number | null>,
   sign: (amount: number) => number = (amount) => amount,
+  // `moneyDecimalsForCode(places, into)`: the places the total is read at, four
+  // for a fiat currency and up to eight for a coin.
+  intoDecimals: number = FIAT_MONEY_DECIMALS,
 ): Promise<ConvertedTotal> {
   const agg = new FxAggregate();
   for (const item of items) {
@@ -106,15 +109,13 @@ export async function convertingTotal(
       continue;
     }
     const rate = await rateFor(item.currency);
-    agg.add(
-      rate === null ? null : roundMoney(amount * rate),
-      item.currency,
-      into,
-    );
+    // Unrounded: `FxAggregate` sums at guard digits and rounds once when read, so
+    // a per-part rounding here would drift the total by a unit (issue #2360).
+    agg.add(rate === null ? null : amount * rate, item.currency, into);
   }
   return {
-    total: agg.total,
-    knownSubtotal: agg.knownSubtotal,
+    total: agg.totalAt(intoDecimals),
+    knownSubtotal: agg.knownSubtotalAt(intoDecimals),
     missingPairs: agg.missingPairs,
   };
 }

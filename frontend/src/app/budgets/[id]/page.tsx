@@ -19,7 +19,6 @@ import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { budgetsApi } from '@/lib/budgets';
-import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getErrorMessage } from '@/lib/errors';
 import { STRATEGY_LABELS } from '@/components/budgets/utils/budget-labels';
@@ -31,7 +30,6 @@ import type {
   BudgetPeriod,
   BudgetTrendPoint,
 } from '@/types/budget';
-import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { CARD_CLASS } from '@/components/ui/Card';
 
 export default function BudgetDetailPage() {
@@ -78,9 +76,6 @@ function BudgetDetailContent() {
   const [summary, setSummary] = useState<BudgetSummary | null>(null);
   const [velocity, setVelocity] = useState<BudgetVelocity | null>(null);
   const [periods, setPeriods] = useState<BudgetPeriod[]>([]);
-  const [scheduledTransactions, setScheduledTransactions] = useState<
-    ScheduledTransaction[]
-  >([]);
   const [dailySpending, setDailySpending] = useState<
     Array<{ date: string; amount: number }>
   >([]);
@@ -144,12 +139,11 @@ function BudgetDetailContent() {
           // The summary's own failure is reported by the page load below.
           .catch(() => undefined);
 
-        const [summaryData, velocityData, periodsData, stData, dailyData, trend] =
+        const [summaryData, velocityData, periodsData, dailyData, trend] =
           await Promise.all([
             summaryRequest,
             budgetsApi.getVelocity(budgetId),
             budgetsApi.getPeriods(budgetId),
-            scheduledTransactionsApi.getAll(),
             budgetsApi.getDailySpending(budgetId).catch(() => []),
             budgetsApi.getTrend(budgetId).catch(() => []),
           ]);
@@ -158,7 +152,6 @@ function BudgetDetailContent() {
         setSummary(summaryData);
         setVelocity(velocityData);
         setPeriods(periodsData);
-        setScheduledTransactions(stData);
         setDailySpending(dailyData);
         setTrendData(trend);
       } catch (err) {
@@ -343,7 +336,6 @@ function BudgetDetailContent() {
           <BudgetDashboard
             summary={summary}
             velocity={velocity}
-            scheduledTransactions={scheduledTransactions}
             dailySpending={dailySpending}
             trendData={trendData}
             healthScore={healthScore}

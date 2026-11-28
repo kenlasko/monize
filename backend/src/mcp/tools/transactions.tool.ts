@@ -1,3 +1,4 @@
+import { todayYMD } from "../../common/date-utils";
 import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { Injectable } from "@nestjs/common";
 import { describeSkippedRows } from "../../common/bulk-create.types";
@@ -324,7 +325,7 @@ export class McpTransactionsTools {
         if (check.error) return check.result;
 
         try {
-          const defaults = getDefaultDateRange();
+          const defaults = getDefaultDateRange(todayYMD());
           const startDate = args.startDate ?? defaults.startDate;
           const endDate = args.endDate ?? defaults.endDate;
 
@@ -421,12 +422,15 @@ export class McpTransactionsTools {
         if (check.error) return check.result;
 
         try {
-          const periods = resolveComparePeriods({
-            period1Start: args.period1Start,
-            period1End: args.period1End,
-            period2Start: args.period2Start,
-            period2End: args.period2End,
-          });
+          const periods = resolveComparePeriods(
+            {
+              period1Start: args.period1Start,
+              period1End: args.period1End,
+              period2Start: args.period2Start,
+              period2End: args.period2End,
+            },
+            todayYMD(),
+          );
           const data = await this.analyticsService.getLlmPeriodComparison(
             user.userId,
             {

@@ -166,8 +166,10 @@ export interface CsvUnreadableDates {
 /** A CSV row whose amount (or debit or credit) field cannot be read, by its line in the file. */
 export interface CsvUnreadableAmountRow {
   rowNumber: number;
-  /** The amount field as the file gave it. */
+  /** The cell named by `field`, as the file gave it. */
   rawAmount: string;
+  /** CSV only: the column the text is in (an investment import also reads quantity, price and commission). */
+  field?: 'amount' | 'quantity' | 'price' | 'commission';
 }
 
 export interface CsvUnreadableAmounts {
@@ -455,8 +457,10 @@ export interface ImportSkippedRow {
   rowNumber?: number;
   /** The date field as the file gave it, empty when it has none; set for `unreadableDate`. */
   rawDate?: string;
-  /** The amount field as the file gave it; set for `unreadableAmount`, whose `amount` is 0. */
+  /** The cell named by `field`, as the file gave it; set for `unreadableAmount`, whose `amount` is 0. */
   rawAmount?: string;
+  /** CSV only: the column `rawAmount` is in. */
+  field?: 'amount' | 'quantity' | 'price' | 'commission';
 }
 
 export interface ImportResult {

@@ -134,6 +134,7 @@
       "carriedIn": "帶入：",
       "carriedOut": "帶出："
     },
+    "noPositiveFunding": "預算大於零時才能計算使用率。",
     "overallUsage": "整體預算使用狀況",
     "expenseCategories": "支出類別",
     "incomeCategories": "收入類別",

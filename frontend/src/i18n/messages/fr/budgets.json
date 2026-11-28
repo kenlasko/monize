@@ -134,6 +134,7 @@
       "carriedIn": "Reporté entrant :",
       "carriedOut": "Reporté sortant :"
     },
+    "noPositiveFunding": "Le taux d’utilisation nécessite un budget positif.",
     "overallUsage": "Utilisation globale du budget",
     "expenseCategories": "Catégories de dépenses",
     "incomeCategories": "Catégories de revenus",

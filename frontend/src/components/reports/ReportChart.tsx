@@ -54,6 +54,8 @@ interface ReportChartProps {
   reportSubtitle?: string;
   /** The report's metric: a count is a number, every other metric money. */
   metric?: MetricType;
+  /** Unit in which the server calculated this result. */
+  currency?: string;
   /**
    * The server's headline for the Total row. Absent leaves the Total row's
    * figure blank: the sum of the rounded rows is not the total, and under an
@@ -142,7 +144,7 @@ function ReportChartTooltip({ active, payload, shareOf, formatCurrency, formatPe
   return null;
 }
 
-export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableColumns, exportFilename, reportTitle, reportSubtitle, metric, totalRowValue, totalRowCount, partialTotal, totalLabel: caption, signed = false }: ReportChartProps) {
+export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableColumns, exportFilename, reportTitle, reportSubtitle, metric, currency, totalRowValue, totalRowCount, partialTotal, totalLabel: caption, signed = false }: ReportChartProps) {
   const t = useTranslations('reports');
   const totalLabel = caption ?? t('spendingByCategory.total');
   const { formatCurrency, formatNumber, formatPercent } = useNumberFormat();
@@ -178,7 +180,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
   const counts = chartData.flatMap(item => item.count == null ? [] : [item.count]);
   const totalCount = totalRowCount ?? (counts.length ? counts.reduce((sum, count) => sum + count, 0) : null);
   const formatValue = (value: number) =>
-    metric === MetricType.COUNT ? formatNumber(value, 0) : formatCurrency(value);
+    metric === MetricType.COUNT ? formatNumber(value, 0) : formatCurrency(value, currency);
   // The Total row prints the headline the server settled for the metric (a mean
   // is not the sum of its groups' means), marked when it is a subtotal.
   const totalCell = () => {

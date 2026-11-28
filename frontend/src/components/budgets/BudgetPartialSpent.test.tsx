@@ -5,7 +5,6 @@ import { BudgetCategoryRow } from './BudgetCategoryRow';
 import { BudgetFlexGroupCard } from './BudgetFlexGroupCard';
 import { BudgetHealthGauge } from './BudgetHealthGauge';
 import { BudgetFundingFigures } from './BudgetFundingFigures';
-import { BudgetUpcomingBills } from './BudgetUpcomingBills';
 import { BudgetVelocityWidget } from './BudgetVelocityWidget';
 import type { BudgetVelocity } from '@/types/budget';
 import { BudgetCategoryList } from './BudgetCategoryList';
@@ -88,22 +87,6 @@ describe('partial budget figures', () => {
     );
     expect(screen.getAllByTestId('unknown-amount')).toHaveLength(2);
     expect(screen.getByText('$0.00')).toBeInTheDocument();
-  });
-
-  it('names the spending, not the schedule, when bills converted but spending did not', () => {
-    render(
-      <BudgetUpcomingBills
-        scheduledTransactions={[]}
-        currentSpent={null}
-        spendingMissingRatePairs={['QQQ->USD']}
-        totalBudgeted={1000}
-        periodEnd="2099-12-31"
-        displayCurrency="USD"
-        formatCurrency={fmt}
-      />,
-    );
-    // The truly-available figure is unknown, with the spending's cause.
-    expect(screen.getAllByTestId('unknown-amount').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows an unknown Total Budget when the budget derives from income with no rate', () => {

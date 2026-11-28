@@ -134,6 +134,7 @@
       "carriedIn": "Ingebracht:",
       "carriedOut": "Uitgebracht:"
     },
+    "noPositiveFunding": "Het gebruikspercentage kan alleen worden berekend bij een positief budget.",
     "overallUsage": "Totaal budgetgebruik",
     "expenseCategories": "Uitgavencategorieën",
     "incomeCategories": "Inkomstencategorieën",

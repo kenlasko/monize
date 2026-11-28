@@ -134,6 +134,7 @@
       "carriedIn": "Transitado para:",
       "carriedOut": "Transitado de:"
     },
+    "noPositiveFunding": "A percentagem de utilização exige um orçamento positivo.",
     "overallUsage": "Utilização Global do Orçamento",
     "expenseCategories": "Categorias de Despesa",
     "incomeCategories": "Categorias de Receita",

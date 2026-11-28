@@ -451,9 +451,18 @@ export interface UpcomingBill {
   /**
    * What this occurrence would cost today, as a positive magnitude, from the
    * server's effective-amount contract. `null` when it cannot be determined --
-   * never the persisted snapshot (issue #1247).
+   * never the persisted snapshot (issue #1247). This is the part that counts
+   * toward the budget; a row prints `amountDue`.
    */
   amount: number | null;
+  /**
+   * The whole occurrence, as a positive magnitude: what is DUE, as the bills
+   * page prints it. `null` when unknown. A split's untracked transfer lines are
+   * in it and not in `amount`.
+   */
+  amountDue: number | null;
+  /** A schedule left at 0 because the amount is not known until it arrives (issue #1124). */
+  isReminder: boolean;
   /**
    * The currency `amount` is in -- the occurrence's own settlement currency,
    * which need not be the budget's. Half of what the amount means: formatting a

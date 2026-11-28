@@ -101,6 +101,8 @@
     "nothingToUndo": "Nada para desfazer",
     "nothingToRedo": "Nada para refazer",
     "undoCreateInUse": "Não é possível desfazer a criação de \"{{ name }}\": agora ele é usado por {{ summary }}. Remova-os primeiro.",
+    "undoBudgetHasHistory": "Não é possível desfazer a criação de \"{{ name }}\": agora ele tem períodos, linhas de categoria ou grupos adicionados depois. Exclua o orçamento em vez disso.",
+    "redoBudgetHasHistory": "Não é possível refazer a exclusão de \"{{ name }}\": agora ele tem períodos, linhas de categoria ou grupos adicionados ou alterados após a restauração. Exclua o orçamento em vez disso.",
     "redoDeleteInUse": "Não é possível refazer a exclusão de \"{{ name }}\": agora ele é usado por {{ summary }}. Remova-os primeiro.",
     "redoDeleteTargetGone": "Não é possível refazer esta exclusão: a categoria para a qual as linhas foram movidas não existe mais.",
     "undoNotSupportedForEntityType": "Desfazer não suportado para o tipo de entidade: {{ entityType }}",
