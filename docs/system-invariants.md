@@ -3658,7 +3658,9 @@ Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     (report-net-cells.ts, report-rows.ts), the built-in
                     reports ticked in stage 1 of
                     docs/future-plans/report-rounding-and-aggregation-tasks.md,
-                    convertDatedRows, the monthly net worth, the Monthly
+                    convertDatedRows, convertingTotal
+                    (backend/src/common/converting-total.ts, issue #2365),
+                    the monthly net worth, the Monthly
                     Comparison's changes (each the difference of the two
                     months' aggregates), the portfolio
                     gains (each account's and the summary's), the AI

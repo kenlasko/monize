@@ -136,6 +136,16 @@ describe("convertingTotal", () => {
     );
     expect(result.total).toBe(0.3);
   });
+  it("rounds once, from the unrounded parts (INV-REPORT-005)", async () => {
+    // Three 1.25005 parts sum to 3.75015 -> 3.7502; rounding each part first gave 3.7503.
+    const result = await convertingTotal(
+      Array.from({ length: 3 }, () => ({ amount: 1, currency: "CAD" })),
+      "USD",
+      memoizedRateResolver(rates({ "CAD->USD": 1.25005 }), "USD", "2026-03-01"),
+    );
+    expect(result.total).toBe(3.7502);
+    expect(result.knownSubtotal).toBe(3.7502);
+  });
 });
 
 describe("memoizedRateResolver", () => {

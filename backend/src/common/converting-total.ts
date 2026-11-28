@@ -1,6 +1,5 @@
 import { FxAggregate } from "./fx-aggregate";
 import { resolveFxRateOrNull } from "./fx-entry.util";
-import { roundMoney } from "./round.util";
 
 /** The rate ladder this module needs; `ExchangeRateService` satisfies it. */
 export interface FxRateSource {
@@ -83,7 +82,7 @@ export function memoizedRateResolver(
  *
  * `sign` maps each amount into the bucket's own convention (bills are reported as
  * positive magnitudes). It is applied BEFORE conversion, which is equivalent for
- * a positive rate and keeps the rounding at one scale.
+ * a positive rate. Each converted part enters unrounded; `FxAggregate` rounds once.
  */
 export async function convertingTotal(
   items: readonly ConvertibleAmount[],
@@ -107,7 +106,8 @@ export async function convertingTotal(
     }
     const rate = await rateFor(item.currency);
     agg.add(
-      rate === null ? null : roundMoney(amount * rate),
+      // Unrounded: FxAggregate rounds once, in `total` (INV-REPORT-005).
+      rate === null ? null : amount * rate,
       item.currency,
       into,
     );
