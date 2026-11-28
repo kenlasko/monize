@@ -89,6 +89,19 @@ export function occurrenceKind(
 }
 
 /**
+ * The kind of a budget's upcoming-bill row, which the server has already
+ * filtered to what the budget tracks: a reminder at 0, `unknown` while the
+ * amount due cannot be worked out, otherwise a bill.
+ */
+export function upcomingBillKind(bill: {
+  amountDue: number | null;
+  isReminder: boolean;
+}): ScheduledKind {
+  if (bill.isReminder) return 'reminder';
+  return bill.amountDue === null ? 'unknown' : 'bill';
+}
+
+/**
  * Chip styling for a calendar occurrence, so the Bills & Deposits calendar and
  * the Upcoming Bills report read the same way. Red is spending, green is money
  * arriving, blue is a transfer between the user's own accounts, and grey is a

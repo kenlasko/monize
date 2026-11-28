@@ -80,7 +80,7 @@
 <li><strong>Budget total</strong>, <strong>Bills coming</strong> and <strong>Truly available</strong> -- your budget less the scheduled bills still to come this period</li>
 <li>A progress bar showing <strong>Day X of Y</strong> and the days remaining</li>
 </ul>
-<p>Because the widget factors in upcoming bills from your scheduled transactions, &quot;safe to spend&quot; reflects your truly available discretionary budget.</p>
+<p>Because the widget factors in upcoming bills from your scheduled transactions, &quot;safe to spend&quot; reflects your truly available discretionary budget. A scheduled transfer between your own accounts counts as a bill only where a budget line takes it, and bills from accounts the budget excludes are left out (see <strong>Upcoming Bills</strong> below).</p>
 <figure><img src="/docs/images/budget-health-velocity.png" alt="The health score gauge and the spending velocity widget" width="1504" height="350" loading="lazy" decoding="async" class="shot-dark"/><img src="/docs/images/budget-health-velocity.light.png" alt="The health score gauge and the spending velocity widget" width="1504" height="350" loading="lazy" decoding="async" class="shot-light"/><figcaption>The health score gauge and the spending velocity widget</figcaption></figure>
 <h3 id="category-list">Category List<a class="hlink" href="#category-list" aria-label="Link to this section">#</a></h3>
 <p>The <strong>Category Budgets</strong> list shows every expense category in the budget with a progress bar.</p>
@@ -131,7 +131,7 @@
 <li><strong>Total upcoming</strong> -- the sum of those bills</li>
 <li><strong>Truly available</strong> -- remaining budget minus upcoming bills</li>
 </ul>
-<p>Each bill is listed with the whole amount that is due. In <strong>Total upcoming</strong> and <strong>Truly available</strong>, a split&#x27;s transfer lines (such as the principal of a loan payment, which moves money to another of your accounts) are left out, because they are not spending.</p>
+<p>Each row shows the whole amount that is due. The totals count only what posting the bill would add to your spending, the same rule the budget&#x27;s actuals use. A scheduled transfer counts only where a budget line takes it: a transfer line for the account it pays, or a line for its category when the money leaves the accounts the budget tracks. Any other transfer, such as a payment to a credit card or a move between your own accounts, is left out because it is not spending. The same holds for a transfer line inside a split, such as the principal of a loan payment. Bills that leave an account the budget excludes are left out too. The Bills page and the calendar still list every transfer as an amount due.</p>
 <p>This prevents a false sense of security when you have budget left but bills still to pay. When nothing is due, the card says &quot;No bills due this period.&quot;</p>
 <h3 id="spending-heatmap">Spending Heatmap<a class="hlink" href="#spending-heatmap" aria-label="Link to this section">#</a></h3>
 <p>A calendar for the current month in which each day is shaded by how much you spent, from <strong>Less</strong> to <strong>More</strong>. Darker days are your heavier spending days, which helps you spot patterns such as weekend spending. Hover over or tap a day to see its total.</p>

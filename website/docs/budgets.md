@@ -151,7 +151,7 @@ Shows your spending pace and whether you will finish the period within budget:
 - **Budget total**, **Bills coming** and **Truly available** -- your budget less the scheduled bills still to come this period
 - A progress bar showing **Day X of Y** and the days remaining
 
-Because the widget factors in upcoming bills from your scheduled transactions, "safe to spend" reflects your truly available discretionary budget.
+Because the widget factors in upcoming bills from your scheduled transactions, "safe to spend" reflects your truly available discretionary budget. A scheduled transfer between your own accounts counts as a bill only where a budget line takes it, and bills from accounts the budget excludes are left out (see **Upcoming Bills** below).
 
 ![The health score gauge and the spending velocity widget](images/budget-health-velocity.png)
 
@@ -225,7 +225,7 @@ Integrates with your scheduled transactions to show:
 - **Total upcoming** -- the sum of those bills
 - **Truly available** -- remaining budget minus upcoming bills
 
-Each bill is listed with the whole amount that is due. In **Total upcoming** and **Truly available**, a split's transfer lines (such as the principal of a loan payment, which moves money to another of your accounts) are left out, because they are not spending.
+Each row shows the whole amount that is due. The totals count only what posting the bill would add to your spending, the same rule the budget's actuals use. A scheduled transfer counts only where a budget line takes it: a transfer line for the account it pays, or a line for its category when the money leaves the accounts the budget tracks. Any other transfer, such as a payment to a credit card or a move between your own accounts, is left out because it is not spending. The same holds for a transfer line inside a split, such as the principal of a loan payment. Bills that leave an account the budget excludes are left out too. The Bills page and the calendar still list every transfer as an amount due.
 
 This prevents a false sense of security when you have budget left but bills still to pay. When nothing is due, the card says "No bills due this period."
 
