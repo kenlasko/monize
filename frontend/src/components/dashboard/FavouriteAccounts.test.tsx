@@ -75,6 +75,12 @@ describe("FavouriteAccounts", () => {
     }
   });
 
+  it("says the accounts failed to load, not that there are no favourites", () => {
+    render(<FavouriteAccounts accounts={[]} isLoading={false} error />);
+    expect(screen.getByRole("alert")).toHaveTextContent(/Couldn't load your accounts/);
+    expect(screen.queryByText(/No favourite accounts yet/)).not.toBeInTheDocument();
+  });
+
   it("renders empty state when no favourites", () => {
     render(<FavouriteAccounts accounts={[]} isLoading={false} />);
     expect(screen.getByText(/No favourite accounts yet/)).toBeInTheDocument();

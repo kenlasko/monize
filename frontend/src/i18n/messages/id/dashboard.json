@@ -371,7 +371,8 @@
     "settlement": "Penyelesaian: {ordinal}",
     "settlementTooltip": "Hari terakhir siklus tagihan. Transaksi yang diposting pada atau sebelum hari ini muncul pada laporan saat ini.",
     "dueShort": "jatuh tempo {ordinal}",
-    "metaWithDue": "{institution} · {due}"
+    "metaWithDue": "{institution} · {due}",
+    "loadFailed": "Akun Anda tidak dapat dimuat. Muat ulang dasbor untuk mencoba lagi."
   },
   "upcomingBills": {
     "title": "Tagihan & Setoran Mendatang",
@@ -407,7 +408,8 @@
     "dayEmpty": "Tidak ada tagihan atau setoran yang dijadwalkan untuk hari tersebut.",
     "metaPayee": "· {payee}",
     "metaManual": "· dibayar manual",
-    "metaWhen": "· {when}"
+    "metaWhen": "· {when}",
+    "loadFailed": "Tagihan mendatang Anda tidak dapat dimuat. Muat ulang dasbor untuk mencoba lagi."
   },
   "cashFlowForecast": {
     "title": "Prakiraan Arus Kas",
@@ -444,7 +446,8 @@
     "viewFullBudget": "Lihat anggaran lengkap",
     "daysLeft": "{count} hari tersisa",
     "safeToSpend": "Aman untuk dibelanjakan hari ini",
-    "topCategories": "Kategori Teratas"
+    "topCategories": "Kategori Teratas",
+    "loadFailed": "Status anggaran Anda tidak dapat dimuat. Muat ulang dasbor untuk mencoba lagi."
   },
   "insights": {
     "title": "Wawasan Pengeluaran",
@@ -520,13 +523,15 @@
     "topLevelOnly": "Kategori tingkat atas",
     "topLevelOnlyHint": "Hitung subkategori pada induknya",
     "viewCallouts": "Label",
-    "viewLegend": "Keterangan"
+    "viewLegend": "Keterangan",
+    "loadFailed": "Pengeluaran Anda per kategori tidak dapat dimuat. Muat ulang dasbor untuk mencoba lagi."
   },
   "incomeExpenses": {
     "title": "Pendapatan vs Pengeluaran",
     "income": "Pendapatan",
     "expenses": "Pengeluaran",
-    "net": "Bersih"
+    "net": "Bersih",
+    "loadFailed": "Pemasukan dan pengeluaran Anda tidak dapat dimuat. Muat ulang dasbor untuk mencoba lagi."
   },
   "customize": {
     "button": "Sesuaikan",
@@ -736,5 +741,6 @@
     "depthSubcategories": "Subkategori",
     "viewDiagram": "Diagram",
     "viewTable": "Tabel"
-  }
+  },
+  "accountsLoadFailed": "Akun Anda tidak dapat dimuat, sehingga widget ini tidak dapat ditampilkan. Muat ulang dasbor untuk mencoba lagi."
 }
