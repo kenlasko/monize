@@ -2585,19 +2585,20 @@ export class TransactionAnalyticsService {
         }
 
         case "payee": {
-          // A linked payee may have no stored transaction name. Free-text
-          // names and the anonymous catch-all keep their existing labels.
-          const label = "COALESCE(t.payeeName, breakdownPayee.name, 'Unknown')";
+          // Linked transactions share their payee's current name. Unlinked
+          // names retain their own groups, including a missing name.
+          const label = "COALESCE(breakdownPayee.name, t.payeeName)";
           qb.leftJoin(
             "t.payee",
             "breakdownPayee",
             "breakdownPayee.userId = t.userId",
           )
             .select(label, "label")
-            .addSelect("MIN(CAST(t.payeeId AS text))", "payeeId")
+            .addSelect("t.payeeId", "payeeId")
             .addSelect(`SUM(${amount})`, "total")
             .addSelect("COUNT(DISTINCT t.id)", "count")
-            .groupBy(label);
+            .groupBy("t.payeeId")
+            .addGroupBy(label);
           byCurrencyAndDay();
 
           const rows = await qb.getRawMany();
@@ -2608,18 +2609,9 @@ export class TransactionAnalyticsService {
             startDate,
             endDate,
           );
-          // The per-day rows each carry their own MIN; the group's is the
-          // least of them, as the single-row query returned before.
-          const payeeIds = new Map<string, string>();
-          for (const r of rows) {
-            const seen = payeeIds.get(r.label);
-            if (r.payeeId && (seen === undefined || r.payeeId < seen)) {
-              payeeIds.set(r.label, r.payeeId);
-            }
-          }
           const groups = this.foldGroups(
             rows,
-            (r) => r.label,
+            (r) => JSON.stringify([r.payeeId ?? null, r.label ?? null]),
             reporting,
             rates,
           );
@@ -2628,8 +2620,8 @@ export class TransactionAnalyticsService {
             fx,
             rows: enforcePayeeAggregationThreshold(
               groups.map((g) => ({
-                payee: g.first.label,
-                payeeId: payeeIds.get(g.first.label) ?? null,
+                payee: g.first.label ?? "Unknown",
+                payeeId: g.first.payeeId ?? null,
                 agg: g.agg,
                 count: g.count,
               })),
