@@ -9,97 +9,71 @@ import {
   numberArg,
   booleanArg,
 } from "./tool-schemas";
+import { todayInTimezone } from "./date-utils";
 
 describe("tool-schemas defaults", () => {
-  const ymdRegex = /^\d{4}-\d{2}-\d{2}$/;
-  const ymRegex = /^\d{4}-\d{2}$/;
+  // The caller passes the user's day (todayYMD()); nothing here reads a clock.
+  // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
+  const TODAY = "2026-11-28";
 
   describe("getDefaultDateRange()", () => {
-    it("returns today's date for endDate", () => {
-      const today = new Date();
-      const y = today.getFullYear();
-      const m = String(today.getMonth() + 1).padStart(2, "0");
-      const d = String(today.getDate()).padStart(2, "0");
-      const expected = `${y}-${m}-${d}`;
-
-      const { endDate } = getDefaultDateRange();
-
-      expect(endDate).toBe(expected);
-    });
-
-    it("returns a startDate roughly DEFAULT_LOOKBACK_DAYS ago by default", () => {
-      const { startDate, endDate } = getDefaultDateRange();
-
-      const startMs = new Date(startDate + "T00:00:00").getTime();
-      const endMs = new Date(endDate + "T00:00:00").getTime();
-      const daysDiff = Math.round((endMs - startMs) / (1000 * 60 * 60 * 24));
-
-      expect(daysDiff).toBe(DEFAULT_LOOKBACK_DAYS);
+    it("ends at the given day and starts DEFAULT_LOOKBACK_DAYS before it", () => {
+      expect(getDefaultDateRange(TODAY)).toEqual({
+        startDate: "2026-10-29",
+        endDate: TODAY,
+      });
+      expect(DEFAULT_LOOKBACK_DAYS).toBe(30);
     });
 
     it("honors a custom lookback window", () => {
-      const { startDate, endDate } = getDefaultDateRange(7);
-      const startMs = new Date(startDate + "T00:00:00").getTime();
-      const endMs = new Date(endDate + "T00:00:00").getTime();
-      const daysDiff = Math.round((endMs - startMs) / (1000 * 60 * 60 * 24));
-
-      expect(daysDiff).toBe(7);
-    });
-
-    it("returns YYYY-MM-DD strings for both ends", () => {
-      const { startDate, endDate } = getDefaultDateRange();
-      expect(startDate).toMatch(ymdRegex);
-      expect(endDate).toMatch(ymdRegex);
+      expect(getDefaultDateRange(TODAY, 7)).toEqual({
+        startDate: "2026-11-21",
+        endDate: TODAY,
+      });
     });
   });
 
   describe("getDefaultComparePeriods()", () => {
-    it("returns period1 as the previous full calendar month", () => {
-      const { period1Start, period1End } = getDefaultComparePeriods();
-
-      const now = new Date();
-      const expectedStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const expectedEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-
-      const fmt = (d: Date) =>
-        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-
-      expect(period1Start).toBe(fmt(expectedStart));
-      expect(period1End).toBe(fmt(expectedEnd));
+    it("compares the previous full month with the month to date", () => {
+      expect(getDefaultComparePeriods(TODAY)).toEqual({
+        period1Start: "2026-10-01",
+        period1End: "2026-10-31",
+        period2Start: "2026-11-01",
+        period2End: TODAY,
+      });
     });
 
-    it("returns period2 as the current month-to-date", () => {
-      const { period2Start, period2End } = getDefaultComparePeriods();
-      const now = new Date();
-      const expectedStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-      const fmt = (d: Date) =>
-        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-
-      expect(period2Start).toBe(fmt(expectedStart));
-      expect(period2End).toBe(fmt(now));
-    });
-
-    it("returns YYYY-MM-DD strings for all four fields", () => {
-      const periods = getDefaultComparePeriods();
-      expect(periods.period1Start).toMatch(ymdRegex);
-      expect(periods.period1End).toMatch(ymdRegex);
-      expect(periods.period2Start).toMatch(ymdRegex);
-      expect(periods.period2End).toMatch(ymdRegex);
+    it("crosses a year boundary and a leap February", () => {
+      expect(getDefaultComparePeriods("2027-01-05")).toEqual({
+        period1Start: "2026-12-01",
+        period1End: "2026-12-31",
+        period2Start: "2027-01-01",
+        period2End: "2027-01-05",
+      });
+      expect(getDefaultComparePeriods("2024-03-10").period1End).toBe(
+        "2024-02-29",
+      );
     });
   });
 
   describe("getDefaultPreviousMonth()", () => {
     it("returns the previous calendar month in YYYY-MM", () => {
-      const now = new Date();
-      const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const expected = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
-
-      expect(getDefaultPreviousMonth()).toBe(expected);
+      expect(getDefaultPreviousMonth(TODAY)).toBe("2026-10");
+      expect(getDefaultPreviousMonth("2027-01-05")).toBe("2026-12");
     });
+  });
 
-    it("returns a YYYY-MM formatted string", () => {
-      expect(getDefaultPreviousMonth()).toMatch(ymRegex);
+  describe("a Kiritimati user at 12:00 UTC (#2365)", () => {
+    it("derives every default from the user's day, not the server's", () => {
+      jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+      try {
+        const today = todayInTimezone("Pacific/Kiritimati") as string;
+        expect(today).toBe("2026-11-28");
+        expect(getDefaultDateRange(today).endDate).toBe("2026-11-28");
+        expect(getDefaultComparePeriods(today).period2End).toBe("2026-11-28");
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 
@@ -112,12 +86,15 @@ describe("tool-schemas defaults", () => {
 
   describe("resolveComparePeriods()", () => {
     it("returns caller-supplied periods when all four dates are present", () => {
-      const periods = resolveComparePeriods({
-        period1Start: "2025-01-01",
-        period1End: "2025-01-31",
-        period2Start: "2025-02-01",
-        period2End: "2025-02-28",
-      });
+      const periods = resolveComparePeriods(
+        {
+          period1Start: "2025-01-01",
+          period1End: "2025-01-31",
+          period2Start: "2025-02-01",
+          period2End: "2025-02-28",
+        },
+        TODAY,
+      );
       expect(periods).toEqual({
         period1Start: "2025-01-01",
         period1End: "2025-01-31",
@@ -127,19 +104,22 @@ describe("tool-schemas defaults", () => {
     });
 
     it("falls back to defaults when any date is missing", () => {
-      const defaults = getDefaultComparePeriods();
-      const periods = resolveComparePeriods({
-        period1Start: "2025-01-01",
-        period1End: "2025-01-31",
-        period2Start: "2025-02-01",
-        // period2End missing -- all-or-nothing
-      });
-      expect(periods).toEqual(defaults);
+      const periods = resolveComparePeriods(
+        {
+          period1Start: "2025-01-01",
+          period1End: "2025-01-31",
+          period2Start: "2025-02-01",
+          // period2End missing -- all-or-nothing
+        },
+        TODAY,
+      );
+      expect(periods).toEqual(getDefaultComparePeriods(TODAY));
     });
 
     it("falls back to defaults on entirely empty input", () => {
-      const defaults = getDefaultComparePeriods();
-      expect(resolveComparePeriods({})).toEqual(defaults);
+      expect(resolveComparePeriods({}, TODAY)).toEqual(
+        getDefaultComparePeriods(TODAY),
+      );
     });
   });
 });

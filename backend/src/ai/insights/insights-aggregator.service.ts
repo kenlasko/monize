@@ -2,8 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import type { CategoryType } from "../../categories/category-type.util";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
-import { todayInTimezone } from "../../common/date-utils";
-import { getEffectiveTimezoneOfUser } from "../../common/users-by-timezone.util";
+import { userTodayYMD } from "../../common/users-by-timezone.util";
 import { Transaction } from "../../transactions/entities/transaction.entity";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
 import { RecurringCharge } from "../../transactions/recurring-charges.util";
@@ -106,10 +105,9 @@ export class InsightsAggregatorService {
   ): Promise<SpendingAggregates> {
     // The user's financial today (A26-L29), never a local-midnight Date read
     // back in UTC: the month a person is in follows their own zone.
-    const today = await withScopedDb(this.dataSource, async (manager) => {
-      const timezone = await getEffectiveTimezoneOfUser(manager, userId);
-      return (todayInTimezone(timezone) ?? todayInTimezone("UTC")) as string;
-    });
+    const today = await withScopedDb(this.dataSource, (manager) =>
+      userTodayYMD(manager, userId),
+    );
     const currentMonthStart = `${today.slice(0, 7)}-01`;
     const sixMonthsAgo = firstOfMonthShifted(currentMonthStart, -6);
     const previousMonthStart = firstOfMonthShifted(currentMonthStart, -1);

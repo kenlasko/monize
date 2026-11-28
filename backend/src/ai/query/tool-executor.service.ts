@@ -1,4 +1,5 @@
 import { DataSource } from "typeorm";
+import { todayYMD } from "../../common/date-utils";
 import { withScopedDb } from "../../common/db/scoped-db";
 import { userTodayYMD } from "../../common/users-by-timezone.util";
 import { sharedLedgerRefusal } from "../../common/db/shared-ledger-refusal";
@@ -508,7 +509,7 @@ export class ToolExecutorService {
     userId: string,
     input: Record<string, unknown>,
   ): Promise<ToolResult> {
-    const defaults = getDefaultDateRange();
+    const defaults = getDefaultDateRange(todayYMD());
     const startDate = (input.startDate as string) ?? defaults.startDate;
     const endDate = (input.endDate as string) ?? defaults.endDate;
     const accountNames = input.accountNames as string[] | undefined;
@@ -2643,12 +2644,15 @@ export class ToolExecutorService {
     input: Record<string, unknown>,
   ): Promise<ToolResult> {
     const { period1Start, period1End, period2Start, period2End } =
-      resolveComparePeriods({
-        period1Start: input.period1Start as string | undefined,
-        period1End: input.period1End as string | undefined,
-        period2Start: input.period2Start as string | undefined,
-        period2End: input.period2End as string | undefined,
-      });
+      resolveComparePeriods(
+        {
+          period1Start: input.period1Start as string | undefined,
+          period1End: input.period1End as string | undefined,
+          period2Start: input.period2Start as string | undefined,
+          period2End: input.period2End as string | undefined,
+        },
+        todayYMD(),
+      );
     const groupBy = (input.groupBy as "category" | "payee") || "category";
     const direction =
       (input.direction as "expenses" | "income" | "both") || "expenses";
@@ -3301,17 +3305,14 @@ export class ToolExecutorService {
         endDate,
       );
 
-      // The user's day, as getLlmHistory resolves it for the same call.
-      const userToday = () =>
-        withScopedDb(this.dataSource, (m) => userTodayYMD(m, userId));
-      const start =
-        startDate ||
-        (history.length > 0 ? history[0].month : await userToday());
-      const end =
-        endDate ||
-        (history.length > 0
-          ? history[history.length - 1].month
-          : await userToday());
+      // An empty history is dated by the user's day, resolved once, as
+      // getLlmHistory resolves it for the same call.
+      const emptyDay =
+        history.length === 0
+          ? await withScopedDb(this.dataSource, (m) => userTodayYMD(m, userId))
+          : undefined;
+      const start = startDate || history[0]?.month || emptyDay;
+      const end = endDate || history[history.length - 1]?.month || emptyDay;
 
       return {
         // Bare array, matching the MCP generate_report net_worth_history payload
@@ -3353,7 +3354,8 @@ export class ToolExecutorService {
     }
 
     if (type === "month_comparison") {
-      const month = (input.month as string) ?? getDefaultPreviousMonth();
+      const month =
+        (input.month as string) ?? getDefaultPreviousMonth(todayYMD());
       const data = await this.builtInReportsService.getMonthlyComparison(
         userId,
         month,
@@ -3380,7 +3382,7 @@ export class ToolExecutorService {
       };
     }
 
-    const defaults = getDefaultDateRange();
+    const defaults = getDefaultDateRange(todayYMD());
     const startDate = (input.startDate as string) ?? defaults.startDate;
     const endDate = (input.endDate as string) ?? defaults.endDate;
 

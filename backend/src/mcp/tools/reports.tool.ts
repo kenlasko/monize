@@ -1,3 +1,4 @@
+import { todayYMD } from "../../common/date-utils";
 import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
@@ -100,7 +101,7 @@ export class McpReportsTools {
           if (args.type === "month_comparison") {
             const data = await this.reportsService.getMonthlyComparison(
               user.userId,
-              args.month ?? getDefaultPreviousMonth(),
+              args.month ?? getDefaultPreviousMonth(todayYMD()),
             );
             return toolResult(
               await this.sharedReview.annotate(user.userId, data),
@@ -118,7 +119,7 @@ export class McpReportsTools {
             );
           }
 
-          const defaults = getDefaultDateRange();
+          const defaults = getDefaultDateRange(todayYMD());
           const startDate = args.startDate ?? defaults.startDate;
           const endDate = args.endDate ?? defaults.endDate;
           let data: any;

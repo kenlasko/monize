@@ -1289,6 +1289,17 @@ describe("ToolExecutorService", () => {
       }
     });
 
+    it("falls back to the first and last history month for a missing date", async () => {
+      netWorth.getLlmHistory.mockResolvedValue([
+        { month: "2026-01-01" },
+        { month: "2026-03-01" },
+      ]);
+      const result = await service.execute(userId, "generate_report", {
+        type: "net_worth_history",
+      });
+      expect(result.sources[0].dateRange).toBe("2026-01-01 to 2026-03-01");
+    });
+
     it("generate_report type net_worth_history delegates to netWorthService.getLlmHistory", async () => {
       const result = await service.execute(userId, "generate_report", {
         type: "net_worth_history",
