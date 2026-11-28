@@ -5787,6 +5787,59 @@ describe("ReportsService", () => {
         expect(result.missingCurrencies).toEqual(["JPY"]);
       });
 
+      it.each([
+        ["JPY", false],
+        ["JPY", true],
+        ["USD", false],
+        ["USD", true],
+      ] as const)(
+        "withholds an unpriced actual with a %s plan and a priced sibling: %s",
+        async (planCurrency, hasPricedSibling) => {
+          const items = [
+            createMockTransaction({
+              id: "foreign",
+              categoryId: "cat-1",
+              currencyCode: "JPY",
+              amount: -800,
+            }),
+          ];
+          if (hasPricedSibling) {
+            items.push(
+              createMockTransaction({
+                id: "local",
+                categoryId: "cat-1",
+                amount: -40,
+              }),
+            );
+          }
+          setupExecuteMocks(
+            {
+              groupBy: GroupByType.CATEGORY,
+              timeframeType: TimeframeType.LAST_MONTH,
+              config: {
+                ...defaultConfig,
+                direction: DirectionFilter.BOTH,
+                metric: MetricType.BUDGET_VARIANCE,
+              },
+            },
+            items,
+          );
+          categoriesRepository.find.mockResolvedValue([mockCategory]);
+          budgetOf(
+            [{ categoryId: "cat-1", amount: 100, isIncome: false }],
+            planCurrency,
+          );
+
+          const result = await service.execute("user-1", "report-1");
+          const row = result.data.find((point) => point.id === "cat-1");
+          expect(row).toMatchObject({ value: null, incomplete: true });
+          expect(row!.actual).toBeUndefined();
+          expect(row!.budgeted).toBe(planCurrency === "USD" ? 100 : undefined);
+          expect(result.summary.total).toBeNull();
+          expect(result.summary.knownTotal).toBe(0);
+        },
+      );
+
       it("keeps a category with an unpriced plan and no spending in scope", async () => {
         setupExecuteMocks(
           {

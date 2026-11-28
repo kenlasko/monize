@@ -1373,12 +1373,13 @@ export class ReportsService {
     categoryMap: Map<string, Category>,
     conv: RowConverter,
   ): ReportRow[] {
+    const budgetVariance = metric === MetricType.BUDGET_VARIANCE;
     const cells = createNetCells(
       config.direction,
       metric,
       this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
-      !!config.transferMeasure,
+      !!config.transferMeasure || budgetVariance,
     );
     // An embedded investment line carries no category by definition, so
     // `netLinesOf` leaves it out: counting it here filed a securities purchase
@@ -1393,7 +1394,7 @@ export class ReportsService {
       }
     }
     const dataMap = cells.settle(
-      metric === MetricType.BUDGET_VARIANCE
+      budgetVariance
         ? (id) => {
             const type = categoryTypeOfOrUndefined(categoryMap.get(id));
             return type === undefined ? undefined : type === "income";
@@ -1419,16 +1420,21 @@ export class ReportsService {
           ? // Legs holding no category, never ordinary uncategorized rows.
             "No category"
           : "Uncategorized";
+      // Keep a category with unpriced spending distinct from a budget with no activity.
+      const actualIncomplete = budgetVariance && data.incomplete;
       result.push({
         point: {
           id: categoryId,
           label,
-          ...this.groupFigure(data, metric, conv, config),
+          ...(actualIncomplete
+            ? { value: null, incomplete: true as const }
+            : this.groupFigure(data, metric, conv, config)),
           color: category?.color || undefined,
-          percentage: whole && shareOf(data.agg, whole),
+          percentage:
+            actualIncomplete || !whole ? undefined : shareOf(data.agg, whole),
           count: data.count,
         },
-        sum: data.agg,
+        sum: actualIncomplete ? null : data.agg,
       });
     }
 
@@ -1677,7 +1683,7 @@ export class ReportsService {
       // In the reporting currency at the rate on the window's last day: a plan
       // has no date of its own, and the actuals it is set against are each
       // converted at theirs. A budget currency with no rate leaves its
-      // categories unenriched and records the gap in the report's own gaps.
+      // categories with unknown variances and records the gap in the report.
       const budgetBasis = transactionRateBasis(
         { currencyCode: budget.currencyCode, transactionDate: endDate },
         conv.currency,
@@ -1723,7 +1729,7 @@ export class ReportsService {
         const id = point.id || "";
         const planned = budgetMap.get(id);
         if (planned === null) {
-          // The actual is known, but it is not a variance until the plan is priced.
+          // Preserve an independently valued actual while the plan is unpriced.
           return {
             point: {
               ...point,
@@ -1735,8 +1741,13 @@ export class ReportsService {
             sum: null,
           };
         }
-        if (point.value === null || sum === null) return row;
         const budgeted = planned ?? 0;
+        if (point.value === null || sum === null) {
+          return {
+            point: { ...point, budgeted: reportFigure(budgeted, conv.places) },
+            sum: null,
+          };
+        }
         const variance = new FxAggregate();
         variance.merge(sum);
         variance.addConverted(-budgeted);
