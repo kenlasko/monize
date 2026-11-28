@@ -85,7 +85,7 @@ In **Monthly & Yearly Breakdown**, the **Transfers** group lists money moved bet
 
 ![The Transfers group of the Monthly & Yearly Breakdown, with a Transfer category's outgoing and incoming rows above the per-account rows](images/report-monthly-breakdown-transfers.png)
 
-In **Spending by Category**, a refund reduces spending in the expense category assigned to it. A purchase of 100 and a refund of 150 show **−50** for that category. A full refund shows **0** and the category stays visible. A refund received this month can therefore give the month negative spending even when the purchase was in an earlier month. Monthly Spending Trend and the assistant’s category breakdown include that credit. Monthly Comparison shows the change in money and leaves percentage growth unavailable when the previous month had a net refund.
+In **Spending by Category**, a refund reduces spending in the expense category assigned to it. A purchase of 100 and a refund of 150 show **−50** for that category. A full refund shows **0** and the category stays visible. A refund received this month can therefore give the month negative spending even when the purchase was in an earlier month. Monthly Spending Trend and the assistant’s category breakdown include that credit. Monthly Comparison shows the change in money and leaves percentage growth unavailable when the previous month had a net refund. The monthly spending trend returned by the assistant and MCP includes up to ten category rows. Its monthly total includes every eligible category.
 
 ![The Spending by Category report](images/report-spending-category.png)
 
