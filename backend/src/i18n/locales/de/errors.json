@@ -100,6 +100,7 @@
     "nothingToUndo": "Nichts rückgängig zu machen",
     "nothingToRedo": "Nichts zu wiederholen",
     "undoCreateInUse": "\"{{ name }}\" kann nicht rückgängig gemacht werden: Es wird jetzt von {{ summary }} verwendet. Entfernen Sie diese zuerst.",
+    "undoBudgetHasHistory": "Die Erstellung von \"{{ name }}\" kann nicht rückgängig gemacht werden: Das Budget hat jetzt Zeiträume, Kategoriezeilen oder Buckets, die danach hinzugefügt wurden. Löschen Sie stattdessen das Budget.",
     "redoDeleteInUse": "\"{{ name }}\" kann nicht wiederholt gelöscht werden: Es wird jetzt von {{ summary }} verwendet. Entfernen Sie diese zuerst.",
     "redoDeleteTargetGone": "Dieses Löschen kann nicht wiederholt werden: Die Kategorie, in die seine Zeilen verschoben wurden, existiert nicht mehr.",
     "undoNotSupportedForEntityType": "Rückgängig machen wird für den Entitätstyp nicht unterstützt: {{ entityType }}",

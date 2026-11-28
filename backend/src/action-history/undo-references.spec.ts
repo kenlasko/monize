@@ -80,7 +80,7 @@ describe("assertNoReferencesBeforeDelete", () => {
     await expect(run("tag", gone)).resolves.toBeUndefined();
     expect(gone.query).toHaveBeenCalledTimes(1);
     // A schedule has no finder: the undo clears a loan's link itself.
-    for (const type of ["budget", "scheduled_transaction"]) {
+    for (const type of ["custom_report", "scheduled_transaction"]) {
       const m = makeManager(5);
       await expect(run(type, m)).resolves.toBeUndefined();
       expect(m.query).not.toHaveBeenCalled();

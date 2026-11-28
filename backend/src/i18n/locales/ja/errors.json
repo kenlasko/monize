@@ -100,6 +100,7 @@
     "nothingToUndo": "元に戻すものがありません",
     "nothingToRedo": "やり直すものがありません",
     "undoCreateInUse": "「{{ name }}」の作成を元に戻せません。現在 {{ summary }} で使われています。先にこれらを削除してください。",
+    "undoBudgetHasHistory": "「{{ name }}」の作成を元に戻せません。作成後に追加された期間、カテゴリ行、バケットがあります。代わりに予算を削除してください。",
     "redoDeleteInUse": "「{{ name }}」の削除をやり直せません。現在 {{ summary }} で使われています。先にこれらを削除してください。",
     "redoDeleteTargetGone": "この削除をやり直せません。行の移動先のカテゴリが存在しなくなりました。",
     "undoNotSupportedForEntityType": "エンティティタイプ {{ entityType }} の元に戻す操作はサポートされていません",

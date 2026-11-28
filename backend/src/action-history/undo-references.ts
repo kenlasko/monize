@@ -1,3 +1,4 @@
+import { ConflictException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { tr } from "../i18n/translate";
 import { findAccountReferences } from "../accounts/account-references";
@@ -20,7 +21,8 @@ type Finder = (
 
 /**
  * Entities whose row removal would clear or destroy rows that point at it.
- * `budget` and `custom_report` are absent: their children are part of them.
+ * `custom_report` is absent: its children are part of it. A budget has its own
+ * check (`assertBudgetCreateUndoable`).
  * The account's finder counts the loan's own schedule too, so an account undo
  * never drops a schedule that still pays into it. (Loan and mortgage creation
  * records only the schedule's entry today, so this guards a future one.)
@@ -58,6 +60,10 @@ export async function assertNoReferencesBeforeDelete(
   manager: EntityManager,
   isRedo: boolean,
 ): Promise<void> {
+  if (action.entityType === "budget" && !isRedo && action.entityId) {
+    await assertBudgetCreateUndoable(action, manager);
+    return;
+  }
   const check = REFERENCE_CHECKS[action.entityType];
   if (!check || !action.entityId || (isRedo && check.skipOnRedo)) return;
   // `table` and `label` come from the map above, never from the request.
@@ -84,4 +90,33 @@ export async function assertNoReferencesBeforeDelete(
         ),
     references,
   );
+}
+
+/**
+ * Creating a budget makes the budget row alone. Its closed periods and lines
+ * come later, so removing the budget would take rows the create never made
+ * (and a redo cannot bring them back): the undo is refused before any write.
+ */
+async function assertBudgetCreateUndoable(
+  action: ActionHistory,
+  manager: EntityManager,
+): Promise<void> {
+  const rows = await manager.query(
+    `SELECT b.name,
+            (SELECT count(*)::int FROM budget_periods WHERE budget_id = b.id) AS periods,
+            (SELECT count(*)::int FROM budget_categories WHERE budget_id = b.id) AS lines,
+            (SELECT count(*)::int FROM budget_buckets WHERE budget_id = b.id) AS buckets
+       FROM budgets b WHERE b.id = $1 AND b.user_id = $2 FOR UPDATE`,
+    [action.entityId, action.userId],
+  );
+  const row = rows?.[0];
+  if (!row || row.periods + row.lines + row.buckets === 0) return;
+  throw new ConflictException({
+    message: tr(
+      "errors.actionHistory.undoBudgetHasHistory",
+      `Cannot undo creating "${row.name}": it now has periods, category lines or buckets that were added after it. Delete the budget instead.`,
+      { name: row.name },
+    ),
+    errorCode: "UNDO_BUDGET_HAS_HISTORY",
+  });
 }
