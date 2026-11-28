@@ -1112,6 +1112,8 @@ export class BudgetsService {
       percentUsed: number;
     }>;
   } | null> {
+    // Read once, as getBudgetSummary does, so the pace window has one day.
+    const todayStr = todayYMD();
     const budget = await this.findNewestActiveBudget(userId);
     if (!budget) return null;
 
@@ -1134,21 +1136,11 @@ export class BudgetsService {
         ? Math.round((totalSpent / totalBudgeted) * 10000) / 100
         : 0;
 
-    const today = new Date();
-    const startDate = new Date(periodStart);
-    const endDate = new Date(periodEnd);
-    // periodEnd is the inclusive last day, so the period spans one more day.
-    const totalDays =
-      Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      ) + 1;
-    const daysElapsed = Math.max(
-      1,
-      Math.ceil(
-        (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      ),
+    const { daysRemaining } = budgetPaceWindow(
+      periodStart,
+      periodEnd,
+      todayStr,
     );
-    const daysRemaining = Math.max(0, totalDays - daysElapsed);
     const safeDailySpend =
       daysRemaining > 0 ? Math.max(0, remaining / daysRemaining) : 0;
 
