@@ -102,3 +102,63 @@ export async function countReferencesById(
   }
   return totals;
 }
+
+/**
+ * A kind counted from both sides: for one record (`sql`, what a delete or an
+ * undo checks) and for all of a user's records at once (`listSql`, what a list
+ * shows). Both live in one entry, so a kind cannot be added to one and missed
+ * by the other.
+ */
+export type CountedReference = {
+  kind: string;
+  sql: string;
+  listSql: string;
+  ids?: boolean;
+  like?: boolean;
+};
+
+const UUID_PATTERN =
+  "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+
+/**
+ * `listSql` for an id kept inside JSON: the UUIDs are pulled out of each row's
+ * text once, then joined to the user's `target` records on equality, so the
+ * cost is rows plus records, not their product. A row counts once per record
+ * however often it names it (what the per-record `LIKE` counts). Arguments are
+ * SQL fragments written in this repository, never request input.
+ */
+export function jsonIdListSql(o: {
+  /** FROM clause (may join) holding the JSON rows. */
+  from: string;
+  /** Unique id of the JSON row, so a row naming a record twice counts once. */
+  rowId: string;
+  /** The owning user column of the JSON rows. */
+  userColumn: string;
+  /** Text expression holding every JSON column that can name the record. */
+  text: string;
+  /** The records being counted: `categories`, `payees` or `tags`. */
+  target: string;
+}): string {
+  return `SELECT t.id, count(DISTINCT x.row_id)::int AS count
+    FROM (SELECT ${o.rowId} AS row_id, m.hit[1] AS ref
+            FROM ${o.from},
+                 LATERAL regexp_matches(lower(${o.text}), '${UUID_PATTERN}', 'g') AS m(hit)
+           WHERE ${o.userColumn} = $1) x
+    JOIN ${o.target} t ON t.user_id = $1 AND t.id::text = x.ref
+   GROUP BY t.id`;
+}
+
+/** Rules keep ids in `condition` and `actions`. */
+export const RULES_JSON = {
+  from: "transaction_rules r",
+  rowId: "r.id",
+  userColumn: "r.user_id",
+  text: "r.condition::text || ' ' || r.actions::text",
+};
+/** Custom reports keep ids in `filters`. */
+export const REPORTS_JSON = {
+  from: "custom_reports r",
+  rowId: "r.id",
+  userColumn: "r.user_id",
+  text: "r.filters::text",
+};

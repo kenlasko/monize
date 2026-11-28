@@ -32,7 +32,9 @@
         "transactionSplits": "{count, plural, other {# 條交易拆分行}}",
         "scheduledTransactions": "{count, plural, other {# 筆排程交易}}",
         "scheduledSplits": "{count, plural, other {# 條排程拆分行}}",
-        "securities": "{count, plural, other {# 檔證券}}"
+        "securities": "{count, plural, other {# 檔證券}}",
+        "rules": "{count, plural, other {# 條規則}}",
+        "customReports": "{count, plural, other {# 份已儲存的報表}}"
       }
     },
     "toasts": {
@@ -54,7 +56,7 @@
     "header": {
       "name": "名稱",
       "icon": "圖示",
-      "transactions": "交易",
+      "count": "數量",
       "actions": "動作"
     }
   },

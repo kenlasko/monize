@@ -97,6 +97,7 @@
     "reassignLabel": "Opnieuw toewijzen aan:",
     "leaveUncategorized": "Zonder categorie laten",
     "safeToDelete": "Deze categorie is niet in gebruik en kan veilig worden verwijderd.",
+    "usageUnknown": "Kon niet controleren waar deze categorie wordt gebruikt. Als iets haar nog gebruikt, wordt het verwijderen geweigerd en verandert er niets.",
     "cannotUndo": "Deze actie kan niet ongedaan worden gemaakt."
   },
   "validation": {

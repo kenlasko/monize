@@ -97,6 +97,7 @@
     "reassignLabel": "Phân công lại cho:",
     "leaveUncategorized": "Để chưa phân loại",
     "safeToDelete": "Danh mục này chưa được sử dụng. Có thể xóa an toàn.",
+    "usageUnknown": "Không thể kiểm tra danh mục này được dùng ở đâu. Nếu vẫn còn nơi dùng, việc xóa sẽ bị từ chối và không có gì thay đổi.",
     "cannotUndo": "Hành động này không thể hoàn tác."
   },
   "validation": {

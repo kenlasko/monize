@@ -97,6 +97,7 @@
     "reassignLabel": "Przypisz ponownie do:",
     "leaveUncategorized": "Pozostaw bez kategorii",
     "safeToDelete": "Ta kategoria nie jest uzywana. Mozna ja bezpiecznie usunąć.",
+    "usageUnknown": "Nie udało się sprawdzić, gdzie ta kategoria jest używana. Jeśli coś jej jeszcze używa, usunięcie zostanie odrzucone i nic się nie zmieni.",
     "cannotUndo": "Tej operacji nie można cofnąć."
   },
   "validation": {

@@ -97,6 +97,7 @@
     "reassignLabel": "重新分配至：",
     "leaveUncategorized": "保留未分类",
     "safeToDelete": "此分类未被使用，可以安全删除。",
+    "usageUnknown": "无法检查此分类在哪里被使用。如果仍有内容在使用它，删除将被拒绝，且不会有任何更改。",
     "cannotUndo": "此操作无法撤销。"
   },
   "validation": {

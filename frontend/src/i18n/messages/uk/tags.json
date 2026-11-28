@@ -32,7 +32,9 @@
         "transactionSplits": "{count, plural, one {# рядка розподілу транзакції} other {# рядків розподілу транзакцій}}",
         "scheduledTransactions": "{count, plural, one {# запланованої транзакції} other {# запланованих транзакцій}}",
         "scheduledSplits": "{count, plural, one {# запланованого рядка розподілу} other {# запланованих рядків розподілу}}",
-        "securities": "{count, plural, one {# цінного папера} other {# цінних паперів}}"
+        "securities": "{count, plural, one {# цінного папера} other {# цінних паперів}}",
+        "rules": "{count, plural, one {# правила} other {# правил}}",
+        "customReports": "{count, plural, one {# збереженого звіту} other {# збережених звітів}}"
       }
     },
     "toasts": {
@@ -54,7 +56,7 @@
     "header": {
       "name": "Назва",
       "icon": "Іконка",
-      "transactions": "Транзакції",
+      "count": "Кількість",
       "actions": "Дії"
     }
   },

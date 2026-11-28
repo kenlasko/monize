@@ -107,6 +107,13 @@ export class CategoriesController {
     type: Boolean,
     description: "Include system categories",
   })
+  @ApiQuery({
+    name: "usage",
+    required: false,
+    type: Boolean,
+    description:
+      "Add usageCount: every record a delete would refuse for (the Categories page)",
+  })
   @ApiResponse({
     status: 200,
     description: "List of categories retrieved successfully",
@@ -117,8 +124,12 @@ export class CategoriesController {
     @Request() req,
     @Query("includeSystem", new ParseBoolPipe({ optional: true }))
     includeSystem?: boolean,
+    @Query("usage", new ParseBoolPipe({ optional: true }))
+    usage?: boolean,
   ) {
-    return this.categoriesService.findAll(req.user.id, includeSystem || false);
+    return this.categoriesService.findAll(req.user.id, includeSystem || false, {
+      withUsage: usage || false,
+    });
   }
 
   @Get("tree")

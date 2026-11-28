@@ -40,7 +40,7 @@ describe('TagList', () => {
 
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText('Icon')).toBeInTheDocument();
-    expect(screen.getByText('Transactions')).toBeInTheDocument();
+    expect(screen.getByText('Count')).toBeInTheDocument();
     expect(screen.getByText('Actions')).toBeInTheDocument();
   });
 
@@ -108,7 +108,7 @@ describe('TagList', () => {
       <TagList tags={mockTags} transactionCounts={{ 'tag-1': 5 }} onEdit={vi.fn()} onDelete={vi.fn()} />,
     );
     const headers = Array.from(container.querySelectorAll('thead th'));
-    const countHeader = headers.find((th) => th.textContent === 'Transactions')!;
+    const countHeader = headers.find((th) => th.textContent === 'Count')!;
     const iconHeader = headers.find((th) => th.textContent === 'Icon')!;
     expect(countHeader.className).not.toMatch(/\bhidden\b/);
     expect(iconHeader.className).toMatch(/\bhidden\b/);
@@ -259,7 +259,7 @@ describe('TagList', () => {
     expect(useDensityStore.getState().densities.tags).toBe('compact');
   });
 
-  it('announces the sort on a th aria-sort holding a keyboard button, Transactions included', () => {
+  it('announces the sort on a th aria-sort holding a keyboard button, Count included', () => {
     const onSort = vi.fn();
     render(
       <TagList
@@ -273,7 +273,7 @@ describe('TagList', () => {
       />,
     );
 
-    const countHeader = screen.getByRole('columnheader', { name: /Transactions/ });
+    const countHeader = screen.getByRole('columnheader', { name: /Count/ });
     expect(countHeader).toHaveAttribute('aria-sort', 'descending');
     expect(screen.getByRole('columnheader', { name: /Name/ })).toHaveAttribute('aria-sort', 'none');
     expect(screen.getByRole('columnheader', { name: 'Icon' })).not.toHaveAttribute('aria-sort');

@@ -32,7 +32,9 @@
         "transactionSplits": "{count, plural, one {# लेन-देन विभाजन पंक्ति} other {# लेन-देन विभाजन पंक्तियाँ}}",
         "scheduledTransactions": "{count, plural, one {# निर्धारित लेन-देन} other {# निर्धारित लेन-देन}}",
         "scheduledSplits": "{count, plural, one {# निर्धारित विभाजन पंक्ति} other {# निर्धारित विभाजन पंक्तियाँ}}",
-        "securities": "{count, plural, one {# प्रतिभूति} other {# प्रतिभूतियाँ}}"
+        "securities": "{count, plural, one {# प्रतिभूति} other {# प्रतिभूतियाँ}}",
+        "rules": "{count, plural, one {# नियम} other {# नियम}}",
+        "customReports": "{count, plural, one {# सहेजी गई रिपोर्ट} other {# सहेजी गई रिपोर्ट}}"
       }
     },
     "toasts": {
@@ -54,7 +56,7 @@
     "header": {
       "name": "नाम",
       "icon": "आइकन",
-      "transactions": "लेन-देन",
+      "count": "संख्या",
       "actions": "क्रियाएँ"
     }
   },

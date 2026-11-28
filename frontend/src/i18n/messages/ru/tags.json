@@ -32,7 +32,9 @@
         "transactionSplits": "{count, plural, one {# строки разделения транзакции} other {# строк разделения транзакций}}",
         "scheduledTransactions": "{count, plural, one {# запланированной транзакции} other {# запланированных транзакций}}",
         "scheduledSplits": "{count, plural, one {# запланированной строки разделения} other {# запланированных строк разделения}}",
-        "securities": "{count, plural, one {# ценной бумаги} other {# ценных бумаг}}"
+        "securities": "{count, plural, one {# ценной бумаги} other {# ценных бумаг}}",
+        "rules": "{count, plural, one {# правила} other {# правил}}",
+        "customReports": "{count, plural, one {# сохранённого отчёта} other {# сохранённых отчётов}}"
       }
     },
     "toasts": {
@@ -54,7 +56,7 @@
     "header": {
       "name": "Название",
       "icon": "Иконка",
-      "transactions": "Проводки",
+      "count": "Количество",
       "actions": "Действия"
     }
   },

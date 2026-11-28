@@ -245,7 +245,7 @@ export function TagList({
               </SortableTh>
               <Th className={`${headerPadding} hidden sm:table-cell`}>{t('list.header.icon')}</Th>
               <SortableTh {...sortProps} field="count" align="right" className={headerPadding}>
-                {t('list.header.transactions')}
+                {t('list.header.count')}
               </SortableTh>
               <Th align="right" className={`${headerPadding} hidden min-[480px]:table-cell sticky right-0 bg-gray-50 dark:bg-gray-800`}>
                 {t('list.header.actions')}

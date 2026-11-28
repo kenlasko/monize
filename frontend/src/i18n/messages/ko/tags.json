@@ -32,7 +32,9 @@
         "transactionSplits": "{count, plural, other {# 개의 거래 분할 항목}}",
         "scheduledTransactions": "{count, plural, other {# 개의 예약 거래}}",
         "scheduledSplits": "{count, plural, other {# 개의 예약 분할 항목}}",
-        "securities": "{count, plural, other {# 개의 증권}}"
+        "securities": "{count, plural, other {# 개의 증권}}",
+        "rules": "{count, plural, other {#개의 규칙}}",
+        "customReports": "{count, plural, other {#개의 저장된 보고서}}"
       }
     },
     "toasts": {
@@ -54,7 +56,7 @@
     "header": {
       "name": "이름",
       "icon": "아이콘",
-      "transactions": "거래",
+      "count": "건수",
       "actions": "작업"
     }
   },

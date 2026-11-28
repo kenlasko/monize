@@ -123,6 +123,19 @@ describe("CategoriesController", () => {
       expect(mockCategoriesService.findAll).toHaveBeenCalledWith(
         "user-1",
         true,
+        { withUsage: false },
+      );
+    });
+
+    it("asks for usage counts only when the usage flag is set", () => {
+      mockCategoriesService.findAll!.mockReturnValue("categories");
+
+      controller.findAll(mockReq, false, true);
+
+      expect(mockCategoriesService.findAll).toHaveBeenCalledWith(
+        "user-1",
+        false,
+        { withUsage: true },
       );
     });
 
@@ -134,6 +147,7 @@ describe("CategoriesController", () => {
       expect(mockCategoriesService.findAll).toHaveBeenCalledWith(
         "user-1",
         false,
+        { withUsage: false },
       );
     });
   });

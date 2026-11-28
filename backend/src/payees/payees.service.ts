@@ -728,10 +728,13 @@ export class PayeesService {
   async findAll(
     userId: string,
     status?: "active" | "inactive" | "all",
+    // The usage counts cost a query per reference kind; only the list page
+    // that shows them asks (`GET /payees?usage=true`).
+    options: { withUsage?: boolean } = {},
   ): Promise<
     (Payee & {
       transactionCount: number;
-      usageCount: number;
+      usageCount?: number;
       lastUsedDate: string | null;
       aliasCount: number;
       uncategorizedCount: number;
@@ -811,13 +814,15 @@ export class PayeesService {
       );
 
       // What the delete refuses for, so the list never reads 0 on a 409.
-      const usageMap = await countPayeeUsage(m, userId);
+      const usageMap = options.withUsage
+        ? await countPayeeUsage(m, userId)
+        : undefined;
 
       // Merge stats with payees
       return payees.map((payee) => ({
         ...payee,
         transactionCount: countMap.get(payee.id) || 0,
-        usageCount: usageMap.get(payee.id) || 0,
+        ...(usageMap && { usageCount: usageMap.get(payee.id) || 0 }),
         lastUsedDate: lastUsedMap.get(payee.id) || null,
         aliasCount: aliasCountMap.get(payee.id) || 0,
         uncategorizedCount: uncategorizedCountMap.get(payee.id) || 0,

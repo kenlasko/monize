@@ -230,6 +230,33 @@ describe('PayeeList', () => {
     expect(screen.getByText('3')).toBeInTheDocument();
   });
 
+  it('shows usageCount, not transactionCount, when the list carries it', () => {
+    // Used only by a schedule: no transactions, but a delete would be refused.
+    const payees = [makePayee({ id: 'p1', name: 'Landlord', transactionCount: 0, usageCount: 6 })];
+
+    render(<PayeeList payees={payees} onEdit={onEdit} onRefresh={onRefresh} />);
+    expect(screen.getAllByText('6').length).toBeGreaterThan(0);
+  });
+
+  it('sorts by usageCount, not transactionCount', () => {
+    const payees = [
+      makePayee({ id: 'p1', name: 'Alpha', transactionCount: 9, usageCount: 1 }),
+      makePayee({ id: 'p2', name: 'Beta', transactionCount: 0, usageCount: 5 }),
+    ];
+
+    const { container } = render(
+      <PayeeList
+        payees={payees}
+        onEdit={onEdit}
+        onRefresh={onRefresh}
+        sortField="count"
+        sortDirection="desc"
+      />,
+    );
+    const names = Array.from(container.querySelectorAll('tbody tr')).map(row => row.querySelector('td button')?.textContent?.trim());
+    expect(names).toEqual(['Beta', 'Alpha']);
+  });
+
   it('displays 0 when transactionCount is undefined', () => {
     const payees = [
       makePayee({ id: 'p1', name: 'Walmart', transactionCount: undefined }),

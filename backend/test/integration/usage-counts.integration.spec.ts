@@ -51,6 +51,8 @@ describe("usage counts agree with the delete guard (integration)", () => {
 
   beforeEach(async () => {
     await cleanTables(db, [
+      "transaction_rules",
+      "custom_reports",
       "budget_categories",
       "budgets",
       "scheduled_transaction_overrides",
@@ -94,13 +96,17 @@ describe("usage counts agree with the delete guard (integration)", () => {
   };
 
   const listedCategory = async (id: string) =>
-    (await withUserContext(userId, () => categories.findAll(userId))).find(
-      (c) => c.id === id,
-    );
+    (
+      await withUserContext(userId, () =>
+        categories.findAll(userId, false, { withUsage: true }),
+      )
+    ).find((c) => c.id === id);
   const listedPayee = async (id: string) =>
-    (await withUserContext(userId, () => payees.findAll(userId))).find(
-      (p) => p.id === id,
-    );
+    (
+      await withUserContext(userId, () =>
+        payees.findAll(userId, undefined, { withUsage: true }),
+      )
+    ).find((p) => p.id === id);
   const guardCount = async (
     find: typeof findCategoryReferences | typeof findPayeeReferences,
     id: string,
@@ -154,5 +160,65 @@ describe("usage counts agree with the delete guard (integration)", () => {
       tags.getAllTransactionCounts(userId),
     );
     expect(counts[tag.id]).toBe(1);
+  });
+
+  it("counts a rule or report naming the record once, as the guard does", async () => {
+    const category = await createTestCategory(db, userId);
+    const payee = await createTestPayee(db, userId);
+    const [tag] = await db.query(
+      `INSERT INTO tags (user_id, name) VALUES ($1, 'R') RETURNING id`,
+      [userId],
+    );
+    const condition = JSON.stringify({ payeeId: payee.id, tagIds: [tag.id] });
+    const actions = JSON.stringify([
+      { categoryId: category.id, again: category.id, tagId: tag.id },
+    ]);
+    await db.query(
+      `INSERT INTO transaction_rules (user_id, name, position, condition, actions)
+       VALUES ($1, 'r', 1, $2::jsonb, $3::jsonb)`,
+      [userId, condition, actions],
+    );
+    await db.query(
+      `INSERT INTO custom_reports (user_id, name, filters)
+       VALUES ($1, 'rep', $2::jsonb)`,
+      [userId, JSON.stringify({ categoryIds: [category.id], tags: [tag.id] })],
+    );
+
+    // The rule counts once however many times it names the category.
+    expect(await guardCount(findCategoryReferences, category.id)).toBe(2);
+    expect((await listedCategory(category.id))?.usageCount).toBe(2);
+    expect(await guardCount(findPayeeReferences, payee.id)).toBe(1);
+    expect((await listedPayee(payee.id))?.usageCount).toBe(1);
+
+    const counts = await withUserContext(userId, () =>
+      tags.getAllTransactionCounts(userId),
+    );
+    expect(counts[tag.id]).toBe(2);
+    const impact = await withUserContext(userId, () =>
+      tags.getDeleteImpact(userId, tag.id),
+    );
+    expect(impact).toMatchObject({ rules: 1, customReports: 1 });
+  });
+
+  it("counts a schedule override naming the category", async () => {
+    const category = await createTestCategory(db, userId);
+    const scheduleId = await seedSchedule({});
+    await db.query(
+      `INSERT INTO scheduled_transaction_overrides (scheduled_transaction_id,
+         original_date, override_date, category_id)
+       VALUES ($1, '2027-01-01', '2027-01-01', $2)`,
+      [scheduleId, category.id],
+    );
+
+    expect(await guardCount(findCategoryReferences, category.id)).toBe(1);
+    expect((await listedCategory(category.id))?.usageCount).toBe(1);
+  });
+
+  it("leaves usageCount out of the plain lists", async () => {
+    const category = await createTestCategory(db, userId);
+    const plain = (
+      await withUserContext(userId, () => categories.findAll(userId))
+    ).find((c) => c.id === category.id);
+    expect(plain).not.toHaveProperty("usageCount");
   });
 });

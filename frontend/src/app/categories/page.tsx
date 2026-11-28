@@ -66,7 +66,7 @@ function CategoriesContent() {
     // Writes live in `run` so they land after the request, not during the effect.
     const run = async () => {
       try {
-        const data = await categoriesApi.getAll();
+        const data = await categoriesApi.getAll({ withUsage: true });
         setCategories(data);
       } catch (error) {
         toast.error(getErrorMessage(error, t('toasts.loadFailed')));
@@ -93,7 +93,7 @@ function CategoriesContent() {
 
   const refreshCategories = useCallback(async () => {
     try {
-      const data = await categoriesApi.getAll();
+      const data = await categoriesApi.getAll({ withUsage: true });
       setCategories(data);
     } catch (error) {
       toast.error(getErrorMessage(error, t('toasts.loadFailed')));

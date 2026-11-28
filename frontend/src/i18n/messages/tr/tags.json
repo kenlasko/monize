@@ -32,7 +32,9 @@
         "transactionSplits": "{count, plural, other {# işlem bölme satırı}}",
         "scheduledTransactions": "{count, plural, other {# planlı işlem}}",
         "scheduledSplits": "{count, plural, other {# planlı bölme satırı}}",
-        "securities": "{count, plural, other {# menkul kıymet}}"
+        "securities": "{count, plural, other {# menkul kıymet}}",
+        "rules": "{count, plural, one {# kural} other {# kural}}",
+        "customReports": "{count, plural, one {# kayıtlı rapor} other {# kayıtlı rapor}}"
       }
     },
     "toasts": {
@@ -54,7 +56,7 @@
     "header": {
       "name": "Ad",
       "icon": "Simge",
-      "transactions": "İşlemler",
+      "count": "Sayı",
       "actions": "İşlemler"
     }
   },

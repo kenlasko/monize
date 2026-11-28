@@ -97,6 +97,7 @@
     "reassignLabel": "Reatribuir a:",
     "leaveUncategorized": "Deixar sem categoria",
     "safeToDelete": "Esta categoria não está em uso. Pode ser excluída com segurança.",
+    "usageUnknown": "Não foi possível verificar onde esta categoria é usada. Se algo ainda a usar, a exclusão é recusada e nada muda.",
     "cannotUndo": "Esta ação não pode ser desfeita."
   },
   "validation": {

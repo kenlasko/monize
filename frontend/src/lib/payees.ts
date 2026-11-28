@@ -80,11 +80,17 @@ export const payeesApi = {
   },
 
   // Get all payees (optionally filtered by status)
-  getAll: async (status?: PayeeStatusFilter): Promise<Payee[]> => {
-    const cacheKey = `payees:all:${status || 'default'}`;
-    const params: Record<string, string> = {};
+  // `withUsage` adds usageCount (what a delete refuses for); only the Payees
+  // page, which shows it, asks.
+  getAll: async (status?: PayeeStatusFilter, options: { withUsage?: boolean } = {}): Promise<Payee[]> => {
+    const withUsage = options.withUsage === true;
+    const cacheKey = `payees:all:${status || 'default'}${withUsage ? ':usage' : ''}`;
+    const params: Record<string, string | boolean> = {};
     if (status) {
       params.status = status;
+    }
+    if (withUsage) {
+      params.usage = true;
     }
     return dedupe(
       cacheKey,

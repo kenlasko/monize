@@ -27,6 +27,8 @@ export function DeleteCategoryDialog({
   const t = useTranslations('categories');
   const tc = useTranslations('common');
   const [transactionCount, setTransactionCount] = useState<number | null>(null);
+  // The lookup failed: usage is unknown, which is not the same as unused.
+  const [usageFailed, setUsageFailed] = useState(false);
   const [reassignTo, setReassignTo] = useState<string>('');
 
   // Reset state during render when category changes
@@ -36,18 +38,19 @@ export function DeleteCategoryDialog({
     setPrevCategoryId(categoryId);
     if (categoryId) {
       setTransactionCount(null);
+      setUsageFailed(false);
       setReassignTo('');
     }
   }
 
-  const isLoading = isOpen && categoryId !== null && transactionCount === null;
+  const isLoading = isOpen && categoryId !== null && transactionCount === null && !usageFailed;
 
   useEffect(() => {
     if (isOpen && category) {
       categoriesApi
         .getTransactionCount(category.id)
         .then(setTransactionCount)
-        .catch(() => setTransactionCount(0));
+        .catch(() => setUsageFailed(true));
     }
   }, [isOpen, category]);
 
@@ -96,6 +99,10 @@ export function DeleteCategoryDialog({
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400 dark:border-gray-500 mr-2"></div>
           {t('deleteDialog.checkingUsage')}
         </div>
+      ) : usageFailed ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {t('deleteDialog.usageUnknown')}
+        </p>
       ) : transactionCount && transactionCount > 0 ? (
         <div>
           <p className="text-sm text-gray-500 dark:text-gray-400">

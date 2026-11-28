@@ -32,7 +32,9 @@
         "transactionSplits": "{count, plural, one {# linha de divisão de transação} other {# linhas de divisão de transação}}",
         "scheduledTransactions": "{count, plural, one {# transação agendada} other {# transações agendadas}}",
         "scheduledSplits": "{count, plural, one {# linha de divisão agendada} other {# linhas de divisão agendadas}}",
-        "securities": "{count, plural, one {# valor mobiliário} other {# valores mobiliários}}"
+        "securities": "{count, plural, one {# valor mobiliário} other {# valores mobiliários}}",
+        "rules": "{count, plural, one {# regra} other {# regras}}",
+        "customReports": "{count, plural, one {# relatório guardado} other {# relatórios guardados}}"
       }
     },
     "toasts": {
@@ -54,7 +56,7 @@
     "header": {
       "name": "Nome",
       "icon": "Ícone",
-      "transactions": "Transações",
+      "count": "Contagem",
       "actions": "Ações"
     }
   },

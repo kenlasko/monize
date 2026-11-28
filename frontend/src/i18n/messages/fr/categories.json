@@ -97,6 +97,7 @@
     "reassignLabel": "Réaffecter à :",
     "leaveUncategorized": "Laisser sans catégorie",
     "safeToDelete": "Cette catégorie n'est pas utilisée. Elle peut être supprimée sans risque.",
+    "usageUnknown": "Impossible de vérifier où cette catégorie est utilisée. Si un élément l'utilise encore, la suppression est refusée et rien ne change.",
     "cannotUndo": "Cette action est irréversible."
   },
   "validation": {

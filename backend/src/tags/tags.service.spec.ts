@@ -365,6 +365,8 @@ describe("TagsService", () => {
           scheduled: "2",
           scheduled_splits: "1",
           securities: "5",
+          rules: "6",
+          reports: "7",
         },
       ]);
 
@@ -374,6 +376,8 @@ describe("TagsService", () => {
         scheduledTransactions: 2,
         scheduledSplits: 1,
         securities: 5,
+        rules: 6,
+        customReports: 7,
       });
     });
 

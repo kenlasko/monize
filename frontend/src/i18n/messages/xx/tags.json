@@ -32,7 +32,9 @@
         "transactionSplits": "[XX-{count, plural, one {# transaction split line} other {# transaction split lines}}-XX]",
         "scheduledTransactions": "[XX-{count, plural, one {# scheduled transaction} other {# scheduled transactions}}-XX]",
         "scheduledSplits": "[XX-{count, plural, one {# scheduled split line} other {# scheduled split lines}}-XX]",
-        "securities": "[XX-{count, plural, one {# security} other {# securities}}-XX]"
+        "securities": "[XX-{count, plural, one {# security} other {# securities}}-XX]",
+        "rules": "[XX-{count, plural, one {# rule} other {# rules}}-XX]",
+        "customReports": "[XX-{count, plural, one {# saved report} other {# saved reports}}-XX]"
       }
     },
     "toasts": {
@@ -54,7 +56,7 @@
     "header": {
       "name": "[XX-Name-XX]",
       "icon": "[XX-Icon-XX]",
-      "transactions": "[XX-Transactions-XX]",
+      "count": "[XX-Count-XX]",
       "actions": "[XX-Actions-XX]"
     }
   },

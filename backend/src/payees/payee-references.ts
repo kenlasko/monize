@@ -5,9 +5,12 @@ import { ScheduledTransaction } from "../scheduled-transactions/entities/schedul
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { Warranty } from "../warranties/entities/warranty.entity";
 import {
+  CountedReference,
   RecordInUseEntry,
+  RULES_JSON,
   countReferences,
   countReferencesById,
+  jsonIdListSql,
 } from "../common/helpers/record-in-use";
 import { affectedRowCount } from "../common/db/query-result";
 import { PayeeAlias } from "./entities/payee-alias.entity";
@@ -182,7 +185,7 @@ const countRowsById = (table: string) =>
  */
 const PAYEE_REFERENCE_COUNTS: Record<
   CountedColumn,
-  { kind: PayeeReferenceKind; sql: string; listSql: string; ids?: boolean }
+  CountedReference & { kind: PayeeReferenceKind }
 > = {
   "transactions.payee_id": {
     kind: "transactions",
@@ -229,11 +232,12 @@ const PAYEE_REFERENCE_COUNTS: Record<
  * LIKE wildcard and is unique, so a text match is exact.
  * shortcut: matches the id anywhere in the JSON text; fine for UUIDs.
  */
-const RULES_SQL =
-  "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (condition::text LIKE $2 OR actions::text LIKE $2)";
-
-const RULES_LIST_SQL =
-  "SELECT p.id, count(*)::int AS count FROM transaction_rules r JOIN payees p ON p.user_id = r.user_id AND (r.condition::text LIKE '%' || p.id::text || '%' OR r.actions::text LIKE '%' || p.id::text || '%') WHERE r.user_id = $1 GROUP BY p.id";
+const PAYEE_RULES_REFERENCE: CountedReference = {
+  kind: "rules",
+  like: true,
+  sql: "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (condition::text LIKE $2 OR actions::text LIKE $2)",
+  listSql: jsonIdListSql({ ...RULES_JSON, target: "payees" }),
+};
 
 /**
  * How many rows point at each of the user's payees, by the same references
@@ -244,10 +248,13 @@ export function countPayeeUsage(
   m: EntityManager,
   userId: string,
 ): Promise<Map<string, number>> {
-  return countReferencesById(m, userId, [
-    ...Object.values(PAYEE_REFERENCE_COUNTS).map((c) => c.listSql),
-    RULES_LIST_SQL,
-  ]);
+  return countReferencesById(
+    m,
+    userId,
+    [...Object.values(PAYEE_REFERENCE_COUNTS), PAYEE_RULES_REFERENCE].map(
+      (c) => c.listSql,
+    ),
+  );
 }
 
 /**
@@ -262,6 +269,6 @@ export function findPayeeReferences(
   // A UUID is valid in either case; JSON keeps it lowercase and LIKE is exact.
   return countReferences(m, userId, payeeId.toLowerCase(), [
     ...Object.values(PAYEE_REFERENCE_COUNTS),
-    { kind: "rules", sql: RULES_SQL, like: true },
+    PAYEE_RULES_REFERENCE,
   ]);
 }

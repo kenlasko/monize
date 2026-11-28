@@ -97,6 +97,7 @@
     "reassignLabel": "Tetapkan ulang ke:",
     "leaveUncategorized": "Biarkan tanpa kategori",
     "safeToDelete": "Kategori ini tidak digunakan. Kategori ini dapat dihapus dengan aman.",
+    "usageUnknown": "Tidak dapat memeriksa di mana kategori ini digunakan. Jika masih digunakan, penghapusan ditolak dan tidak ada yang berubah.",
     "cannotUndo": "Tindakan ini tidak dapat dibatalkan."
   },
   "validation": {

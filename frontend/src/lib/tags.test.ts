@@ -60,7 +60,7 @@ describe('tagsApi', () => {
   });
 
   it('getDeleteImpact fetches the per-kind counts for one tag', async () => {
-    const impact = { transactions: 1, transactionSplits: 0, scheduledTransactions: 2, scheduledSplits: 0, securities: 0 };
+    const impact = { transactions: 1, transactionSplits: 0, scheduledTransactions: 2, scheduledSplits: 0, securities: 0, rules: 0, customReports: 0 };
     vi.mocked(apiClient.get).mockResolvedValue({ data: impact });
     const result = await tagsApi.getDeleteImpact('t-1');
     expect(apiClient.get).toHaveBeenCalledWith('/tags/t-1/delete-impact');

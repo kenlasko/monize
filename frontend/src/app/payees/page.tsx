@@ -77,7 +77,7 @@ function PayeesContent() {
     const run = async () => {
       try {
         const [payeesData, categoriesData] = await Promise.all([
-          payeesApi.getAll('all'),
+          payeesApi.getAll('all', { withUsage: true }),
           categoriesApi.getAll(),
         ]);
         setPayees(payeesData);

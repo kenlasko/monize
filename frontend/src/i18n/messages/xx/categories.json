@@ -97,6 +97,7 @@
     "reassignLabel": "[XX-Reassign to:-XX]",
     "leaveUncategorized": "[XX-Leave uncategorized-XX]",
     "safeToDelete": "[XX-This category is not used. It can be safely deleted.-XX]",
+    "usageUnknown": "[XX-Could not check where this category is used. If something still uses it, the delete is refused and nothing changes.-XX]",
     "cannotUndo": "[XX-This action cannot be undone.-XX]"
   },
   "validation": {

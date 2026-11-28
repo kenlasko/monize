@@ -97,6 +97,7 @@
     "reassignLabel": "再割り当て先：",
     "leaveUncategorized": "未分類のままにする",
     "safeToDelete": "このカテゴリは使用されていません。安全に削除できます。",
+    "usageUnknown": "このカテゴリがどこで使われているか確認できませんでした。まだ使われている場合は、削除は拒否され、何も変更されません。",
     "cannotUndo": "この操作は取り消せません。"
   },
   "validation": {

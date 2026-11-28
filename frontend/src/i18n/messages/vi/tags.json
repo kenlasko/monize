@@ -32,7 +32,9 @@
         "transactionSplits": "{count, plural, other {# dòng chia giao dịch}}",
         "scheduledTransactions": "{count, plural, other {# giao dịch định kỳ}}",
         "scheduledSplits": "{count, plural, other {# dòng chia định kỳ}}",
-        "securities": "{count, plural, other {# chứng khoán}}"
+        "securities": "{count, plural, other {# chứng khoán}}",
+        "rules": "{count, plural, other {# quy tắc}}",
+        "customReports": "{count, plural, other {# báo cáo đã lưu}}"
       }
     },
     "toasts": {
@@ -54,7 +56,7 @@
     "header": {
       "name": "Tên",
       "icon": "Biểu tượng",
-      "transactions": "Giao dịch",
+      "count": "Số lượng",
       "actions": "Hành động"
     }
   },

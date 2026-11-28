@@ -34,6 +34,9 @@ export interface TagDeleteImpact {
   scheduledTransactions: number;
   scheduledSplits: number;
   securities: number;
+  /** Rules and saved reports keep the tag id in JSON; a delete leaves it dangling. */
+  rules: number;
+  customReports: number;
 }
 
 /** Counts every row that carries the tag, void and future-dated ones included. */
@@ -48,8 +51,12 @@ export async function countTagReferences(
        (SELECT COUNT(*) FROM scheduled_transactions
          WHERE tag_ids @> to_jsonb($1::text)) AS scheduled,
        (SELECT COUNT(*) FROM scheduled_transaction_split_tags WHERE tag_id = $1) AS scheduled_splits,
-       (SELECT COUNT(*) FROM security_tags WHERE tag_id = $1) AS securities`,
-    [tagId],
+       (SELECT COUNT(*) FROM security_tags WHERE tag_id = $1) AS securities,
+       (SELECT COUNT(*) FROM transaction_rules
+         WHERE condition::text LIKE $2 OR actions::text LIKE $2) AS rules,
+       (SELECT COUNT(*) FROM custom_reports WHERE filters::text LIKE $2) AS reports`,
+    // A UUID is lowercase in JSON and has no LIKE wildcard; RLS scopes the rows.
+    [tagId, `%${tagId.toLowerCase()}%`],
   );
   return {
     transactions: Number(row.transactions),
@@ -57,6 +64,8 @@ export async function countTagReferences(
     scheduledTransactions: Number(row.scheduled),
     scheduledSplits: Number(row.scheduled_splits),
     securities: Number(row.securities),
+    rules: Number(row.rules),
+    customReports: Number(row.reports),
   };
 }
 

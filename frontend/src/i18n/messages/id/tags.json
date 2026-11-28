@@ -32,7 +32,9 @@
         "transactionSplits": "{count, plural, other {# baris pemisahan transaksi}}",
         "scheduledTransactions": "{count, plural, other {# transaksi terjadwal}}",
         "scheduledSplits": "{count, plural, other {# baris pemisahan terjadwal}}",
-        "securities": "{count, plural, other {# sekuritas}}"
+        "securities": "{count, plural, other {# sekuritas}}",
+        "rules": "{count, plural, other {# aturan}}",
+        "customReports": "{count, plural, other {# laporan tersimpan}}"
       }
     },
     "toasts": {
@@ -54,7 +56,7 @@
     "header": {
       "name": "Nama",
       "icon": "Ikon",
-      "transactions": "Transaksi",
+      "count": "Jumlah",
       "actions": "Tindakan"
     }
   },

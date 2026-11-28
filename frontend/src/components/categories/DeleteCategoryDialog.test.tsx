@@ -49,6 +49,18 @@ describe('DeleteCategoryDialog', () => {
     expect(onCancel).toHaveBeenCalled();
   });
 
+  it('says usage is unknown, never "not used", when the lookup fails', async () => {
+    vi.mocked(categoriesApi.getTransactionCount).mockRejectedValueOnce(new Error('boom'));
+    render(
+      <DeleteCategoryDialog isOpen={true} category={categories[0]} categories={categories} onConfirm={onConfirm} onCancel={onCancel} />
+    );
+    await screen.findByText(/Could not check where this category is used/);
+    expect(screen.queryByText('This category is not used. It can be safely deleted.')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    // A plain delete: no reassignment is sent for a count that is unknown.
+    expect(onConfirm).toHaveBeenLastCalledWith(undefined);
+  });
+
   it('shows safe delete message when no transactions', async () => {
     render(
       <DeleteCategoryDialog isOpen={true} category={categories[0]} categories={categories} onConfirm={onConfirm} onCancel={onCancel} />

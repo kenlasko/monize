@@ -36,6 +36,8 @@ const DELETE_IMPACT_KEYS = {
   scheduledTransactions: 'scheduledTransactions',
   scheduledSplits: 'scheduledSplits',
   securities: 'securities',
+  rules: 'rules',
+  customReports: 'customReports',
 } as const;
 
 export default function TagsPage() {

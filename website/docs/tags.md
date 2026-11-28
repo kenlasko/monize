@@ -36,7 +36,7 @@ Navigate to **Tools > Tags** to access the tag management page.
 
 ![The Tags page: counts of tags with a colour and an icon above the list, each tag with its colour, icon and number of transactions](images/tags-page.png)
 
-Three cards at the top count your **Total Tags**, the **Tags with Colour** and the **Tags with Icon**. **Search tags...** narrows the list by name. The list shows each tag's **Name** with its colour, its **Icon** and the number of **Transactions** that carry it (split lines, scheduled transactions, securities, rules and saved reports that use the tag count too); click a column header to sort by it. Click a tag's name to see its transactions on the Transactions page; click anywhere else on the row to edit it. **Edit** and **Delete** are at the end of each row (on a phone, press and hold the row, or right-click it).
+Three cards at the top count your **Total Tags**, the **Tags with Colour** and the **Tags with Icon**. **Search tags...** narrows the list by name. The list shows each tag's **Name** with its colour, its **Icon** and the **Count** of places that use it (transactions, split lines, scheduled transactions, securities, rules and saved reports); click a column header to sort by it. Click a tag's name to see its transactions on the Transactions page; click anywhere else on the row to edit it. **Edit** and **Delete** are at the end of each row (on a phone, press and hold the row, or right-click it).
 
 ### Creating a Tag
 

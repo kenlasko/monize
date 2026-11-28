@@ -22,12 +22,16 @@ export const categoriesApi = {
     return response.data;
   },
 
-  // Get all categories
-  getAll: async (): Promise<Category[]> => {
+  // Get all categories. `withUsage` adds usageCount (what a delete refuses
+  // for); only the Categories page, which shows it, asks.
+  getAll: async (options: { withUsage?: boolean } = {}): Promise<Category[]> => {
+    const withUsage = options.withUsage === true;
     return dedupe(
-      'categories:all',
+      withUsage ? 'categories:all:usage' : 'categories:all',
       async () => {
-        const response = await apiClient.get<Category[]>('/categories');
+        const response = await apiClient.get<Category[]>('/categories', {
+          params: withUsage ? { usage: true } : undefined,
+        });
         return response.data;
       },
       300_000, // 5 min - categories rarely change

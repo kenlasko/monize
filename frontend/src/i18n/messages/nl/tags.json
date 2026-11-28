@@ -32,7 +32,9 @@
         "transactionSplits": "{count, plural, one {# transactiesplitsregel} other {# transactiesplitsregels}}",
         "scheduledTransactions": "{count, plural, one {# geplande transactie} other {# geplande transacties}}",
         "scheduledSplits": "{count, plural, one {# geplande splitsregel} other {# geplande splitsregels}}",
-        "securities": "{count, plural, one {# effect} other {# effecten}}"
+        "securities": "{count, plural, one {# effect} other {# effecten}}",
+        "rules": "{count, plural, one {# regel} other {# regels}}",
+        "customReports": "{count, plural, one {# opgeslagen rapport} other {# opgeslagen rapporten}}"
       }
     },
     "toasts": {
@@ -54,7 +56,7 @@
     "header": {
       "name": "Naam",
       "icon": "Pictogram",
-      "transactions": "Transacties",
+      "count": "Aantal",
       "actions": "Acties"
     }
   },

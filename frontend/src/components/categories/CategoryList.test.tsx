@@ -170,6 +170,38 @@ describe('CategoryList', () => {
     expect(screen.getByText('12')).toBeInTheDocument();
   });
 
+  it('shows usageCount, not transactionCount, when the list carries it', () => {
+    // Used only by a schedule: no transactions, but a delete would be refused.
+    const categories = [
+      makeCategory({ id: 'c1', name: 'Rent', transactionCount: 0, usageCount: 7 }),
+    ];
+
+    render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
+    expect(screen.getByText('7')).toBeInTheDocument();
+    expect(screen.queryByText('0')).not.toBeInTheDocument();
+  });
+
+  it('sorts by usageCount, not transactionCount', () => {
+    const categories = [
+      makeCategory({ id: 'c1', name: 'Alpha', transactionCount: 9, usageCount: 1 }),
+      makeCategory({ id: 'c2', name: 'Beta', transactionCount: 0, usageCount: 5 }),
+    ];
+    render(
+      <CategoryList
+        categories={categories}
+        onEdit={onEdit}
+        onRefresh={onRefresh}
+        sortField="count"
+        sortDirection="desc"
+      />,
+    );
+    const names = screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((row) => within(row).getAllByRole('button')[0].textContent);
+    expect(names).toEqual(['Beta', 'Alpha']);
+  });
+
   it('displays 0 when transactionCount is undefined', () => {
     const categories = [
       makeCategory({ id: 'c1', name: 'Food', transactionCount: undefined }),

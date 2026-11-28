@@ -898,6 +898,45 @@ describe("PayeesService", () => {
       expect(result[1]).toMatchObject({ id: "payee-2", transactionCount: 3 });
     });
 
+    it("leaves usageCount out unless the list asks for it", async () => {
+      payeesRepository.find.mockResolvedValue([mockPayee]);
+      payeesRepository.createQueryBuilder.mockReturnValue({
+        ...queryBuilderMock,
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+      txManager.query.mockClear();
+
+      const result = await service.findAll(userId);
+
+      expect(result[0]).not.toHaveProperty("usageCount");
+      expect(txManager.query).not.toHaveBeenCalledWith(
+        expect.stringContaining("scheduled_transactions"),
+        [userId],
+      );
+    });
+
+    it("sums every guarded reference into usageCount when asked", async () => {
+      payeesRepository.find.mockResolvedValue([mockPayee, mockPayeeNoCategory]);
+      payeesRepository.createQueryBuilder.mockReturnValue({
+        ...queryBuilderMock,
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+      // The scheduled-transactions count is the second reference counted.
+      txManager.query.mockImplementation(async (sql: string) =>
+        sql.includes("FROM scheduled_transactions")
+          ? [{ id: "payee-2", count: 2 }]
+          : [],
+      );
+
+      const result = await service.findAll(userId, undefined, {
+        withUsage: true,
+      });
+
+      expect(result[0].usageCount).toBe(0);
+      expect(result[1].usageCount).toBe(2);
+      expect(result[1].transactionCount).toBe(0);
+    });
+
     it("should return empty array when no payees exist", async () => {
       payeesRepository.find.mockResolvedValue([]);
 

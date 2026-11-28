@@ -1,9 +1,12 @@
 import { EntityManager } from "typeorm";
 import {
   RecordInUseEntry,
-  ReferenceCount,
+  CountedReference,
+  REPORTS_JSON,
+  RULES_JSON,
   countReferences,
   countReferencesById,
+  jsonIdListSql,
 } from "../common/helpers/record-in-use";
 
 /** What still uses a tag: one entry per kind of row carrying it. */
@@ -58,24 +61,34 @@ export const TAG_REFERENCES = {
 >;
 
 /**
- * Tag ids kept in JSON have no foreign key. shortcut: matches the id anywhere
- * in the JSON text; fine for UUIDs. `$2` is the LIKE pattern.
+ * Tag ids kept in JSON have no foreign key. shortcut: the per-record count
+ * matches the id anywhere in the JSON text; fine for UUIDs. `$2` is the LIKE
+ * pattern.
  */
-const JSON_SQL: ReferenceCount[] = [
+const JSON_REFERENCES: readonly CountedReference[] = [
   {
     kind: "scheduledTransactions",
-    sql: "SELECT count(*)::int AS count FROM scheduled_transactions WHERE user_id = $1 AND tag_ids::text LIKE $2",
     like: true,
+    sql: "SELECT count(*)::int AS count FROM scheduled_transactions WHERE user_id = $1 AND tag_ids::text LIKE $2",
+    listSql: jsonIdListSql({
+      from: "scheduled_transactions s",
+      rowId: "s.id",
+      userColumn: "s.user_id",
+      text: "s.tag_ids::text",
+      target: "tags",
+    }),
   },
   {
     kind: "rules",
-    sql: "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (condition::text LIKE $2 OR actions::text LIKE $2)",
     like: true,
+    sql: "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (condition::text LIKE $2 OR actions::text LIKE $2)",
+    listSql: jsonIdListSql({ ...RULES_JSON, target: "tags" }),
   },
   {
     kind: "customReports",
-    sql: "SELECT count(*)::int AS count FROM custom_reports WHERE user_id = $1 AND filters::text LIKE $2",
     like: true,
+    sql: "SELECT count(*)::int AS count FROM custom_reports WHERE user_id = $1 AND filters::text LIKE $2",
+    listSql: jsonIdListSql({ ...REPORTS_JSON, target: "tags" }),
   },
 ];
 
@@ -92,15 +105,9 @@ export function findTagReferences(
   // A UUID is valid in either case; JSON keeps it lowercase and LIKE is exact.
   return countReferences(m, userId, tagId.toLowerCase(), [
     ...Object.values(TAG_REFERENCES),
-    ...JSON_SQL,
+    ...JSON_REFERENCES,
   ]);
 }
-
-const JSON_LIST_SQL = [
-  "SELECT g.id, count(*)::int AS count FROM scheduled_transactions s JOIN tags g ON g.user_id = s.user_id AND s.tag_ids::text LIKE '%' || g.id::text || '%' WHERE s.user_id = $1 GROUP BY g.id",
-  "SELECT g.id, count(*)::int AS count FROM transaction_rules r JOIN tags g ON g.user_id = r.user_id AND (r.condition::text LIKE '%' || g.id::text || '%' OR r.actions::text LIKE '%' || g.id::text || '%') WHERE r.user_id = $1 GROUP BY g.id",
-  "SELECT g.id, count(*)::int AS count FROM custom_reports r JOIN tags g ON g.user_id = r.user_id AND r.filters::text LIKE '%' || g.id::text || '%' WHERE r.user_id = $1 GROUP BY g.id",
-];
 
 /**
  * How many rows carry each of the user's tags, by the same references
@@ -113,6 +120,6 @@ export function countTagUsage(
 ): Promise<Map<string, number>> {
   return countReferencesById(m, userId, [
     ...Object.values(TAG_REFERENCES).map((r) => r.listSql),
-    ...JSON_LIST_SQL,
+    ...JSON_REFERENCES.map((r) => r.listSql),
   ]);
 }

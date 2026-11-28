@@ -97,6 +97,7 @@
     "reassignLabel": "Yeniden ata:",
     "leaveUncategorized": "Kategorisiz bırak",
     "safeToDelete": "Bu kategori kullanılmıyor. Güvenle silinebilir.",
+    "usageUnknown": "Bu kategorinin nerede kullanıldığı kontrol edilemedi. Hâlâ kullanılıyorsa silme reddedilir ve hiçbir şey değişmez.",
     "cannotUndo": "Bu işlem geri alınamaz."
   },
   "validation": {
