@@ -141,6 +141,12 @@ export interface OccurrenceCandidateFilter {
    */
   outflowsOnly?: boolean;
   /**
+   * With `outflowsOnly`, also keep a schedule left at exactly 0 (a reminder: the
+   * amount is not known until it arrives, issue #1124). It is a payment the user
+   * still has to make, though it adds nothing to a total.
+   */
+  includeZeroAmount?: boolean;
+  /**
    * Only occurrences the user has to post themselves: those the auto-post cron
    * will not post (`autoPosts` false), by the schedule's setting or the
    * occurrence's own override. Decided on the resolved occurrence, not the
@@ -212,7 +218,17 @@ export function nonTransferAmount(
   o: ResolvedScheduledOccurrence,
   isSpending: (line: OccurrenceTransferLine) => boolean = () => false,
 ): number | null {
-  if (o.amount === null || o.transferLinesUnknown) return null;
+  if (o.amount === null) return null;
+  // Unpriced lines are withheld, unless the consumer keeps every one of them
+  // (the loan's own account included) as spending: nothing is netted then.
+  if (o.transferLinesUnknown) {
+    const keepsAll =
+      o.transferLines.every(isSpending) &&
+      (o.loanAccountId === null
+        ? o.transferLines.length > 0
+        : isSpending({ transferAccountId: o.loanAccountId, amount: 0 }));
+    if (!keepsAll) return null;
+  }
   // Exact for a schedule without lines: no rounding of what is already stated.
   const internal = o.transferLines.filter((l) => !isSpending(l));
   if (internal.length === 0) return o.amount;
@@ -444,7 +460,7 @@ export class ScheduledOccurrenceService {
       // The direction itself is decided on the resolved occurrence below.
       if (filter.outflowsOnly) {
         qb.andWhere(
-          `(st.amount < 0 OR st.isInvestment = true OR EXISTS (
+          `(st.amount < 0${filter.includeZeroAmount ? " OR st.amount = 0" : ""} OR st.isInvestment = true OR EXISTS (
               SELECT 1 FROM scheduled_transaction_splits s
               WHERE s.scheduled_transaction_id = st.id
                 AND s.kind = :investmentKind
@@ -488,9 +504,13 @@ export class ScheduledOccurrenceService {
     // An unknown direction is KEPT, not dropped: its amount is unknown too, so a
     // consumer's total is withheld either way, and dropping it would hide a
     // possible outflow behind a total that still looked complete.
+    const isOutflow = (o: ResolvedScheduledOccurrence): boolean =>
+      o.directionAmount === null || o.directionAmount < 0;
     const outflows = keepManual(
       occurrences.filter(
-        (o) => o.directionAmount === null || o.directionAmount < 0,
+        (o) =>
+          isOutflow(o) ||
+          (filter.includeZeroAmount === true && o.directionAmount === 0),
       ),
     );
     if (window.maxOccurrences === undefined) return outflows;
@@ -727,6 +747,11 @@ function withLoanAmount(
           ),
           {
             transferAccountId: loanId,
+            // The line it replaces keeps its own category.
+            categoryId:
+              occurrence.transferLines.find(
+                (l) => l.transferAccountId === loanId,
+              )?.categoryId ?? null,
             amount:
               sign *
               sumMoney(

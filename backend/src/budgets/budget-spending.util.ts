@@ -1,4 +1,7 @@
-import { categoryTypeIs } from "../categories/category-type.util";
+import {
+  categoryTypeIs,
+  categoryTypeOfOrUndefined,
+} from "../categories/category-type.util";
 import { ObjectLiteral, Repository, SelectQueryBuilder } from "typeorm";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
@@ -236,24 +239,46 @@ export function isTransferIncomeLine(bc: BudgetCategory): boolean {
 }
 
 /**
- * Whether a plain scheduled transfer would count against the budget once
- * posted: the budget has an outgoing line for its destination account, or an
- * outgoing line on its category (an Expense category, or a Transfer category,
- * docs/specs/transfer-categories.md sections 5 and 6.1). A transfer no line
- * takes is not the budget's spending.
+ * Whether a transfer out of a budget account would add to the budget's spent
+ * once posted, by the actuals' own rules (docs/specs/transfer-categories.md
+ * sections 5, 6.1 and 6.3):
+ *
+ * - a line on the transfer's category reads the net of the rows holding it in
+ *   the budget's accounts, so a transfer to another budget account nets to zero
+ *   and counts only where the destination is outside the budget
+ *   (`excludedAccountIds`); only an outgoing line is spending;
+ * - a Transfer category that has a line here takes the leg from every
+ *   per-account line (6.3); any other category leaves them in force;
+ * - a per-account outgoing line counts a transfer to that account.
  */
 export function transferCountsAgainstBudget(
   lines: readonly BudgetCategory[],
   transfer: { transferAccountId: string | null; categoryId: string | null },
+  excludedAccountIds: readonly string[],
 ): boolean {
+  const onCategory =
+    transfer.categoryId === null
+      ? []
+      : lines.filter(
+          (bc) => !bc.isTransfer && bc.categoryId === transfer.categoryId,
+        );
+  const leavesBudget =
+    transfer.transferAccountId !== null &&
+    excludedAccountIds.includes(transfer.transferAccountId);
+  if (leavesBudget && onCategory.some((bc) => !bc.isIncome)) return true;
+  // A Transfer category's own line (either direction) takes the leg.
+  if (
+    onCategory.some(
+      (bc) => categoryTypeOfOrUndefined(bc.category) === "transfer",
+    )
+  ) {
+    return false;
+  }
   return lines.some(
     (bc) =>
       !bc.isIncome &&
-      ((isTransferLine(bc) &&
-        bc.transferAccountId === transfer.transferAccountId) ||
-        (!bc.isTransfer &&
-          bc.categoryId !== null &&
-          bc.categoryId === transfer.categoryId)),
+      isTransferLine(bc) &&
+      bc.transferAccountId === transfer.transferAccountId,
   );
 }
 

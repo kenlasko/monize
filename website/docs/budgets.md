@@ -225,7 +225,7 @@ Integrates with your scheduled transactions to show:
 - **Total upcoming** -- the sum of those bills
 - **Truly available** -- remaining budget minus upcoming bills
 
-Only what this budget tracks counts as a bill, so the card and the "Bills coming" figure in the velocity widget always agree. A scheduled transfer between your own accounts counts only where a budget line takes it: a transfer line for the account it pays, or a line for its category. Any other transfer, such as a payment to a credit card or a move to savings, is left out because it is not spending. The same holds for a transfer line inside a split, such as the principal of a loan payment. Bills that leave an account the budget excludes are left out too. The Bills page and the calendar still list every transfer as an amount due.
+Each row shows the whole amount that is due. The totals count only what posting the bill would add to your spending, the same rule the budget's actuals use. A scheduled transfer counts only where a budget line takes it: a transfer line for the account it pays, or a line for its category when the money leaves the accounts the budget tracks. Any other transfer, such as a payment to a credit card or a move between your own accounts, is left out because it is not spending. The same holds for a transfer line inside a split, such as the principal of a loan payment. Bills that leave an account the budget excludes are left out too. The Bills page and the calendar still list every transfer as an amount due.
 
 This prevents a false sense of security when you have budget left but bills still to pay. When nothing is due, the card says "No bills due this period."
 

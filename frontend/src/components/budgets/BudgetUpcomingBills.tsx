@@ -2,7 +2,10 @@
 
 import { useTranslations } from 'next-intl';
 import { gainLossColor } from '@/lib/format';
-import { SCHEDULED_KIND_AMOUNT_CLASSES } from '@/lib/scheduled-kind';
+import {
+  SCHEDULED_KIND_AMOUNT_CLASSES,
+  upcomingBillKind,
+} from '@/lib/scheduled-kind';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { CARD_CLASS } from '@/components/ui/Card';
 import type { BudgetVelocity } from '@/types/budget';
@@ -69,19 +72,15 @@ export function BudgetUpcomingBills({
               </div>
               <span
                 className={`font-medium ml-2 whitespace-nowrap ${
-                  SCHEDULED_KIND_AMOUNT_CLASSES[
-                    bill.amount !== null && bill.amount > 0
-                      ? 'bill'
-                      : bill.amount === null
-                        ? 'unknown'
-                        : 'reminder'
-                  ]
+                  SCHEDULED_KIND_AMOUNT_CLASSES[upcomingBillKind(bill)]
                 }`}
               >
-                {bill.amount === null ? (
+                {/* What is DUE, as the bills page prints it; the totals below
+                    count only the part that is spending. */}
+                {bill.amountDue === null ? (
                   <UnknownAmount />
                 ) : (
-                  formatCurrency(bill.amount, bill.currencyCode)
+                  formatCurrency(bill.amountDue, bill.currencyCode)
                 )}
               </span>
             </div>

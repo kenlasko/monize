@@ -10,6 +10,8 @@ function bill(overrides: Partial<UpcomingBill> = {}): UpcomingBill {
     id: 'st-1',
     name: 'Internet',
     amount: 80,
+    amountDue: 80,
+    isReminder: false,
     currencyCode: 'USD',
     amountComplete: true,
     dueDate: '2026-02-25',
@@ -53,7 +55,7 @@ describe('BudgetUpcomingBills', () => {
         velocity={velocity({
           upcomingBills: [
             bill(),
-            bill({ id: 'st-2', name: 'Insurance', amount: 150, dueDate: '2026-02-28' }),
+            bill({ id: 'st-2', name: 'Insurance', amount: 150, amountDue: 150, dueDate: '2026-02-28' }),
           ],
           totalUpcomingBills: 230,
           trulyAvailable: 2120,
@@ -71,8 +73,9 @@ describe('BudgetUpcomingBills', () => {
     expect(screen.getByText('$2120.00')).toBeInTheDocument();
   });
 
-  it('shows a transfer the server left out of the bills as nothing', () => {
-    // The server sends no row and no amount for a transfer no budget line takes.
+  // The server sends no row for a transfer no budget line takes, nor for a
+  // split made only of such transfer lines: they are transfers, not bills.
+  it('lists only the rows the server sends, so a transfer the budget does not track is no bill', () => {
     render(
       <BudgetUpcomingBills
         velocity={velocity({
@@ -88,19 +91,54 @@ describe('BudgetUpcomingBills', () => {
     expect(screen.queryByText(/transfer/i)).not.toBeInTheDocument();
   });
 
-  it('does not paint a zero-amount row as a bill', () => {
+  it('shows what is due, and counts only the spending part', () => {
+    // A 100 loan payment: 30 interest and a 70 principal transfer line.
     render(
       <BudgetUpcomingBills
         velocity={velocity({
-          upcomingBills: [bill({ name: 'Card Payment', amount: 0 })],
+          upcomingBills: [bill({ name: 'Loan', amount: 30, amountDue: 100 })],
+          totalUpcomingBills: 30,
+          trulyAvailable: 5170,
         })}
         formatCurrency={mockFormat}
       />,
     );
 
-    const amount = screen.getAllByText('$0.00')[0];
-    expect(amount.className).not.toContain('text-red-600');
-    expect(amount.className).toContain('text-gray-500');
+    // The row prints the whole $100.00 due; the total counts the $30.00.
+    expect(screen.getByText('$100.00')).toBeInTheDocument();
+    expect(screen.getByText('$30.00')).toBeInTheDocument();
+  });
+
+  // Issue #1124: a bill left at 0 because the amount varies month to month is
+  // still a payment to make; it adds nothing to the total and is not red.
+  it('shows a zero-amount reminder without adding it to the total', () => {
+    render(
+      <BudgetUpcomingBills
+        velocity={velocity({
+          upcomingBills: [
+            bill(),
+            bill({
+              id: 'st-2',
+              name: 'Card Payment',
+              amount: 0,
+              amountDue: 0,
+              isReminder: true,
+            }),
+          ],
+          totalUpcomingBills: 80,
+          trulyAvailable: 2120,
+        })}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(screen.getByText('Card Payment')).toBeInTheDocument();
+    // The $80 bill's row and the total.
+    expect(screen.getAllByText('$80.00')).toHaveLength(2);
+    expect(screen.getByText('$2120.00')).toBeInTheDocument();
+    const reminder = screen.getByText('$0.00');
+    expect(reminder.className).not.toContain('text-red-600');
+    expect(reminder.className).toContain('text-gray-500');
   });
 
   it("prints a row in the occurrence's own currency", () => {
@@ -108,7 +146,7 @@ describe('BudgetUpcomingBills', () => {
     render(
       <BudgetUpcomingBills
         velocity={velocity({
-          upcomingBills: [bill({ amount: 100, currencyCode: 'CAD' })],
+          upcomingBills: [bill({ amount: 100, amountDue: 100, currencyCode: 'CAD' })],
           totalUpcomingBills: 75,
         })}
         formatCurrency={(amount, currency) => {
@@ -159,7 +197,7 @@ describe('BudgetUpcomingBills', () => {
     render(
       <BudgetUpcomingBills
         velocity={velocity({
-          upcomingBills: [bill({ amount: null, amountComplete: false })],
+          upcomingBills: [bill({ amount: null, amountDue: null, amountComplete: false })],
           totalUpcomingBills: null,
           trulyAvailable: null,
         })}

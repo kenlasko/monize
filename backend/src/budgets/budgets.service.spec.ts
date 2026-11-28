@@ -2116,13 +2116,143 @@ describe("BudgetsService", () => {
         ).toEqual([]);
       });
 
-      it("counts a transfer whose category has an outgoing line in the budget", async () => {
-        expect(
-          await upcoming([schedule({ categoryId: "cat-sav" })], {
+      // A category line reads the net of the rows holding it inside the budget,
+      // so a transfer between two budget accounts nets to zero (spec 6.1).
+      it("counts a transfer on a budgeted category only where it leaves the budget", async () => {
+        const categories = [line({ categoryId: "cat-sav" })];
+        const bills = (excludedAccountIds: string[]) =>
+          upcoming([schedule({ categoryId: "cat-sav" })], {
             ...mockBudget,
-            categories: [line({ categoryId: "cat-sav" })],
-          }),
+            config: { excludedAccountIds },
+            categories,
+          });
+
+        expect(await bills([])).toEqual([]);
+        expect(await bills(["acc-2"])).toEqual([["st-t", 70, true]]);
+      });
+
+      // Spec 6.3: a Transfer category that has a line takes the leg from the
+      // per-account lines; any other category leaves them in force.
+      it("lets a Transfer category's line take the leg from a per-account line", async () => {
+        const perAccount = line({
+          categoryId: null,
+          isTransfer: true,
+          transferAccountId: "acc-2",
+        });
+        const transferCategoryLine = line({
+          categoryId: "cat-tr",
+          category: {
+            ...mockCategory,
+            id: "cat-tr",
+            categoryType: "transfer",
+          },
+        });
+        const bills = (categories: BudgetCategory[], excluded: string[]) =>
+          upcoming([schedule({ categoryId: "cat-tr" })], {
+            ...mockBudget,
+            config: { excludedAccountIds: excluded },
+            categories,
+          });
+
+        // Inside the budget the category line nets it to zero and the
+        // per-account line no longer sees it.
+        expect(await bills([perAccount, transferCategoryLine], [])).toEqual([]);
+        // Without a line on the category, the per-account line counts it.
+        expect(await bills([perAccount], [])).toEqual([["st-t", 70, true]]);
+        // Out of the budget the category line counts it, once.
+        expect(
+          await bills([perAccount, transferCategoryLine], ["acc-2"]),
         ).toEqual([["st-t", 70, true]]);
+      });
+
+      it("prints the whole amount due and counts only the spending part", async () => {
+        const split = {
+          ...staleInvestmentBill(),
+          id: "st-split",
+          amount: -100,
+          currencyCode: "USD",
+          isInvestment: false,
+          investmentAction: null,
+          isSplit: true,
+          accountId: "acc-1",
+          splits: [
+            { id: "s1", kind: "category", amount: -30 },
+            {
+              id: "s2",
+              kind: "category",
+              amount: -70,
+              transferAccountId: "acc-2",
+            },
+          ],
+        };
+        scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            getMany: jest.fn().mockResolvedValue([split]),
+          }),
+        );
+
+        const bills = await service.getUpcomingBills(
+          "user-1",
+          addDaysYMD(todayYMD(), 7),
+          { ...mockBudget, categories: [] },
+        );
+
+        expect(bills.map((b) => [b.id, b.amount, b.amountDue])).toEqual([
+          ["st-split", 30, 100],
+        ]);
+      });
+
+      it("lists a split made only of untracked transfer lines as no bill", async () => {
+        const onlyTransfers = {
+          ...staleInvestmentBill(),
+          id: "st-only",
+          amount: -100,
+          currencyCode: "USD",
+          isInvestment: false,
+          investmentAction: null,
+          isSplit: true,
+          accountId: "acc-1",
+          splits: [
+            {
+              id: "s1",
+              kind: "category",
+              amount: -100,
+              transferAccountId: "acc-2",
+            },
+          ],
+        };
+
+        expect(
+          await upcoming([onlyTransfers], { ...mockBudget, categories: [] }),
+        ).toEqual([]);
+      });
+
+      // Issue #1124: a schedule left at 0 is a payment still to make; it adds
+      // nothing to the totals.
+      it("lists a zero-amount reminder as a row that adds nothing", async () => {
+        scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
+          createMockQueryBuilder({
+            getMany: jest
+              .fn()
+              .mockResolvedValue([
+                { ...netflix, id: "st-zero", name: "Card Payment", amount: 0 },
+                netflix,
+              ]),
+          }),
+        );
+
+        const bills = await service.getUpcomingBills(
+          "user-1",
+          addDaysYMD(todayYMD(), 7),
+          mockBudget,
+        );
+
+        expect(
+          bills.map((b) => [b.id, b.amount, b.amountDue, b.isReminder]),
+        ).toEqual([
+          ["st-1", 15.99, 15.99, false],
+          ["st-zero", 0, 0, true],
+        ]);
       });
 
       it("drops an occurrence out of an account the budget excludes", async () => {
@@ -2178,8 +2308,10 @@ describe("BudgetsService", () => {
               ...over,
             },
           ]);
+        // acc-2 is outside the budget, so a category line counts the transfer.
         const budgeted = {
           ...mockBudget,
+          config: { excludedAccountIds: ["acc-2"] },
           categories: [line({ categoryId: "cat-sav" })],
         };
 
@@ -2237,6 +2369,38 @@ describe("BudgetsService", () => {
             categories: [transferLine],
           }),
         ).toEqual([["st-split", 100, true]]);
+      });
+
+      it("counts a split's transfer line on a budgeted category only where it leaves the budget", async () => {
+        const split = {
+          ...staleInvestmentBill(),
+          id: "st-split",
+          amount: -100,
+          currencyCode: "USD",
+          isInvestment: false,
+          investmentAction: null,
+          isSplit: true,
+          accountId: "acc-1",
+          splits: [
+            { id: "s1", kind: "category", amount: -30 },
+            {
+              id: "s2",
+              kind: "category",
+              amount: -70,
+              transferAccountId: "acc-2",
+              categoryId: "cat-sav",
+            },
+          ],
+        };
+        const spent = async (excludedAccountIds: string[]) =>
+          upcoming([split], {
+            ...mockBudget,
+            config: { excludedAccountIds },
+            categories: [line({ categoryId: "cat-sav" })],
+          });
+
+        expect(await spent([])).toEqual([["st-split", 30, true]]);
+        expect(await spent(["acc-2"])).toEqual([["st-split", 100, true]]);
       });
 
       it("keeps a plain transfer out of the velocity totals", async () => {
