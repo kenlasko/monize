@@ -66,7 +66,6 @@ const ALLOWED = new Set([
 const MIGRATED_SURFACES = [
   '/src/lib/scheduled-utils.ts',
   '/src/components/dashboard/UpcomingBills.tsx',
-  '/src/components/budgets/BudgetUpcomingBills.tsx',
   '/src/components/reports/UpcomingBillsReport.tsx',
   '/src/components/accounts/shared/RecurringChargesPanel.tsx',
   '/src/components/scheduled-transactions/ScheduledTransactionList.tsx',

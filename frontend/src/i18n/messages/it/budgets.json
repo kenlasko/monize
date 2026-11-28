@@ -134,6 +134,7 @@
       "carriedIn": "Riportato in entrata:",
       "carriedOut": "Riportato in uscita:"
     },
+    "noPositiveFunding": "La percentuale di utilizzo richiede un budget positivo.",
     "overallUsage": "Utilizzo complessivo del budget",
     "expenseCategories": "Categorie di uscite",
     "incomeCategories": "Categorie di entrate",

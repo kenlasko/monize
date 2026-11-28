@@ -371,7 +371,8 @@
     "settlement": "结算：{ordinal}",
     "settlementTooltip": "账单周期的最后一天。在此日期当天或之前入账的交易将显示在当期账单上。",
     "dueShort": "到期 {ordinal}",
-    "metaWithDue": "{institution} · {due}"
+    "metaWithDue": "{institution} · {due}",
+    "loadFailed": "无法加载您的账户。请重新加载仪表板后再试。"
   },
   "upcomingBills": {
     "title": "即将到来的账单与存款",
@@ -407,7 +408,8 @@
     "dayEmpty": "这一天没有安排任何账单或存款。",
     "metaPayee": "· {payee}",
     "metaManual": "· 手动支付",
-    "metaWhen": "· {when}"
+    "metaWhen": "· {when}",
+    "loadFailed": "无法加载您即将到期的账单。请重新加载仪表板后再试。"
   },
   "cashFlowForecast": {
     "title": "现金流预测",
@@ -444,7 +446,8 @@
     "viewFullBudget": "查看完整预算",
     "daysLeft": "剩余 {count} 天",
     "safeToSpend": "今日可安全支出",
-    "topCategories": "主要科目"
+    "topCategories": "主要科目",
+    "loadFailed": "无法加载您的预算状态。请重新加载仪表板后再试。"
   },
   "insights": {
     "title": "消费洞察",
@@ -520,13 +523,15 @@
     "topLevelOnly": "顶级类别",
     "topLevelOnlyHint": "将子类别计入其父类别",
     "viewCallouts": "标签",
-    "viewLegend": "图例"
+    "viewLegend": "图例",
+    "loadFailed": "无法加载您按类别划分的支出。请重新加载仪表板后再试。"
   },
   "incomeExpenses": {
     "title": "收入与支出",
     "income": "收入",
     "expenses": "支出",
-    "net": "净额"
+    "net": "净额",
+    "loadFailed": "无法加载您的收入和支出。请重新加载仪表板后再试。"
   },
   "customize": {
     "button": "自定义",
@@ -736,5 +741,6 @@
     "depthSubcategories": "子类别",
     "viewDiagram": "图表",
     "viewTable": "表格"
-  }
+  },
+  "accountsLoadFailed": "无法加载您的账户，因此无法显示此小组件。请重新加载仪表板后再试。"
 }

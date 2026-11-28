@@ -134,6 +134,7 @@
       "carriedIn": "आगे लाया:",
       "carriedOut": "आगे ले जाया:"
     },
+    "noPositiveFunding": "उपयोग का प्रतिशत निकालने के लिए बजट शून्य से अधिक होना चाहिए।",
     "overallUsage": "समग्र बजट उपयोग",
     "expenseCategories": "व्यय श्रेणियां",
     "incomeCategories": "आय श्रेणियां",

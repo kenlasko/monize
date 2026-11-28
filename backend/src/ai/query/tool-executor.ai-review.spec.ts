@@ -15,6 +15,7 @@ import { AiActionBuilderService } from "../actions/ai-action-builder.service";
 import { AccountsService } from "../../accounts/accounts.service";
 import { CategoriesService } from "../../categories/categories.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
+import { DataSource } from "typeorm";
 import { NetWorthService } from "../../net-worth/net-worth.service";
 import { BudgetReportsService } from "../../budgets/budget-reports.service";
 import { PortfolioService } from "../../securities/portfolio.service";
@@ -67,6 +68,7 @@ describe("ToolExecutorService ai_review_requests", () => {
       CategoriesService,
       TransactionAnalyticsService,
       NetWorthService,
+      DataSource,
       BudgetReportsService,
       PortfolioService,
       SecuritiesService,

@@ -2,7 +2,11 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { Currency } from "../currencies/entities/currency.entity";
 import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 import { DataSource } from "typeorm";
-import { ScheduledOccurrenceService } from "./scheduled-occurrence.service";
+import {
+  nonTransferAmount,
+  ResolvedScheduledOccurrence,
+  ScheduledOccurrenceService,
+} from "./scheduled-occurrence.service";
 import {
   ScheduleAmountEstimate,
   ScheduledAmountEstimateService,
@@ -894,6 +898,87 @@ describe("ScheduledOccurrenceService", () => {
         ["2024-02-03", -584.59],
         ["2024-03-03", -584.59],
       ]);
+    });
+
+    it("keeps the category of the transfer line the priced loan line replaces", async () => {
+      loanService.projectLoanOccurrencesMany.mockResolvedValue(
+        projection([
+          row("2023-02-03", 584.59, { principal: 167.92, extraPrincipal: 0 }),
+          row("2023-03-03", 584.59, { principal: 168.4, extraPrincipal: 0 }),
+        ]),
+      );
+
+      const occurrences = await service.expand(
+        userId,
+        [
+          mortgageBill({
+            splits: [
+              {
+                transferAccountId: "mortgage-1",
+                categoryId: "cat-principal",
+                amount: -167.92,
+              },
+              {
+                transferAccountId: null,
+                categoryId: "cat-int",
+                amount: -416.67,
+              },
+            ],
+          } as Partial<ScheduledTransaction>),
+        ],
+        { through: "2023-03-31" },
+      );
+
+      expect(occurrences.map((o) => o.transferLines)).toEqual([
+        [
+          {
+            transferAccountId: "mortgage-1",
+            amount: -167.92,
+            categoryId: "cat-principal",
+          },
+        ],
+        [
+          {
+            transferAccountId: "mortgage-1",
+            amount: -168.4,
+            categoryId: "cat-principal",
+          },
+        ],
+      ]);
+    });
+
+    describe("nonTransferAmount with unpriced transfer lines", () => {
+      const unpriced = (
+        transferAccountId: string | null,
+        loanAccountId: string | null = null,
+      ) =>
+        ({
+          amount: -100,
+          transferLinesUnknown: true,
+          loanAccountId,
+          moneyDecimals: 4,
+          transferLines: transferAccountId
+            ? [{ transferAccountId, amount: -70, categoryId: null }]
+            : [],
+        }) as unknown as ResolvedScheduledOccurrence;
+
+      it("withholds the amount while an unpriced line is not the consumer's spending", () => {
+        expect(nonTransferAmount(unpriced("acc-2"))).toBeNull();
+        expect(nonTransferAmount(unpriced(null))).toBeNull();
+        expect(nonTransferAmount(unpriced("acc-2"), () => false)).toBeNull();
+      });
+
+      it("returns the whole amount when the consumer keeps every line, the loan's own account included", () => {
+        const keep = (line: { transferAccountId: string }) =>
+          line.transferAccountId === "acc-2" ||
+          line.transferAccountId === "loan-1";
+
+        expect(nonTransferAmount(unpriced("acc-2"), keep)).toBe(-100);
+        expect(nonTransferAmount(unpriced("acc-2", "loan-1"), keep)).toBe(-100);
+        expect(
+          nonTransferAmount(unpriced("acc-2", "other-loan"), keep),
+        ).toBeNull();
+      });
     });
 
     it("reports an occurrence the projection cannot price as unknown, never as the template", async () => {

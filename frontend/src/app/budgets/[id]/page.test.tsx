@@ -116,13 +116,6 @@ vi.mock('@/lib/budgets', () => ({
   },
 }));
 
-// Mock scheduled transactions API
-vi.mock('@/lib/scheduled-transactions', () => ({
-  scheduledTransactionsApi: {
-    getAll: vi.fn().mockResolvedValue([]),
-  },
-}));
-
 vi.mock('@/components/ui/ConfirmDialog', () => ({
   ConfirmDialog: ({ isOpen, onConfirm, onCancel, confirmLabel }: any) =>
     isOpen ? (

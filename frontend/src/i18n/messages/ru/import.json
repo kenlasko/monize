@@ -299,6 +299,7 @@
     "unreadableDatesGoBack": "Если в файле даты записаны в другом порядке, вернитесь к шагу сопоставления столбцов и выберите формат даты, который в нём используется.",
     "unreadableAmountsNotice": "{count, plural, one {# строка содержит сумму, которую} few {# строки содержат суммы, которые} many {# строк содержат суммы, которые} other {# строки содержат суммы, которые}} невозможно прочитать; {count, plural, one {она не будет импортирована} other {они не будут импортированы}}:",
     "unreadableAmountRow": "Строка {line}: \"{rawAmount}\"",
+    "unreadableAmountRowField": "Строка {line}, {field, select, quantity {количество} price {цена} commission {комиссия} other {сумма}}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...и ещё {count}",
     "unreadableAmountsGoBack": "Проверьте, правильно ли сопоставлены столбцы сумм, или исправьте эти строки в файле и импортируйте его снова.",
     "unreadableAmountLine": "Строка {line}: \"{rawAmount}\"",

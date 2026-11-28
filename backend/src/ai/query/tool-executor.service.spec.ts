@@ -1,3 +1,6 @@
+import { DataSource } from "typeorm";
+import { requestContextStorage } from "../../common/request-context";
+import { createScopedDbMocks } from "../../test-helpers/scoped-db-testing";
 import {
   SharedReviewService,
   SHARED_LEDGER_TOOLS,
@@ -43,6 +46,12 @@ import { TagsService } from "../../tags/tags.service";
 import { TagToolPrepService } from "../../tags/tag-tool-prep.service";
 import { LlmWarrantyList } from "../../warranties/warranty-llm-shape";
 import { TransactionRuleToolPrepService } from "../../transaction-rules/rule-tool-prep.service";
+
+jest.mock("../../common/db/scoped-db", () =>
+  jest
+    .requireActual("../../test-helpers/scoped-db-testing")
+    .scopedDbMockModule(),
+);
 
 describe("ToolExecutorService", () => {
   let service: ToolExecutorService;
@@ -795,10 +804,15 @@ describe("ToolExecutorService", () => {
       releaseForPrompt: jest.fn(),
     };
 
+    // The user's timezone lookup behind "today": no row, so UTC.
+    const scopedDb = createScopedDbMocks();
+    scopedDb.manager.query.mockResolvedValue([]);
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         sharedReviewProvider(),
         ToolExecutorService,
+        { provide: DataSource, useValue: scopedDb.dataSource },
         { provide: AttachmentToolPrepService, useValue: attachmentPrep },
         { provide: RelayAttachmentStore, useValue: attachmentStore },
         { provide: AccountsService, useValue: accounts },
@@ -871,6 +885,26 @@ describe("ToolExecutorService", () => {
   );
 
   describe("tool routing", () => {
+    it("list_transactions defaults its range to the user's day (#2365)", async () => {
+      // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
+      jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+      try {
+        await requestContextStorage.run(
+          { userId, timezone: "Pacific/Kiritimati" },
+          () => service.execute(userId, "list_transactions", {}),
+        );
+        expect(analytics.getLlmListTransactions).toHaveBeenCalledWith(
+          userId,
+          expect.objectContaining({
+            startDate: "2026-10-29",
+            endDate: "2026-11-28",
+          }),
+        );
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it("list_transactions delegates to analytics.getLlmListTransactions", async () => {
       const result = await service.execute(userId, "list_transactions", {
         startDate: "2026-01-01",
@@ -1259,6 +1293,36 @@ describe("ToolExecutorService", () => {
         type: "expense",
         search: "groc",
       });
+    });
+
+    it("dates an empty net worth history by the user's day (#2365)", async () => {
+      // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
+      jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+      try {
+        netWorth.getLlmHistory.mockResolvedValue([]);
+        const result = await requestContextStorage.run(
+          { userId, timezone: "Pacific/Kiritimati" },
+          () =>
+            service.execute(userId, "generate_report", {
+              type: "net_worth_history",
+            }),
+        );
+        // The range getLlmHistory searched: twelve months back to the user's day.
+        expect(result.sources[0].dateRange).toBe("2025-11-01 to 2026-11-28");
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("falls back to the first and last history month for a missing date", async () => {
+      netWorth.getLlmHistory.mockResolvedValue([
+        { month: "2026-01-01" },
+        { month: "2026-03-01" },
+      ]);
+      const result = await service.execute(userId, "generate_report", {
+        type: "net_worth_history",
+      });
+      expect(result.sources[0].dateRange).toBe("2026-01-01 to 2026-03-01");
     });
 
     it("generate_report type net_worth_history delegates to netWorthService.getLlmHistory", async () => {

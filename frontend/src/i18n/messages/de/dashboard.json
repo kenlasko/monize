@@ -371,7 +371,8 @@
     "settlement": "Abrechnung: {ordinal}",
     "settlementTooltip": "Der letzte Tag des Abrechnungszeitraums. Buchungen, die an oder vor diesem Tag erfasst werden, erscheinen auf der aktuellen Abrechnung.",
     "dueShort": "fällig {ordinal}",
-    "metaWithDue": "{institution} · {due}"
+    "metaWithDue": "{institution} · {due}",
+    "loadFailed": "Ihre Konten konnten nicht geladen werden. Laden Sie das Dashboard neu und versuchen Sie es erneut."
   },
   "upcomingBills": {
     "title": "Bevorstehende Rechnungen und Einzahlungen",
@@ -407,7 +408,8 @@
     "dayEmpty": "Für diesen Tag sind keine Rechnungen oder Einzahlungen geplant.",
     "metaPayee": "· {payee}",
     "metaManual": "· von Hand bezahlt",
-    "metaWhen": "· {when}"
+    "metaWhen": "· {when}",
+    "loadFailed": "Ihre anstehenden Rechnungen konnten nicht geladen werden. Laden Sie das Dashboard neu und versuchen Sie es erneut."
   },
   "cashFlowForecast": {
     "title": "Cashflow-Prognose",
@@ -444,7 +446,8 @@
     "viewFullBudget": "Vollständiges Budget anzeigen",
     "daysLeft": "{count} Tage verbleibend",
     "safeToSpend": "Heute sicher ausgeben",
-    "topCategories": "Top-Kategorien"
+    "topCategories": "Top-Kategorien",
+    "loadFailed": "Ihr Budgetstatus konnte nicht geladen werden. Laden Sie das Dashboard neu und versuchen Sie es erneut."
   },
   "insights": {
     "title": "Ausgaben-Einblicke",
@@ -520,13 +523,15 @@
     "topLevelOnly": "Oberkategorien",
     "topLevelOnlyHint": "Unterkategorien der Oberkategorie zurechnen",
     "viewCallouts": "Beschriftungen",
-    "viewLegend": "Legende"
+    "viewLegend": "Legende",
+    "loadFailed": "Ihre Ausgaben nach Kategorie konnten nicht geladen werden. Laden Sie das Dashboard neu und versuchen Sie es erneut."
   },
   "incomeExpenses": {
     "title": "Einnahmen vs. Ausgaben",
     "income": "Einnahmen",
     "expenses": "Ausgaben",
-    "net": "Netto"
+    "net": "Netto",
+    "loadFailed": "Ihre Einnahmen und Ausgaben konnten nicht geladen werden. Laden Sie das Dashboard neu und versuchen Sie es erneut."
   },
   "customize": {
     "button": "Anpassen",
@@ -736,5 +741,6 @@
     "depthSubcategories": "Unterkategorien",
     "viewDiagram": "Diagramm",
     "viewTable": "Tabelle"
-  }
+  },
+  "accountsLoadFailed": "Ihre Konten konnten nicht geladen werden, daher kann dieses Widget nicht angezeigt werden. Laden Sie das Dashboard neu und versuchen Sie es erneut."
 }

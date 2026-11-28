@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { InsightsAggregatorService } from "./insights-aggregator.service";
 import { Transaction } from "../../transactions/entities/transaction.entity";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
+import { requestContextStorage } from "../../common/request-context";
 import { createScopedDbMocks } from "../../test-helpers/scoped-db-testing";
 
 jest.mock("../../common/db/scoped-db", () =>
@@ -503,6 +504,26 @@ describe("InsightsAggregatorService", () => {
       );
       expect(result.daysElapsedInMonth).toBe(21);
       expect(result.daysInMonth).toBe(31);
+    });
+
+    it("shares the forecast's rule: the request's zone wins over the stored one (#2365)", async () => {
+      // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
+      jest.useFakeTimers({
+        now: new Date("2026-11-27T12:00:00Z"),
+        doNotFake: [...ALL_BUT_DATE],
+      });
+
+      await requestContextStorage.run(
+        { userId, timezone: "Pacific/Kiritimati" },
+        () => service.computeAggregates(userId, "USD"),
+      );
+
+      expect(mockTransactionAnalytics.getRecurringCharges).toHaveBeenCalledWith(
+        userId,
+        "2026-05-01",
+        "2026-11-28",
+        { reportingCurrency: "USD" },
+      );
     });
 
     it("enters the new month when the user's zone is already there", async () => {

@@ -122,6 +122,11 @@ export interface JointNetWorthScope {
  * across a line the valuation cannot see and the difference reads as
  * performance (`docs/specs/portfolio-period-result.md` section 6).
  */
+/** The first day of the history getLlmHistory searches when no start is given: twelve months back. */
+export function defaultNetWorthHistoryStart(today: string): string {
+  return `${Number(today.slice(0, 4)) - 1}-${today.slice(5, 7)}-01`;
+}
+
 export function isValuationCashAccount(account: {
   account_type: string;
   account_sub_type: string | null;
@@ -964,9 +969,7 @@ export class NetWorthService {
     const userToday = await withScopedDb(this.dataSource, (m) =>
       userTodayYMD(m, userId),
     );
-    const [todayYear, todayMonth] = userToday.split("-").map(Number);
-    const defaultStart = `${todayYear - 1}-${String(todayMonth).padStart(2, "0")}-01`;
-    const resolvedStart = startDate || defaultStart;
+    const resolvedStart = startDate || defaultNetWorthHistoryStart(userToday);
     // `fetchMissing: false`: a tool call is not a user waiting on a chart. The
     // model gets what the database holds, with the same completeness flags and
     // the same named pairs it would get for any other gap, and no HTTP request

@@ -475,7 +475,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "render_chart",
     description:
-      "Render a chart in the chat so the user can see the data visually. Call this AFTER gathering numbers with another tool (list_transactions, generate_report, compare_periods, etc.). Choose the chart type that fits the data: 'pie' for category breakdowns with 6 or fewer slices, 'bar' for larger breakdowns or period comparisons, 'line' or 'area' for time series (months or weeks). Pass a compact subset of the data (at most 10-15 data points) and aggregate the long tail into an 'Other' bucket. Values must be positive numbers (use absolute values for expenses). Do not narrate the chart's existence in your reply; just render it and summarize the findings.",
+      "Render a chart in the chat so the user can see the data visually. Call this AFTER gathering numbers with another tool (list_transactions, generate_report, compare_periods, etc.). Choose the chart type that fits the data: 'pie' for category breakdowns with 6 or fewer slices, 'bar' for larger breakdowns or period comparisons, 'line' or 'area' for time series (months or weeks). Pass a compact subset of the data (at most 10-15 data points) and aggregate the long tail into an 'Other' bucket. Keep the sign of the source measure. Use a bar chart for breakdowns with negative values; pie slices require non-negative values. Do not narrate the chart's existence in your reply; just render it and summarize the findings.",
     inputSchema: {
       type: "object",
       properties: {
@@ -505,7 +505,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
               value: {
                 type: "number",
                 description:
-                  "Non-negative numeric value for this data point. Use absolute values for expenses.",
+                  "Finite value in the original measure, including negative net spending. Pie slices require non-negative values.",
               },
             },
             required: ["label", "value"],

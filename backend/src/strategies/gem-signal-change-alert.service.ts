@@ -5,6 +5,7 @@ import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { withSystemContext, withUserContext } from "../common/db/with-context";
 import { returnedRows } from "../common/db/query-result";
+import { getUsersByEffectiveTimezone } from "../common/users-by-timezone.util";
 import {
   NotificationSeverity,
   NotificationType,
@@ -65,25 +66,40 @@ export class GemSignalChangeAlertService {
     if (this.running) return;
     this.running = true;
     try {
-      const userIds = await withSystemContext(() =>
-        withScopedDb(this.dataSource, async (manager) =>
-          returnedRows<{ user_id: string }>(
-            await manager.query("SELECT DISTINCT user_id FROM gem_strategies"),
-          ).map((row) => row.user_id),
+      const { owners, zones } = await withSystemContext(async () => ({
+        owners: new Set(
+          await withScopedDb(this.dataSource, async (manager) =>
+            returnedRows<{ user_id: string }>(
+              await manager.query(
+                "SELECT DISTINCT user_id FROM gem_strategies",
+              ),
+            ).map((row) => row.user_id),
+          ),
         ),
-      );
+        // Every user's effective zone in one query, like the other per-zone crons.
+        zones: await getUsersByEffectiveTimezone(this.dataSource),
+      }));
 
       let fired = 0;
-      for (const userId of userIds) {
-        try {
-          fired += await withUserContext(userId, () =>
-            this.evaluateUser(userId),
-          );
-        } catch (error) {
-          this.logger.error(
-            `GEM signal-change evaluation failed for user ${userId}`,
-            error instanceof Error ? error.stack : error,
-          );
+      for (const [timezone, zoneUserIds] of zones) {
+        for (const userId of zoneUserIds) {
+          if (!owners.has(userId)) continue;
+          try {
+            // The report is cut at the user's day, so the identity carries the
+            // user's timezone (todayYMD() would otherwise be the server's day).
+            // A user with no zone counts in UTC, like every other cron: a cron
+            // has no request header, and UTC keeps the day deterministic.
+            fired += await withUserContext(
+              userId,
+              () => this.evaluateUser(userId),
+              timezone,
+            );
+          } catch (error) {
+            this.logger.error(
+              `GEM signal-change evaluation failed for user ${userId}`,
+              error instanceof Error ? error.stack : error,
+            );
+          }
         }
       }
       if (fired > 0) {

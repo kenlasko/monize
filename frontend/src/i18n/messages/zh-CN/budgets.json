@@ -134,6 +134,7 @@
       "carriedIn": "转入：",
       "carriedOut": "转出："
     },
+    "noPositiveFunding": "预算大于零时才能计算使用率。",
     "overallUsage": "总体预算使用情况",
     "expenseCategories": "支出分类",
     "incomeCategories": "收入分类",
