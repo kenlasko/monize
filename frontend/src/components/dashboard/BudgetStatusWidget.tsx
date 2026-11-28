@@ -84,11 +84,18 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
     );
   }
 
-  // A row with no exchange rate is left out of the converted figure, so the
-  // total is unknown rather than small (read as `=== false`: absent is no
-  // information).
-  const totalUnknown =
-    summary.valuationComplete === false || summary.percentUsed === null || summary.totalSpent === null;
+  // Each figure names its own cause (read as `=== false`: absent is no
+  // information). Spent follows the expense rows; the percent, what is left and
+  // the budget also follow the income an income-linked budget derives from.
+  const spentUnknownNow = summary.totalSpent === null;
+  const budgetUnknownNow = summary.budgetedComplete === false;
+  const percentUnknown = summary.percentUsed === null;
+  const spentReason = partialReason(summary.missingRatePairs);
+  const budgetReason = partialReason(summary.budgetedMissingRatePairs);
+  const percentReason = spentUnknownNow ? spentReason : budgetReason;
+  const safeReason = [spentUnknownNow ? spentReason : '', budgetUnknownNow ? budgetReason : '']
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className={`${CARD_CLASS} p-3 sm:p-6`}>
@@ -104,30 +111,38 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
       {/* Overall progress */}
       <div className="mb-3">
         <div className="flex items-baseline justify-between mb-1">
-          {totalUnknown ? (
-            <>
-              <span className="text-xl font-bold text-gray-500 dark:text-gray-400">
-                <UnknownAmount reasonText={partialReason(summary.missingRatePairs)} />
-              </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {formatCurrency(summary.totalBudgeted)}
-              </span>
-            </>
+          {percentUnknown ? (
+            <span className="text-xl font-bold text-gray-500 dark:text-gray-400">
+              <UnknownAmount reasonText={percentReason} />
+            </span>
           ) : (
-            <>
-              <span className={`text-xl font-bold ${budgetPercentColor(summary.percentUsed ?? 0)}`}>
-                {formatPercent(summary.percentUsed ?? 0, 0)}
-              </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {formatCurrency(summary.totalSpent ?? 0)} / {formatCurrency(summary.totalBudgeted)}
-              </span>
-            </>
+            <span className={`text-xl font-bold ${budgetPercentColor(summary.percentUsed ?? 0)}`}>
+              {formatPercent(summary.percentUsed ?? 0, 0)}
+            </span>
           )}
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {spentUnknownNow ? (
+              <UnknownAmount reasonText={spentReason} />
+            ) : (
+              formatCurrency(summary.totalSpent ?? 0)
+            )}{' '}
+            /{' '}
+            {budgetUnknownNow ? (
+              <UnknownAmount reasonText={budgetReason} />
+            ) : (
+              formatCurrency(summary.totalBudgeted)
+            )}
+          </span>
         </div>
-        {totalUnknown ? (
+        {percentUnknown ? (
           <p className="text-xs text-gray-500 dark:text-gray-400" data-testid="budget-partial-note" role="note">
-            {partialReason(summary.missingRatePairs)}{' '}
-            {tb('partialSpent.known', { amount: formatCurrency(summary.knownTotalSpent ?? 0) })}
+            {percentReason}
+            {spentUnknownNow && (
+              <>
+                {' '}
+                {tb('partialSpent.known', { amount: formatCurrency(summary.knownTotalSpent ?? 0) })}
+              </>
+            )}
           </p>
         ) : (
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -146,7 +161,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
         </div>
         <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
           {summary.safeDailySpend === null ? (
-            <UnknownAmount reasonText={partialReason(summary.missingRatePairs)} />
+            <UnknownAmount reasonText={safeReason || undefined} />
           ) : (
             formatCurrency(summary.safeDailySpend)
           )}
@@ -187,7 +202,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
       {(summary.incompleteCategories ?? []).length > 0 && (
         <div className="space-y-1 mt-3" data-testid="budget-incomplete-categories">
           {(summary.incompleteCategories ?? []).map((cat) => (
-            <div key={cat.categoryName} className="flex items-center justify-between gap-2">
+            <div key={cat.budgetCategoryId} className="flex items-center justify-between gap-2">
               <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
                 {cat.categoryName}
               </span>

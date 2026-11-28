@@ -2947,9 +2947,11 @@ export class ToolExecutorService {
     }
 
     const summaryParts = [
-      data.totalSpent === null || data.percentUsed === null
+      data.totalSpent === null
         ? `Budget "${data.budgetName}": total spent unknown (no exchange rate for ${data.missingRatePairs.join(", ")}); $${data.knownTotalSpent.toFixed(2)} of $${data.totalBudgeted.toFixed(2)} converted so far`
-        : `Budget "${data.budgetName}": ${data.percentUsed.toFixed(1)}% used ($${data.totalSpent.toFixed(2)} of $${data.totalBudgeted.toFixed(2)})`,
+        : data.percentUsed === null
+          ? `Budget "${data.budgetName}": $${data.totalSpent.toFixed(2)} spent, but the budget derives from income with no exchange rate for ${data.budgetedMissingRatePairs.join(", ")}; percent used and remaining unknown`
+          : `Budget "${data.budgetName}": ${data.percentUsed.toFixed(1)}% used ($${data.totalSpent.toFixed(2)} of $${data.totalBudgeted.toFixed(2)})`,
     ];
 
     if (data.velocity) {
@@ -2962,6 +2964,11 @@ export class ToolExecutorService {
               ...(data.velocity.spendingComplete === false
                 ? [
                     `spending in a currency with no exchange rate (${data.velocity.spendingMissingRatePairs.join(", ")}) is not converted`,
+                  ]
+                : []),
+              ...(data.velocity.budgetedComplete === false
+                ? [
+                    `the budget derives from income with no exchange rate for ${data.velocity.budgetedMissingRatePairs.join(", ")}`,
                   ]
                 : []),
               ...(data.velocity.upcomingBillsComplete
@@ -2984,14 +2991,14 @@ export class ToolExecutorService {
     // rather than letting "0 over budget" read as a clean bill.
     if (data.incompleteCategories.length > 0) {
       summaryParts.push(
-        `${data.incompleteCategories.length} categories with unknown spending (no exchange rate for ${data.missingRatePairs.join(", ")}): ${data.incompleteCategories.map((c) => c.category).join(", ")}`,
+        `${data.incompleteCategories.length} categories with unknown figures: ${data.incompleteCategories.map((c) => `${c.category} (no exchange rate for ${c.missingRatePairs.join(", ")})`).join(", ")}`,
       );
     }
 
     if (data.healthScore) {
       summaryParts.push(
         data.healthScore.score === null
-          ? "Health score: unknown while spending is partial"
+          ? `Health score: unknown (no exchange rate for ${(data.healthScore.missingRatePairs ?? []).join(", ")})`
           : `Health score: ${data.healthScore.score}/100 (${data.healthScore.label})`,
       );
     }

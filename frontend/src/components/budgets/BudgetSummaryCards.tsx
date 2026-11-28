@@ -34,22 +34,28 @@ function BudgetSummaryCardsStandard({
   totalIncome,
   percentUsed,
   partialReason,
+  incomeReason,
   daysRemaining,
   formatCurrency,
 }: BudgetSummaryCardsProps) {
   const t = useTranslations('budgets');
   const { formatPercentTrimmed } = useNumberFormat();
-  const spentKnown = totalSpent !== null && percentUsed !== null;
+  // Spent needs only its own rows; the percent, what is left and the budget
+  // need the budget's income too, so each unknown figure names its own cause.
+  const spentKnown = totalSpent !== null;
+  const percentKnown = percentUsed !== null;
   const savingsKnown = totalSpent !== null && totalIncome !== null;
   const projectedSavings = savingsKnown ? totalIncome - totalSpent : 0;
   const savingsLabel = projectedSavings >= 0 ? t('summaryCards.onTrack') : t('summaryCards.overBudget');
-  const unknown = <UnknownAmount reasonText={partialReason} />;
+  const unknownSpent = <UnknownAmount reasonText={partialReason} />;
+  const unknownIncome = <UnknownAmount reasonText={incomeReason ?? partialReason} />;
+  const unknownRemaining = totalSpent === null ? unknownSpent : unknownIncome;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <SummaryCard
         label={t('summaryCards.totalBudget')}
-        value={totalBudgeted === null ? <UnknownAmount reasonText={partialReason} /> : formatCurrency(totalBudgeted)}
+        value={totalBudgeted === null ? unknownIncome : formatCurrency(totalBudgeted)}
         icon={SummaryIcons.money}
         valueColor="blue"
       />
@@ -59,16 +65,18 @@ function BudgetSummaryCardsStandard({
           spentKnown ? (
             <span>
               {formatCurrency(totalSpent)}
-              <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">
-                ({formatPercentTrimmed(Math.round(percentUsed))})
-              </span>
+              {percentKnown && (
+                <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">
+                  ({formatPercentTrimmed(Math.round(percentUsed))})
+                </span>
+              )}
             </span>
           ) : (
-            unknown
+            unknownSpent
           )
         }
         icon={SummaryIcons.minus}
-        valueColor={spentKnown && percentUsed > 100 ? 'red' : 'default'}
+        valueColor={percentKnown && percentUsed > 100 ? 'red' : 'default'}
       />
       <SummaryCard
         label={t('summaryCards.remaining')}
@@ -81,7 +89,7 @@ function BudgetSummaryCardsStandard({
               </span>
             </span>
           ) : (
-            unknown
+            unknownRemaining
           )
         }
         icon={remaining === null || remaining >= 0 ? SummaryIcons.checkmark : SummaryIcons.cross}
@@ -98,7 +106,7 @@ function BudgetSummaryCardsStandard({
               </span>
             </span>
           ) : (
-            unknown
+            totalSpent === null ? unknownSpent : unknownIncome
           )
         }
         icon={SummaryIcons.plusCircle}

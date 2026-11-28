@@ -282,6 +282,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-2",
@@ -294,6 +296,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-income",
@@ -306,6 +310,8 @@ describe("BudgetReportsService", () => {
             isIncome: true,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       }),
@@ -691,6 +697,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-2",
@@ -703,6 +711,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });
@@ -737,6 +747,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-2",
@@ -749,6 +761,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });
@@ -781,6 +795,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });
@@ -847,6 +863,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });
@@ -880,6 +898,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });
@@ -912,6 +932,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-2",
@@ -924,6 +946,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });
@@ -1117,7 +1141,7 @@ describe("BudgetReportsService", () => {
 
       for (const group of result) {
         expect(group.remaining).toBe(
-          Math.round((group.totalBudgeted - group.totalSpent) * 100) / 100,
+          Math.round((group.totalBudgeted - group.totalSpent!) * 100) / 100,
         );
       }
     });
@@ -1126,8 +1150,8 @@ describe("BudgetReportsService", () => {
       const result = await service.getFlexGroupStatus("user-1", "budget-1");
 
       for (let i = 1; i < result.length; i++) {
-        expect(result[i - 1].percentUsed).toBeGreaterThanOrEqual(
-          result[i].percentUsed,
+        expect(result[i - 1].percentUsed!).toBeGreaterThanOrEqual(
+          result[i].percentUsed!,
         );
       }
     });
@@ -1158,6 +1182,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-2",
@@ -1170,6 +1196,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });
@@ -1212,6 +1240,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });
@@ -2009,6 +2039,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });
@@ -2065,6 +2097,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });
@@ -2321,6 +2355,8 @@ describe("BudgetReportsService", () => {
           isIncome: false,
           valuationComplete: true,
           missingRatePairs: [],
+          budgetedComplete: true,
+          budgetedMissingRatePairs: [],
         },
         {
           budgetCategoryId: "bc-2",
@@ -2333,6 +2369,8 @@ describe("BudgetReportsService", () => {
           isIncome: false,
           valuationComplete: true,
           missingRatePairs: [],
+          budgetedComplete: true,
+          budgetedMissingRatePairs: [],
         },
         {
           budgetCategoryId: "bc-3",
@@ -2345,6 +2383,8 @@ describe("BudgetReportsService", () => {
           isIncome: false,
           valuationComplete: true,
           missingRatePairs: [],
+          budgetedComplete: true,
+          budgetedMissingRatePairs: [],
         },
       ],
     };
@@ -2409,6 +2449,8 @@ describe("BudgetReportsService", () => {
         percentUsed: null,
         valuationComplete: false,
         missingRatePairs: ["QQQ->USD"],
+        budgetedComplete: true,
+        budgetedMissingRatePairs: [],
       });
 
       const result = await service.getLlmBudgetStatus("user-1");
@@ -2421,6 +2463,8 @@ describe("BudgetReportsService", () => {
         percentUsed: null,
         valuationComplete: false,
         missingRatePairs: ["QQQ->USD"],
+        budgetedComplete: true,
+        budgetedMissingRatePairs: [],
       });
     });
 
@@ -2439,6 +2483,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: false,
             missingRatePairs: ["QQQ->USD"],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-2",
@@ -2451,6 +2497,8 @@ describe("BudgetReportsService", () => {
             isIncome: false,
             valuationComplete: true,
             missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });

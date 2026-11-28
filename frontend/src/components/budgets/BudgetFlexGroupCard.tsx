@@ -7,6 +7,7 @@ import type { CategoryBreakdown, BudgetCategory } from '@/types/budget';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { CARD_CLASS } from '@/components/ui/Card';
 import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
+import { spentUnknown, budgetedUnknown, spentPairs, budgetedPairs } from './utils/line-completeness';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 interface FlexGroupData {
   name: string;
@@ -17,10 +18,14 @@ interface FlexGroupData {
   /** `false` when a member line had a row with no exchange rate. */
   complete: boolean;
   missingRatePairs: string[];
+  /** `false`: a member line's budget derives from income with no rate. */
+  budgetedComplete: boolean;
+  budgetedMissingRatePairs: string[];
   categories: Array<{
     categoryName: string;
     spent: number;
     complete: boolean;
+    missingRatePairs: string[];
   }>;
 }
 
@@ -45,22 +50,28 @@ function computeFlexGroups(
     const bc = bcMap.get(cat.budgetCategoryId);
     if (!bc?.flexGroup) continue;
 
+    const member = {
+      categoryName: cat.categoryName,
+      spent: cat.spent,
+      complete: !spentUnknown(cat),
+      missingRatePairs: spentPairs(cat),
+    };
     const existing = groupMap.get(bc.flexGroup);
     if (existing) {
       existing.totalBudgeted += cat.budgeted;
       existing.totalSpent += cat.spent;
       existing.remaining += cat.remaining;
-      if (cat.valuationComplete === false) {
+      if (spentUnknown(cat)) {
         existing.complete = false;
-        existing.missingRatePairs = [
-          ...new Set([...existing.missingRatePairs, ...(cat.missingRatePairs ?? [])]),
+        existing.missingRatePairs = [...new Set([...existing.missingRatePairs, ...spentPairs(cat)])];
+      }
+      if (budgetedUnknown(cat)) {
+        existing.budgetedComplete = false;
+        existing.budgetedMissingRatePairs = [
+          ...new Set([...existing.budgetedMissingRatePairs, ...budgetedPairs(cat)]),
         ];
       }
-      existing.categories.push({
-        categoryName: cat.categoryName,
-        spent: cat.spent,
-        complete: cat.valuationComplete !== false,
-      });
+      existing.categories.push(member);
     } else {
       groupMap.set(bc.flexGroup, {
         name: bc.flexGroup,
@@ -68,15 +79,11 @@ function computeFlexGroups(
         totalSpent: cat.spent,
         remaining: cat.remaining,
         percentUsed: 0,
-        complete: cat.valuationComplete !== false,
-        missingRatePairs: cat.valuationComplete === false ? [...(cat.missingRatePairs ?? [])] : [],
-        categories: [
-          {
-            categoryName: cat.categoryName,
-            spent: cat.spent,
-            complete: cat.valuationComplete !== false,
-          },
-        ],
+        complete: !spentUnknown(cat),
+        missingRatePairs: spentPairs(cat),
+        budgetedComplete: !budgetedUnknown(cat),
+        budgetedMissingRatePairs: budgetedPairs(cat),
+        categories: [member],
       });
     }
   }
@@ -91,7 +98,9 @@ function computeFlexGroups(
 
   // A group with an unknown total has no percent to rank by: it goes last.
   return groups.sort(
-    (a, b) => Number(b.complete) - Number(a.complete) || b.percentUsed - a.percentUsed,
+    (a, b) =>
+      Number(b.complete && b.budgetedComplete) - Number(a.complete && a.budgetedComplete) ||
+      b.percentUsed - a.percentUsed,
   );
 }
 
@@ -122,17 +131,19 @@ export function BudgetFlexGroupCard({
                 {group.name}
               </span>
               <span className="text-sm text-gray-600 dark:text-gray-300">
-                {group.complete ? (
-                  <>
-                    {formatCurrency(group.totalSpent)} / {formatCurrency(group.totalBudgeted)}{' '}
-                    ({formatPercentTrimmed(Math.round(group.percentUsed))})
-                  </>
-                ) : (
+                {group.complete ? formatCurrency(group.totalSpent) : (
                   <UnknownAmount reasonText={partialReason(group.missingRatePairs)} />
+                )}{' '}
+                /{' '}
+                {group.budgetedComplete ? formatCurrency(group.totalBudgeted) : (
+                  <UnknownAmount reasonText={partialReason(group.budgetedMissingRatePairs)} />
+                )}
+                {group.complete && group.budgetedComplete && (
+                  <> ({formatPercentTrimmed(Math.round(group.percentUsed))})</>
                 )}
               </span>
             </div>
-            {group.complete && <BudgetProgressBar percentUsed={group.percentUsed} />}
+            {group.complete && group.budgetedComplete && <BudgetProgressBar percentUsed={group.percentUsed} />}
             <div className="mt-2 space-y-1">
               {group.categories.map((cat) => (
                 <div
@@ -144,7 +155,7 @@ export function BudgetFlexGroupCard({
                     {cat.complete ? (
                       formatCurrency(cat.spent)
                     ) : (
-                      <UnknownAmount reasonText={partialReason(group.missingRatePairs)} />
+                      <UnknownAmount reasonText={partialReason(cat.missingRatePairs)} />
                     )}
                   </span>
                 </div>

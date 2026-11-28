@@ -20,6 +20,7 @@ import { GroupedTotal, MonthlyTotal, TransactionSummary } from '@/types/transact
 import { CategoryBudgetStatus } from '@/types/budget';
 import { transactionsApi } from '@/lib/transactions';
 import { budgetsApi } from '@/lib/budgets';
+import { figuresUnknown, unknownPairs } from '@/components/budgets/utils/line-completeness';
 import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import { countElapsedPeriods } from '@/lib/chart-buckets';
 import { sumMoney } from '@/lib/format';
@@ -240,7 +241,7 @@ export function CategoryInfoWidget({
   // own icon, or the nearest ancestor's.
   const glyphIcon = category.effectiveIcon ?? category.icon;
   // A row with no exchange rate is left out of `spent`: the percent is unknown.
-  const budgetPartial = budgetStatus?.valuationComplete === false;
+  const budgetPartial = budgetStatus !== null && figuresUnknown(budgetStatus);
   const budgetPercent = budgetStatus ? clamp(budgetStatus.percentUsed, 0, 100) : 0;
   const budgetBarColor = budgetStatus
     ? budgetStatus.percentUsed >= 100
@@ -347,7 +348,7 @@ export function CategoryInfoWidget({
             </p>
             <p className="text-sm text-gray-900 dark:text-gray-100">
               {budgetPartial ? (
-                <UnknownAmount reasonText={partialReasonOf(budgetStatus.missingRatePairs)} />
+                <UnknownAmount reasonText={partialReasonOf(unknownPairs(budgetStatus))} />
               ) : (
                 t('categoryWidget.budgetProgress', {
                   spent: formatCurrency(budgetStatus.spent, defaultCurrency),

@@ -73,6 +73,15 @@ function BudgetVelocityWidgetStandard({
   // is a different cause and a different repair from an unpriced bill.
   const spendingUnknown = velocity.spendingComplete === false;
   const spendingReason = partialReason(velocity.spendingMissingRatePairs);
+  // The budget is unknown when it derives from income with no exchange rate:
+  // the pace badge, the budget total and what is left are withheld with it.
+  const budgetUnknown = velocity.budgetedComplete === false;
+  const budgetReason = partialReason(velocity.budgetedMissingRatePairs);
+  // What is withheld says every cause that applies.
+  const withheldReason =
+    [spendingUnknown ? spendingReason : '', budgetUnknown ? budgetReason : '']
+      .filter(Boolean)
+      .join(' ') || undefined;
   const paceLabel = velocity.paceStatus && t(`velocity.paceStatus.${velocity.paceStatus}`);
 
   return (
@@ -82,6 +91,7 @@ function BudgetVelocityWidgetStandard({
           {t('velocity.title')}
           <InfoTooltip text={t('velocity.titleTooltip')} learnMore="budgetVelocity" />
         </h2>
+        {paceLabel === null && budgetUnknown && <UnknownAmount reasonText={budgetReason} />}
         {paceLabel && <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${paceColor} ${paceBgColor}`}>
           {paceLabel}
         </span>}
@@ -103,7 +113,7 @@ function BudgetVelocityWidgetStandard({
               upcoming bill's current amount is (issue #1247). A `?? 0` here
               would present the unknown as a measured zero. */}
           {velocity.safeDailySpend === null ? (
-            <UnknownAmount reasonText={spendingUnknown ? spendingReason : undefined} />
+            <UnknownAmount reasonText={withheldReason} />
           ) : (
             <div className="ui-bud-fig text-lg font-semibold text-green-600 dark:text-green-400">
               {formatCurrency(velocity.safeDailySpend)}/day
@@ -127,7 +137,7 @@ function BudgetVelocityWidgetStandard({
             {t('velocity.budgetTotal')}
           </div>
           <div className="ui-bud-fig text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {formatCurrency(velocity.budgetTotal)}
+            {budgetUnknown ? <UnknownAmount reasonText={budgetReason} /> : formatCurrency(velocity.budgetTotal)}
           </div>
         </div>
       </div>
@@ -157,7 +167,7 @@ function BudgetVelocityWidgetStandard({
             {velocity.trulyAvailable === null ? (
               <UnknownAmount
                 reason={unknownReason}
-                reasonText={spendingUnknown ? spendingReason : undefined}
+                reasonText={withheldReason}
               />
             ) : (
               <div className={`ui-bud-fig text-lg font-semibold ${

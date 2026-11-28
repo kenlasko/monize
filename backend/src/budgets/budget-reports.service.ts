@@ -4,7 +4,11 @@ import { BudgetHealthReportsService } from "./budget-health-reports.service";
 import { BudgetActivityReportsService } from "./budget-activity-reports.service";
 import { BudgetBucketReportsService } from "./budget-bucket-reports.service";
 import type { BudgetBucketStatusResult } from "./budget-bucket-reports.service";
-import { BudgetsService } from "./budgets.service";
+import {
+  BudgetsService,
+  lineFiguresKnown,
+  lineUnknownPairs,
+} from "./budgets.service";
 import { BudgetStrategy } from "./entities/budget.entity";
 import {
   getCurrentMonthPeriodDates,
@@ -99,15 +103,27 @@ export interface SeasonalPattern {
 export interface FlexGroupStatusResult {
   groupName: string;
   totalBudgeted: number;
-  totalSpent: number;
-  remaining: number;
-  percentUsed: number;
+  /** `null` when a member line had a row with no rate; `knownTotalSpent` is then the converted part. */
+  totalSpent: number | null;
+  knownTotalSpent: number;
+  /** `null` while `totalSpent` is unknown or the budget derives from income with no rate. */
+  remaining: number | null;
+  percentUsed: number | null;
+  /** The group's spent total is known (every member line's `valuationComplete`). */
+  valuationComplete: boolean;
+  /** `false`: a member line's budget derives from income with no rate. */
+  budgetedComplete: boolean;
+  /** `"JPY->CAD"` for each pair behind the withheld figures, spent and budgeted. */
+  missingRatePairs: string[];
   categories: Array<{
     categoryId: string;
     categoryName: string;
     budgeted: number;
     spent: number;
     percentUsed: number;
+    valuationComplete: boolean;
+    budgetedComplete: boolean;
+    missingRatePairs: string[];
   }>;
 }
 
@@ -149,11 +165,14 @@ export interface LlmBudgetStatusResult {
   valuationComplete: boolean;
   /**
    * `false` when an income-linked budget's income had a row with no rate:
-   * `totalBudgeted` derives from its converted part, and its percentage lines
-   * are in `incompleteCategories`.
+   * `totalBudgeted` derives from its converted part, `remaining` and
+   * `percentUsed` are `null`, and its percentage lines are in
+   * `incompleteCategories`. `totalSpent` is not withheld by this.
    */
   budgetedComplete: boolean;
-  /** `"JPY->CAD"` for each pair with no rate behind the withheld totals. */
+  /** The income's pairs behind an unknown budget. */
+  budgetedMissingRatePairs: string[];
+  /** `"JPY->CAD"` for each expense pair behind an unknown `totalSpent`. */
   missingRatePairs: string[];
   /** Total Budget Funding: `categoryIncome` plus `transferFunding`. */
   totalIncome: number | null;
@@ -208,6 +227,9 @@ export interface LlmBudgetStatusResult {
     /** `false`: spending had a row with no rate, so `safeDailySpend` is `null`. */
     spendingComplete: boolean;
     spendingMissingRatePairs: string[];
+    /** `false`: the budget derives from income with no rate; the pace figures are `null`. */
+    budgetedComplete: boolean;
+    budgetedMissingRatePairs: string[];
     projectedTotal: number | null;
     projectedVariance: number | null;
     daysRemaining: number;
@@ -407,16 +429,16 @@ export class BudgetReportsService {
     }
 
     const incompleteCategories = summary.categoryBreakdown
-      .filter((c) => !c.isIncome && !c.valuationComplete)
+      .filter((c) => !c.isIncome && !lineFiguresKnown(c))
       .map((c) => ({
         category: c.categoryName,
         budgeted: c.budgeted,
         knownSpent: c.spent,
-        missingRatePairs: c.missingRatePairs,
+        missingRatePairs: lineUnknownPairs(c),
       }));
 
     const overBudgetCategories = summary.categoryBreakdown
-      .filter((c) => !c.isIncome && c.valuationComplete && c.remaining < 0)
+      .filter((c) => !c.isIncome && lineFiguresKnown(c) && c.remaining < 0)
       .map((c) => ({
         category: c.categoryName,
         budgeted: c.budgeted,
@@ -428,7 +450,7 @@ export class BudgetReportsService {
       .filter(
         (c) =>
           !c.isIncome &&
-          c.valuationComplete &&
+          lineFiguresKnown(c) &&
           c.remaining >= 0 &&
           c.percentUsed >= 80 &&
           c.percentUsed <= 100,
@@ -450,6 +472,7 @@ export class BudgetReportsService {
       knownTotalSpent: summary.knownTotalSpent,
       valuationComplete: summary.valuationComplete,
       budgetedComplete: summary.budgetedComplete,
+      budgetedMissingRatePairs: summary.budgetedMissingRatePairs,
       missingRatePairs: summary.missingRatePairs,
       totalIncome: summary.totalIncome,
       categoryIncome: summary.categoryIncome,
@@ -470,6 +493,8 @@ export class BudgetReportsService {
         upcomingBillsComplete: velocity.upcomingBillsComplete,
         spendingComplete: velocity.spendingComplete,
         spendingMissingRatePairs: velocity.spendingMissingRatePairs,
+        budgetedComplete: velocity.budgetedComplete,
+        budgetedMissingRatePairs: velocity.budgetedMissingRatePairs,
         projectedTotal: velocity.projectedTotal,
         projectedVariance: velocity.projectedVariance,
         daysRemaining: velocity.daysRemaining,

@@ -12,8 +12,10 @@ interface Budget503020SummaryProps {
   categoryBreakdown: CategoryBreakdown[];
   /** `null` when an income row had no exchange rate: the shares are unknown. */
   totalIncome: number | null;
-  /** The translated cause shown beside an unknown figure. */
+  /** The translated cause beside an unknown SPENT figure (the expense pairs). */
   partialReason?: string;
+  /** The cause beside an unknown income or budget (the income pairs). */
+  incomeReason?: string;
   formatCurrency: (amount: number) => string;
 }
 
@@ -28,6 +30,7 @@ export function Budget503020Summary({
   categoryBreakdown,
   totalIncome,
   partialReason,
+  incomeReason,
   formatCurrency,
 }: Budget503020SummaryProps) {
   const t = useTranslations('budgets');
@@ -109,7 +112,7 @@ export function Budget503020Summary({
                       </span>
                     </>
                   ) : (
-                    <UnknownAmount reasonText={partialReason} />
+                    <UnknownAmount reasonText={incomeKnown ? partialReason : (incomeReason ?? partialReason)} />
                   )}
                 </div>
               </div>
@@ -133,7 +136,7 @@ export function Budget503020Summary({
                 {budgetedKnown ? (
                   t('summary503020.budgeted', { percent: formatPercentTrimmed(budgetedPercent), amount: formatCurrency(data.budgeted) })
                 ) : (
-                  <UnknownAmount reasonText={partialReason} />
+                  <UnknownAmount reasonText={incomeReason ?? partialReason} />
                 )}
               </div>
             </div>

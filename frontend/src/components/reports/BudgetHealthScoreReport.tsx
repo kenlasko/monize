@@ -310,7 +310,8 @@ export function BudgetHealthScoreReport() {
       summaryCards: score !== null ? [
         { label: t('budgetHealthScore.finalScore'), value: `${score}/100`, color: scoreColor },
       ] : undefined,
-      tableData: healthScore ? {
+      // No breakdown rows for an unknown score: "null" must never print.
+      tableData: healthScore && score !== null ? {
         headers: [t('budgetHealthScore.colCategory'), t('budgetHealthScore.colScoreImpact')],
         rows: [
           [t('budgetHealthScore.baseScore'), String(healthScore.breakdown.baseScore)],
@@ -318,7 +319,7 @@ export function BudgetHealthScoreReport() {
           [t('budgetHealthScore.essentialPenalty'), `-${healthScore.breakdown.essentialWeightPenalty}`],
           [t('budgetHealthScore.underBudgetBonus'), `+${healthScore.breakdown.underBudgetBonus}`],
           [t('budgetHealthScore.improvingBonus'), `+${healthScore.breakdown.trendBonus}`],
-          [t('budgetHealthScore.finalScore'), String(healthScore.score)],
+          [t('budgetHealthScore.finalScore'), String(score)],
         ],
       } : undefined,
       additionalTables: rows.length > 0 ? [{
@@ -385,7 +386,8 @@ export function BudgetHealthScoreReport() {
               partialReason={partialReasonOf(healthScore.missingRatePairs)}
             />
 
-            {/* Score Breakdown */}
+            {/* Score Breakdown: there is nothing to break down for an unknown score. */}
+            {healthScore.score !== null && (
             <div className={`${CARD_CLASS} p-4 sm:p-6`}>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                 {t('budgetHealthScore.scoreBreakdown')}
@@ -427,6 +429,7 @@ export function BudgetHealthScoreReport() {
                 </div>
               </div>
             </div>
+            )}
           </div>
 
           {/* Per-Category Impact */}
@@ -434,7 +437,16 @@ export function BudgetHealthScoreReport() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {t('budgetHealthScore.categoryImpact')}
             </h2>
-            {healthScore.categoryScores.length === 0 ? (
+            {healthScore.score === null ? (
+              // Not "no categories": the lines exist but their figures are unknown.
+              <p
+                className="text-sm text-gray-500 dark:text-gray-400"
+                data-testid="health-partial-note"
+                role="note"
+              >
+                {partialReasonOf(healthScore.missingRatePairs)}
+              </p>
+            ) : healthScore.categoryScores.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {t('budgetHealthScore.noCategories')}
               </p>

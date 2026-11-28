@@ -32,35 +32,41 @@ export function BudgetSummaryFolio({
   totalIncome,
   percentUsed,
   partialReason,
+  incomeReason,
   daysRemaining,
   displayCurrency,
 }: BudgetSummaryViewProps) {
   const t = useTranslations('budgets');
   const { formatPercentTrimmed } = useNumberFormat();
-  const spentKnown = totalSpent !== null && percentUsed !== null;
+  // Spent needs only its own rows; the percent, what is left and the budget
+  // need the budget's income too, so each unknown figure names its own cause.
+  const spentKnown = totalSpent !== null;
+  const percentKnown = percentUsed !== null;
   const savingsKnown = totalSpent !== null && totalIncome !== null;
   const projectedSavings = savingsKnown ? totalIncome - totalSpent : 0;
-  const unknown = <UnknownAmount reasonText={partialReason} />;
+  const unknownSpent = <UnknownAmount reasonText={partialReason} />;
+  const unknownIncome = <UnknownAmount reasonText={incomeReason ?? partialReason} />;
+  const unknownRemaining = totalSpent === null ? unknownSpent : unknownIncome;
   return (
     <section aria-label={t('summaryCards.ariaLabel')} className="ui-bud-statement">
       <dl className="ui-bud-statement-row">
         <Entry label={t('summaryCards.totalBudget')}>
           {totalBudgeted === null ? (
-            <UnknownAmount reasonText={partialReason} />
+            unknownIncome
           ) : (
             <MoneyFigure amount={totalBudgeted} currencyCode={displayCurrency} display />
           )}
         </Entry>
         <Entry
           label={t('summaryCards.spent')}
-          hint={spentKnown ? `(${formatPercentTrimmed(Math.round(percentUsed))})` : undefined}
+          hint={percentKnown ? `(${formatPercentTrimmed(Math.round(percentUsed))})` : undefined}
         >
           {spentKnown ? (
-            <span className={percentUsed > 100 ? LOSS : undefined}>
+            <span className={percentKnown && percentUsed > 100 ? LOSS : undefined}>
               <MoneyFigure amount={totalSpent} currencyCode={displayCurrency} display />
             </span>
           ) : (
-            unknown
+            unknownSpent
           )}
         </Entry>
         <Entry
@@ -72,7 +78,7 @@ export function BudgetSummaryFolio({
               <MoneyFigure amount={Math.abs(remaining)} currencyCode={displayCurrency} display />
             </span>
           ) : (
-            unknown
+            unknownRemaining
           )}
         </Entry>
         <Entry
@@ -84,7 +90,7 @@ export function BudgetSummaryFolio({
               <MoneyFigure amount={Math.abs(projectedSavings)} currencyCode={displayCurrency} display />
             </span>
           ) : (
-            unknown
+            totalSpent === null ? unknownSpent : unknownIncome
           )}
         </Entry>
       </dl>

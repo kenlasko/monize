@@ -10,6 +10,7 @@ import { BudgetCategoryListPebble } from './variants/BudgetCategoryListPebble';
 import type { BudgetCategoryListViewProps } from './variants/budget-category-list-view';
 import type { CategoryBreakdown, BudgetCategory } from '@/types/budget';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { spentUnknown, figuresUnknown } from './utils/line-completeness';
 
 type SortField = BudgetCategoryListViewProps['sortField'];
 type SortDirection = 'asc' | 'desc';
@@ -79,8 +80,11 @@ export function BudgetCategoryList({
       // A line with an unknown figure has nothing to rank by on the figure
       // columns: it goes last in either direction (read as `=== false`).
       if (sortField !== 'name') {
-        const aPartial = a.valuationComplete === false;
-        const bPartial = b.valuationComplete === false;
+        // Spent follows its own flag; what is left and the percent also need
+        // the budget.
+        const unknownOn = sortField === 'spent' ? spentUnknown : figuresUnknown;
+        const aPartial = unknownOn(a);
+        const bPartial = unknownOn(b);
         if (aPartial !== bPartial) return aPartial ? 1 : -1;
         if (aPartial && bPartial) return a.categoryName.localeCompare(b.categoryName);
       }

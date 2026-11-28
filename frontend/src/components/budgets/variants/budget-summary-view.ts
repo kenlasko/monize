@@ -16,8 +16,10 @@ export interface BudgetSummaryViewProps {
   remaining: number | null;
   totalIncome: number | null;
   percentUsed: number | null;
-  /** The translated cause shown beside an unknown figure. */
+  /** The translated cause shown beside an unknown SPENT figure (the expense pairs). */
   partialReason?: string;
+  /** The cause beside an unknown budget, what is left or the income (the income pairs). */
+  incomeReason?: string;
   daysRemaining: number;
   displayCurrency?: string;
   formatCurrency: (amount: number) => string;

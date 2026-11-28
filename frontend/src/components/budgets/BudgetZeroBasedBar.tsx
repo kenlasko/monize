@@ -9,7 +9,8 @@ interface BudgetZeroBasedBarProps {
   totalIncome: number | null;
   /** The translated cause shown beside an unknown figure. */
   partialReason?: string;
-  totalBudgeted: number;
+  /** `null` when the budget derives from income with no exchange rate. */
+  totalBudgeted: number | null;
   formatCurrency: (amount: number) => string;
 }
 
@@ -20,7 +21,8 @@ export function BudgetZeroBasedBar({
   formatCurrency,
 }: BudgetZeroBasedBarProps) {
   const t = useTranslations('budgets');
-  if (totalIncome === null) {
+  // Both figures are income-derived: either one unknown leaves nothing to assign.
+  if (totalIncome === null || totalBudgeted === null) {
     return (
       <div className={`${CARD_CLASS} p-4 sm:p-6`}>
         <div className="flex items-center justify-between">

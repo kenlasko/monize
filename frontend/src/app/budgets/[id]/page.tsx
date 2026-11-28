@@ -23,6 +23,7 @@ import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getErrorMessage } from '@/lib/errors';
 import { STRATEGY_LABELS } from '@/components/budgets/utils/budget-labels';
+import { figuresUnknown } from '@/components/budgets/utils/line-completeness';
 import type {
   Budget,
   BudgetSummary,
@@ -46,8 +47,7 @@ export default function BudgetDetailPage() {
 function computeHealthScore(summary: BudgetSummary): number | null {
   let score = 100;
   const expenseCategories = summary.categoryBreakdown.filter((c) => !c.isIncome);
-  if (summary.valuationComplete === false && summary.totalSpent === null) return null;
-  if (expenseCategories.some((c) => c.valuationComplete === false)) return null;
+  if (expenseCategories.some(figuresUnknown)) return null;
 
   for (const cat of expenseCategories) {
     if (cat.percentUsed > 100) {

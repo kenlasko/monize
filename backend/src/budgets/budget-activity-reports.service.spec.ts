@@ -283,6 +283,10 @@ describe("BudgetActivityReportsService", () => {
             remaining: 150,
             percentUsed: 70,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-2",
@@ -293,6 +297,10 @@ describe("BudgetActivityReportsService", () => {
             remaining: 150,
             percentUsed: 50,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
           {
             budgetCategoryId: "bc-income",
@@ -303,6 +311,10 @@ describe("BudgetActivityReportsService", () => {
             remaining: 0,
             percentUsed: 100,
             isIncome: true,
+            valuationComplete: true,
+            missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       }),
@@ -532,6 +544,10 @@ describe("BudgetActivityReportsService", () => {
             remaining: 149.995,
             percentUsed: 70,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });
@@ -549,6 +565,74 @@ describe("BudgetActivityReportsService", () => {
       const groupNames = result.map((r) => r.groupName);
       // Income category (Salary) has no flexGroup so it should not appear
       expect(groupNames).not.toContain("Salary");
+    });
+
+    it("withholds a flex group's totals when a member line is incomplete (audit #2365 p)", async () => {
+      budgetsService.getSummary.mockResolvedValueOnce({
+        budget: {
+          ...mockBudget,
+          categories: [{ ...mockBudgetCategory, flexGroup: "Food" }],
+        },
+        categoryBreakdown: [
+          {
+            budgetCategoryId: "bc-1",
+            categoryId: "cat-1",
+            categoryName: "Groceries",
+            budgeted: 1000,
+            spent: 20,
+            remaining: 980,
+            percentUsed: 2,
+            isIncome: false,
+            valuationComplete: false,
+            missingRatePairs: ["QQQ->USD"],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
+          },
+        ],
+      });
+
+      const [group] = await service.getFlexGroupStatus("user-1", "budget-1");
+
+      expect(group.totalSpent).toBeNull();
+      expect(group.knownTotalSpent).toBe(20);
+      expect(group.remaining).toBeNull();
+      expect(group.percentUsed).toBeNull();
+      expect(group.valuationComplete).toBe(false);
+      expect(group.missingRatePairs).toEqual(["QQQ->USD"]);
+      expect(group.categories[0].valuationComplete).toBe(false);
+    });
+
+    it("keeps a flex group's spent total when only its budget is unknown", async () => {
+      budgetsService.getSummary.mockResolvedValueOnce({
+        budget: {
+          ...mockBudget,
+          categories: [{ ...mockBudgetCategory, flexGroup: "Food" }],
+        },
+        categoryBreakdown: [
+          {
+            budgetCategoryId: "bc-1",
+            categoryId: "cat-1",
+            categoryName: "Groceries",
+            budgeted: 300,
+            spent: 20,
+            remaining: 280,
+            percentUsed: 7,
+            isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
+            budgetedComplete: false,
+            budgetedMissingRatePairs: ["JPY->CAD"],
+          },
+        ],
+      });
+
+      const [group] = await service.getFlexGroupStatus("user-1", "budget-1");
+
+      expect(group.totalSpent).toBe(20);
+      expect(group.remaining).toBeNull();
+      expect(group.percentUsed).toBeNull();
+      expect(group.budgetedComplete).toBe(false);
+      expect(group.missingRatePairs).toEqual(["JPY->CAD"]);
     });
 
     it("should skip categories without a flex group", async () => {
@@ -575,6 +659,10 @@ describe("BudgetActivityReportsService", () => {
             remaining: 150,
             percentUsed: 70,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });
@@ -605,6 +693,10 @@ describe("BudgetActivityReportsService", () => {
             remaining: 0,
             percentUsed: 0,
             isIncome: false,
+            valuationComplete: true,
+            missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });
@@ -644,6 +736,10 @@ describe("BudgetActivityReportsService", () => {
             remaining: 0,
             percentUsed: 100,
             isIncome: true,
+            valuationComplete: true,
+            missingRatePairs: [],
+            budgetedComplete: true,
+            budgetedMissingRatePairs: [],
           },
         ],
       });

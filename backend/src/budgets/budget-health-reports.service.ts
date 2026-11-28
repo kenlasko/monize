@@ -9,7 +9,11 @@ import {
 import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
-import { BudgetsService } from "./budgets.service";
+import {
+  BudgetsService,
+  lineFiguresKnown,
+  lineUnknownPairs,
+} from "./budgets.service";
 import { formatMonthKey, getMonthEndYMD } from "../common/date-utils";
 import {
   HealthScoreResult,
@@ -83,12 +87,16 @@ export class BudgetHealthReportsService {
     const baseScore = 100;
     // A score over partial spending would read as a measurement: a row with no
     // rate to the budget currency makes it unknown (audit #2365 p).
-    if (expenseCategories.some((c) => !c.valuationComplete)) {
+    const unknownLines = expenseCategories.filter((c) => !lineFiguresKnown(c));
+    if (unknownLines.length > 0) {
       return {
         score: null,
         label: null,
         valuationComplete: false,
-        missingRatePairs: summary.missingRatePairs,
+        // Each unknown line's own pairs, spent and budgeted.
+        missingRatePairs: [
+          ...new Set(unknownLines.flatMap((c) => lineUnknownPairs(c))),
+        ].sort(),
         breakdown: {
           baseScore,
           overBudgetDeductions: 0,

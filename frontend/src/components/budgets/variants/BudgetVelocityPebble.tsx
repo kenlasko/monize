@@ -32,7 +32,14 @@ export function BudgetVelocityPebble({ velocity, formatCurrency }: BudgetVelocit
   const tr = useTranslations('reports');
   const partialReason = useBudgetPartialReason();
   const spendingReason =
-    velocity.spendingComplete === false ? partialReason(velocity.spendingMissingRatePairs) : undefined;
+    velocity.spendingComplete === false ? partialReason(velocity.spendingMissingRatePairs) : '';
+  // The budget is unknown when it derives from income with no exchange rate:
+  // the pace badge, the budget total and what is left are withheld with it.
+  const budgetUnknown = velocity.budgetedComplete === false;
+  const budgetReason = partialReason(velocity.budgetedMissingRatePairs);
+  // What is withheld says every cause that applies.
+  const withheldReason =
+    [spendingReason, budgetUnknown ? budgetReason : ''].filter(Boolean).join(' ') || undefined;
   const pairs = velocity.projectionMissingRatePairs;
   const missingRate = pairs?.length ? tr('partialData.weightingNoRate', { pairs: pairs.join(', ') }) : undefined;
   const unknownReason =
@@ -44,6 +51,7 @@ export function BudgetVelocityPebble({ velocity, formatCurrency }: BudgetVelocit
           {t('velocity.title')}
           <InfoTooltip text={t('velocity.titleTooltip')} learnMore="budgetVelocity" />
         </h2>
+        {velocity.paceStatus === null && budgetUnknown && <UnknownAmount reasonText={budgetReason} />}
         {velocity.paceStatus && <Badge variant={PACE_BADGE[velocity.paceStatus]}>
           {t(`velocity.paceStatus.${velocity.paceStatus}`)}
         </Badge>}
@@ -52,7 +60,7 @@ export function BudgetVelocityPebble({ velocity, formatCurrency }: BudgetVelocit
         <div className="ui-figure-label">{t('velocity.safeToSpend')}</div>
         <div className="ui-bud-lead-figure mt-1 text-4xl">
           {velocity.safeDailySpend === null ? (
-            <UnknownAmount reasonText={spendingReason} />
+            <UnknownAmount reasonText={withheldReason} />
           ) : (
             <>
               {formatCurrency(velocity.safeDailySpend)}
@@ -81,7 +89,7 @@ export function BudgetVelocityPebble({ velocity, formatCurrency }: BudgetVelocit
         <div>
           <dt className="text-sm text-gray-500 dark:text-gray-400">{t('velocity.budgetTotal')}</dt>
           <dd className="ui-bud-block-figure text-xl text-gray-900 dark:text-gray-100">
-            {formatCurrency(velocity.budgetTotal)}
+            {budgetUnknown ? <UnknownAmount reasonText={budgetReason} /> : formatCurrency(velocity.budgetTotal)}
           </dd>
         </div>
         {(velocity.totalUpcomingBills === null || velocity.totalUpcomingBills > 0) && (
@@ -104,7 +112,7 @@ export function BudgetVelocityPebble({ velocity, formatCurrency }: BudgetVelocit
                 }`}
               >
                 {velocity.trulyAvailable === null ? (
-                  <UnknownAmount reason={unknownReason} reasonText={spendingReason} />
+                  <UnknownAmount reason={unknownReason} reasonText={withheldReason} />
                 ) : (
                   <>
                     {formatCurrency(Math.abs(velocity.trulyAvailable))}

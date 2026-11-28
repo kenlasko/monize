@@ -82,7 +82,26 @@ describe('BudgetStatusWidget', () => {
     expect(screen.getAllByTestId('unknown-amount').length).toBeGreaterThanOrEqual(3);
   });
 
-  it('shows loading skeleton when parent is loading', () => {
+  it('shows an unknown budget and percent but the known spent when the budget derives from income with no rate', async () => {
+    mockGetDashboardSummary.mockResolvedValue({
+      ...mockSummary,
+      totalSpent: 1800,
+      knownTotalSpent: 1800,
+      remaining: null,
+      percentUsed: null,
+      safeDailySpend: null,
+      budgetedComplete: false,
+      budgetedMissingRatePairs: ['JPY->CAD'],
+    });
+    render(<BudgetStatusWidget isLoading={false} />);
+    const note = await screen.findByTestId('budget-partial-note');
+    expect(note).toHaveTextContent('JPY->CAD');
+    expect(screen.getByText(/\$1800\.00/)).toBeInTheDocument();
+    expect(screen.queryByText('$3000.00')).not.toBeInTheDocument();
+    expect(screen.queryByText('60%')).not.toBeInTheDocument();
+  });
+
+  it('shows a loading skeleton when parent is loading', () => {
     render(<BudgetStatusWidget isLoading={true} />);
 
     expect(screen.getByText('Budget Status')).toBeInTheDocument();

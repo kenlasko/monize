@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { figuresUnknown, unknownPairs } from '@/components/budgets/utils/line-completeness';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import toast from 'react-hot-toast';
@@ -353,7 +354,7 @@ function BudgetEditContent() {
                       categoryIncome={summary.categoryIncome}
                       transferFunding={summary.transferFunding}
                       totalFunding={summary.totalIncome}
-                      partialReason={partialReasonOf(summary.missingRatePairs)}
+                      partialReason={partialReasonOf(summary.incomeMissingRatePairs ?? summary.missingRatePairs)}
                       formatCurrency={(amount) => formatCurrency(amount, budget.currencyCode)}
                     />
                   )}
@@ -372,7 +373,7 @@ function BudgetEditContent() {
                 const percentUsed = breakdownItem?.percentUsed ?? 0;
                 // A row with no exchange rate (or income-linked income that has
                 // none) leaves the percent unknown: no bar, no percent.
-                const partial = breakdownItem?.valuationComplete === false;
+                const partial = breakdownItem !== undefined && figuresUnknown(breakdownItem);
 
                 return (
                   <button
@@ -409,7 +410,7 @@ function BudgetEditContent() {
                           : t('pages.edit.resetsEachPeriod')}
                       </span>
                       {partial ? (
-                        <UnknownAmount reasonText={partialReasonOf(breakdownItem?.missingRatePairs)} />
+                        <UnknownAmount reasonText={partialReasonOf(breakdownItem ? unknownPairs(breakdownItem) : [])} />
                       ) : (
                         <span>{t('pages.edit.percentUsed', { percent: String(Math.round(percentUsed)) })}</span>
                       )}

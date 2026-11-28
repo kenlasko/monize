@@ -1864,7 +1864,7 @@ describe("ToolExecutorService", () => {
       expect(result.summary).toContain("total spent unknown");
       expect(result.summary).toContain("QQQ->USD");
       expect(result.summary).not.toContain("% used");
-      expect(result.summary).toContain("1 categories with unknown spending");
+      expect(result.summary).toContain("1 categories with unknown figures");
       expect(result.summary).toContain("Health score: unknown");
     });
 

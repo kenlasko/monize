@@ -29,7 +29,10 @@ interface BudgetUpcomingBillsProps {
   currentSpent: number | null;
   /** The pairs with no rate behind an unknown `currentSpent`. */
   spendingMissingRatePairs?: string[];
-  totalBudgeted: number;
+  /** `null` when the budget derives from income with no exchange rate. */
+  totalBudgeted: number | null;
+  /** The income's pairs behind an unknown `totalBudgeted`. */
+  budgetedMissingRatePairs?: string[];
   periodEnd: string;
   /**
    * The currency this panel's own figures are reported in -- the budget's, which
@@ -64,6 +67,7 @@ export function BudgetUpcomingBills({
   currentSpent,
   spendingMissingRatePairs,
   totalBudgeted,
+  budgetedMissingRatePairs,
   periodEnd,
   displayCurrency,
   formatCurrency,
@@ -137,7 +141,8 @@ export function BudgetUpcomingBills({
   // Incomplete for either reason -- an occurrence nobody can price, or one in a
   // currency with no rate into the budget's -- leaves this unknown rather than
   // larger. `isComplete` is the one definition of "nothing left out".
-  const trulyAvailable = isComplete(upcomingTotal) && currentSpent !== null
+  const trulyAvailable =
+    isComplete(upcomingTotal) && currentSpent !== null && totalBudgeted !== null
     ? totalBudgeted - currentSpent - upcomingTotal.value
     : null;
 
@@ -215,8 +220,13 @@ export function BudgetUpcomingBills({
             <UnknownAmount
               reason={unknownReason}
               reasonText={
-                currentSpent === null && isComplete(upcomingTotal)
-                  ? partialReason(spendingMissingRatePairs)
+                isComplete(upcomingTotal)
+                  ? [
+                      currentSpent === null ? partialReason(spendingMissingRatePairs) : '',
+                      totalBudgeted === null ? partialReason(budgetedMissingRatePairs) : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')
                   : undefined
               }
             />

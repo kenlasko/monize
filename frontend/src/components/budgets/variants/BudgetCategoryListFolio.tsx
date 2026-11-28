@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { SortableTh, TABLE_BODY_CLASS, TABLE_CLASS, Th, TD_CLASS } from '@/components/ui/Table';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
+import { spentUnknown, budgetedUnknown, figuresUnknown, spentPairs, budgetedPairs, unknownPairs } from '../utils/line-completeness';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { BudgetProgressBar } from '../BudgetProgressBar';
 import type { BudgetCategoryListViewProps } from './budget-category-list-view';
@@ -46,8 +47,10 @@ export function BudgetCategoryListFolio({
         </thead>
         <tbody className={TABLE_BODY_CLASS}>
           {rows.map(({ category, rolloverType, flexGroup }) => {
-            const partial = category.valuationComplete === false;
-            const unknown = <UnknownAmount reasonText={partialReason(category.missingRatePairs)} />;
+            const partial = figuresUnknown(category);
+            const unknownSpent = <UnknownAmount reasonText={partialReason(spentPairs(category))} />;
+            const unknownBudget = <UnknownAmount reasonText={partialReason(budgetedPairs(category))} />;
+            const unknown = <UnknownAmount reasonText={partialReason(unknownPairs(category))} />;
             const over = !partial && category.remaining < 0;
             return (
               <tr key={category.budgetCategoryId}>
@@ -74,10 +77,10 @@ export function BudgetCategoryListFolio({
                   )}
                 </td>
                 <td className={`${TD_CLASS} ui-bud-num hidden text-right whitespace-nowrap sm:table-cell`}>
-                  {formatCurrency(category.budgeted)}
+                  {budgetedUnknown(category) ? unknownBudget : formatCurrency(category.budgeted)}
                 </td>
                 <td className={`${TD_CLASS} ui-bud-num text-right whitespace-nowrap ${over ? LOSS : ''}`}>
-                  {partial ? unknown : formatCurrency(category.spent)}
+                  {spentUnknown(category) ? unknownSpent : formatCurrency(category.spent)}
                 </td>
                 <td className={`${TD_CLASS} ui-bud-num hidden text-right whitespace-nowrap sm:table-cell ${over ? LOSS : ''}`}>
                   {partial ? unknown : over ? `(${formatCurrency(Math.abs(category.remaining))})` : formatCurrency(category.remaining)}

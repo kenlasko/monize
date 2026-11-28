@@ -1595,7 +1595,9 @@ describe("BudgetsService", () => {
       expect(result.knownCategoryIncome).toBe(100);
       expect(result.transferFunding).toBe(0);
       expect(result.valuationComplete).toBe(false);
-      expect(result.missingRatePairs).toEqual(["QQQ->USD"]);
+      // Unknown income is not a reason spending is unknown.
+      expect(result.missingRatePairs).toEqual([]);
+      expect(result.incomeMissingRatePairs).toEqual(["QQQ->USD"]);
       expect(result.totalSpent).toBe(0);
     });
 
@@ -1634,7 +1636,7 @@ describe("BudgetsService", () => {
         createMockQueryBuilder({
           getRawMany: jest.fn().mockResolvedValue([
             { ...spendingRow("cat-1", "-100"), currencyCode: "CAD" },
-            { ...spendingRow("cat-3", "5000"), currencyCode: "USD" },
+            { ...spendingRow("cat-3", "500000"), currencyCode: "JPY" },
           ]),
         }),
       );
@@ -1642,15 +1644,27 @@ describe("BudgetsService", () => {
       const result = await service.getSummary("user-1", "budget-1");
       const line = result.categoryBreakdown.find((c) => !c.isIncome)!;
 
+      // Every expense is CAD: spent is known, what is left is not.
       expect(line.budgetedComplete).toBe(false);
-      expect(line.valuationComplete).toBe(false);
-      expect(line.missingRatePairs).toEqual(["USD->CAD"]);
+      expect(line.valuationComplete).toBe(true);
+      expect(line.missingRatePairs).toEqual([]);
+      expect(line.budgetedMissingRatePairs).toEqual(["JPY->CAD"]);
       expect(result.budgetedComplete).toBe(false);
-      expect(result.totalSpent).toBeNull();
+      expect(result.budgetedMissingRatePairs).toEqual(["JPY->CAD"]);
+      expect(result.totalSpent).toBe(100);
       expect(result.remaining).toBeNull();
       expect(result.percentUsed).toBeNull();
       expect(result.totalIncome).toBeNull();
       expect(result.actualIncome).toBeNull();
+
+      const velocity = await service.getVelocity("user-1", "budget-1");
+      expect(velocity.spendingComplete).toBe(true);
+      expect(velocity.budgetedComplete).toBe(false);
+      expect(velocity.budgetedMissingRatePairs).toEqual(["JPY->CAD"]);
+      expect(velocity.trulyAvailable).toBeNull();
+      expect(velocity.safeDailySpend).toBeNull();
+      expect(velocity.paceStatus).toBeNull();
+      expect(velocity.projectedVariance).toBeNull();
     });
 
     it("names only the expense pairs for unknown spending and the income pairs for unknown income", async () => {
@@ -1692,7 +1706,8 @@ describe("BudgetsService", () => {
       const income = result.categoryBreakdown.find((c) => c.isIncome)!;
       expect(expense.missingRatePairs).toEqual(["QQQ->USD"]);
       expect(income.missingRatePairs).toEqual(["ZZZ->USD"]);
-      expect(result.missingRatePairs).toEqual(["QQQ->USD", "ZZZ->USD"]);
+      expect(result.missingRatePairs).toEqual(["QQQ->USD"]);
+      expect(result.incomeMissingRatePairs).toEqual(["ZZZ->USD"]);
 
       const velocity = await service.getVelocity("user-1", "budget-1");
       expect(velocity.spendingMissingRatePairs).toEqual(["QQQ->USD"]);
@@ -2788,6 +2803,7 @@ describe("BudgetsService", () => {
       expect(result!.topCategories).toEqual([]);
       expect(result!.incompleteCategories).toEqual([
         {
+          budgetCategoryId: "bc-1",
           categoryName: "Groceries",
           budgeted: 1000,
           knownSpent: 20,

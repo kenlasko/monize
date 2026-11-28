@@ -6,6 +6,7 @@ import type { CategoryBreakdown } from '@/types/budget';
 
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
+import { spentUnknown, budgetedUnknown, figuresUnknown, spentPairs, budgetedPairs, unknownPairs } from './utils/line-completeness';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 interface BudgetCategoryRowProps {
   category: CategoryBreakdown;
@@ -35,8 +36,14 @@ export function BudgetCategoryRow({
   const { formatPercentTrimmed } = useNumberFormat();
   const partialReason = useBudgetPartialReason();
   // A row with no exchange rate is left out of `spent`: read as `=== false`.
-  const partial = category.valuationComplete === false;
-  const unknown = <UnknownAmount reasonText={partialReason(category.missingRatePairs)} />;
+  // Spent follows its own flag; the budget, what is left and the percent
+  // follow the budget's (an income-linked line over income with no rate).
+  const spentIsUnknown = spentUnknown(category);
+  const budgetIsUnknown = budgetedUnknown(category);
+  const partial = figuresUnknown(category);
+  const unknownSpent = <UnknownAmount reasonText={partialReason(spentPairs(category))} />;
+  const unknownBudget = <UnknownAmount reasonText={partialReason(budgetedPairs(category))} />;
+  const unknown = <UnknownAmount reasonText={partialReason(unknownPairs(category))} />;
   const isOverBudget = !partial && category.remaining < 0;
   const hasPositiveBudget = category.budgeted > 0;
   const paceStatus = !partial && hasPositiveBudget && pacePercent !== undefined
@@ -72,11 +79,11 @@ export function BudgetCategoryRow({
               ? 'text-red-600 dark:text-red-400'
               : 'text-gray-900 dark:text-gray-100'
           }`}>
-            {partial ? unknown : formatCurrency(category.spent)}
+            {spentIsUnknown ? unknownSpent : formatCurrency(category.spent)}
           </span>
           <span className="text-sm text-gray-400 dark:text-gray-500">/</span>
           <span className="text-sm text-gray-600 dark:text-gray-300">
-            {formatCurrency(category.budgeted)}
+            {budgetIsUnknown ? unknownBudget : formatCurrency(category.budgeted)}
             {category.percentage != null && (
               <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">
                 ({formatPercentTrimmed(category.percentage)})

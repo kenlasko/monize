@@ -6,6 +6,8 @@ import { BudgetFlexGroupCard } from './BudgetFlexGroupCard';
 import { BudgetHealthGauge } from './BudgetHealthGauge';
 import { BudgetFundingFigures } from './BudgetFundingFigures';
 import { BudgetUpcomingBills } from './BudgetUpcomingBills';
+import { BudgetVelocityWidget } from './BudgetVelocityWidget';
+import type { BudgetVelocity } from '@/types/budget';
 import { BudgetCategoryList } from './BudgetCategoryList';
 import { Budget503020Summary } from './Budget503020Summary';
 import type { BudgetCategory, CategoryBreakdown } from '@/types/budget';
@@ -171,5 +173,51 @@ describe('partial budget figures', () => {
     // Only the two groups with no lines (a known zero) draw a fill: the NEED
     // group, whose line is partial, draws none.
     expect(container.querySelectorAll('[style*="width"]')).toHaveLength(2);
+  });
+
+  it('draws a budget derived from income with no rate as unknown while spent stays known', () => {
+    const line: CategoryBreakdown = {
+      ...partialLine,
+      valuationComplete: true,
+      missingRatePairs: [],
+      budgetedComplete: false,
+      budgetedMissingRatePairs: ['JPY->CAD'],
+    };
+    render(<BudgetCategoryRow category={line} formatCurrency={fmt} pacePercent={50} />);
+    // Spent is a figure; the budget, what is left and the percent are unknown.
+    expect(screen.getByText('$20.00')).toBeInTheDocument();
+    expect(screen.queryByText('$1000.00')).not.toBeInTheDocument();
+    expect(screen.queryByText('2%')).not.toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('unknown-amount').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('draws the budget total and pace as unknown when the budget derives from income with no rate', () => {
+    const velocity = {
+      dailyBurnRate: 10,
+      projectedTotal: 300,
+      budgetTotal: 1000,
+      projectedVariance: null,
+      safeDailySpend: null,
+      daysElapsed: 10,
+      daysRemaining: 20,
+      totalDays: 30,
+      currentSpent: 100,
+      paceStatus: null,
+      upcomingBills: [],
+      totalUpcomingBills: 0,
+      knownUpcomingBillsSubtotal: 0,
+      upcomingBillsComplete: true,
+      upcomingBillsMissingRates: [],
+      trulyAvailable: null,
+      spendingComplete: true,
+      spendingMissingRatePairs: [],
+      budgetedComplete: false,
+      budgetedMissingRatePairs: ['JPY->CAD'],
+    } as BudgetVelocity;
+    render(<BudgetVelocityWidget velocity={velocity} formatCurrency={fmt} />);
+    expect(screen.queryByText('$1000.00')).not.toBeInTheDocument();
+    // Budget total, the pace badge, safe daily spend and truly available.
+    expect(screen.getAllByTestId('unknown-amount').length).toBeGreaterThanOrEqual(3);
   });
 });
