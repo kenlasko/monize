@@ -26,6 +26,7 @@ import {
   LlmTagsResult,
 } from "./tag-llm-shape";
 import { searchIncludes } from "../common/helpers/search-match";
+import { countTagUsage } from "./tag-references";
 
 export interface TagDeleteImpact {
   transactions: number;
@@ -295,26 +296,10 @@ export class TagsService {
   async getAllTransactionCounts(
     userId: string,
   ): Promise<Record<string, number>> {
-    const rows: Array<{ tag_id: string; count: string }> = await withScopedDb(
-      this.dataSource,
-      (m) =>
-        m
-          .getRepository(TransactionTag)
-          .createQueryBuilder("tt")
-          .select("tt.tag_id", "tag_id")
-          .addSelect("COUNT(*)", "count")
-          .innerJoin(Tag, "t", "t.id = tt.tag_id AND t.user_id = :userId", {
-            userId,
-          })
-          .groupBy("tt.tag_id")
-          .getRawMany(),
+    const usage = await withScopedDb(this.dataSource, (m) =>
+      countTagUsage(m, userId),
     );
-
-    const counts: Record<string, number> = {};
-    for (const row of rows) {
-      counts[row.tag_id] = Number(row.count);
-    }
-    return counts;
+    return Object.fromEntries(usage);
   }
 
   /**

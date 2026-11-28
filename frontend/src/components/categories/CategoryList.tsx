@@ -217,7 +217,7 @@ const CategoryRow = memo(function CategoryRow({
               <div className="text-right whitespace-nowrap">
                 <CellLabel>{t('list.colCount')}</CellLabel>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {category.transactionCount ?? 0}
+                  {category.usageCount ?? category.transactionCount ?? 0}
                 </div>
               </div>
               <div className="col-span-2 flex items-start gap-3 min-w-0">
@@ -254,7 +254,7 @@ const CategoryRow = memo(function CategoryRow({
         <CategoryTypePill category={category} density={density} />
       </td>
       <td className={`${cellPadding} whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell`}>
-        {category.transactionCount ?? 0}
+        {category.usageCount ?? category.transactionCount ?? 0}
       </td>
       {density === 'normal' && (
         <td className={`${cellPadding}`}>
@@ -407,7 +407,7 @@ export function CategoryList({
         // Income, then Expense, then Transfer when ascending
         comparison = TYPE_SORT_ORDER[categoryTypeOf(a)] - TYPE_SORT_ORDER[categoryTypeOf(b)];
       } else if (sortField === 'count') {
-        comparison = (a.transactionCount ?? 0) - (b.transactionCount ?? 0);
+        comparison = (a.usageCount ?? a.transactionCount ?? 0) - (b.usageCount ?? b.transactionCount ?? 0);
       }
       return sortDirection === 'asc' ? comparison : -comparison;
     });

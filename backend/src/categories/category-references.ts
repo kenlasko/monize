@@ -2,6 +2,7 @@ import { EntityManager } from "typeorm";
 import {
   RecordInUseEntry,
   countReferences,
+  countReferencesById,
 } from "../common/helpers/record-in-use";
 
 /**
@@ -27,51 +28,71 @@ export const CATEGORY_REFERENCES = {
     policy: "refuse",
     kind: "transactions",
     sql: "SELECT count(*)::int AS count FROM transactions WHERE user_id = $1 AND category_id = $2",
+    listSql:
+      "SELECT category_id AS id, count(*)::int AS count FROM transactions WHERE user_id = $1 AND category_id IS NOT NULL GROUP BY category_id",
   },
   "transaction_splits.category_id": {
     policy: "refuse",
     kind: "transactions",
     sql: "SELECT count(*)::int AS count FROM transaction_splits s JOIN transactions t ON t.id = s.transaction_id WHERE t.user_id = $1 AND s.category_id = $2",
+    listSql:
+      "SELECT s.category_id AS id, count(*)::int AS count FROM transaction_splits s JOIN transactions t ON t.id = s.transaction_id WHERE t.user_id = $1 AND s.category_id IS NOT NULL GROUP BY s.category_id",
   },
   "scheduled_transactions.category_id": {
     policy: "refuse",
     kind: "scheduledTransactions",
     sql: "SELECT count(*)::int AS count FROM scheduled_transactions WHERE user_id = $1 AND category_id = $2",
+    listSql:
+      "SELECT category_id AS id, count(*)::int AS count FROM scheduled_transactions WHERE user_id = $1 AND category_id IS NOT NULL GROUP BY category_id",
   },
   "scheduled_transaction_splits.category_id": {
     policy: "refuse",
     kind: "scheduledTransactions",
     sql: "SELECT count(*)::int AS count FROM scheduled_transaction_splits s JOIN scheduled_transactions t ON t.id = s.scheduled_transaction_id WHERE t.user_id = $1 AND s.category_id = $2",
+    listSql:
+      "SELECT s.category_id AS id, count(*)::int AS count FROM scheduled_transaction_splits s JOIN scheduled_transactions t ON t.id = s.scheduled_transaction_id WHERE t.user_id = $1 AND s.category_id IS NOT NULL GROUP BY s.category_id",
   },
   "scheduled_transaction_overrides.category_id": {
     policy: "refuse",
     kind: "scheduledTransactions",
     sql: "SELECT count(*)::int AS count FROM scheduled_transaction_overrides o JOIN scheduled_transactions t ON t.id = o.scheduled_transaction_id WHERE t.user_id = $1 AND (o.category_id = $2 OR o.splits::text LIKE '%' || $2::text || '%')",
+    listSql:
+      "SELECT c.id, count(*)::int AS count FROM scheduled_transaction_overrides o JOIN scheduled_transactions t ON t.id = o.scheduled_transaction_id JOIN categories c ON c.user_id = t.user_id AND (o.category_id = c.id OR o.splits::text LIKE '%' || c.id::text || '%') WHERE t.user_id = $1 GROUP BY c.id",
   },
   "budget_categories.category_id": {
     policy: "refuse",
     kind: "budgetLines",
     sql: "SELECT count(*)::int AS count FROM budget_categories c JOIN budgets b ON b.id = c.budget_id WHERE b.user_id = $1 AND c.category_id = $2",
+    listSql:
+      "SELECT c.category_id AS id, count(*)::int AS count FROM budget_categories c JOIN budgets b ON b.id = c.budget_id WHERE b.user_id = $1 AND c.category_id IS NOT NULL GROUP BY c.category_id",
   },
   "budget_period_categories.category_id": {
     policy: "refuse",
     kind: "budgetPeriods",
     sql: "SELECT count(*)::int AS count FROM budget_period_categories c JOIN budget_periods p ON p.id = c.budget_period_id JOIN budgets b ON b.id = p.budget_id WHERE b.user_id = $1 AND c.category_id = $2",
+    listSql:
+      "SELECT c.category_id AS id, count(*)::int AS count FROM budget_period_categories c JOIN budget_periods p ON p.id = c.budget_period_id JOIN budgets b ON b.id = p.budget_id WHERE b.user_id = $1 AND c.category_id IS NOT NULL GROUP BY c.category_id",
   },
   "payroll_deduction_rules.category_id": {
     policy: "refuse",
     kind: "payrollDeductionRules",
     sql: "SELECT count(*)::int AS count FROM payroll_deduction_rules WHERE user_id = $1 AND category_id = $2",
+    listSql:
+      "SELECT category_id AS id, count(*)::int AS count FROM payroll_deduction_rules WHERE user_id = $1 AND category_id IS NOT NULL GROUP BY category_id",
   },
   "loan_fees.category_id": {
     policy: "refuse",
     kind: "loanFees",
     sql: "SELECT count(*)::int AS count FROM loan_fees WHERE user_id = $1 AND category_id = $2",
+    listSql:
+      "SELECT category_id AS id, count(*)::int AS count FROM loan_fees WHERE user_id = $1 AND category_id IS NOT NULL GROUP BY category_id",
   },
   "shared_postings.category_id": {
     policy: "refuse",
     kind: "sharedPostings",
     sql: "SELECT count(*)::int AS count FROM shared_postings WHERE user_id = $1 AND category_id = $2",
+    listSql:
+      "SELECT category_id AS id, count(*)::int AS count FROM shared_postings WHERE user_id = $1 AND category_id IS NOT NULL GROUP BY category_id",
   },
   "accounts.principal_category_id": {
     policy: "refuse",
@@ -95,7 +116,12 @@ export const CATEGORY_REFERENCES = {
   },
 } as const satisfies Record<
   string,
-  | { policy: "refuse"; kind: CategoryReferenceKind; sql: string }
+  | {
+      policy: "refuse";
+      kind: CategoryReferenceKind;
+      sql: string;
+      listSql: string;
+    }
   | { policy: "refuse"; kind: "loanAccounts"; counted: "loanAccounts" }
   | { policy: "part" | "clear" }
 >;
@@ -150,5 +176,32 @@ export function findCategoryReferences(
     { kind: "customReports", sql: REPORTS_SQL, like: true },
     { kind: "subcategories", sql: CHILDREN_SQL },
     { kind: "loanAccounts", sql: LOAN_ACCOUNTS_SQL, ids: true },
+  ]);
+}
+
+/** The loan columns, grouped; an account naming the category twice counts once. */
+const LOAN_ACCOUNTS_LIST_SQL =
+  "SELECT c.id, count(*)::int AS count FROM accounts a JOIN categories c ON c.user_id = a.user_id AND c.id IN (a.principal_category_id, a.interest_category_id, a.overpayment_category_id, a.asset_category_id) WHERE a.user_id = $1 GROUP BY c.id";
+const RULES_LIST_SQL =
+  "SELECT c.id, count(*)::int AS count FROM transaction_rules r JOIN categories c ON c.user_id = r.user_id AND (r.condition::text LIKE '%' || c.id::text || '%' OR r.actions::text LIKE '%' || c.id::text || '%') WHERE r.user_id = $1 GROUP BY c.id";
+const REPORTS_LIST_SQL =
+  "SELECT c.id, count(*)::int AS count FROM custom_reports r JOIN categories c ON c.user_id = r.user_id AND r.filters::text LIKE '%' || c.id::text || '%' WHERE r.user_id = $1 GROUP BY c.id";
+
+/**
+ * How many rows use each of the user's categories, by the same references
+ * `findCategoryReferences` refuses a delete for (subcategories aside, which the
+ * service refuses on their own), so the list's count and the 409 agree.
+ */
+export function countCategoryUsage(
+  m: EntityManager,
+  userId: string,
+): Promise<Map<string, number>> {
+  return countReferencesById(m, userId, [
+    ...Object.values(CATEGORY_REFERENCES).flatMap((ref) =>
+      ref.policy === "refuse" && "listSql" in ref ? [ref.listSql] : [],
+    ),
+    LOAN_ACCOUNTS_LIST_SQL,
+    RULES_LIST_SQL,
+    REPORTS_LIST_SQL,
   ]);
 }

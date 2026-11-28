@@ -32,7 +32,10 @@ import {
   recordInUseSummary,
 } from "../common/helpers/record-in-use";
 import { UNCATEGORIZED } from "./dto/remove-category-query.dto";
-import { findCategoryReferences } from "./category-references";
+import {
+  countCategoryUsage,
+  findCategoryReferences,
+} from "./category-references";
 import { qualifiedCategoryName } from "./category-name.util";
 import { searchIncludes } from "../common/helpers/search-match";
 import {
@@ -211,7 +214,7 @@ export class CategoriesService {
   async findAll(
     userId: string,
     includeSystem = false,
-  ): Promise<(Category & { transactionCount: number })[]> {
+  ): Promise<(Category & { transactionCount: number; usageCount: number })[]> {
     const categoriesWithCounts = await withScopedDb(
       this.dataSource,
       async (m) => {
@@ -258,9 +261,13 @@ export class CategoriesService {
         const countMap = toCountMap(directCounts, { keyField: "categoryId" });
         toCountMap(splitCounts, { keyField: "categoryId", into: countMap });
 
+        // What the delete refuses for, so the list never reads 0 on a 409.
+        const usageMap = await countCategoryUsage(m, userId);
+
         return categories.map((category) => ({
           ...category,
           transactionCount: countMap.get(category.id) || 0,
+          usageCount: usageMap.get(category.id) || 0,
         }));
       },
     );

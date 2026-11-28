@@ -387,43 +387,29 @@ describe("TagsService", () => {
   });
 
   describe("getAllTransactionCounts()", () => {
-    it("returns transaction counts keyed by tag ID", async () => {
-      const ttQueryBuilder = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        innerJoin: jest.fn().mockReturnThis(),
-        groupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue([
-          { tag_id: "tag-1", count: "5" },
-          { tag_id: "tag-2", count: "3" },
-        ]),
-      };
-      transactionTagsRepository.createQueryBuilder.mockReturnValue(
-        ttQueryBuilder,
-      );
+    it("sums every reference per tag ID, schedules' tag_ids included", async () => {
+      mockManager.query
+        .mockResolvedValueOnce([{ id: "tag-1", count: 5 }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          { id: "tag-1", count: 1 },
+          { id: "tag-2", count: 3 },
+        ])
+        .mockResolvedValue([]);
 
       const result = await service.getAllTransactionCounts(userId);
 
-      expect(result).toEqual({ "tag-1": 5, "tag-2": 3 });
-      expect(ttQueryBuilder.innerJoin).toHaveBeenCalledWith(
-        Tag,
-        "t",
-        "t.id = tt.tag_id AND t.user_id = :userId",
-        { userId },
+      expect(result).toEqual({ "tag-1": 6, "tag-2": 3 });
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining("FROM scheduled_transactions"),
+        [userId],
       );
     });
 
-    it("returns empty object when no tags have transactions", async () => {
-      const ttQueryBuilder = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        innerJoin: jest.fn().mockReturnThis(),
-        groupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue([]),
-      };
-      transactionTagsRepository.createQueryBuilder.mockReturnValue(
-        ttQueryBuilder,
-      );
+    it("returns empty object when no tags have references", async () => {
+      mockManager.query.mockResolvedValue([]);
 
       const result = await service.getAllTransactionCounts(userId);
 

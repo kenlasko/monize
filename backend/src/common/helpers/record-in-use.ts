@@ -82,3 +82,23 @@ export async function countReferences(
   }
   return [...found.values()];
 }
+
+/**
+ * Per-record totals for a list: each `listSql` takes the user as `$1` and
+ * returns `id` and `count` rows for that user's records; the counts are summed
+ * per id. The grouped twin of `countReferences`, which counts one record.
+ */
+export async function countReferencesById(
+  m: EntityManager,
+  userId: string,
+  listSqls: readonly string[],
+): Promise<Map<string, number>> {
+  const totals = new Map<string, number>();
+  for (const sql of listSqls) {
+    const rows: { id: string; count: number }[] = await m.query(sql, [userId]);
+    for (const r of rows) {
+      totals.set(r.id, (totals.get(r.id) ?? 0) + Number(r.count));
+    }
+  }
+  return totals;
+}

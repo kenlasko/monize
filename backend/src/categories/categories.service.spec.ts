@@ -150,6 +150,8 @@ describe("CategoriesService", () => {
       [ScheduledTransactionSplit, scheduledSplitsRepository],
       [UserPreference, preferencesRepository],
     ]));
+    // The list's usage counts (`countCategoryUsage`) read raw rows.
+    txManager.query.mockResolvedValue([]);
     txManager.update.mockResolvedValue({ affected: 0 });
     txManager.find.mockResolvedValue([]);
     // Mirror real TypeORM: save/remove require an explicit entity target
@@ -534,11 +536,16 @@ describe("CategoriesService", () => {
       transactionsRepository.createQueryBuilder.mockReturnValue(directCountsQb);
       splitsRepository.createQueryBuilder.mockReturnValue(splitCountsQb);
 
+      // Every reference the delete refuses for is summed into usageCount.
+      txManager.query.mockResolvedValueOnce([{ id: "cat-2", count: 4 }]);
+
       const result = await service.findAll("user-1");
 
       expect(result).toHaveLength(2);
       expect(result[0].transactionCount).toBe(5);
       expect(result[1].transactionCount).toBe(0);
+      expect(result[0].usageCount).toBe(0);
+      expect(result[1].usageCount).toBe(4);
     });
 
     it("filters out system categories by default", async () => {

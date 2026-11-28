@@ -39,6 +39,7 @@ import {
   RecordInUseEntry,
 } from "../common/helpers/record-in-use";
 import {
+  countPayeeUsage,
   findPayeeReferences,
   reassignPayeeReferences,
 } from "./payee-references";
@@ -730,6 +731,7 @@ export class PayeesService {
   ): Promise<
     (Payee & {
       transactionCount: number;
+      usageCount: number;
       lastUsedDate: string | null;
       aliasCount: number;
       uncategorizedCount: number;
@@ -808,10 +810,14 @@ export class PayeesService {
         userId,
       );
 
+      // What the delete refuses for, so the list never reads 0 on a 409.
+      const usageMap = await countPayeeUsage(m, userId);
+
       // Merge stats with payees
       return payees.map((payee) => ({
         ...payee,
         transactionCount: countMap.get(payee.id) || 0,
+        usageCount: usageMap.get(payee.id) || 0,
         lastUsedDate: lastUsedMap.get(payee.id) || null,
         aliasCount: aliasCountMap.get(payee.id) || 0,
         uncategorizedCount: uncategorizedCountMap.get(payee.id) || 0,
