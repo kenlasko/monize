@@ -864,7 +864,8 @@ export class AccountsService {
 
   /**
    * Resolve a list of account names to an account-id filter. Case-insensitive
-   * exact match over the user's OPEN accounts. Returns:
+   * exact match over open accounts by default. Historical reads include closed
+   * accounts and accept an ID to disambiguate a reused name. Returns:
    * - `{ accountIds: undefined }` when no names are supplied (treat as "all
    *   accounts");
    * - `{ accountIds }` when every name resolves;
@@ -879,17 +880,40 @@ export class AccountsService {
   async resolveAccountFilter(
     userId: string,
     names?: string[],
+    scope: "open" | "historical" = "open",
   ): Promise<{ accountIds?: string[]; error?: string }> {
-    if (!names || names.length === 0) return { accountIds: undefined };
+    if (!names?.length) return { accountIds: undefined };
 
-    const accounts = await this.findAll(userId, false);
-    const nameMap = new Map(accounts.map((a) => [a.name.toLowerCase(), a.id]));
-
+    const historical = scope === "historical";
+    const accounts = await this.findAll(userId, historical);
     const accountIds: string[] = [];
     const unresolved: string[] = [];
     for (const name of names) {
-      const id = nameMap.get(name.toLowerCase());
-      if (id) accountIds.push(id);
+      const key = name.toLowerCase();
+      const byId = historical && accounts.find((a) => a.id === key);
+      if (byId) {
+        accountIds.push(byId.id);
+        continue;
+      }
+      const matches = accounts.filter((a) => a.name.toLowerCase() === key);
+      if (historical && matches.length > 1) {
+        const idsFor = (closed: boolean) =>
+          matches
+            .filter((a) => a.isClosed === closed)
+            .map((a) => a.id)
+            .join(", ") || "—";
+        const openIds = idsFor(false);
+        const closedIds = idsFor(true);
+        return {
+          error: tr(
+            "errors.accounts.historicalNameAmbiguous",
+            `Choose an account ID for "${name}". Open: ${openIds}. Closed: ${closedIds}.`,
+            { name, openIds, closedIds },
+          ),
+        };
+      }
+      const match = matches.at(-1);
+      if (match) accountIds.push(match.id);
       else unresolved.push(name);
     }
 

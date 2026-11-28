@@ -69,7 +69,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
           type: "array",
           items: { type: "string" },
           description:
-            "Filter by account names. Use exact names from the user's account list.",
+            "Exact account names or IDs, including closed accounts. If a name matches several accounts, ask the user which ID to use.",
         },
         categoryNames: {
           type: "array",
@@ -290,7 +290,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
           type: "array",
           items: { type: "string" },
           description:
-            "Optional: filter to specific investment account names. Use exact names from the user's account list.",
+            "Exact account names or IDs, including closed accounts. If a name matches several accounts, ask the user which ID to use.",
         },
         symbols: {
           type: "array",
@@ -354,7 +354,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
           type: "array",
           items: { type: "string" },
           description:
-            "Optional: filter to specific investment account names. Use exact names from the user's account list.",
+            "Exact account names or IDs, including closed accounts. If a name matches several accounts, ask the user which ID to use.",
         },
         symbols: {
           type: "array",

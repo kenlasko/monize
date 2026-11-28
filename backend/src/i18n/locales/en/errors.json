@@ -79,6 +79,7 @@
     "sourceNotFound": "Source account not found",
     "loanSourceCurrencyMismatch": "The payment account is in {{ source }} and the loan in {{ loan }}. Choose an account in {{ loan }}.",
     "invalidSourceAccount": "Choose an open account, other than the loan itself, to pay from",
+    "historicalNameAmbiguous": "Choose an account ID for \"{{ name }}\". Open: {{ openIds }}. Closed: {{ closedIds }}.",
     "ambiguousBrokerage": "\"{{ query }}\" matches multiple brokerage accounts: {{ list }}. Use the exact account name.",
     "unknownInvestmentAccount": "Unknown account: {{ name }}. Use an exact name from the user's account list.",
     "notACreditCard": "Statement cycles are only available for credit card accounts",

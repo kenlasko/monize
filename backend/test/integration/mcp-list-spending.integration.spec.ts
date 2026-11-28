@@ -1,3 +1,4 @@
+import { Account } from "@/accounts/entities/account.entity";
 import { AccountsService } from "@/accounts/accounts.service";
 import { ToolExecutorService } from "@/ai/query/tool-executor.service";
 import { Test, TestingModule } from "@nestjs/testing";
@@ -44,7 +45,7 @@ describe("list_transactions grouped spending through MCP (USD)", () => {
         ToolExecutorService,
         {
           provide: AccountsService,
-          useValue: { resolveAccountFilter: async () => ({}) },
+          useValue: module.get(AccountsService),
         },
         {
           provide: TransactionAnalyticsService,
@@ -114,6 +115,81 @@ describe("list_transactions grouped spending through MCP (USD)", () => {
     expect(result).not.toHaveProperty("isError", true);
     return config.outputSchema.parse(result.structuredContent);
   }
+
+  it("resolves closed accounts and requests an explicit ID for a reused name on both tools", async () => {
+    await db.manager.update(Account, accountId, {
+      name: "Household",
+      currencyCode: "EUR",
+    });
+    await db.manager.update(
+      UserPreference,
+      { userId },
+      { defaultCurrency: "EUR" },
+    );
+    const posting = { currencyCode: "EUR", transactionDate: "2026-03-01" };
+    await post(-125, posting);
+
+    async function read(accountNames?: string[]) {
+      const input = {
+        startDate: "2026-03-01",
+        endDate: "2026-03-31",
+        direction: "expenses",
+        groupBy: "month",
+        accountNames,
+      };
+      const [, config, handler] = registerTool.mock.calls.find(
+        ([name]) => name === "list_transactions",
+      )!;
+      const mcp = await withUserContext<{
+        isError?: boolean;
+        structuredContent?: unknown;
+        content: { text: string }[];
+      }>(userId, () =>
+        handler(
+          config.inputSchema.parse(input),
+          mcpTestCtx({ userId, scopes: "read" }),
+        ),
+      );
+      const ai = await withUserContext(userId, () =>
+        tools
+          .get(ToolExecutorService)
+          .execute(userId, "list_transactions", input),
+      );
+      return { mcp, ai };
+    }
+    async function checkTotal(total: number, names?: string[]) {
+      const { mcp, ai } = await read(names);
+      const expected = {
+        totalsCurrency: "EUR",
+        breakdown: [{ month: "2026-03", total }],
+      };
+      expect(mcp.isError).toBeFalsy();
+      expect(mcp.structuredContent).toMatchObject(expected);
+      expect(ai.isError).toBeFalsy();
+      expect(ai.data).toMatchObject(expected);
+    }
+
+    await checkTotal(125, ["household"]);
+    await withUserContext(userId, () =>
+      module.get(AccountsService).close(userId, accountId),
+    );
+    await checkTotal(125, ["Household"]);
+    const replacement = await createTestAccount(db, userId, {
+      name: "Household",
+      currencyCode: "EUR",
+    });
+    await post(-24, { ...posting, accountId: replacement.id });
+    const { mcp, ai } = await read(["Household"]);
+    expect(mcp.isError).toBe(true);
+    expect(ai.isError).toBe(true);
+    for (const message of [mcp.content[0].text, ai.summary]) {
+      expect(message).toContain(`Closed: ${accountId}`);
+      expect(message).toContain(`Open: ${replacement.id}`);
+    }
+    await checkTotal(125, [accountId]);
+    await checkTotal(24, [replacement.id]);
+    await checkTotal(149);
+  });
 
   it.each([30, 100, 150])(
     "nets a %i USD refund in every grouping and keeps cash flows separate",
