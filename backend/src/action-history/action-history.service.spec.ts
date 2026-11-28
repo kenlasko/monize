@@ -30,6 +30,59 @@ jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
 );
 
+/**
+ * `manager.query` for the row locks a create-undo takes (investment rows, then
+ * transaction rows), by statement; any other statement answers `fallback`.
+ */
+function lockQueries(
+  fallback: unknown,
+  rows: {
+    investment?: Record<string, unknown>[];
+    transactions?: Record<string, unknown>[];
+  },
+) {
+  return async (sql: string) => {
+    if (/FROM investment_transactions[\s\S]*FOR UPDATE/.test(sql)) {
+      return rows.investment ?? [];
+    }
+    if (/FROM transactions[\s\S]*FOR UPDATE/.test(sql)) {
+      return rows.transactions ?? [];
+    }
+    return fallback;
+  };
+}
+
+const lockedTx = (id: string, accountId: string) => ({
+  id,
+  account_id: accountId,
+  amount: "0",
+  transaction_date: "2024-01-01",
+  status: "UNRECONCILED",
+  is_split: false,
+  linked_transaction_id: null,
+  parent_transaction_id: null,
+  payee_id: null,
+  payee_name: null,
+});
+
+const lockedInv = (id: string, accountId: string, cashId: string | null) => ({
+  id,
+  account_id: accountId,
+  security_id: null,
+  funding_account_id: null,
+  transaction_id: cashId,
+  transaction_split_id: null,
+  linked_transaction_id: null,
+  action: "BUY",
+  transaction_date: "2024-01-15",
+  quantity: "1",
+  price: "1",
+  commission: "0",
+  total_amount: "1",
+  exchange_rate: "1",
+  status: "UNRECONCILED",
+});
+
 describe("ActionHistoryService", () => {
   let service: ActionHistoryService;
   let mockRepository: Record<string, jest.Mock>;
@@ -2123,14 +2176,56 @@ describe("ActionHistoryService", () => {
       });
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
       mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
-      mockQueryRunner.query.mockResolvedValue([
-        { opening_balance: "0", tx_sum: "0" },
-      ]);
+      mockQueryRunner.query.mockImplementation(
+        lockQueries([{ opening_balance: "0", tx_sum: "0" }], {
+          transactions: [
+            lockedTx("tx-from", "acc-1"),
+            lockedTx("tx-to", "acc-2"),
+          ],
+        }),
+      );
 
       const result = await service.undo(userId);
 
       expect(result.description).toContain("Undone");
       expect(mockDataSource.transaction).toHaveBeenCalled();
+    });
+
+    it("refuses the undo of a transfer create when a leg is not locked, deleting nothing", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType: "transfer",
+        action: "create",
+        entityId: "tx-from",
+        afterData: {
+          fromTransactionId: "tx-from",
+          toTransactionId: "tx-other-owner",
+          fromAccountId: "acc-1",
+          toAccountId: "acc-2",
+        },
+      });
+      mockQueryRunner.query.mockImplementation(
+        lockQueries([], { transactions: [lockedTx("tx-from", "acc-1")] }),
+      );
+
+      await expect(service.undo(userId)).rejects.toThrow(/tx-other-owner/);
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+    });
+
+    it("refuses the redo of a transfer create, which holds leg ids only", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        isUndone: true,
+        entityType: "transfer",
+        action: "create",
+        entityId: "tx-from",
+        afterData: { fromTransactionId: "tx-from", toTransactionId: "tx-to" },
+      });
+
+      await expect(service.redo(userId)).rejects.toMatchObject({
+        status: 409,
+      });
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
     });
 
     it("should undo transfer delete by re-inserting both transactions", async () => {
@@ -2334,9 +2429,12 @@ describe("ActionHistoryService", () => {
         .mockResolvedValueOnce(mockCashTx); // Cash Transaction
       mockQueryRunner.manager.remove.mockResolvedValue(undefined);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
-      mockQueryRunner.query.mockResolvedValue([
-        { opening_balance: "0", tx_sum: "0" },
-      ]);
+      mockQueryRunner.query.mockImplementation(
+        lockQueries([{ opening_balance: "0", tx_sum: "0" }], {
+          investment: [lockedInv("inv-1", "acc-1", "cash-tx-1")],
+          transactions: [lockedTx("cash-tx-1", "acc-2")],
+        }),
+      );
 
       const result = await service.undo(userId);
 
@@ -3037,6 +3135,9 @@ describe("ActionHistoryService", () => {
       });
       mockQueryRunner.manager.remove.mockResolvedValue(undefined);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.query.mockImplementation(
+        lockQueries([], { investment: [lockedInv("inv-1", "acc-1", null)] }),
+      );
 
       await service.undo(userId);
 

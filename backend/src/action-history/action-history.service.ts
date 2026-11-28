@@ -70,6 +70,8 @@ import {
   LockedTransactionRow,
   lockAccountsForBalanceWrite,
   lockCategoryOwnerShared,
+  lockHoldingScope,
+  lockInvestmentTransactionRow,
   lockTransactionRows,
 } from "../common/db/locks";
 import { LEDGER_MOVEMENT_PREDICATE } from "../common/ledger-balance.sql";
@@ -88,6 +90,23 @@ import {
 import { invalidatePortfolioSummary } from "../securities/portfolio-summary-memo";
 import { todayYMD } from "../common/date-utils";
 
+/** Refuses when the lock did not return a row the undo means to delete. */
+function assertAllLocked(
+  ids: readonly string[],
+  locked: ReadonlyMap<string, unknown>,
+): void {
+  const missing = ids.find((id) => !locked.has(id));
+  if (missing) {
+    throw new NotFoundException(
+      tr(
+        "errors.transactions.notFoundById",
+        `Transaction with ID ${missing} not found`,
+        { id: missing },
+      ),
+    );
+  }
+}
+
 /**
  * A create whose snapshot links the row to a counterpart leg (a transfer leg,
  * or a split line with a linked leg) cannot be redone: the undo deleted the
@@ -100,7 +119,11 @@ function assertTransactionCreateRedoable(action: ActionHistory): void {
     (after?.isTransfer === true && !!after?.linkedTransactionId) ||
     (splits as SplitSnapshot[]).some(isLegSplit);
   if (!hasLegs) return;
-  throw new ConflictException({
+  throw redoCreateWithLegsError();
+}
+
+function redoCreateWithLegsError(): ConflictException {
+  return new ConflictException({
     message: tr(
       "errors.actionHistory.redoCreateWithLegs",
       "This transaction created entries in other accounts, so it cannot be redone. Create it again instead",
@@ -1009,6 +1032,11 @@ export class ActionHistoryService {
     if (action.entityType === "transaction" && action.action === "create") {
       assertTransactionCreateRedoable(action);
     }
+    // A transfer create's snapshot holds leg ids only, so its redo would
+    // re-create nothing yet report success: refused like a create with legs.
+    if (action.entityType === "transfer" && action.action === "create") {
+      throw redoCreateWithLegsError();
+    }
     // A delete that moved rows into another category: the undo moved them back,
     // so the redo moves them again before the delete's reference check.
     const moved =
@@ -1048,21 +1076,14 @@ export class ActionHistoryService {
   /**
    * The rows a scheduled posting wrote are removed exactly as the undo of the
    * create that wrote them would remove them (`scheduled-posting-undo.ts`),
-   * after the strict reconciled lock (INV-RECONCILE-001): the transaction
-   * create's undo takes it itself; a transfer's two legs and an investment
-   * row's cash transaction are locked and checked here first, so a
-   * reconciled row refuses the undo before anything is written.
+   * under the strict reconciled lock (INV-RECONCILE-001): each create-undo
+   * handler locks and checks its own rows before its first write, so a
+   * reconciled row refuses the undo and nothing is written.
    */
   private scheduledPostingRemover(
     action: ActionHistory,
     manager: EntityManager,
   ): ScheduledPostingMoneyRemover {
-    const assertMutable = async (ids: string[]): Promise<void> => {
-      const rows = await lockTransactionRows(manager, ids, action.userId);
-      await assertReconciledRowsMutable(manager, action.userId, [
-        ...rows.values(),
-      ]);
-    };
     return async (money) => {
       switch (money.kind) {
         case "transaction":
@@ -1072,7 +1093,6 @@ export class ActionHistoryService {
           );
           return;
         case "transfer":
-          await assertMutable([money.fromTransactionId, money.toTransactionId]);
           await this.undoTransferCreate(
             {
               ...action,
@@ -1086,20 +1106,12 @@ export class ActionHistoryService {
             manager,
           );
           return;
-        case "investment": {
-          const row = await manager.findOne(InvestmentTransaction, {
-            where: {
-              id: money.investmentTransactionId,
-              userId: action.userId,
-            },
-          });
-          if (row?.transactionId) await assertMutable([row.transactionId]);
+        case "investment":
           await this.undoInvestmentCreate(
             { ...action, entityId: money.investmentTransactionId },
             manager,
           );
           return;
-        }
       }
     };
   }
@@ -1667,18 +1679,21 @@ export class ActionHistoryService {
     const { fromTransactionId, toTransactionId, fromAccountId, toAccountId } =
       action.afterData;
 
-    // INV-RECONCILE-001: refused before the first write when a leg is reconciled
-    // (the scheduled-posting remover reaches here too).
+    // INV-RECONCILE-001: refused before the first write when a leg is
+    // reconciled. A leg the lock does not return (the other owner's leg of a
+    // cross-owner transfer, or one already gone) refuses the undo rather than
+    // being deleted unchecked.
+    const legIds = [fromTransactionId, toTransactionId].filter(
+      (id): id is string => !!id,
+    );
+    const lockedLegs = await lockTransactionRows(
+      manager,
+      legIds,
+      action.userId,
+    );
+    assertAllLocked(legIds, lockedLegs);
     await assertReconciledRowsMutable(manager, action.userId, [
-      ...(
-        await lockTransactionRows(
-          manager,
-          [fromTransactionId, toTransactionId].filter(
-            (id): id is string => !!id,
-          ),
-          action.userId,
-        )
-      ).values(),
+      ...lockedLegs.values(),
     ]);
 
     // Delete both linked transactions
@@ -1701,7 +1716,7 @@ export class ActionHistoryService {
 
     for (const txId of [fromTransactionId, toTransactionId]) {
       if (!txId) continue;
-      await manager.delete(Transaction, { id: txId });
+      await manager.delete(Transaction, { id: txId, userId: action.userId });
     }
 
     if (fromAccountId) {
@@ -1919,6 +1934,26 @@ export class ActionHistoryService {
     const legs = linkedTx ? [invTx, linkedTx] : [invTx];
     const accountIds = new Set<string>();
 
+    // Lock order (docs/concurrency-and-idempotency.md section 5), as
+    // InvestmentTransactionsService.remove: the holdings advisory lock first,
+    // then the investment rows, then the cash rows.
+    await lockHoldingScope(
+      manager,
+      legs.map((leg) => leg.accountId),
+    );
+    const lockedLegs = new Map<
+      string,
+      NonNullable<Awaited<ReturnType<typeof lockInvestmentTransactionRow>>>
+    >();
+    for (const id of legs.map((leg) => leg.id).sort()) {
+      const locked = await lockInvestmentTransactionRow(
+        manager,
+        id,
+        action.userId,
+      );
+      if (locked) lockedLegs.set(id, locked);
+    }
+
     await assertSecuritiesActiveIn(
       manager,
       action.userId,
@@ -1935,23 +1970,29 @@ export class ActionHistoryService {
 
     // INV-RECONCILE-001: the cash rows go with the create, so a reconciled one
     // refuses the undo (and the redo of a delete) before anything is written.
+    // The ids come from the locked rows, and a row the lock did not return is
+    // refused, never deleted unchecked.
+    const cashIds = [...lockedLegs.values()].flatMap((leg) =>
+      leg.transactionId ? [leg.transactionId] : [],
+    );
+    const lockedCash = await lockTransactionRows(
+      manager,
+      cashIds,
+      action.userId,
+    );
+    assertAllLocked(cashIds, lockedCash);
     await assertReconciledRowsMutable(manager, action.userId, [
-      ...(
-        await lockTransactionRows(
-          manager,
-          legs.flatMap((leg) => (leg.transactionId ? [leg.transactionId] : [])),
-          action.userId,
-        )
-      ).values(),
+      ...lockedCash.values(),
     ]);
 
     for (const leg of legs) {
       accountIds.add(leg.accountId);
 
       // Delete linked cash transaction
-      if (leg.transactionId) {
+      const cashId = lockedLegs.get(leg.id)?.transactionId;
+      if (cashId) {
         const cashTx = await manager.findOne(Transaction, {
-          where: { id: leg.transactionId },
+          where: { id: cashId, userId: action.userId },
         });
         if (cashTx) {
           await manager.query(

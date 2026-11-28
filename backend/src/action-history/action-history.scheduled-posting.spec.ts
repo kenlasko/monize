@@ -11,7 +11,6 @@ import {
 } from "./scheduled-posting-undo";
 import { lockTransactionRows } from "../common/db/locks";
 import { assertReconciledRowsMutable } from "../transactions/reconciled-lock.util";
-import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -141,62 +140,41 @@ describe("ActionHistoryService: scheduled posting entries", () => {
       );
     });
 
+    const transferLegs = {
+      fromTransactionId: "tx-1",
+      toTransactionId: "tx-2",
+      fromAccountId: "acc-1",
+      toAccountId: "acc-2",
+    };
+
     it("a transfer's two legs", async () => {
-      const legs = {
-        fromTransactionId: "tx-1",
-        toTransactionId: "tx-2",
-        fromAccountId: "acc-1",
-        toAccountId: "acc-2",
-      };
-      await remover({ kind: "transfer", ...legs });
-      expect(lockTransactionRows).toHaveBeenCalledWith(
-        manager,
-        ["tx-1", "tx-2"],
-        userId,
-      );
-      expect(assertReconciledRowsMutable).toHaveBeenCalledWith(
-        manager,
-        userId,
-        [lockedLeg],
-      );
+      await remover({ kind: "transfer", ...transferLegs });
       expect(undoTransferCreate).toHaveBeenCalledWith(
-        expect.objectContaining({ userId, afterData: legs }),
+        expect.objectContaining({ userId, afterData: transferLegs }),
         manager,
       );
     });
 
+    // The refusal belongs to the handler (INV-RECONCILE-001), so the remover
+    // needs no check of its own: the real handler runs here.
     it("a reconciled transfer leg refuses before anything is removed", async () => {
+      undoTransferCreate.mockRestore();
+      (lockTransactionRows as jest.Mock).mockResolvedValue(
+        new Map([
+          ["tx-1", lockedLeg],
+          ["tx-2", { id: "tx-2", status: "UNRECONCILED" }],
+        ]),
+      );
       (assertReconciledRowsMutable as jest.Mock).mockRejectedValue(
         new ConflictException("reconciled"),
       );
+      manager.query.mockClear();
+      manager.delete.mockClear();
       await expect(
-        remover({
-          kind: "transfer",
-          fromTransactionId: "tx-1",
-          toTransactionId: "tx-2",
-          fromAccountId: "acc-1",
-          toAccountId: "acc-2",
-        }),
+        remover({ kind: "transfer", ...transferLegs }),
       ).rejects.toBeInstanceOf(ConflictException);
-      expect(undoTransferCreate).not.toHaveBeenCalled();
-    });
-
-    it("an investment row's cash transaction is checked first", async () => {
-      manager.findOne.mockResolvedValue({ id: "inv-1", transactionId: "tx-1" });
-      await remover({
-        kind: "investment",
-        investmentTransactionId: "inv-1",
-        securityId: "sec-1",
-      });
-      expect(manager.findOne).toHaveBeenCalledWith(InvestmentTransaction, {
-        where: { id: "inv-1", userId },
-      });
-      expect(lockTransactionRows).toHaveBeenCalledWith(
-        manager,
-        ["tx-1"],
-        userId,
-      );
-      expect(undoInvestmentCreate).toHaveBeenCalled();
+      expect(manager.query).not.toHaveBeenCalled();
+      expect(manager.delete).not.toHaveBeenCalled();
     });
 
     it("an investment transaction", async () => {

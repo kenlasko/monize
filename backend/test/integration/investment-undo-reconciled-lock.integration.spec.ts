@@ -16,6 +16,7 @@ import {
   AccountType,
 } from "@/accounts/entities/account.entity";
 import { InvestmentAction } from "@/securities/entities/investment-transaction.entity";
+import { TransactionsService } from "@/transactions/transactions.service";
 import { withUserContext } from "@/common/db/with-context";
 import {
   createIntegrationModule,
@@ -28,6 +29,7 @@ describe("undo of an investment create honours the reconciled lock (integration,
   let module: TestingModule;
   let investments: InvestmentTransactionsService;
   let history: ActionHistoryService;
+  let transactions: TransactionsService;
   let dataSource: DataSource;
   let userId: string;
   let brokerageAccountId: string;
@@ -38,6 +40,7 @@ describe("undo of an investment create honours the reconciled lock (integration,
     module = await createIntegrationModule([SecuritiesModule]);
     investments = module.get(InvestmentTransactionsService);
     history = module.get(ActionHistoryService, { strict: false });
+    transactions = module.get(TransactionsService, { strict: false });
     dataSource = module.get(DataSource);
   });
 
@@ -49,9 +52,21 @@ describe("undo of an investment create honours the reconciled lock (integration,
   beforeAll(async () => {
     // The synchronize-built schema has NO ACTION here; database/schema.sql has
     // ON DELETE SET NULL, which the undo's delete of the cash row relies on.
-    await dataSource.query(
-      'ALTER TABLE investment_transactions DROP CONSTRAINT "FK_73200e77d5b658b4e0c6b379dd9", ADD FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL',
-    );
+    await dataSource.query(`
+      DO $$
+      DECLARE c text;
+      BEGIN
+        SELECT conname INTO c FROM pg_constraint
+         WHERE conrelid = 'investment_transactions'::regclass
+           AND contype = 'f'
+           AND confrelid = 'transactions'::regclass
+           AND conkey = ARRAY[(SELECT attnum FROM pg_attribute
+                WHERE attrelid = 'investment_transactions'::regclass
+                  AND attname = 'transaction_id')];
+        EXECUTE format('ALTER TABLE investment_transactions DROP CONSTRAINT %I', c);
+        ALTER TABLE investment_transactions ADD FOREIGN KEY (transaction_id)
+          REFERENCES transactions(id) ON DELETE SET NULL;
+      END $$`);
   });
 
   beforeEach(async () => {
@@ -172,5 +187,65 @@ describe("undo of an investment create honours the reconciled lock (integration,
     await withUserContext(userId, () => history.undo(userId));
 
     expect(await cashCount()).toBe(0);
+  });
+
+  describe("a transfer create", () => {
+    let otherAccountId: string;
+
+    const makeTransfer = async (lockOn: boolean) => {
+      otherAccountId = (
+        await createTestAccount(dataSource, userId, {
+          name: "Savings",
+          openingBalance: 0,
+          currentBalance: 0,
+        })
+      ).id;
+      await withUserContext(userId, () =>
+        transactions.createTransfer(userId, {
+          fromAccountId: fundingAccountId,
+          toAccountId: otherAccountId,
+          transactionDate: "2026-01-15",
+          amount: 25,
+          fromCurrencyCode: "USD",
+        }),
+      );
+      await settlePendingHistoryWrites();
+      await dataSource.query(
+        `UPDATE transactions SET status = 'RECONCILED' WHERE account_id = $1`,
+        [otherAccountId],
+      );
+      await dataSource.query(
+        `INSERT INTO user_preferences (user_id, lock_reconciled_transactions)
+         VALUES ($1, $2)
+         ON CONFLICT (user_id) DO UPDATE SET lock_reconciled_transactions = $2`,
+        [userId, lockOn],
+      );
+    };
+
+    const legCount = async (): Promise<number> =>
+      (
+        await dataSource.query(
+          `SELECT id FROM transactions WHERE account_id IN ($1, $2)`,
+          [fundingAccountId, otherAccountId],
+        )
+      ).length;
+
+    it("refuses the undo when one leg is reconciled, both legs staying", async () => {
+      await makeTransfer(true);
+
+      await expect(
+        withUserContext(userId, () => history.undo(userId)),
+      ).rejects.toMatchObject({ status: 409 });
+
+      expect(await legCount()).toBe(2);
+    });
+
+    it("undoes it when the lock is off", async () => {
+      await makeTransfer(false);
+
+      await withUserContext(userId, () => history.undo(userId));
+
+      expect(await legCount()).toBe(0);
+    });
   });
 });
