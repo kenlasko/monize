@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { createContext, useCallback, useContext, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslations } from 'next-intl';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -7,6 +7,27 @@ import { getErrorMessage } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('useWidgetConfig');
+
+/**
+ * The ids of the accounts the dashboard has loaded, or null while they load
+ * (or if the load failed): a widget's saved settings name accounts in a map the
+ * server cannot join, so an id that is not among them is dropped on read and
+ * never sent back on save. Null keeps every id, so a failed load wipes nothing.
+ */
+export const KnownAccountIdsContext = createContext<ReadonlySet<string> | null>(null);
+
+const ACCOUNT_ID_KEY = /accountids$/i;
+
+function withoutUnknownAccounts<S extends object>(slice: S, known: ReadonlySet<string> | null): S {
+  if (!known) return slice;
+  let out: Record<string, unknown> | null = null;
+  for (const [key, value] of Object.entries(slice)) {
+    if (!ACCOUNT_ID_KEY.test(key) || !Array.isArray(value)) continue;
+    const kept = value.filter((id) => typeof id !== 'string' || known.has(id));
+    if (kept.length !== value.length) out = { ...(out ?? slice), [key]: kept };
+  }
+  return (out ?? slice) as S;
+}
 
 export interface UseWidgetConfigResult<T> {
   /** The widget's settings: stored values merged over the defaults. */
@@ -38,9 +59,11 @@ export function useWidgetConfig<T extends object>(
     (s) => s.preferences?.dashboardWidgetConfig?.[widgetId],
   );
 
+  const known = useContext(KnownAccountIdsContext);
+
   const config = useMemo(
-    () => ({ ...defaults, ...(stored as Partial<T> | undefined) }),
-    [defaults, stored],
+    () => withoutUnknownAccounts({ ...defaults, ...(stored as Partial<T> | undefined) }, known),
+    [defaults, stored, known],
   );
 
   const updateConfig = useCallback(
@@ -51,11 +74,14 @@ export function useWidgetConfig<T extends object>(
       const state = usePreferencesStore.getState();
       const allBefore = state.preferences?.dashboardWidgetConfig ?? {};
       const sliceBefore = allBefore[widgetId];
-      const nextWidget = {
-        ...defaults,
-        ...(sliceBefore as Partial<T> | undefined),
-        ...patch,
-      } as Record<string, unknown>;
+      const nextWidget = withoutUnknownAccounts(
+        {
+          ...defaults,
+          ...(sliceBefore as Partial<T> | undefined),
+          ...patch,
+        } as Record<string, unknown>,
+        known,
+      );
       const nextAll = { ...allBefore, [widgetId]: nextWidget };
 
       // Optimistic update so the chart re-renders immediately.
@@ -88,7 +114,7 @@ export function useWidgetConfig<T extends object>(
         toast.error(getErrorMessage(error, t('widgets.configSaveFailed')));
       }
     },
-    [defaults, widgetId, t],
+    [defaults, widgetId, t, known],
   );
 
   return { config, updateConfig };

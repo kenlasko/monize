@@ -2586,9 +2586,8 @@ export class AccountsService {
     // its schedule, and a failure to remove it went on to delete the account
     // anyway, which set the schedule's transfer to NULL (an uncategorized
     // payment from then on) and dropped any split line into the loan.
-    const { removedSchedule, unlinkedSchedule } = await withScopedDb(
-      this.dataSource,
-      async (m) => {
+    const { removedSchedule, unlinkedSchedule, widgetConfigRefs } =
+      await withScopedDb(this.dataSource, async (m) => {
         // A bank sync or import that wrote into the account after an unlocked
         // count would be cascaded away with it, leaving its transfer legs in
         // other accounts one-sided (A26-M19). The account row lock is the one
@@ -2645,18 +2644,26 @@ export class AccountsService {
         }
 
         // Widget settings name accounts in JSONB with no foreign key.
-        await stripAccountIdsFromWidgetConfig(m, userId, [id]);
+        const refs = await stripAccountIdsFromWidgetConfig(m, userId, [id]);
         await m.remove(account);
-        return { removedSchedule: removed, unlinkedSchedule: !!ownSchedule };
-      },
-    );
+        return {
+          removedSchedule: removed,
+          unlinkedSchedule: !!ownSchedule,
+          widgetConfigRefs: refs,
+        };
+      });
 
     // The account as it was, less the pointer to the schedule this delete
     // removed: undo restores the account first, and a pointer to a schedule
     // not yet restored would fail its foreign key and the whole undo.
+    // The widget settings that named it, so undo can put the id back.
+    const withRefs =
+      widgetConfigRefs.length > 0
+        ? { ...snapshot, widgetConfigRefs }
+        : snapshot;
     const beforeData = unlinkedSchedule
-      ? { ...snapshot, scheduledTransactionId: null }
-      : snapshot;
+      ? { ...withRefs, scheduledTransactionId: null }
+      : withRefs;
 
     // After the commit, in the order an undo has to reverse them: the
     // account's entry is the newer, so undo restores the loan before the

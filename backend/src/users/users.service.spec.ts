@@ -2387,6 +2387,34 @@ describe("UsersService", () => {
       expect(kept.some((q) => q.includes("investment_reports"))).toBe(false);
     });
 
+    it("strips the selected account ids from the widget config before deleting the accounts", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+      mockQueryRunner.query.mockImplementation(async (q: string) =>
+        q.startsWith("SELECT id FROM accounts")
+          ? [{ id: "a1" }, { id: "a2" }]
+          : [],
+      );
+
+      await service.deleteData("user-1", {
+        password: "CorrectPass123!",
+        deleteAccounts: true,
+      });
+      const calls = mockQueryRunner.query.mock.calls as [string, unknown[]][];
+      const strip = calls.findIndex(
+        ([q]) =>
+          q.includes("SET dashboard_widget_config") ||
+          q.includes("jsonb_each(p.dashboard_widget_config)"),
+      );
+      const wipe = calls.findIndex(([q]) => q.includes("DELETE FROM accounts"));
+      expect(strip).toBeGreaterThanOrEqual(0);
+      expect(strip).toBeLessThan(wipe);
+      expect(calls[strip][1]).toEqual(["user-1", ["a1", "a2"]]);
+    });
+
     it("passes userId to all deletion queries", async () => {
       const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
       usersRepository.findOne.mockResolvedValue({

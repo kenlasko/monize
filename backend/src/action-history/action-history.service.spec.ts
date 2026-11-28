@@ -3521,6 +3521,8 @@ describe("ActionHistoryService", () => {
       mockRepository.findOne.mockResolvedValue(action);
       mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      // The widget-config reference lookup: none.
+      mockQueryRunner.manager.query.mockResolvedValue([]);
 
       const result = await service.undo(userId);
 

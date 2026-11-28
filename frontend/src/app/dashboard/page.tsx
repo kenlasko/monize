@@ -27,6 +27,7 @@ import {
   type WidgetWidth,
 } from '@/components/dashboard/dashboard-layout';
 import { DashboardGrid, type DashboardGridEditing } from '@/components/dashboard/DashboardGrid';
+import { KnownAccountIdsContext } from '@/hooks/useWidgetConfig';
 import { useDashboardLayoutDraft } from '@/hooks/useDashboardLayoutDraft';
 import { useGridReorder } from '@/hooks/useGridReorder';
 import { accountsApi } from '@/lib/accounts';
@@ -143,6 +144,8 @@ function DashboardContent() {
   const [favouriteSecurities, setFavouriteSecurities] = useState<FavouriteSecurityQuote[]>([]);
   const [hasSecurities, setHasSecurities] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  // Set once the accounts have loaded; a widget drops saved ids outside them.
+  const [accountsLoaded, setAccountsLoaded] = useState(false);
   // The portfolio valuation loads after `isLoading` clears (below). The hero
   // holds only its "invested" figure on this, and the automatic price refresh
   // waits for it so the two do not compete for the server.
@@ -168,6 +171,11 @@ function DashboardContent() {
     if (wasEditingRef.current && !editing) gearRef.current?.focus();
     wasEditingRef.current = editing;
   }, [editing]);
+
+  const knownAccountIds = useMemo(
+    () => (accountsLoaded ? new Set(accountsWithClosed.map((a) => a.id)) : null),
+    [accountsLoaded, accountsWithClosed],
+  );
 
   const brokerageMarketValues = useMemo(() => {
     const map = new Map<string, number>();
@@ -266,6 +274,7 @@ function DashboardContent() {
           const delegateAccounts = await accountsApi.getAll();
           setAccounts(delegateAccounts);
           setAccountsWithClosed(delegateAccounts);
+          setAccountsLoaded(true);
           setInstitutions([]);
           // 3C: when the owner granted the Bills & Deposits section, the
           // scheduled endpoint is delegate-reachable (server-filtered to the
@@ -303,6 +312,7 @@ function DashboardContent() {
         ]);
 
         setAccountsWithClosed(accountsData);
+        setAccountsLoaded(true);
         setAccounts(accountsData.filter((a: Account) => !a.isClosed));
         setInstitutions(institutionsData);
         setScheduledTransactions(scheduledData);
@@ -600,6 +610,7 @@ function DashboardContent() {
   );
 
   return (
+    <KnownAccountIdsContext.Provider value={knownAccountIds}>
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <div className="sm:px-0">
@@ -669,5 +680,6 @@ function DashboardContent() {
         </div>
       </main>
     </PageLayout>
+    </KnownAccountIdsContext.Provider>
   );
 }

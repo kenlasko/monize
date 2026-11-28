@@ -68,7 +68,7 @@ describe("Account delete strips the id from dashboard widget config (integration
     );
 
     await withUserContext(userId, () => accounts.delete(userId, a));
-    await settlePendingHistoryWrites(history);
+    await settlePendingHistoryWrites();
 
     const [{ dashboard_widget_config: after }] = await db.query(
       `SELECT dashboard_widget_config FROM user_preferences WHERE user_id = $1`,
@@ -79,6 +79,62 @@ describe("Account delete strips the id from dashboard widget config (integration
       portfolio: { range: "1y", accountIds: [] },
       hero: { portfolioAccountIds: [b], showReturn: true },
       untouched: { range: "1m", accountIds: [b] },
+    });
+  });
+
+  it("does not write the preferences row when no widget names the account", async () => {
+    await db.query(
+      `INSERT INTO user_preferences (user_id, dashboard_widget_config, updated_at)
+       VALUES ($1, $2::jsonb, '2020-01-01')`,
+      [userId, JSON.stringify({ spending: { accountIds: [b] } })],
+    );
+
+    await withUserContext(userId, () => accounts.delete(userId, a));
+    await settlePendingHistoryWrites();
+
+    const [row] = await db.query(
+      `SELECT to_char(updated_at, 'YYYY') AS year FROM user_preferences WHERE user_id = $1`,
+      [userId],
+    );
+    expect(row.year).toBe("2020");
+  });
+
+  it("undo puts the id back only into slices that still exist and lack it", async () => {
+    await db.query(
+      `INSERT INTO user_preferences (user_id, dashboard_widget_config)
+       VALUES ($1, $2::jsonb)`,
+      [
+        userId,
+        JSON.stringify({
+          spending: { accountIds: [a, b] },
+          portfolio: { accountIds: [a] },
+          hero: { portfolioAccountIds: [a] },
+        }),
+      ],
+    );
+    await withUserContext(userId, () => accounts.delete(userId, a));
+    // Meanwhile the user removed the portfolio widget and re-picked a for hero.
+    await db.query(
+      `UPDATE user_preferences SET dashboard_widget_config = $2::jsonb WHERE user_id = $1`,
+      [
+        userId,
+        JSON.stringify({
+          spending: { accountIds: [b] },
+          hero: { portfolioAccountIds: [a] },
+        }),
+      ],
+    );
+
+    await settlePendingHistoryWrites();
+    await withUserContext(userId, () => history.undo(userId));
+
+    const [{ dashboard_widget_config: after }] = await db.query(
+      `SELECT dashboard_widget_config FROM user_preferences WHERE user_id = $1`,
+      [userId],
+    );
+    expect(after).toEqual({
+      spending: { accountIds: [b, a] },
+      hero: { portfolioAccountIds: [a] },
     });
   });
 });
