@@ -58,10 +58,16 @@ describe('undoRedoSignal', () => {
     for (const code of [
       'UNDO_DELETED_SPLIT_HAS_TRANSFER_LINE',
       'UNDO_TRANSFER_LEG_DELETED',
+      'UNDO_CROSS_OWNER_TRANSFER_NOT_SUPPORTED',
+      'UNDO_TRANSFER_CHANGE_NOT_SUPPORTED',
       'UNDO_BULK_DELETED_SPLIT',
     ]) {
       expect(isUndoRefusal(409, code)).toBe(true);
     }
+  });
+
+  it('holds Undo on a budget creation whose budget gained periods or lines', () => {
+    expect(isUndoRefusal(409, 'UNDO_BUDGET_HAS_HISTORY')).toBe(true);
   });
 
   it('holds Undo on a scheduled posting the server refuses to undo (issue #2165)', () => {

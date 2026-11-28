@@ -1,6 +1,7 @@
 import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { sharedReviewMock } from "../../shared-expenses/__fixtures__/shared-review";
 import { McpFinancialSummaryResource } from "./financial-summary.resource";
+import { requestContextStorage } from "../../common/request-context";
 import { mcpTestCtx, McpTestContext } from "../testing/mcp-test-context";
 
 describe("McpFinancialSummaryResource", () => {
@@ -65,6 +66,29 @@ describe("McpFinancialSummaryResource", () => {
     ctx.setUser({ userId: "u1", scopes: "write" });
     const result = await handler("monize://financial-summary", ctx);
     expect(result.contents[0].text).toContain("Insufficient scope");
+  });
+
+  it("runs the month from the user's month start to the user's today (#2365)", async () => {
+    // 12:00 UTC on 2026-11-30 is already 2026-12-01 in Kiritimati.
+    jest.useFakeTimers({ now: new Date("2026-11-30T12:00:00Z") });
+    try {
+      ctx.setUser({ userId: "u1", scopes: "read" });
+      accountsService.getSummary.mockResolvedValue({});
+      analyticsService.getSummary.mockResolvedValue({});
+      analyticsService.getLlmFlowTotals.mockResolvedValue({});
+
+      const result = await requestContextStorage.run(
+        { userId: "u1", timezone: "Pacific/Kiritimati" },
+        () => handler("monize://financial-summary", ctx),
+      );
+
+      expect(JSON.parse(result.contents[0].text).currentMonth.period).toEqual({
+        startDate: "2026-12-01",
+        endDate: "2026-12-01",
+      });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("should return financial summary with net worth and current month", async () => {

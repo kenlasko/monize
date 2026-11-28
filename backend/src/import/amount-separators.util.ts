@@ -34,7 +34,13 @@ export function normalizeAmountSeparators(value: string): string {
   const dotCount = countOf(value, ".");
 
   if (commaCount > 0 && dotCount > 0) {
-    return value.lastIndexOf(",") > value.lastIndexOf(".")
+    const decimalIsComma = value.lastIndexOf(",") > value.lastIndexOf(".");
+    const [integer, ...rest] = value.split(decimalIsComma ? "," : ".");
+    // "1,2.3" or "1.2,3.4": a second decimal or a malformed group is no number.
+    if (rest.length !== 1 || !isGrouped(integer, decimalIsComma ? "." : ",")) {
+      return value;
+    }
+    return decimalIsComma
       ? value.replace(/\./g, "").replace(",", ".")
       : value.replace(/,/g, "");
   }
@@ -46,12 +52,31 @@ export function normalizeAmountSeparators(value: string): string {
     return isGrouping ? value.replace(",", "") : value.replace(",", ".");
   }
   if (commaCount > 1) {
-    return value.replace(/,/g, "");
+    return isGrouped(value, ",") ? value.replace(/,/g, "") : value;
   }
   if (dotCount > 1) {
-    return value.replace(/\./g, "");
+    return isGrouped(value, ".") ? value.replace(/\./g, "") : value;
   }
   return value;
+}
+
+/**
+ * Digit groups split by `separator` read as grouping only in the two shapes
+ * people write: 1-3 digits then groups of 3 ("1,234,567"), or the lakh form,
+ * 1-2 digits, groups of 2, a last group of 3 ("12,34,567"). "12.03.26" is a
+ * date and "1,234,56" a typo, so both are left unread.
+ */
+function isGrouped(integer: string, separator: string): boolean {
+  const [first, ...rest] = integer.replace(/^[-+]/, "").split(separator);
+  const last = rest.pop();
+  if (last === undefined || !/^\d{3}$/.test(last)) return false;
+  return (
+    (/^\d{1,3}$/.test(first) && rest.every((g) => /^\d{3}$/.test(g))) ||
+    // The lakh form is written with commas only ("12.34.567" is not a number).
+    (separator === "," &&
+      /^\d{1,2}$/.test(first) &&
+      rest.every((g) => /^\d{2}$/.test(g)))
+  );
 }
 
 function countOf(value: string, separator: string): number {

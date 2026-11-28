@@ -1,3 +1,6 @@
+import { DataSource } from "typeorm";
+import { withScopedDb } from "../../common/db/scoped-db";
+import { userTodayYMD } from "../../common/users-by-timezone.util";
 import { sharedLedgerRefusal } from "../../common/db/shared-ledger-refusal";
 import {
   SharedReviewService,
@@ -62,7 +65,10 @@ import {
   type LlmQueryDirection,
   TransactionAnalyticsService,
 } from "../../transactions/transaction-analytics.service";
-import { NetWorthService } from "../../net-worth/net-worth.service";
+import {
+  NetWorthService,
+  defaultNetWorthHistoryStart,
+} from "../../net-worth/net-worth.service";
 import { BudgetReportsService } from "../../budgets/budget-reports.service";
 import { PortfolioService } from "../../securities/portfolio.service";
 import { SecuritiesService } from "../../securities/securities.service";
@@ -240,6 +246,14 @@ function tagSummarySuffix(change: {
 export class ToolExecutorService {
   private readonly logger = new Logger(ToolExecutorService.name);
 
+  /**
+   * The user's day, by the one rule the prompt, forecast and insights use. A
+   * tool resolves it once per call and passes it to every default it applies.
+   */
+  private userToday(userId: string): Promise<string> {
+    return withScopedDb(this.dataSource, (m) => userTodayYMD(m, userId));
+  }
+
   constructor(
     @Inject(forwardRef(() => AccountsService))
     private readonly accountsService: AccountsService,
@@ -291,6 +305,7 @@ export class ToolExecutorService {
     // `list_tags` and `manage_tags`.
     private readonly tagsService: TagsService,
     private readonly tagPrep: TagToolPrepService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async execute(
@@ -353,7 +368,7 @@ export class ToolExecutorService {
           result = await this.getUpcomingBills(userId, validatedInput);
           break;
         case "calculate":
-          result = await this.calculate(validatedInput);
+          result = await this.calculate(userId, validatedInput);
           break;
         case "render_chart":
           result = this.renderChart(validatedInput);
@@ -504,9 +519,15 @@ export class ToolExecutorService {
     userId: string,
     input: Record<string, unknown>,
   ): Promise<ToolResult> {
-    const defaults = getDefaultDateRange();
-    const startDate = (input.startDate as string) ?? defaults.startDate;
-    const endDate = (input.endDate as string) ?? defaults.endDate;
+    // The day is read only when a bound is missing: a call with both dates
+    // needs no default and no extra transaction.
+    let startDate = input.startDate as string | undefined;
+    let endDate = input.endDate as string | undefined;
+    if (startDate == null || endDate == null) {
+      const defaults = getDefaultDateRange(await this.userToday(userId));
+      startDate ??= defaults.startDate;
+      endDate ??= defaults.endDate;
+    }
     const accountNames = input.accountNames as string[] | undefined;
     const categoryNames = input.categoryNames as string[] | undefined;
     const payeeNames = input.payeeNames as string[] | undefined;
@@ -2639,12 +2660,15 @@ export class ToolExecutorService {
     input: Record<string, unknown>,
   ): Promise<ToolResult> {
     const { period1Start, period1End, period2Start, period2End } =
-      resolveComparePeriods({
-        period1Start: input.period1Start as string | undefined,
-        period1End: input.period1End as string | undefined,
-        period2Start: input.period2Start as string | undefined,
-        period2End: input.period2End as string | undefined,
-      });
+      resolveComparePeriods(
+        {
+          period1Start: input.period1Start as string | undefined,
+          period1End: input.period1End as string | undefined,
+          period2Start: input.period2Start as string | undefined,
+          period2End: input.period2End as string | undefined,
+        },
+        await this.userToday(userId),
+      );
     const groupBy = (input.groupBy as "category" | "payee") || "category";
     const direction =
       (input.direction as "expenses" | "income" | "both") || "expenses";
@@ -2722,7 +2746,10 @@ export class ToolExecutorService {
       includeLookThrough: input.includeLookThrough === true,
     });
 
-    const sign = data.totalGainLoss >= 0 ? "+" : "";
+    // A total is null unless every component is known; the line then quotes
+    // the known subtotal under its own name, never as the total.
+    const gainLoss = data.totalGainLoss ?? data.knownGainLossSubtotal;
+    const sign = gainLoss >= 0 ? "+" : "";
     // The totals are in the reporting currency and arrive rounded at its
     // places; the line names it and prints them there (`figureIn`).
     const cur = data.currency;
@@ -2743,25 +2770,58 @@ export class ToolExecutorService {
     ];
     // A missing price and a missing rate are different causes with the same
     // consequence, and the price half was not covered (recheck RR3-004).
+    // Each total is null on its own gap, so name the ones that are.
+    const withheldTotals = (
+      [
+        ["totalCashValue", data.totalCashValue],
+        ["totalHoldingsValue", data.totalHoldingsValue],
+        ["totalCostBasis", data.totalCostBasis],
+        ["totalPortfolioValue", data.totalPortfolioValue],
+        ["totalGainLoss", data.totalGainLoss],
+        ["totalGainLossPercent", data.totalGainLossPercent],
+      ] as const
+    )
+      .filter(([, value]) => value === null)
+      .map(([name]) => name);
     const incompleteNote = data.valuationComplete
       ? ""
-      : ` INCOMPLETE: ${incompleteReasons.join("; ")}, so every total above is a subtotal of what could be worked out. Say so rather than quoting these figures as complete.`;
+      : ` INCOMPLETE: ${incompleteReasons.join("; ")}. ${
+          withheldTotals.length > 0
+            ? `${withheldTotals.join(", ")} ${withheldTotals.length === 1 ? "is" : "are"} null (unknown); the matching known...Subtotal fields hold only what could be worked out.`
+            : "Every total above is known; the gap affects only net invested and the returns."
+        } Say so rather than quoting an unknown figure as complete.`;
     // The gain is over the holdings that have a value, so say which cost it
     // leaves out; "every total above is a subtotal" does not tell a model that
     // the percentage is over a smaller base (A26-M38).
+    const gainPairs =
+      data.totalGainLoss === null
+        ? [
+            ...new Set([
+              ...data.holdingsValueMissingRatePairs,
+              ...data.costBasisMissingRatePairs,
+            ]),
+          ].sort()
+        : [];
     const gainLeftOut = [
       ...(data.unpricedSymbols.length > 0
         ? [`${data.unpricedSymbols.join(", ")} (no price)`]
         : []),
-      ...(data.missingRatePairs.length > 0
-        ? [`holdings needing ${data.missingRatePairs.join(", ")} (no rate)`]
+      ...(gainPairs.length > 0
+        ? [`holdings needing ${gainPairs.join(", ")} (no rate)`]
         : []),
     ];
-    const gainNote = data.valuationComplete
-      ? ""
-      : ` The unrealized gain/loss is over the priced holdings only; it leaves out ${
-          gainLeftOut.length > 0 ? gainLeftOut.join("; ") : "unvalued holdings"
-        }, and the cost of the unpriced holdings excluded from it is ${fig(data.unpricedCostBasis)} ${cur}.`;
+    // A gain withheld only for a rate has no unpriced holding and no excluded
+    // cost to quote, so it must not claim either.
+    const gainNote =
+      data.totalGainLoss !== null
+        ? ""
+        : data.unpricedSymbols.length > 0
+          ? ` The unrealized gain/loss is over the priced holdings only; it leaves out ${gainLeftOut.join("; ")}, and the cost of the unpriced holdings excluded from it is ${fig(data.unpricedCostBasis)} ${cur}.`
+          : ` The unrealized gain/loss is withheld and the figure shown is over the holdings that could be valued only; it leaves out ${
+              gainLeftOut.length > 0
+                ? gainLeftOut.join("; ")
+                : "unvalued holdings"
+            }.`;
     // An account whose own totals could not be worked out is separately worth
     // saying: its figures are in its own currency, so the flags above do not
     // cover it (recheck RR3-005).
@@ -2774,7 +2834,11 @@ export class ToolExecutorService {
         : "";
     return {
       data,
-      summary: `${data.holdingCount} holding${data.holdingCount === 1 ? "" : "s"}, total portfolio value ${fig(data.totalPortfolioValue)} ${cur}, unrealized gain/loss ${sign}${fig(data.totalGainLoss)} ${cur} (${sign}${data.totalGainLossPercent.toFixed(2)}%).${lookThroughNote}${incompleteNote}${gainNote}${incompleteAccountsNote}`,
+      summary: `${data.holdingCount} holding${data.holdingCount === 1 ? "" : "s"}, ${data.totalPortfolioValue === null ? `known portfolio value (a subtotal, the total is unknown) ${fig(data.knownPortfolioValueSubtotal)}` : `total portfolio value ${fig(data.totalPortfolioValue)}`} ${cur}, unrealized gain/loss ${data.totalGainLoss === null ? "over the valued holdings only " : ""}${sign}${fig(gainLoss)} ${cur}${
+        data.totalGainLossPercent === null
+          ? ` (${sign}${data.knownGainLossPercentSubtotal.toFixed(2)}% over the valued holdings)`
+          : ` (${sign}${data.totalGainLossPercent.toFixed(2)}%)`
+      }.${lookThroughNote}${incompleteNote}${gainNote}${incompleteAccountsNote}`,
       sources: [
         {
           type: "portfolio",
@@ -2947,7 +3011,11 @@ export class ToolExecutorService {
     }
 
     const summaryParts = [
-      `Budget "${data.budgetName}": ${data.percentUsed.toFixed(1)}% used ($${data.totalSpent.toFixed(2)} of $${data.totalBudgeted.toFixed(2)})`,
+      data.totalSpent === null
+        ? `Budget "${data.budgetName}": total spent unknown (no exchange rate for ${data.missingRatePairs.join(", ")}); $${data.knownTotalSpent.toFixed(2)} of $${data.totalBudgeted.toFixed(2)} converted so far`
+        : data.percentUsed === null
+          ? `Budget "${data.budgetName}": $${data.totalSpent.toFixed(2)} spent, but the budget derives from income with no exchange rate for ${data.budgetedMissingRatePairs.join(", ")}; percent used and remaining unknown`
+          : `Budget "${data.budgetName}": ${data.percentUsed.toFixed(1)}% used ($${data.totalSpent.toFixed(2)} of $${data.totalBudgeted.toFixed(2)})`,
     ];
 
     if (data.velocity) {
@@ -2956,7 +3024,23 @@ export class ToolExecutorService {
       // not defaulted -- the summary is the line a model quotes (issue #1247).
       summaryParts.push(
         data.velocity.safeDailySpend === null
-          ? `Safe daily spend: unknown (an upcoming bill's current amount could not be determined), ${data.velocity.daysRemaining} days remaining`
+          ? `Safe daily spend: unknown (${[
+              ...(data.velocity.spendingComplete === false
+                ? [
+                    `spending in a currency with no exchange rate (${data.velocity.spendingMissingRatePairs.join(", ")}) is not converted`,
+                  ]
+                : []),
+              ...(data.velocity.budgetedComplete === false
+                ? [
+                    `the budget derives from income with no exchange rate for ${data.velocity.budgetedMissingRatePairs.join(", ")}`,
+                  ]
+                : []),
+              ...(data.velocity.upcomingBillsComplete
+                ? []
+                : [
+                    "an upcoming bill's current amount could not be determined",
+                  ]),
+            ].join(" and ")}), ${data.velocity.daysRemaining} days remaining`
           : `Safe daily spend: $${data.velocity.safeDailySpend.toFixed(2)}, ${data.velocity.daysRemaining} days remaining`,
       );
     }
@@ -2967,9 +3051,19 @@ export class ToolExecutorService {
       );
     }
 
+    // A partial line can neither be over nor under budget: say it is unknown
+    // rather than letting "0 over budget" read as a clean bill.
+    if (data.incompleteCategories.length > 0) {
+      summaryParts.push(
+        `${data.incompleteCategories.length} categories with unknown figures: ${data.incompleteCategories.map((c) => `${c.category} (no exchange rate for ${c.missingRatePairs.join(", ")})`).join(", ")}`,
+      );
+    }
+
     if (data.healthScore) {
       summaryParts.push(
-        `Health score: ${data.healthScore.score}/100 (${data.healthScore.label})`,
+        data.healthScore.score === null
+          ? `Health score: unknown (no exchange rate for ${(data.healthScore.missingRatePairs ?? []).join(", ")})`
+          : `Health score: ${data.healthScore.score}/100 (${data.healthScore.label})`,
       );
     }
 
@@ -3277,6 +3371,7 @@ export class ToolExecutorService {
     userId: string,
     input: Record<string, unknown>,
   ): Promise<ToolResult> {
+    const today = await this.userToday(userId);
     const type = input.type as
       | "spending_by_category"
       | "spending_by_payee"
@@ -3297,16 +3392,11 @@ export class ToolExecutorService {
         endDate,
       );
 
+      // With no rows the range shown is the one getLlmHistory searched: its
+      // default start (twelve months back) and the user's day.
       const start =
-        startDate ??
-        (history.length > 0
-          ? history[0].month
-          : new Date().toISOString().substring(0, 10));
-      const end =
-        endDate ??
-        (history.length > 0
-          ? history[history.length - 1].month
-          : new Date().toISOString().substring(0, 10));
+        startDate || history[0]?.month || defaultNetWorthHistoryStart(today);
+      const end = endDate || history[history.length - 1]?.month || today;
 
       return {
         // Bare array, matching the MCP generate_report net_worth_history payload
@@ -3348,7 +3438,7 @@ export class ToolExecutorService {
     }
 
     if (type === "month_comparison") {
-      const month = (input.month as string) ?? getDefaultPreviousMonth();
+      const month = (input.month as string) ?? getDefaultPreviousMonth(today);
       const data = await this.builtInReportsService.getMonthlyComparison(
         userId,
         month,
@@ -3375,7 +3465,7 @@ export class ToolExecutorService {
       };
     }
 
-    const defaults = getDefaultDateRange();
+    const defaults = getDefaultDateRange(today);
     const startDate = (input.startDate as string) ?? defaults.startDate;
     const endDate = (input.endDate as string) ?? defaults.endDate;
 
@@ -3455,7 +3545,10 @@ export class ToolExecutorService {
     return ` ${consequence}: no exchange rate for ${pairs.join(", ")}; add it under Currencies.`;
   }
 
-  private async calculate(input: Record<string, unknown>): Promise<ToolResult> {
+  private async calculate(
+    userId: string,
+    input: Record<string, unknown>,
+  ): Promise<ToolResult> {
     // A currency conversion is the one calculation that needs the database:
     // the rate is the server's, on the date asked for, through the same
     // resolver the MCP `calculate` tool uses.
@@ -3464,6 +3557,7 @@ export class ToolExecutorService {
         ? await executeConversion(
             input as unknown as ConvertInput,
             this.exchangeRateService,
+            await this.userToday(userId),
           )
         : executeCalculation(input as unknown as CalculateInput);
 

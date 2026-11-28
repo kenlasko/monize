@@ -348,8 +348,16 @@ export class CsvUnreadableAmountRowDto {
   })
   rowNumber: number;
 
-  @ApiProperty({ description: "The amount field as the file gave it" })
+  @ApiProperty({
+    description: "The cell named by `field`, as the file gave it",
+  })
   rawAmount: string;
+
+  @ApiPropertyOptional({
+    enum: ["amount", "quantity", "price", "commission"],
+    description: "The CSV column the text is in; absent for QIF and OFX",
+  })
+  field?: "amount" | "quantity" | "price" | "commission";
 }
 
 export class CsvUnreadableAmountsDto {
@@ -398,6 +406,12 @@ export class ParsedQifResponseDto {
   @ApiProperty({ description: "Detected date format" })
   detectedDateFormat: string;
 
+  @ApiPropertyOptional({
+    description:
+      "QIF only: true when the file's dates prove the detected format (a part above 12 or an ISO shape), false when it is the month-first default",
+  })
+  dateFormatConclusive?: boolean;
+
   @ApiProperty({ type: [String], description: "Sample dates from the file" })
   sampleDates: string[];
 
@@ -418,7 +432,7 @@ export class ParsedQifResponseDto {
   @ApiPropertyOptional({
     type: () => CsvUnreadableDatesDto,
     description:
-      "CSV parses only: the rows the import will leave out because their date cannot be read under the mapping's date format",
+      "The rows (CSV; `rowNumber` is the line), QIF records (the line the record starts on) and OFX transactions (their 1-based position) the import will leave out because their date cannot be read",
   })
   unreadableDates?: CsvUnreadableDatesDto;
 
@@ -439,7 +453,9 @@ export class ParsedQifResponseDto {
  * (or debit or credit) field, a QIF record's amount, price, commission or
  * quantity, or an OFX transaction's amount holds text that cannot be read,
  * `unreadableAmountTransfer` when that record is a transfer, whose other leg
- * may already have been created from the other account's record. The
+ * may already have been created from the other account's record,
+ * `unreadableDateTransfer` the same for a QIF or OFX transfer whose date cannot
+ * be read. The
  * rest are an investment-mode CSV row
  * whose action needs data it does not carry (`InvestmentRejectReason`):
  * `missingSecurity`, `missingQuantity`, `missingAmount`, `missingProceeds`
@@ -455,6 +471,7 @@ export const IMPORT_SKIP_REASONS = [
   "unreadableDate",
   "unreadableAmount",
   "unreadableAmountTransfer",
+  "unreadableDateTransfer",
   "missingSecurity",
   "missingQuantity",
   "missingAmount",
@@ -487,7 +504,7 @@ export class ImportSkippedRowDto {
 
   @ApiPropertyOptional({
     description:
-      "The line of the file the row starts on, 1-based with the header; set for a CSV row the parse left out (`unreadableDate`, `unreadableAmount` and the investment-mode reasons); for a QIF record the line it starts on, for an OFX transaction its 1-based position (`unreadableAmount`)",
+      "The line of the file the row starts on, 1-based with the header; set for a CSV row the parse left out (`unreadableDate`, `unreadableAmount` and the investment-mode reasons); for a QIF record the line it starts on, for an OFX transaction its 1-based position (`unreadableAmount`, `unreadableDate`)",
   })
   rowNumber?: number;
 
@@ -499,9 +516,16 @@ export class ImportSkippedRowDto {
 
   @ApiPropertyOptional({
     description:
-      "The amount field as the file gave it; set for `unreadableAmount`, whose `amount` is 0 because the file's text gives none",
+      "The cell named by `field` (the amount when `field` is absent), as the file gave it; set for `unreadableAmount`, and for an `unreadableDate` whose amount cannot be read either; `amount` is 0 because the file's text gives none",
   })
   rawAmount?: string;
+
+  @ApiPropertyOptional({
+    enum: ["amount", "quantity", "price", "commission"],
+    description:
+      "The CSV column `rawAmount` is in; set for a CSV `unreadableAmount` row",
+  })
+  field?: "amount" | "quantity" | "price" | "commission";
 }
 
 /**
@@ -805,6 +829,13 @@ export class ParsedQifMultiAccountResponseDto {
       "The QIF records, across all accounts, the import will leave out because an amount cannot be read; `rowNumber` is the line the record starts on",
   })
   unreadableAmounts?: CsvUnreadableAmountsDto;
+
+  @ApiPropertyOptional({
+    type: () => CsvUnreadableDatesDto,
+    description:
+      "The QIF records, across all accounts, the import will leave out because a date cannot be read; `rowNumber` is the line the record starts on",
+  })
+  unreadableDates?: CsvUnreadableDatesDto;
 }
 
 // --- OFX DTOs ---

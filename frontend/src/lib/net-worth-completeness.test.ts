@@ -8,6 +8,8 @@ import {
   pairSourceCurrency,
   partialTotalFor,
   portfolioPartialTotal,
+  summaryTotal,
+  totalOrSubtotal,
   unionPairs,
 } from './net-worth-completeness';
 import { isComplete } from './currency-total';
@@ -84,5 +86,37 @@ describe('net-worth completeness', () => {
     const bare = portfolioPartialTotal(5, { valuationComplete: false });
     expect(isComplete(bare)).toBe(false);
     expect(bare.excludedCount).toBe(1);
+  });
+});
+
+describe('totalOrSubtotal', () => {
+  it('prints the total, else the known subtotal, else 0 for an older backend', () => {
+    expect(totalOrSubtotal(5, 3)).toBe(5);
+    expect(totalOrSubtotal(0, 3)).toBe(0);
+    expect(totalOrSubtotal(null, 3)).toBe(3);
+    expect(totalOrSubtotal(null, undefined)).toBeNull();
+  });
+});
+
+describe('summaryTotal', () => {
+  it('marks a figure partial from its own withheld total, not from the summary flags', () => {
+    const source = { valuationComplete: false, fxComplete: false, missingRatePairs: ['CAD->EUR'] };
+    // Own total known, subtotal present: complete whatever the summary says.
+    expect(summaryTotal(900, 900, source)).toEqual({ value: 900, missingCurrencies: [], excludedCount: 0 });
+    // Own total withheld: the subtotal, marked partial and naming the pair.
+    expect(summaryTotal(null, 300, source)).toEqual({
+      value: 300,
+      missingCurrencies: ['CAD'],
+      excludedCount: 1,
+    });
+  });
+
+  it('falls back to the summary flags for an older backend with no subtotals', () => {
+    expect(isComplete(summaryTotal(5, undefined, { valuationComplete: true })!)).toBe(true);
+    expect(isComplete(summaryTotal(5, undefined, { valuationComplete: false })!)).toBe(false);
+  });
+
+  it('is null when the figure is unknown outright', () => {
+    expect(summaryTotal(null, undefined, {})).toBeNull();
   });
 });

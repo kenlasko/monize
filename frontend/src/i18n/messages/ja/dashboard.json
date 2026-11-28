@@ -371,7 +371,8 @@
     "settlement": "締め日: {ordinal}",
     "settlementTooltip": "請求サイクルの最終日。この日以前に計上された取引が現在の明細に表示されます。",
     "dueShort": "支払日 {ordinal}",
-    "metaWithDue": "{institution} · {due}"
+    "metaWithDue": "{institution} · {due}",
+    "loadFailed": "口座を読み込めませんでした。ダッシュボードを再読み込みして、もう一度お試しください。"
   },
   "upcomingBills": {
     "title": "今後の請求書・入金",
@@ -407,7 +408,8 @@
     "dayEmpty": "この日に予定されている請求書や入金はありません。",
     "metaPayee": "· {payee}",
     "metaManual": "· 手動で支払い",
-    "metaWhen": "· {when}"
+    "metaWhen": "· {when}",
+    "loadFailed": "今後の請求を読み込めませんでした。ダッシュボードを再読み込みして、もう一度お試しください。"
   },
   "cashFlowForecast": {
     "title": "キャッシュフロー予測",
@@ -444,7 +446,8 @@
     "viewFullBudget": "予算の詳細を見る",
     "daysLeft": "残り {count} 日",
     "safeToSpend": "今日の使用可能額",
-    "topCategories": "主なカテゴリ"
+    "topCategories": "主なカテゴリ",
+    "loadFailed": "予算の状況を読み込めませんでした。ダッシュボードを再読み込みして、もう一度お試しください。"
   },
   "insights": {
     "title": "支出インサイト",
@@ -520,13 +523,15 @@
     "topLevelOnly": "最上位カテゴリ",
     "topLevelOnlyHint": "サブカテゴリを親カテゴリに集計します",
     "viewCallouts": "ラベル",
-    "viewLegend": "凡例"
+    "viewLegend": "凡例",
+    "loadFailed": "カテゴリ別の支出を読み込めませんでした。ダッシュボードを再読み込みして、もう一度お試しください。"
   },
   "incomeExpenses": {
     "title": "収入 対 支出",
     "income": "収入",
     "expenses": "支出",
-    "net": "差引"
+    "net": "差引",
+    "loadFailed": "収入と支出を読み込めませんでした。ダッシュボードを再読み込みして、もう一度お試しください。"
   },
   "customize": {
     "button": "カスタマイズ",
@@ -736,5 +741,6 @@
     "depthSubcategories": "サブカテゴリ",
     "viewDiagram": "図",
     "viewTable": "テーブル"
-  }
+  },
+  "accountsLoadFailed": "口座を読み込めなかったため、このウィジェットを表示できません。ダッシュボードを再読み込みして、もう一度お試しください。"
 }

@@ -143,6 +143,31 @@ describe('FlexGroupAnalysisReport', () => {
     expect(screen.getByText('Rent')).toBeInTheDocument();
   });
 
+  it('draws a group and a line with unknown figures as unknown, never as a number (audit #2365 p)', async () => {
+    mockGetAll.mockResolvedValue([makeBudget()]);
+    const group = makeGroup('Food', [{ id: 'c1', name: 'Groceries', budgeted: 1000, spent: 20 }]);
+    mockGetFlexGroupStatus.mockResolvedValue([
+      {
+        ...group,
+        totalSpent: null,
+        knownTotalSpent: 20,
+        remaining: null,
+        percentUsed: null,
+        valuationComplete: false,
+        missingRatePairs: ['QQQ->USD'],
+        categories: [
+          { ...group.categories[0], valuationComplete: false, missingRatePairs: ['QQQ->USD'] },
+        ],
+      },
+    ]);
+    await renderReport();
+    await waitFor(() => expect(screen.getByText('Food')).toBeInTheDocument());
+    expect(screen.getAllByTestId('unknown-amount').length).toBeGreaterThanOrEqual(1);
+    // Spent, remaining and percent of the line are the marker, not 2%.
+    expect(screen.queryByText('2%')).not.toBeInTheDocument();
+    expect(screen.queryByText('$20')).not.toBeInTheDocument();
+  });
+
   it('falls back to first budget when no active', async () => {
     mockGetAll.mockResolvedValue([
       makeBudget({ id: 'a', isActive: false }),

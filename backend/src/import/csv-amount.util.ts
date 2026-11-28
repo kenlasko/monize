@@ -57,7 +57,7 @@ const MIXED_CASE_CURRENCIES = new Set([
 const STRAY_SEPARATOR = /^[.,].*[.,]|[.,].*[.,]$/;
 
 /** The number left once the sign, currency and grouping are stripped. */
-const PLAIN_NUMBER = /^(?:\d+\.?\d*|\.\d+)$/;
+const PLAIN_NUMBER = /^(?:\d+(?:\.\d*)?|\.\d+)$/;
 
 /**
  * True when a CSV amount field holds no amount: empty, whitespace, or only

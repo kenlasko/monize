@@ -134,6 +134,7 @@
       "carriedIn": "Chuyển vào:",
       "carriedOut": "Chuyển ra:"
     },
+    "noPositiveFunding": "Chỉ tính được tỷ lệ sử dụng khi ngân sách lớn hơn 0.",
     "overallUsage": "Tổng mức sử dụng ngân sách",
     "expenseCategories": "Danh mục chi tiêu",
     "incomeCategories": "Danh mục thu nhập",
@@ -164,6 +165,10 @@
     "projectedSavings": "Tiết kiệm dự báo",
     "savingsChange": "Thay đổi tiết kiệm",
     "original": "Gốc: {amount}"
+  },
+  "partialSpent": {
+    "reason": "Không có tỷ giá cho {pairs}, nên chi tiêu bằng các loại tiền đó không được tính. Hãy thêm tỷ giá ở trang Tiền tệ.",
+    "known": "Chi tiêu đã quy đổi đến nay: {amount}."
   },
   "summaryCards": {
     "ariaLabel": "Tổng ngân sách",

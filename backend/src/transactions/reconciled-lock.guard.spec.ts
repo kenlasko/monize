@@ -132,6 +132,18 @@ const ENFORCEMENT_SITES: {
     beforeWrite: "manager.update(Transaction",
   },
   {
+    file: "../action-history/action-history.service.ts",
+    fn: "private async undoTransferCreate(",
+    why: "undo of a transfer create deletes both legs",
+    beforeWrite: "DELETE FROM transaction_tags",
+  },
+  {
+    file: "../action-history/action-history.service.ts",
+    fn: "private async undoInvestmentCreate(",
+    why: "undo of an investment create deletes the cash row it carries",
+    beforeWrite: "DELETE FROM transaction_tags",
+  },
+  {
     file: "../securities/investment-transactions.service.ts",
     fn: "private async updateEmbeddedSplitParent(",
     why: "editing an embedded investment rewrites the split amount and the parent's total",

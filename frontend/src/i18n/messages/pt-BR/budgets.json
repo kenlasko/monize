@@ -134,6 +134,7 @@
       "carriedIn": "Transitado para:",
       "carriedOut": "Transitado de:"
     },
+    "noPositiveFunding": "O percentual de utilização exige um orçamento positivo.",
     "overallUsage": "Uso Global do Orçamento",
     "expenseCategories": "Categorias de Despesa",
     "incomeCategories": "Categorias de Receita",
@@ -164,6 +165,10 @@
     "projectedSavings": "Poupanças Projetadas",
     "savingsChange": "Variação nas Poupanças",
     "original": "Original: {amount}"
+  },
+  "partialSpent": {
+    "reason": "Não há taxa de câmbio para {pairs}, então os gastos nessas moedas não são contabilizados. Adicione a taxa na página Moedas.",
+    "known": "Gasto convertido até agora: {amount}."
   },
   "summaryCards": {
     "ariaLabel": "Totais do orçamento",

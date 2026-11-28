@@ -371,7 +371,8 @@
     "settlement": "결제일: {ordinal}",
     "settlementTooltip": "청구 주기의 마지막 날. 이 날 또는 이전에 등록된 거래가 현재 명세서에 표시됩니다.",
     "dueShort": "납부일 {ordinal}",
-    "metaWithDue": "{institution} · {due}"
+    "metaWithDue": "{institution} · {due}",
+    "loadFailed": "계좌를 불러오지 못했습니다. 대시보드를 새로고침한 후 다시 시도하세요."
   },
   "upcomingBills": {
     "title": "예정된 청구서 및 입금",
@@ -407,7 +408,8 @@
     "dayEmpty": "이 날에는 예정된 청구서나 입금이 없습니다.",
     "metaPayee": "· {payee}",
     "metaManual": "· 직접 납부",
-    "metaWhen": "· {when}"
+    "metaWhen": "· {when}",
+    "loadFailed": "예정된 청구서를 불러오지 못했습니다. 대시보드를 새로고침한 후 다시 시도하세요."
   },
   "cashFlowForecast": {
     "title": "현금 흐름 예측",
@@ -444,7 +446,8 @@
     "viewFullBudget": "전체 예산 보기",
     "daysLeft": "{count}일 남음",
     "safeToSpend": "오늘 사용 가능 금액",
-    "topCategories": "주요 카테고리"
+    "topCategories": "주요 카테고리",
+    "loadFailed": "예산 현황을 불러오지 못했습니다. 대시보드를 새로고침한 후 다시 시도하세요."
   },
   "insights": {
     "title": "지출 인사이트",
@@ -520,13 +523,15 @@
     "topLevelOnly": "최상위 카테고리",
     "topLevelOnlyHint": "하위 카테고리를 상위 카테고리에 합산합니다",
     "viewCallouts": "레이블",
-    "viewLegend": "범례"
+    "viewLegend": "범례",
+    "loadFailed": "카테고리별 지출을 불러오지 못했습니다. 대시보드를 새로고침한 후 다시 시도하세요."
   },
   "incomeExpenses": {
     "title": "수입 대 지출",
     "income": "수입",
     "expenses": "지출",
-    "net": "순액"
+    "net": "순액",
+    "loadFailed": "수입과 지출을 불러오지 못했습니다. 대시보드를 새로고침한 후 다시 시도하세요."
   },
   "customize": {
     "button": "사용자 지정",
@@ -736,5 +741,6 @@
     "depthSubcategories": "하위 카테고리",
     "viewDiagram": "다이어그램",
     "viewTable": "표"
-  }
+  },
+  "accountsLoadFailed": "계좌를 불러오지 못해 이 위젯을 표시할 수 없습니다. 대시보드를 새로고침한 후 다시 시도하세요."
 }

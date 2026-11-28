@@ -75,6 +75,8 @@
     "title": "Asignación de Activos",
     "noData": "No hay datos de asignación disponibles.",
     "knownValueOnly": "Los porcentajes cubren solo el valor conocido; algunas posiciones no se pudieron valorar.",
+    "knownValueOnlyMissing": "Los porcentajes cubren solo el valor conocido; algunas posiciones no se pudieron valorar. Sin valorar: {items}. Añada los precios que faltan en el historial de precios de cada valor y los tipos que faltan en la página Divisas.",
+    "loadFailed": "No se pudo cargar la distribución. Recargue la página para volver a intentarlo.",
     "cash": "Efectivo",
     "untagged": "Sin etiquetas",
     "noTagData": "No hay posiciones etiquetadas para mostrar. Añade etiquetas a tus valores para ver la exposición por etiqueta.",

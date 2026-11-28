@@ -1199,10 +1199,11 @@ describe("TransactionsController", () => {
 
   describe("remove()", () => {
     it("delegates to service.removeAny so a transfer leg deletes both legs", async () => {
-      mockService.removeAny.mockResolvedValue(undefined);
+      mockService.removeAny.mockResolvedValue(["tx-1", "tx-2"]);
 
       const result = await controller.remove(mockReq, "tx-1");
 
+      // The removed ids are for in-process callers; the response stays empty.
       expect(result).toBeUndefined();
       expect(mockService.removeAny).toHaveBeenCalledWith("user-1", "tx-1", {
         effectiveUserId: "user-1",

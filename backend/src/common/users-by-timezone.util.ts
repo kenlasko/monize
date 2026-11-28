@@ -139,6 +139,31 @@ export async function userTodayYMD(
   userId: string,
   now: Date = new Date(),
 ): Promise<string> {
+  return (
+    requestDayOf(userId, now) ??
+    todayInTimezoneOrUtc(await getEffectiveTimezoneOfUser(m, userId), now)
+  );
+}
+
+/**
+ * `userTodayYMD` for a caller that already holds the user's preference row:
+ * the same rule, without a second read.
+ */
+export function userTodayFromPreference(
+  userId: string,
+  pref: { timezone?: string | null; lastClientTimezone?: string | null } | null,
+  now: Date = new Date(),
+): string {
+  return (
+    requestDayOf(userId, now) ??
+    todayInTimezoneOrUtc(
+      resolveEffectiveTimezone(pref?.timezone, pref?.lastClientTimezone),
+      now,
+    )
+  );
+}
+
+function requestDayOf(userId: string, now: Date): string | undefined {
   const ctx = getRequestContext();
   // The request's timezone is the authenticated user's: for a delegate acting
   // as `userId` (`realUserId` differs) it is the delegate's header, not the
@@ -151,5 +176,5 @@ export async function userTodayYMD(
     const day = todayInTimezone(ctx.timezone, now);
     if (day) return day;
   }
-  return todayInTimezoneOrUtc(await getEffectiveTimezoneOfUser(m, userId), now);
+  return undefined;
 }

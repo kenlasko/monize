@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { InsightsAggregatorService } from "./insights-aggregator.service";
 import { Transaction } from "../../transactions/entities/transaction.entity";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
+import { requestContextStorage } from "../../common/request-context";
 import { createScopedDbMocks } from "../../test-helpers/scoped-db-testing";
 
 jest.mock("../../common/db/scoped-db", () =>
@@ -220,6 +221,35 @@ describe("InsightsAggregatorService", () => {
         "cat",
         expect.stringContaining("COALESCE(ts.categoryId, t.categoryId)"),
       );
+    });
+
+    it("loads the rates against the user's own day", async () => {
+      jest.useFakeTimers().setSystemTime(new Date("2026-06-10T11:00:00Z"));
+      try {
+        withRows([
+          row({
+            month: "2026-06",
+            net: "50",
+            currencyCode: "EUR",
+            fx_day: "2026-06-05",
+          }),
+        ]);
+        // The stored zone puts the user on the 11th while UTC is on the 10th.
+        managerQuery.mockImplementation(async (sql: string) =>
+          /user_preferences/.test(sql)
+            ? [{ timezone: "Pacific/Kiritimati" }]
+            : [],
+        );
+
+        await service.computeAggregates(userId, "USD");
+
+        const rateCall = managerQuery.mock.calls.find(([sql]) =>
+          /exchange_rates/.test(sql),
+        )!;
+        expect(rateCall[1]).toContain("2026-06-11");
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("converts each currency into the reporting currency and names a missing pair", async () => {
@@ -474,6 +504,26 @@ describe("InsightsAggregatorService", () => {
       );
       expect(result.daysElapsedInMonth).toBe(21);
       expect(result.daysInMonth).toBe(31);
+    });
+
+    it("shares the forecast's rule: the request's zone wins over the stored one (#2365)", async () => {
+      // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
+      jest.useFakeTimers({
+        now: new Date("2026-11-27T12:00:00Z"),
+        doNotFake: [...ALL_BUT_DATE],
+      });
+
+      await requestContextStorage.run(
+        { userId, timezone: "Pacific/Kiritimati" },
+        () => service.computeAggregates(userId, "USD"),
+      );
+
+      expect(mockTransactionAnalytics.getRecurringCharges).toHaveBeenCalledWith(
+        userId,
+        "2026-05-01",
+        "2026-11-28",
+        { reportingCurrency: "USD" },
+      );
     });
 
     it("enters the new month when the user's zone is already there", async () => {

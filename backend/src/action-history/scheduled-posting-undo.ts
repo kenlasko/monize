@@ -104,6 +104,8 @@ export async function undoScheduledPosting(
     );
   }
 
+  // Lock order as the posting's: the schedule row above, then the holdings
+  // advisory lock inside the handler (post locks the schedule, then creates).
   await removeMoney(snapshot.money);
 
   await manager.query(

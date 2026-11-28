@@ -1,6 +1,7 @@
 import { SharedReviewService } from "../../shared-expenses/shared-review.service";
 import { sharedReviewMock } from "../../shared-expenses/__fixtures__/shared-review";
 import { McpRecentTransactionsResource } from "./recent-transactions.resource";
+import { requestContextStorage } from "../../common/request-context";
 import { mcpTestCtx, McpTestContext } from "../testing/mcp-test-context";
 
 describe("McpRecentTransactionsResource", () => {
@@ -65,6 +66,31 @@ describe("McpRecentTransactionsResource", () => {
     ctx.setUser({ userId: "u1", scopes: "write" });
     const result = await handler("monize://recent-transactions", ctx);
     expect(result.contents[0].text).toContain("Insufficient scope");
+  });
+
+  it("ends the window at the user's today and starts 30 days before it (#2365)", async () => {
+    // 12:00 UTC on 2026-11-27 is already 2026-11-28 in Kiritimati.
+    jest.useFakeTimers({ now: new Date("2026-11-27T12:00:00Z") });
+    try {
+      ctx.setUser({ userId: "u1", scopes: "read" });
+      transactionsService.findAll.mockResolvedValue({
+        data: [],
+        pagination: { total: 0, hasMore: false },
+      });
+      analyticsService.getSummary.mockResolvedValue({});
+      analyticsService.getLlmFlowTotals.mockResolvedValue({});
+
+      await requestContextStorage.run(
+        { userId: "u1", timezone: "Pacific/Kiritimati" },
+        () => handler("monize://recent-transactions", ctx),
+      );
+
+      const args = transactionsService.findAll.mock.calls[0];
+      expect(args[2]).toBe("2026-10-29");
+      expect(args[3]).toBe("2026-11-28");
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("should return recent transactions with summary", async () => {

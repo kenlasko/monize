@@ -6,7 +6,8 @@ import { parseISO } from 'date-fns';
 import { investmentsApi } from '@/lib/investments';
 import { resolveRangePreset } from '@/lib/date-range';
 import { useFinancialToday } from '@/hooks/useFinancialToday';
-import { partialTotalFor, portfolioPartialTotal } from '@/lib/net-worth-completeness';
+import { summaryFigure } from '@/lib/portfolio-headline';
+import { useWithheldReason } from '@/hooks/useWithheldReason';
 import { isComplete } from '@/lib/currency-total';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
@@ -48,6 +49,8 @@ interface PortfolioHeroProps {
   /** The investment accounts, for naming the ones the set covers. */
   investmentAccounts: Account[];
   hasInvestments: boolean;
+  /** The accounts request failed: "no investment accounts" is unknown, not known. */
+  accountsFailed?: boolean;
   isLoading: boolean;
   /**
    * Bumped by the dashboard when a price refresh wrote new prices: every figure
@@ -73,11 +76,16 @@ export function PortfolioHero({
   config,
   investmentAccounts,
   hasInvestments,
+  accountsFailed = false,
   isLoading,
   refreshKey = 0,
 }: PortfolioHeroProps) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
+  // An unknown figure is a withheld figure, said as the investments card says it,
+  // with that figure's own causes.
+  const tInvestments = useTranslations('investments');
+  const withheldReason = useWithheldReason();
   const uiStyle = useUiStyle();
   const mainAccountName = useMainAccountName();
   const { formatCurrency, formatSignedPercent, defaultCurrency } = useNumberFormat();
@@ -185,6 +193,11 @@ export function PortfolioHero({
   const sampled = !intraday && !PORTFOLIO_DAILY_RANGES.has(range);
 
   const label = t('hero.portfolioLabel');
+  // Also on a reload: `investmentAccounts` is then empty while the old valuation
+  // would still be drawn under "All accounts".
+  if (accountsFailed && !isLoading) {
+    return <HeroMessage>{t('hero.portfolioLoadFailed')}</HeroMessage>;
+  }
   if (!hasInvestments && !isLoading) {
     return <HeroMessage>{t('hero.portfolioEmpty')}</HeroMessage>;
   }
@@ -227,13 +240,12 @@ export function PortfolioHero({
 
   const metricValue = (): ReactNode => {
     if (config.portfolioMetric === 'simpleReturn') {
-      // Over the holdings that have a value: partial while the valuation is.
+      // Over the holdings that have a value: partial while the server withholds it.
+      const pct = summaryFigure(summary, 'gainPercent');
+      if (pct === null) return <UnknownAmount reasonText={withheldReason(summary, 'gainPercent')} />;
       return (
-        <PartialTotal
-          total={partialTotalFor(0, summary.valuationComplete, summary.missingRatePairs)}
-          displayCurrency={defaultCurrency}
-        >
-          {formatSignedPercent(summary.totalGainLossPercent, 2)}
+        <PartialTotal total={pct} displayCurrency={defaultCurrency}>
+          {formatSignedPercent(pct.value, 2)}
         </PartialTotal>
       );
     }
@@ -266,7 +278,11 @@ export function PortfolioHero({
 
   const metricName = t(`hero.metricNames.${config.portfolioMetric}`);
 
-  const cashTotal = partialTotalFor(summary.totalCashValue, summary.fxComplete, summary.missingRatePairs);
+  // Each figure is partial from whether ITS OWN total was withheld, not from the
+  // summary-wide flags.
+  const cashTotal = summaryFigure(summary, 'cash');
+  const total = summaryFigure(summary, 'portfolioValue');
+  const holdingsTotal = summaryFigure(summary, 'holdingsValue');
 
   const chartNode = seriesError ? (
     <p className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
@@ -298,7 +314,6 @@ export function PortfolioHero({
     />
   );
 
-  const total = portfolioPartialTotal(summary.totalPortfolioValue, summary);
 
   return renderForStyle(uiStyle, PORTFOLIO_HERO_VARIANTS, {
     label,
@@ -311,8 +326,8 @@ export function PortfolioHero({
     total,
     collapsed: {
       title: t('customize.hero.sets.portfolio'),
-      figure: formatCurrency(summary.totalPortfolioValue, defaultCurrency),
-      figurePartial: !isComplete(total),
+      figure: total === null ? tInvestments('portfolioSummary.incompleteHeading') : formatCurrency(total.value, defaultCurrency),
+      figurePartial: total === null || !isComplete(total),
       change:
         totalChange === null
           ? undefined
@@ -322,8 +337,13 @@ export function PortfolioHero({
             },
     },
     change,
-    holdings: portfolioPartialTotal(summary.totalHoldingsValue, summary),
+    holdings: holdingsTotal,
     cash: cashTotal,
+    unknown: {
+      total: <UnknownAmount reasonText={withheldReason(summary, 'portfolioValue')} />,
+      holdings: <UnknownAmount reasonText={withheldReason(summary, 'holdingsValue')} />,
+      cash: <UnknownAmount reasonText={withheldReason(summary, 'cash')} />,
+    },
     metric: {
       name: metricName,
       label: t(`customize.hero.metrics.${config.portfolioMetric}`),

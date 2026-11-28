@@ -134,6 +134,7 @@
       "carriedIn": "Dibawa masuk:",
       "carriedOut": "Dibawa keluar:"
     },
+    "noPositiveFunding": "Persentase penggunaan hanya dapat dihitung jika anggaran positif.",
     "overallUsage": "Penggunaan Anggaran Keseluruhan",
     "expenseCategories": "Kategori Pengeluaran",
     "incomeCategories": "Kategori Pendapatan",
@@ -164,6 +165,10 @@
     "projectedSavings": "Proyeksi Tabungan",
     "savingsChange": "Perubahan Tabungan",
     "original": "Asli: {amount}"
+  },
+  "partialSpent": {
+    "reason": "Tidak ada kurs untuk {pairs}, jadi pengeluaran dalam mata uang tersebut tidak dihitung. Tambahkan kurs di halaman Mata Uang.",
+    "known": "Pengeluaran yang sudah dikonversi sejauh ini: {amount}."
   },
   "summaryCards": {
     "ariaLabel": "Total anggaran",

@@ -676,18 +676,20 @@ describe('the investment register on a phone under Folio and Pebble (issue #2508
     expect(container.querySelector('.ui-register-card-grouped')).toBeNull();
   });
 
-  it('keeps the tier table, its Date column and no headings at Compact density', () => {
-    style.value = 'folio';
+  it('keeps the tier table, its Date column and no headings at Compact density in Pebble', () => {
+    style.value = 'pebble';
     useDensityStore.setState({ densities: { investments: 'compact' } });
     const { container } = renderList({ transactions: days });
     expect(headings(container)).toEqual([]);
     expect(screen.getAllByText('2024-01-16')).toHaveLength(2);
+    expect(container.querySelector('[data-testid="pebble-trade-row"]')).toBeNull();
   });
 
-  it('keeps the tier table and no headings on a desktop width', () => {
-    style.value = 'pebble';
-    setPhoneViewport(false);
+  it('keeps the ledger\'s date group rows at Compact density in Folio (issue #2510)', () => {
+    style.value = 'folio';
+    useDensityStore.setState({ densities: { investments: 'compact' } });
     const { container } = renderList({ transactions: days });
-    expect(headings(container)).toEqual([]);
+    expect(headings(container)).toEqual(['Tuesday, January 16', 'Monday, January 15']);
+    expect(screen.queryByText('2024-01-16')).toBeNull();
   });
 });

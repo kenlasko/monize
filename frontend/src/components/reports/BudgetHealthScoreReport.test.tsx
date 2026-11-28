@@ -152,6 +152,40 @@ describe('BudgetHealthScoreReport', () => {
     expect(arg.additionalTables[0].rows.length).toBe(4);
   });
 
+  it('shows the reason, not "no categories" or a breakdown, for an unknown score', async () => {
+    mockGetAll.mockResolvedValue([makeBudget()]);
+    mockGetHealthScore.mockResolvedValue(
+      makeScore({
+        score: null,
+        label: null,
+        categoryScores: [],
+        valuationComplete: false,
+        missingRatePairs: ['QQQ->USD'],
+      }),
+    );
+    await renderReport();
+    const note = await screen.findByTestId('health-partial-note');
+    expect(note).toHaveTextContent('QQQ->USD');
+    expect(screen.queryByText('Score Breakdown')).not.toBeInTheDocument();
+    expect(screen.queryByText(/^null$/)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toContain('null');
+  });
+
+  it('puts no breakdown rows and no "null" in the PDF for an unknown score', async () => {
+    mockGetAll.mockResolvedValue([makeBudget()]);
+    mockGetHealthScore.mockResolvedValue(
+      makeScore({ score: null, label: null, categoryScores: [], missingRatePairs: ['QQQ->USD'] }),
+    );
+    await renderReport();
+    const exportBtn = await screen.findByTitle('Export PDF');
+    await act(async () => { fireEvent.click(exportBtn); });
+    await waitFor(() => expect(mockExportToPdf).toHaveBeenCalled());
+    const arg = mockExportToPdf.mock.calls[0][0];
+    expect(arg.summaryCards).toBeUndefined();
+    expect(arg.tableData).toBeUndefined();
+    expect(JSON.stringify(arg)).not.toContain('null');
+  });
+
   it('exports to PDF with no health score (empty case)', async () => {
     mockGetAll.mockResolvedValue([makeBudget()]);
     mockGetHealthScore.mockResolvedValue(null);

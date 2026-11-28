@@ -13,6 +13,7 @@ import type {
   SortColumnsByField as TableSortColumnsByField,
 } from '@/components/ui/Table';
 import { useTranslations } from 'next-intl';
+import { useBudgetPartialReason } from '@/hooks/useBudgetPartialReason';
 import { useReportData } from '@/hooks/useReportData';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import type { HealthScoreCategoryDetail } from '@/types/budget';
@@ -165,6 +166,7 @@ const FIGURE_CELL =
 
 export function BudgetHealthScoreReport() {
   const t = useTranslations('reports');
+  const partialReasonOf = useBudgetPartialReason();
   const { formatPercentTrimmed } = useNumberFormat();
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -298,15 +300,18 @@ export function BudgetHealthScoreReport() {
           .sort((a, b) => a.impact - b.impact)
           .map((cat) => sortColumns.map((col) => col.value(cat)))
       : [];
-    const scoreColor = healthScore
-      ? healthScore.score >= 80 ? '#16a34a' : healthScore.score >= 60 ? '#ca8a04' : '#dc2626'
-      : '#111827';
+    const score = healthScore?.score ?? null;
+    const scoreColor = score === null
+      ? '#111827'
+      : score >= 80 ? '#16a34a' : score >= 60 ? '#ca8a04' : '#dc2626';
     await exportToPdf({
       title: t('budgetHealthScore.pdfTitle'),
-      summaryCards: healthScore ? [
-        { label: t('budgetHealthScore.finalScore'), value: `${healthScore.score}/100`, color: scoreColor },
+      // An unknown score has no figure to print: the cards are left out.
+      summaryCards: score !== null ? [
+        { label: t('budgetHealthScore.finalScore'), value: `${score}/100`, color: scoreColor },
       ] : undefined,
-      tableData: healthScore ? {
+      // No breakdown rows for an unknown score: "null" must never print.
+      tableData: healthScore && score !== null ? {
         headers: [t('budgetHealthScore.colCategory'), t('budgetHealthScore.colScoreImpact')],
         rows: [
           [t('budgetHealthScore.baseScore'), String(healthScore.breakdown.baseScore)],
@@ -314,7 +319,7 @@ export function BudgetHealthScoreReport() {
           [t('budgetHealthScore.essentialPenalty'), `-${healthScore.breakdown.essentialWeightPenalty}`],
           [t('budgetHealthScore.underBudgetBonus'), `+${healthScore.breakdown.underBudgetBonus}`],
           [t('budgetHealthScore.improvingBonus'), `+${healthScore.breakdown.trendBonus}`],
-          [t('budgetHealthScore.finalScore'), String(healthScore.score)],
+          [t('budgetHealthScore.finalScore'), String(score)],
         ],
       } : undefined,
       additionalTables: rows.length > 0 ? [{
@@ -376,9 +381,13 @@ export function BudgetHealthScoreReport() {
         <>
           {/* Gauge */}
           <div ref={chartRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <BudgetHealthGauge score={healthScore.score} />
+            <BudgetHealthGauge
+              score={healthScore.score}
+              partialReason={partialReasonOf(healthScore.missingRatePairs)}
+            />
 
-            {/* Score Breakdown */}
+            {/* Score Breakdown: there is nothing to break down for an unknown score. */}
+            {healthScore.score !== null && (
             <div className={`${CARD_CLASS} p-4 sm:p-6`}>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                 {t('budgetHealthScore.scoreBreakdown')}
@@ -420,6 +429,7 @@ export function BudgetHealthScoreReport() {
                 </div>
               </div>
             </div>
+            )}
           </div>
 
           {/* Per-Category Impact */}
@@ -427,7 +437,16 @@ export function BudgetHealthScoreReport() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {t('budgetHealthScore.categoryImpact')}
             </h2>
-            {healthScore.categoryScores.length === 0 ? (
+            {healthScore.score === null ? (
+              // Not "no categories": the lines exist but their figures are unknown.
+              <p
+                className="text-sm text-gray-500 dark:text-gray-400"
+                data-testid="health-partial-note"
+                role="note"
+              >
+                {partialReasonOf(healthScore.missingRatePairs)}
+              </p>
+            ) : healthScore.categoryScores.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {t('budgetHealthScore.noCategories')}
               </p>

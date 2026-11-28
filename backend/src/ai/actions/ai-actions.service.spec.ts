@@ -82,7 +82,7 @@ describe("AiActionsService", () => {
       update: jest.fn().mockResolvedValue({ id: TX }),
       updateSplits: jest.fn().mockResolvedValue([]),
       remove: jest.fn().mockResolvedValue(undefined),
-      removeAny: jest.fn().mockResolvedValue(undefined),
+      removeAny: jest.fn().mockResolvedValue([]),
       createBulk: jest.fn(),
       createTransfer: jest.fn().mockResolvedValue({
         fromTransaction: { id: "tf-1" },
@@ -2205,7 +2205,7 @@ describe("AiActionsService", () => {
 
     it("executes batch_actions(delete) best-effort, collecting skips", async () => {
       transactions.removeAny
-        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce([TX])
         .mockRejectedValueOnce(new Error("nope"));
       const descriptor: import("./ai-action.types").BatchActionsDescriptor = {
         type: "batch_actions",
@@ -2219,6 +2219,71 @@ describe("AiActionsService", () => {
       expect(result.type).toBe("batch_actions");
       expect(result.count).toBe(1);
       expect(result.skipped).toHaveLength(1);
+    });
+
+    const deleteBatch = (actionId: string) =>
+      service.confirm(
+        USER,
+        dtoFor({
+          type: "batch_actions",
+          userId: USER,
+          actionId,
+          expiresAt: Date.now() + 60_000,
+          operation: "delete",
+          rows: [{ transactionId: TX }, { transactionId: ACC2 }],
+        } as import("./ai-action.types").BatchActionsDescriptor),
+      );
+
+    it("does not delete a row a previous delete already took with it", async () => {
+      transactions.removeAny.mockResolvedValueOnce([TX, ACC2]);
+      const result = await deleteBatch("act-batch-mirror");
+      expect(transactions.removeAny).toHaveBeenCalledTimes(1);
+      expect(transactions.removeAny).toHaveBeenCalledWith(USER, TX, undefined, {
+        reportRemoved: true,
+      });
+      expect(result.count).toBe(2);
+      expect(result.skipped).toHaveLength(0);
+    });
+
+    it("counts a delete row id listed twice once", async () => {
+      transactions.removeAny.mockResolvedValueOnce([TX]);
+      const result = await service.confirm(
+        USER,
+        dtoFor({
+          type: "batch_actions",
+          userId: USER,
+          actionId: "act-batch-dup",
+          expiresAt: Date.now() + 60_000,
+          operation: "delete",
+          rows: [{ transactionId: TX }, { transactionId: TX }],
+        } as import("./ai-action.types").BatchActionsDescriptor),
+      );
+      expect(transactions.removeAny).toHaveBeenCalledTimes(1);
+      expect(result.ids).toEqual([TX]);
+      expect(result.count).toBe(1);
+    });
+
+    it("deletes the second row itself when the first delete failed", async () => {
+      transactions.removeAny
+        .mockRejectedValueOnce(new Error("nope"))
+        .mockResolvedValueOnce([TX, ACC2]);
+      const result = await deleteBatch("act-batch-mirror-fail");
+      expect(transactions.removeAny).toHaveBeenCalledTimes(2);
+      expect(transactions.removeAny).toHaveBeenLastCalledWith(
+        USER,
+        ACC2,
+        undefined,
+        { reportRemoved: true },
+      );
+      expect(result.count).toBe(1);
+      expect(result.skipped).toHaveLength(1);
+    });
+
+    it("deletes the second row when the first delete did not remove it", async () => {
+      transactions.removeAny.mockResolvedValueOnce([TX]);
+      const result = await deleteBatch("act-batch-unlinked");
+      expect(transactions.removeAny).toHaveBeenCalledTimes(2);
+      expect(result.count).toBe(2);
     });
 
     it("executes batch_actions(update) for each row", async () => {

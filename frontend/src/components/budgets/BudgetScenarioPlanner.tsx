@@ -5,10 +5,14 @@ import { useTranslations } from 'next-intl';
 import { gainLossColor } from '@/lib/format';
 import type { CategoryBreakdown } from '@/types/budget';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
 
 interface BudgetScenarioPlannerProps {
   categories: CategoryBreakdown[];
-  totalIncome: number;
+  /** `null` when an income row had no exchange rate: the savings figures are unknown. */
+  totalIncome: number | null;
+  /** The translated cause shown beside an unknown figure. */
+  partialReason?: string;
   formatCurrency: (amount: number) => string;
   onApplyChanges?: (changes: Array<{ budgetCategoryId: string; amount: number }>) => void;
 }
@@ -24,6 +28,7 @@ interface ScenarioCategory {
 export function BudgetScenarioPlanner({
   categories,
   totalIncome,
+  partialReason,
   formatCurrency,
   onApplyChanges,
 }: BudgetScenarioPlannerProps) {
@@ -81,9 +86,9 @@ export function BudgetScenarioPlanner({
     [scenarioCategories],
   );
 
-  const originalSavings = totalIncome - originalTotal;
-  const adjustedSavings = totalIncome - adjustedTotal;
-  const savingsDifference = adjustedSavings - originalSavings;
+  // The difference needs no income, so it stays known; the savings do.
+  const adjustedSavings = totalIncome === null ? null : totalIncome - adjustedTotal;
+  const savingsDifference = originalTotal - adjustedTotal;
 
   const hasChanges = useMemo(
     () =>
@@ -178,11 +183,11 @@ export function BudgetScenarioPlanner({
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('scenarioPlanner.projectedSavings')}</p>
           <p
             className={`text-base font-semibold ${
-              gainLossColor(adjustedSavings)
+              adjustedSavings === null ? 'text-gray-500 dark:text-gray-400' : gainLossColor(adjustedSavings)
             }`}
             data-testid="projected-savings"
           >
-            {formatCurrency(adjustedSavings)}
+            {adjustedSavings === null ? <UnknownAmount reasonText={partialReason} /> : formatCurrency(adjustedSavings)}
           </p>
         </div>
         <div className="bg-gray-50 dark:bg-gray-900/40 rounded-lg p-3">

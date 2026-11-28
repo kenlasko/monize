@@ -140,6 +140,8 @@ function DashboardContent() {
   // The net worth request failed: `netWorthData` is then empty, which is not
   // the answer "no history yet" and must not be shown as one.
   const [netWorthFailed, setNetWorthFailed] = useState(false);
+  const [accountsFailed, setAccountsFailed] = useState(false);
+  const [scheduledFailed, setScheduledFailed] = useState(false);
   const [favouriteSecurities, setFavouriteSecurities] = useState<FavouriteSecurityQuote[]>([]);
   const [hasSecurities, setHasSecurities] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -263,19 +265,27 @@ function DashboardContent() {
         // other dashboard endpoints are not delegate-accessible. Load just the
         // (server-filtered) accounts and stop.
         if (isDelegateView) {
-          const delegateAccounts = await accountsApi.getAll();
-          setAccounts(delegateAccounts);
-          setAccountsWithClosed(delegateAccounts);
+          const delegateAccounts = await accountsApi.getAll().catch((error) => {
+            logger.error('Failed to load delegate accounts:', error);
+            return null;
+          });
+          setAccountsFailed(delegateAccounts === null);
+          setAccounts(delegateAccounts ?? []);
+          setAccountsWithClosed(delegateAccounts ?? []);
           setInstitutions([]);
           // 3C: when the owner granted the Bills & Deposits section, the
           // scheduled endpoint is delegate-reachable (server-filtered to the
           // delegate's readable accounts) so the widget can render.
+          // A stale flag from the owner's view must not outlive the switch.
+          if (!delegateBills) setScheduledFailed(false);
           if (delegateBills) {
             try {
               const sched = await scheduledTransactionsApi.getAll();
               setScheduledTransactions(sched);
+              setScheduledFailed(false);
             } catch (error) {
               logger.error('Failed to load delegate scheduled data:', error);
+              setScheduledFailed(true);
             }
           }
           setIsLoading(false);
@@ -288,8 +298,16 @@ function DashboardContent() {
         const twelveMonthsAgo = format(subMonths(new Date(), 12), 'yyyy-MM-dd');
 
         const [accountsData, scheduledData, netWorth, favouriteSecs, securitiesList, institutionsData] = await Promise.all([
-          accountsApi.getAll(true),
-          scheduledTransactionsApi.getAll(),
+          // Each source fails on its own: a lost accounts call must not blank
+          // the bills, and neither may read as "none yet".
+          accountsApi.getAll(true).catch((error) => {
+            logger.error('Failed to load accounts:', error);
+            return null;
+          }),
+          scheduledTransactionsApi.getAll().catch((error) => {
+            logger.error('Failed to load scheduled transactions:', error);
+            return null;
+          }),
           netWorthApi.getMonthly({ startDate: twelveMonthsAgo, endDate: today }).catch((error) => {
             logger.error('Failed to load net worth history:', error);
             return null;
@@ -302,14 +320,21 @@ function DashboardContent() {
           }),
         ]);
 
-        setAccountsWithClosed(accountsData);
-        setAccounts(accountsData.filter((a: Account) => !a.isClosed));
+        setAccountsFailed(accountsData === null);
+        setScheduledFailed(scheduledData === null);
+        setAccountsWithClosed(accountsData ?? []);
+        setAccounts((accountsData ?? []).filter((a: Account) => !a.isClosed));
         setInstitutions(institutionsData);
-        setScheduledTransactions(scheduledData);
+        setScheduledTransactions(scheduledData ?? []);
         setNetWorthData(netWorth ?? []);
         setNetWorthFailed(netWorth === null);
         setFavouriteSecurities(favouriteSecs);
         setHasSecurities(securitiesList.length > 0);
+
+        // A failed accounts call says nothing about investments: leave
+        // `hasInvestments` and the portfolio widgets as they were, and let
+        // each widget that reads accounts show its own failed state.
+        if (accountsData === null) return;
 
         const investmentAccounts = accountsData.filter(
           (a: Account) => a.accountType === 'INVESTMENT' && !a.isClosed,
@@ -379,6 +404,8 @@ function DashboardContent() {
     favouriteSecurities,
     netWorthData,
     netWorthFailed,
+    accountsFailed,
+    scheduledFailed,
     brokerageMarketValues,
     unpricedHoldingCounts,
     incompleteHoldingAccountIds,
@@ -615,12 +642,13 @@ function DashboardContent() {
             <DashboardHero
               portfolioValuation={portfolioValuation}
               hasInvestments={hasInvestments}
+              accountsFailed={accountsFailed}
               isLoading={isLoading}
               investmentSummaryLoading={investmentSummaryLoading}
               investmentAccounts={portfolioAccounts}
               priceRefreshKey={priceRefreshKey}
               header={header}
-              scheduledTransactions={scheduledTransactions}
+              scheduledTransactions={scheduledFailed ? undefined : scheduledTransactions}
             />
           )}
 

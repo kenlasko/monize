@@ -4,7 +4,7 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { TransactionsService } from "../../transactions/transactions.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
 import { resolveUserContext, hasScope } from "../mcp-context";
-import { formatDateYMD, todayYMD } from "../../common/date-utils";
+import { addDaysYMD, todayYMD } from "../../common/date-utils";
 
 /**
  * What a row is, beside its category's name: a transfer leg (a whole leg or a
@@ -65,9 +65,7 @@ export class McpRecentTransactionsResource {
 
         try {
           const endDate = todayYMD();
-          const startDate = new Date();
-          startDate.setDate(startDate.getDate() - 30);
-          const startDateStr = formatDateYMD(startDate);
+          const startDateStr = addDaysYMD(endDate, -30);
 
           const [result, summary, totals] = await Promise.all([
             this.transactionsService.findAll(

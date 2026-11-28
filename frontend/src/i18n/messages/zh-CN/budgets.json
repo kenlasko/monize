@@ -134,6 +134,7 @@
       "carriedIn": "转入：",
       "carriedOut": "转出："
     },
+    "noPositiveFunding": "预算大于零时才能计算使用率。",
     "overallUsage": "总体预算使用情况",
     "expenseCategories": "支出分类",
     "incomeCategories": "收入分类",
@@ -164,6 +165,10 @@
     "projectedSavings": "预计储蓄",
     "savingsChange": "储蓄变化",
     "original": "原始：{amount}"
+  },
+  "partialSpent": {
+    "reason": "{pairs} 没有汇率，因此这些货币的支出未计入。请在“货币”页面添加汇率。",
+    "known": "目前已换算的支出：{amount}。"
   },
   "summaryCards": {
     "ariaLabel": "预算合计",

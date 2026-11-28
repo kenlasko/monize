@@ -88,13 +88,14 @@ const config = (overrides: Partial<DashboardHeroConfig> = {}): DashboardHeroConf
   ...overrides,
 });
 
-async function renderHero(cfg: DashboardHeroConfig = config(), props: { hasInvestments?: boolean } = {}) {
+async function renderHero(cfg: DashboardHeroConfig = config(), props: { hasInvestments?: boolean; accountsFailed?: boolean } = {}) {
   await act(async () => {
     render(
       <PortfolioHero
         config={cfg}
         investmentAccounts={ACCOUNTS}
         hasInvestments={props.hasInvestments ?? true}
+        accountsFailed={props.accountsFailed}
         isLoading={false}
       />,
     );
@@ -217,6 +218,24 @@ describe('PortfolioHero', () => {
     expect(within(screen.getByTestId('dashboard-hero-headline')).getByTestId('partial-total-marker')).toBeInTheDocument();
   });
 
+  it('names one withheld figure as withheld and keeps the rest of the hero', async () => {
+    // The cash has no rate: only that figure is unknown, the value and holdings
+    // are known and their partial marks follow their own totals.
+    getPortfolioValuation.mockResolvedValue(
+      summary({
+        totalCashValue: null,
+        knownCashValueSubtotal: undefined,
+        valuationComplete: false,
+        fxComplete: false,
+        missingRatePairs: ['CHF->CAD'],
+      }),
+    );
+    await renderHero();
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/154,523\.85/);
+    expect(screen.getByTestId('unknown-amount')).toBeInTheDocument();
+    expect(screen.queryByText(/Couldn't load your portfolio/)).not.toBeInTheDocument();
+  });
+
   it('says a failed change request failed, and holds nothing for one still in flight', async () => {
     period.current = { periodResult: null, failed: true };
     await renderHero();
@@ -240,6 +259,18 @@ describe('PortfolioHero', () => {
     await renderHero();
     expect(chartState.data.map((p) => p.value)).toEqual([140000, 150000.4]);
     expect(within(screen.getByTestId('area')).getAllByRole('button', { name: 'Hide this value' })).toHaveLength(2);
+  });
+
+  it('says the accounts failed to load, not that there are no investment accounts', async () => {
+    await renderHero(config(), { hasInvestments: false, accountsFailed: true });
+    expect(screen.getByText(/Couldn't load your portfolio/)).toBeInTheDocument();
+    expect(screen.queryByText(/No investment accounts yet/)).not.toBeInTheDocument();
+  });
+
+  it('says the accounts failed to load on a reload too, instead of the old valuation', async () => {
+    await renderHero(config(), { hasInvestments: true, accountsFailed: true });
+    expect(screen.getByText(/Couldn't load your portfolio/)).toBeInTheDocument();
+    expect(screen.queryByTestId('dashboard-hero-metric')).not.toBeInTheDocument();
   });
 
   it('says there is nothing to show without investment accounts, and asks for nothing', async () => {
