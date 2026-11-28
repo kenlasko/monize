@@ -99,7 +99,11 @@ export interface CsvUnreadableDateRow {
   /** The date field as the file gave it, empty when the row has none. */
   rawDate: string;
   amount: number;
+  /** QIF and OFX: the amount text too, when it cannot be read either (`amount` is then 0). */
+  rawAmount?: string;
   payee: string;
+  /** QIF and OFX: the record is a transfer, whose other leg may exist. */
+  isTransfer?: boolean;
 }
 
 /**

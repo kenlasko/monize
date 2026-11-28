@@ -32,7 +32,11 @@ import {
 } from "./amount-separators.util";
 import { QifRecordTracker } from "./qif-record-tracker";
 import { isQifCashTransfer } from "./qif-cash-transfer-action";
-import type { CsvUnreadableAmountRow } from "./csv-parser";
+import { isCalendarDate } from "../common/validators/is-calendar-date.validator";
+import type {
+  CsvUnreadableAmountRow,
+  CsvUnreadableDateRow,
+} from "./csv-parser";
 
 export interface QifTransaction {
   date: string;
@@ -94,6 +98,11 @@ export interface QifParseResult {
   /** Unique securities found in investment transactions */
   securities: string[];
   detectedDateFormat: string;
+  /**
+   * QIF parses: whether the dates prove `detectedDateFormat` (a part above 12
+   * or an ISO shape); when false the order is the month-first default.
+   */
+  dateFormatConclusive?: boolean;
   sampleDates: string[];
   /** Opening balance extracted from the first "Opening Balance" record, if present */
   openingBalance: number | null;
@@ -106,9 +115,10 @@ export interface QifParseResult {
    */
   investmentSummary?: import("./csv-parser").CsvInvestmentSummary;
   /**
-   * CSV parses only: every row left out because its date could not be read
-   * under the mapping's date format, in file order. The preview counts them
-   * and the import records each as a skipped row.
+   * Every row (CSV) or record (QIF, OFX) left out because its date cannot be
+   * read, in file order. QIF rows carry the line the record starts on, OFX
+   * rows the 1-based position of the transaction block. The preview counts
+   * them and the import records each as a skipped row.
    */
   unreadableDateRows?: import("./csv-parser").CsvUnreadableDateRow[];
   /**
@@ -221,8 +231,6 @@ export function parseQif(
   const transferAccountsSet = new Set<string>();
   const securitiesSet = new Set<string>();
   const rawDates: string[] = [];
-  const transactionRawDates: string[] = [];
-  let openingBalanceRawDate: string | null = null;
 
   let accountType = "Bank";
   let accountName = "";
@@ -235,7 +243,7 @@ export function parseQif(
   // The open record's unreadable-amount state and the names it uses.
   const rec = new QifRecordTracker(parseQifQuantity, truncate);
   const unreadableAmountRows: CsvUnreadableAmountRow[] = [];
-  const unreadableRawDates: string[] = [];
+  const unreadableDateRows: CsvUnreadableDateRow[] = [];
   let openingBalance: number | null = null;
   let openingBalanceDate: string | null = null;
   let skippingSection = false;
@@ -516,7 +524,14 @@ export function parseQif(
           rec.transfers,
         );
 
-        if (currentTransaction.date) {
+        if (!currentTransaction.date) {
+          unreadableDateRows.push(
+            rec.unreadableDateRow(
+              currentTransaction,
+              rawDates[rawDates.length - 1],
+            ),
+          );
+        } else {
           rec.keepNames(categoriesSet, transferAccountsSet, securitiesSet);
           // Check if this is an Opening Balance record
           // Opening Balance records have Payee="Opening Balance" and typically a transfer category [AccountName]
@@ -529,16 +544,13 @@ export function parseQif(
 
           if (rec.bad !== null) {
             unreadableAmountRows.push(rec.unreadableRow(currentTransaction));
-            unreadableRawDates.push(rawDates[rawDates.length - 1]);
           } else if (isOpeningBalance && openingBalance === null) {
             // Extract opening balance - don't add as a transaction
             openingBalance = currentTransaction.amount || 0;
             openingBalanceDate = currentTransaction.date;
-            openingBalanceRawDate = rawDates[rawDates.length - 1];
           } else {
             currentTransaction.splits = currentSplits;
             transactions.push(currentTransaction as QifTransaction);
-            transactionRawDates.push(rawDates[rawDates.length - 1]);
           }
         }
 
@@ -552,7 +564,12 @@ export function parseQif(
   }
 
   // Handle last transaction if file doesn't end with ^
-  if (currentTransaction && currentTransaction.date) {
+  if (currentTransaction && !currentTransaction.date) {
+    rec.settleBad();
+    unreadableDateRows.push(
+      rec.unreadableDateRow(currentTransaction, rawDates[rawDates.length - 1]),
+    );
+  } else if (currentTransaction) {
     if (
       currentQRaw !== null &&
       currentTransaction.action?.toLowerCase() === "stksplit"
@@ -571,39 +588,21 @@ export function parseQif(
     }
     if (rec.bad !== null) {
       unreadableAmountRows.push(rec.unreadableRow(currentTransaction));
-      unreadableRawDates.push(rawDates[rawDates.length - 1]);
     } else {
       currentTransaction.splits = currentSplits;
       transactions.push(currentTransaction as QifTransaction);
-      transactionRawDates.push(rawDates[rawDates.length - 1]);
     }
   }
 
-  // Detect date format from raw dates
-  const detectedDateFormat = dateFormat || detectDateFormat(rawDates);
-
-  // If no explicit format was provided, re-parse all dates using the detected format
-  // so the preview endpoint returns correct date ranges
-  if (!dateFormat) {
-    for (let i = 0; i < transactions.length; i++) {
-      transactions[i].date = parseQifDate(
-        transactionRawDates[i],
-        detectedDateFormat,
-      );
-    }
-    unreadableAmountRows.forEach((row, i) => {
-      row.date = parseQifDate(unreadableRawDates[i], detectedDateFormat);
-    });
-    if (openingBalanceRawDate !== null) {
-      openingBalanceDate = parseQifDate(
-        openingBalanceRawDate,
-        detectedDateFormat,
-      );
-    }
-  }
+  // Dates are read under the file's own format, so a date is judged
+  // readable only once that format is known: parse again under it.
+  if (!dateFormat) return parseQif(content, detectDateFormat(rawDates));
+  const detectedDateFormat = dateFormat;
 
   // Get sample dates for UI display (unique, up to 3)
-  const sampleDates = [...new Set(rawDates)].slice(0, 3);
+  const sampleDates = [
+    ...new Set(rawDates.filter((d) => parseQifDate(d, dateFormat) !== "")),
+  ].slice(0, 3);
 
   return {
     accountType,
@@ -613,9 +612,11 @@ export function parseQif(
     transferAccounts: Array.from(transferAccountsSet).sort(),
     securities: Array.from(securitiesSet).sort(),
     detectedDateFormat,
+    dateFormatConclusive: isConclusiveDateFormat(rawDates),
     sampleDates,
     openingBalance,
     openingBalanceDate,
+    ...(unreadableDateRows.length > 0 ? { unreadableDateRows } : {}),
     ...(unreadableAmountRows.length > 0 ? { unreadableAmountRows } : {}),
   };
 }
@@ -628,14 +629,40 @@ function normalizeDateSeparators(dateStr: string): string {
   normalized = normalized.replace(/(\d)\s*['"]\s*(\d)/g, "$1/$2");
   // Strip spaces around date separators (Quicken pads single-digit days: "2/ 4/19")
   normalized = normalized.replace(/\s*([/-])\s*/g, "$1");
-  return normalized;
+  // A dot between digits (DD.MM.YYYY) is a date separator too.
+  normalized = normalized.replace(/(\d)\s*\.\s*(?=\d)/g, "$1/");
+  // A compact YYYYMMDD reads as YYYY-MM-DD.
+  return normalized.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3");
+}
+
+/** True when some order reads the (separator-normalised) date. */
+function readableInAnyOrder(d: string): boolean {
+  return (
+    ["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "YYYY-DD-MM"] as const
+  ).some((f) => parseQifDate(d, f) !== "");
+}
+
+/** True when a readable date has a part above 12 or an ISO shape, so the order is not a guess. */
+function isConclusiveDateFormat(dates: string[]): boolean {
+  return dates
+    .map(normalizeDateSeparators)
+    .filter(readableInAnyOrder)
+    .some((d) => {
+      if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(d)) return true;
+      const m = d.match(/^(\d{1,2})[-/](\d{1,2})[-/]\d{1,4}$/);
+      return m !== null && (Number(m[1]) > 12 || Number(m[2]) > 12);
+    });
 }
 
 function detectDateFormat(dates: string[]): DateFormat {
   if (dates.length === 0) return "MM/DD/YYYY";
 
   // Normalize separators so apostrophe formats (e.g. DD/MM'YYYY) are handled
-  const normalizedDates = dates.map(normalizeDateSeparators);
+  // A date no order can read (13/45/2026) says nothing about the file's order.
+  const normalizedDates = dates
+    .map(normalizeDateSeparators)
+    .filter(readableInAnyOrder);
+  if (normalizedDates.length === 0) return "MM/DD/YYYY";
 
   // Check for YYYY-MM-DD or YYYY-DD-MM format (ISO-like)
   const isoMatch = normalizedDates[0]?.match(
@@ -683,8 +710,87 @@ function detectDateFormat(dates: string[]): DateFormat {
   return "MM/DD/YYYY";
 }
 
+/** YYYY-MM-DD, or "" when the text is no date of the calendar. */
+function checkedDate(year: string, month: string, day: string): string {
+  const date = `${year}-${month}-${day}`;
+  return Number(year) >= 1 && isCalendarDate(date) ? date : "";
+}
+
+const MONTH_ABBREVIATIONS = [
+  "jan",
+  "feb",
+  "mar",
+  "apr",
+  "may",
+  "jun",
+  "jul",
+  "aug",
+  "sep",
+  "oct",
+  "nov",
+  "dec",
+];
+const FULL_MONTH_NAMES = [
+  "january",
+  "february",
+  "march",
+  "april",
+  "may",
+  "june",
+  "july",
+  "august",
+  "september",
+  "october",
+  "november",
+  "december",
+];
+
+/** 1-12 for an English month name (full, 3 letters or "sept"); else 0. */
+function englishMonth(name: string): number {
+  const n = name.toLowerCase();
+  if (n === "sept") return 9;
+  const i =
+    n.length === 3
+      ? MONTH_ABBREVIATIONS.indexOf(n)
+      : FULL_MONTH_NAMES.indexOf(n);
+  return i + 1;
+}
+
+// A space, comma or hyphen (or a run of them) between the parts of a date.
+const NAMED_MDY = /^([A-Za-z]{3,9})\.?[\s,-]+(\d{1,2})[\s,-]+(\d{4}|\d{2})$/;
+const NAMED_DMY = /^(\d{1,2})[\s,-]+([A-Za-z]{3,9})\.?[\s,-]+(\d{4}|\d{2})$/;
+const NAMED_YMD = /^(\d{4})[\s,-]+([A-Za-z]{3,9})\.?[\s,-]+(\d{1,2})$/;
+
+/**
+ * An English month name in any order PostgreSQL reads ("January 15, 2026",
+ * "15-Jan-26", "2026-Jan-15", "Sept 15 2026"); "" when it is none of them. A
+ * two-digit year pivots at 50 as the numeric dates do.
+ */
+function parseNamedMonthDate(dateStr: string): string {
+  if (dateStr.length > 40) return "";
+  let name: string, day: string, year: string;
+  let m: RegExpMatchArray | null;
+  if ((m = dateStr.match(NAMED_MDY))) [, name, day, year] = m;
+  else if ((m = dateStr.match(NAMED_DMY))) [, day, name, year] = m;
+  else if ((m = dateStr.match(NAMED_YMD))) [, year, name, day] = m;
+  else return "";
+  const month = englishMonth(name);
+  if (!month) return "";
+  if (year.length === 2) {
+    year = `${Number(year) > 50 ? 19 : 20}${year}`;
+  }
+  return checkedDate(
+    year,
+    String(month).padStart(2, "0"),
+    day.padStart(2, "0"),
+  );
+}
+
 function parseQifDate(dateStr: string, format?: DateFormat): string {
   dateStr = normalizeDateSeparators(dateStr);
+
+  const named = parseNamedMonthDate(dateStr);
+  if (named) return named;
 
   // Try YYYY-MM-DD or YYYY-DD-MM format (ISO-like)
   let match = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
@@ -701,7 +807,7 @@ function parseQifDate(dateStr: string, format?: DateFormat): string {
       day = part3.padStart(2, "0");
     }
 
-    return `${year}-${month}-${day}`;
+    return checkedDate(year, month, day);
   }
 
   // Try MM/DD/YYYY or DD/MM/YYYY format (1-4 digit years)
@@ -729,11 +835,11 @@ function parseQifDate(dateStr: string, format?: DateFormat): string {
       day = part2.padStart(2, "0");
     }
 
-    return `${year}-${month}-${day}`;
+    return checkedDate(year, month, day);
   }
 
-  // Return as-is if can't parse
-  return dateStr;
+  // Never invent a date: the record is reported as unreadable.
+  return "";
 }
 
 /**
@@ -962,6 +1068,8 @@ export interface QifAccountBlock {
   openingBalanceDate: string | null;
   /** Records left out because an amount field cannot be read (see QifParseResult). */
   unreadableAmountRows?: CsvUnreadableAmountRow[];
+  /** Records left out because the date cannot be read (see QifParseResult). */
+  unreadableDateRows?: CsvUnreadableDateRow[];
 }
 
 /**
@@ -1038,6 +1146,7 @@ export function parseQifFull(
   // See parseQif: the open record's unreadable-amount state and its names.
   const rec = new QifRecordTracker(parseQifQuantity, truncate);
   let blockUnreadableAmountRows: CsvUnreadableAmountRow[] = [];
+  let blockUnreadableDateRows: CsvUnreadableDateRow[] = [];
   let blockCategoriesSet = new Set<string>();
   let blockTransferAccountsSet = new Set<string>();
   let blockSecuritiesSet = new Set<string>();
@@ -1082,7 +1191,15 @@ export function parseQifFull(
     if (!currentBlock) return;
 
     // Finalize last transaction if present
-    if (currentTransaction && currentTransaction.date) {
+    if (currentTransaction && !currentTransaction.date) {
+      rec.settleBad();
+      blockUnreadableDateRows.push(
+        rec.unreadableDateRow(
+          currentTransaction,
+          blockRawDates[blockRawDates.length - 1],
+        ),
+      );
+    } else if (currentTransaction) {
       if (currentSplit && currentSplit.category !== undefined) {
         currentSplits.push(currentSplit as QifSplit);
       }
@@ -1116,7 +1233,7 @@ export function parseQifFull(
         blockUnreadableAmountRows.push(rec.unreadableRow(currentTransaction));
       } else if (isOB && blockOpeningBalance === null) {
         blockOpeningBalance = currentTransaction.amount || 0;
-        blockOpeningBalanceDate = currentTransaction.date;
+        blockOpeningBalanceDate = currentTransaction.date ?? null;
       } else {
         currentTransaction.splits = currentSplits;
         currentBlock.transactions.push(currentTransaction as QifTransaction);
@@ -1131,6 +1248,9 @@ export function parseQifFull(
     currentBlock.openingBalanceDate = blockOpeningBalanceDate;
     if (blockUnreadableAmountRows.length > 0) {
       currentBlock.unreadableAmountRows = blockUnreadableAmountRows;
+    }
+    if (blockUnreadableDateRows.length > 0) {
+      currentBlock.unreadableDateRows = blockUnreadableDateRows;
     }
     accountBlocks.push(currentBlock);
 
@@ -1148,6 +1268,7 @@ export function parseQifFull(
     blockRawDates = [];
     blockTransactionRawDates = [];
     blockUnreadableAmountRows = [];
+    blockUnreadableDateRows = [];
     rec.start(0);
   }
 
@@ -1552,7 +1673,14 @@ export function parseQifFull(
           rec.transfers,
         );
 
-        if (currentTransaction.date) {
+        if (!currentTransaction.date) {
+          blockUnreadableDateRows.push(
+            rec.unreadableDateRow(
+              currentTransaction,
+              blockRawDates[blockRawDates.length - 1],
+            ),
+          );
+        } else {
           rec.keepNames(
             blockCategoriesSet,
             blockTransferAccountsSet,
@@ -1623,7 +1751,9 @@ export function parseQifFull(
     return parseQifFull(content, detectedDateFormat);
   }
 
-  const sampleDates = [...new Set(rawDates)].slice(0, 3);
+  const sampleDates = [
+    ...new Set(rawDates.filter((d) => parseQifDate(d, dateFormat) !== "")),
+  ].slice(0, 3);
 
   return {
     categoryDefs,

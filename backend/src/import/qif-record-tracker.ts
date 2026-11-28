@@ -1,5 +1,8 @@
 import { parseQifAmount } from "./amount-separators.util";
-import type { CsvUnreadableAmountRow } from "./csv-parser";
+import type {
+  CsvUnreadableAmountRow,
+  CsvUnreadableDateRow,
+} from "./csv-parser";
 import type { QifTransaction } from "./qif-parser";
 
 /** Longest raw amount text an unreadable record carries back. */
@@ -110,6 +113,21 @@ export class QifRecordTracker {
       rowNumber: this.startLine,
       rawAmount: this.bad ?? "",
       date: tx.date ?? "",
+      payee: tx.payee ?? "",
+      ...(tx.isTransfer ? { isTransfer: true } : {}),
+    };
+  }
+
+  /** The report row for a record whose D line holds no readable date. */
+  unreadableDateRow(
+    tx: Partial<QifTransaction>,
+    rawDate: string,
+  ): CsvUnreadableDateRow {
+    return {
+      rowNumber: this.startLine,
+      rawDate: this.clean(rawDate, RAW_AMOUNT_LIMIT),
+      amount: this.bad === null ? (tx.amount ?? 0) : 0,
+      ...(this.bad !== null ? { rawAmount: this.bad } : {}),
       payee: tx.payee ?? "",
       ...(tx.isTransfer ? { isTransfer: true } : {}),
     };

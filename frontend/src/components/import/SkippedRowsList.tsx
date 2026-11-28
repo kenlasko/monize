@@ -17,12 +17,16 @@ const REASON_KEYS = {
   unreadableDate: 'complete.skipReasonUnreadableDate',
   unreadableAmount: 'complete.skipReasonUnreadableAmount',
   unreadableAmountTransfer: 'complete.skipReasonUnreadableAmountTransfer',
+  unreadableDateTransfer: 'complete.skipReasonUnreadableDateTransfer',
   missingSecurity: 'complete.skipReasonMissingSecurity',
   missingQuantity: 'complete.skipReasonMissingQuantity',
   missingAmount: 'complete.skipReasonMissingAmount',
   missingProceeds: 'complete.skipReasonMissingProceeds',
   missingSplitRatio: 'complete.skipReasonMissingSplitRatio',
 } as const satisfies Record<ImportSkipReason, string>;
+
+const isUnreadableDate = (row: ImportSkippedRow) =>
+  row.reason === 'unreadableDate' || row.reason === 'unreadableDateTransfer';
 
 const isUnreadableAmount = (row: ImportSkippedRow) =>
   row.reason === 'unreadableAmount' || row.reason === 'unreadableAmountTransfer';
@@ -63,7 +67,7 @@ export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total, fileType }
   // its line in the file and the text the file gave. Any other row the parse
   // left out (an investment row missing data) has both its line and its date.
   const describeDate = (row: ImportSkippedRow) => {
-    if (row.reason !== 'unreadableDate') {
+    if (!isUnreadableDate(row)) {
       const lineKey =
         isUnreadableAmount(row) && fileType === 'qif'
           ? 'complete.skippedRowQifLineAt'
@@ -74,12 +78,17 @@ export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total, fileType }
         ? t(lineKey, { line: row.rowNumber, date: formatDate(row.date) })
         : formatDate(row.date);
     }
+    if (fileType === 'qif' || fileType === 'ofx') {
+      return row.rawDate
+        ? t('complete.skippedRowFileLineDate', { kind: fileType, line: row.rowNumber ?? '', rawDate: row.rawDate })
+        : t('complete.skippedRowFileLine', { kind: fileType, line: row.rowNumber ?? '' });
+    }
     return row.rawDate
       ? t('complete.skippedRowLineDate', { line: row.rowNumber ?? '', rawDate: row.rawDate })
       : t('complete.skippedRowLine', { line: row.rowNumber ?? '' });
   };
   const describeReason = (row: ImportSkippedRow) =>
-    row.reason === 'unreadableDate' && !row.rawDate
+    isUnreadableDate(row) && !row.rawDate
       ? t('complete.skipReasonNoDate')
       : t(REASON_KEYS[row.reason]);
 
@@ -88,7 +97,7 @@ export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total, fileType }
       date: describeDate(row),
       // An unreadable amount has no number to format; the file's text is shown.
       amount:
-        isUnreadableAmount(row) && row.rawAmount !== undefined
+        row.rawAmount !== undefined
           ? t('complete.skippedRowRawAmount', { rawAmount: row.rawAmount })
           : formatCurrency(row.amount, row.currencyCode),
       reason: describeReason(row),

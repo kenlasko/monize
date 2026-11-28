@@ -949,4 +949,75 @@ ${amounts
       ]);
     });
   });
+  describe("unreadable dates", () => {
+    const ofx = (...dates: string[]) => `OFXHEADER:100
+<OFX>
+<BANKMSGSRSV1>
+<STMTTRNRS><STMTRS><BANKTRANLIST>
+${dates
+  .map(
+    (d, i) => `<STMTTRN>
+<TRNTYPE>DEBIT
+<DTPOSTED>${d}
+<TRNAMT>-${i + 1}.00
+<FITID>${i}
+<NAME>Row ${i + 1}
+</STMTTRN>`,
+  )
+  .join("\n")}
+</BANKTRANLIST></STMTRS></STMTTRNRS>
+</BANKMSGSRSV1>
+</OFX>`;
+
+    it.each(["2026-02-30", "20260230", "20261345", "2024011X", "garbage", ""])(
+      "reports DTPOSTED %p instead of dropping or mis-dating it",
+      (raw) => {
+        const result = parseOfx(ofx("20260105", raw));
+        expect(result.transactions.map((t) => t.date)).toEqual(["2026-01-05"]);
+        expect(result.unreadableDateRows).toEqual([
+          { rowNumber: 2, rawDate: raw, amount: -2, payee: "Row 2" },
+        ]);
+      },
+    );
+
+    it("reports year 0000", () => {
+      const result = parseOfx(ofx("00000101"));
+      expect(result.unreadableDateRows).toHaveLength(1);
+    });
+
+    it("lists every block with an unreadable date, whatever its FITID", () => {
+      const result = parseOfx(
+        ofx("garbage", "garbage").replace("<FITID>1", "<FITID>0"),
+      );
+      expect(result.unreadableDateRows?.map((r) => r.rowNumber)).toEqual([
+        1, 2,
+      ]);
+    });
+
+    it("flags an unreadable-date XFER transaction as a transfer", () => {
+      const result = parseOfx(
+        ofx("garbage").replace("<TRNTYPE>DEBIT", "<TRNTYPE>XFER"),
+      );
+      expect(result.unreadableDateRows?.[0].isTransfer).toBe(true);
+    });
+
+    it("takes sample dates only from dates that were read", () => {
+      const result = parseOfx(ofx("garbage", "20260105"));
+      expect(result.sampleDates).toEqual(["20260105"]);
+    });
+
+    it("carries the amount text when the amount cannot be read either", () => {
+      const result = parseOfx(ofx("garbage").replace("-1.00", "abc"));
+      expect(result.unreadableDateRows?.[0]).toMatchObject({
+        amount: 0,
+        rawAmount: "abc",
+      });
+    });
+
+    it("reads a leap day", () => {
+      const result = parseOfx(ofx("20240229"));
+      expect(result.unreadableDateRows).toBeUndefined();
+      expect(result.transactions[0].date).toBe("2024-02-29");
+    });
+  });
 });
