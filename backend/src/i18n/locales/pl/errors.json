@@ -101,6 +101,8 @@
     "nothingToUndo": "Nie ma nic do cofnięcia",
     "nothingToRedo": "Nie ma nic do ponowienia",
     "undoCreateInUse": "Nie można cofnąć utworzenia „{{ name }}”: używają go teraz {{ summary }}. Najpierw usuń te elementy.",
+    "undoBudgetHasHistory": "Nie można cofnąć utworzenia „{{ name }}”: budżet ma teraz okresy, wiersze kategorii lub koszyki dodane później. Zamiast tego usuń budżet.",
+    "redoBudgetHasHistory": "Nie można ponowić usunięcia „{{ name }}”: budżet ma teraz okresy, wiersze kategorii lub koszyki dodane lub zmienione po jego przywróceniu. Zamiast tego usuń budżet.",
     "redoDeleteInUse": "Nie można ponowić usunięcia „{{ name }}”: używają go teraz {{ summary }}. Najpierw usuń te elementy.",
     "redoDeleteTargetGone": "Nie można ponowić tego usunięcia: kategoria, do której przeniesiono jej wiersze, już nie istnieje.",
     "undoNotSupportedForEntityType": "Cofnięcie nie jest obsługiwane dla typu encji: {{ entityType }}",

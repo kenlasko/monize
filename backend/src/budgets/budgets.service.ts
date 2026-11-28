@@ -286,11 +286,18 @@ export class BudgetsService {
   }
 
   async remove(userId: string, id: string): Promise<void> {
-    const budget = await this.findOne(userId, id);
-    const beforeData = { ...budget };
-    await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Budget).remove(budget),
-    );
+    // The budget is locked before the snapshot is read, so a line committed
+    // meanwhile is in the snapshot the undo restores from.
+    const beforeData = await withScopedDb(this.dataSource, async (m) => {
+      await m.query(
+        `SELECT id FROM budgets WHERE id = $1 AND user_id = $2 FOR UPDATE`,
+        [id, userId],
+      );
+      const budget = await this.findOne(userId, id);
+      const snapshot = { ...budget };
+      await m.getRepository(Budget).remove(budget);
+      return snapshot;
+    });
 
     this.actionHistoryService.record(userId, {
       entityType: "budget",

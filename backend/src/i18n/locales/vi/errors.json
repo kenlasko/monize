@@ -101,6 +101,8 @@
     "nothingToUndo": "Không có gì để hoàn tác",
     "nothingToRedo": "Không có gì để làm lại",
     "undoCreateInUse": "Không thể hoàn tác việc tạo \"{{ name }}\": hiện mục này đang được {{ summary }} sử dụng. Hãy gỡ các mục này trước.",
+    "undoBudgetHasHistory": "Không thể hoàn tác việc tạo \"{{ name }}\": ngân sách hiện có các kỳ, dòng danh mục hoặc nhóm được thêm sau đó. Hãy xóa ngân sách thay thế.",
+    "redoBudgetHasHistory": "Không thể làm lại việc xóa \"{{ name }}\": ngân sách hiện có các kỳ, dòng danh mục hoặc nhóm được thêm hoặc thay đổi sau khi khôi phục. Hãy xóa ngân sách thay thế.",
     "redoDeleteInUse": "Không thể làm lại việc xóa \"{{ name }}\": hiện mục này đang được {{ summary }} sử dụng. Hãy gỡ các mục này trước.",
     "redoDeleteTargetGone": "Không thể làm lại thao tác xóa này: danh mục mà các dòng đã được chuyển tới không còn tồn tại.",
     "undoNotSupportedForEntityType": "Hoàn tác không được hỗ trợ cho loại thực thể: {{ entityType }}",

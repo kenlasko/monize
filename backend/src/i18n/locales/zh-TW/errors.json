@@ -101,6 +101,8 @@
     "nothingToUndo": "沒有可復原的操作",
     "nothingToRedo": "沒有可重做的操作",
     "undoCreateInUse": "無法復原建立「{{ name }}」：它現在被 {{ summary }} 使用。請先移除這些項目。",
+    "undoBudgetHasHistory": "無法復原建立「{{ name }}」：該預算現在有之後新增的期間、類別列或群組。請改為刪除該預算。",
+    "redoBudgetHasHistory": "無法重做刪除「{{ name }}」：該預算在還原後新增或變更了期間、類別列或群組。請改為刪除該預算。",
     "redoDeleteInUse": "無法重做刪除「{{ name }}」：它現在被 {{ summary }} 使用。請先移除這些項目。",
     "redoDeleteTargetGone": "無法重做此刪除：其項目被移入的類別已不存在。",
     "undoNotSupportedForEntityType": "不支援復原實體類型：{{ entityType }}",
