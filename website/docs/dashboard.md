@@ -58,7 +58,7 @@ In either set the highest and lowest points on the chart carry a green and a red
 
 The hero is on by default. With it off, the dashboard opens with just the greeting and today's date.
 
-When the data behind a widget could not be loaded, the widget says so (for example "Couldn't load your accounts") and tells you to reload the dashboard. It does not show its empty message, such as "No upcoming bills" or "No active budget", because that would claim there is nothing to show. The other widgets keep working.
+When the data behind one of the default widgets (Favourite Accounts, Upcoming Bills, Top Movers, Portfolio Value, Expenses by Category, Income vs Expenses, Budget Status, Net Worth and Assets vs Liabilities), the hero or the Cash Flow Forecast could not be loaded, it says so (for example "Couldn't load your accounts") and tells you to reload the dashboard. It does not show its empty message, such as "No upcoming bills" or "No active budget", because that would claim there is nothing to show. The other widgets keep working. Some optional widgets do not yet have this message.
 
 ---
 

@@ -372,7 +372,7 @@
     "settlementTooltip": "Der letzte Tag des Abrechnungszeitraums. Buchungen, die an oder vor diesem Tag erfasst werden, erscheinen auf der aktuellen Abrechnung.",
     "dueShort": "fällig {ordinal}",
     "metaWithDue": "{institution} · {due}",
-    "loadFailed": "Deine Konten konnten nicht geladen werden. Lade das Dashboard neu und versuche es erneut."
+    "loadFailed": "Ihre Konten konnten nicht geladen werden. Laden Sie das Dashboard neu und versuchen Sie es erneut."
   },
   "upcomingBills": {
     "title": "Bevorstehende Rechnungen und Einzahlungen",
@@ -409,7 +409,7 @@
     "metaPayee": "· {payee}",
     "metaManual": "· von Hand bezahlt",
     "metaWhen": "· {when}",
-    "loadFailed": "Deine anstehenden Rechnungen konnten nicht geladen werden. Lade das Dashboard neu und versuche es erneut."
+    "loadFailed": "Ihre anstehenden Rechnungen konnten nicht geladen werden. Laden Sie das Dashboard neu und versuchen Sie es erneut."
   },
   "cashFlowForecast": {
     "title": "Cashflow-Prognose",
@@ -447,7 +447,7 @@
     "daysLeft": "{count} Tage verbleibend",
     "safeToSpend": "Heute sicher ausgeben",
     "topCategories": "Top-Kategorien",
-    "loadFailed": "Dein Budgetstatus konnte nicht geladen werden. Lade das Dashboard neu und versuche es erneut."
+    "loadFailed": "Ihr Budgetstatus konnte nicht geladen werden. Laden Sie das Dashboard neu und versuchen Sie es erneut."
   },
   "insights": {
     "title": "Ausgaben-Einblicke",
@@ -524,14 +524,14 @@
     "topLevelOnlyHint": "Unterkategorien der Oberkategorie zurechnen",
     "viewCallouts": "Beschriftungen",
     "viewLegend": "Legende",
-    "loadFailed": "Deine Ausgaben nach Kategorie konnten nicht geladen werden. Lade das Dashboard neu und versuche es erneut."
+    "loadFailed": "Ihre Ausgaben nach Kategorie konnten nicht geladen werden. Laden Sie das Dashboard neu und versuchen Sie es erneut."
   },
   "incomeExpenses": {
     "title": "Einnahmen vs. Ausgaben",
     "income": "Einnahmen",
     "expenses": "Ausgaben",
     "net": "Netto",
-    "loadFailed": "Deine Einnahmen und Ausgaben konnten nicht geladen werden. Lade das Dashboard neu und versuche es erneut."
+    "loadFailed": "Ihre Einnahmen und Ausgaben konnten nicht geladen werden. Laden Sie das Dashboard neu und versuchen Sie es erneut."
   },
   "customize": {
     "button": "Anpassen",
@@ -742,5 +742,5 @@
     "viewDiagram": "Diagramm",
     "viewTable": "Tabelle"
   },
-  "accountsLoadFailed": "Deine Konten konnten nicht geladen werden, daher kann dieses Widget nicht angezeigt werden. Lade das Dashboard neu und versuche es erneut."
+  "accountsLoadFailed": "Ihre Konten konnten nicht geladen werden, daher kann dieses Widget nicht angezeigt werden. Laden Sie das Dashboard neu und versuchen Sie es erneut."
 }

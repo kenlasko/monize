@@ -249,6 +249,12 @@ describe('PortfolioHero', () => {
     expect(screen.queryByText(/No investment accounts yet/)).not.toBeInTheDocument();
   });
 
+  it('says the accounts failed to load on a reload too, instead of the old valuation', async () => {
+    await renderHero(config(), { hasInvestments: true, accountsFailed: true });
+    expect(screen.getByText(/Couldn't load your portfolio/)).toBeInTheDocument();
+    expect(screen.queryByTestId('dashboard-hero-metric')).not.toBeInTheDocument();
+  });
+
   it('says there is nothing to show without investment accounts, and asks for nothing', async () => {
     await renderHero(config(), { hasInvestments: false });
     expect(screen.getByText(/No investment accounts yet/)).toBeInTheDocument();

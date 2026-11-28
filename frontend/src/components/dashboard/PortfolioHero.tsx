@@ -188,7 +188,9 @@ export function PortfolioHero({
   const sampled = !intraday && !PORTFOLIO_DAILY_RANGES.has(range);
 
   const label = t('hero.portfolioLabel');
-  if (accountsFailed && !hasInvestments && !isLoading) {
+  // Also on a reload: `investmentAccounts` is then empty while the old valuation
+  // would still be drawn under "All accounts".
+  if (accountsFailed && !isLoading) {
     return <HeroMessage>{t('hero.portfolioLoadFailed')}</HeroMessage>;
   }
   if (!hasInvestments && !isLoading) {
