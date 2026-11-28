@@ -1667,6 +1667,20 @@ export class ActionHistoryService {
     const { fromTransactionId, toTransactionId, fromAccountId, toAccountId } =
       action.afterData;
 
+    // INV-RECONCILE-001: refused before the first write when a leg is reconciled
+    // (the scheduled-posting remover reaches here too).
+    await assertReconciledRowsMutable(manager, action.userId, [
+      ...(
+        await lockTransactionRows(
+          manager,
+          [fromTransactionId, toTransactionId].filter(
+            (id): id is string => !!id,
+          ),
+          action.userId,
+        )
+      ).values(),
+    ]);
+
     // Delete both linked transactions
     for (const txId of [fromTransactionId, toTransactionId]) {
       if (!txId) continue;
@@ -1918,6 +1932,18 @@ export class ActionHistoryService {
       action.userId,
       legs.map((leg) => leg.securityId),
     );
+
+    // INV-RECONCILE-001: the cash rows go with the create, so a reconciled one
+    // refuses the undo (and the redo of a delete) before anything is written.
+    await assertReconciledRowsMutable(manager, action.userId, [
+      ...(
+        await lockTransactionRows(
+          manager,
+          legs.flatMap((leg) => (leg.transactionId ? [leg.transactionId] : [])),
+          action.userId,
+        )
+      ).values(),
+    ]);
 
     for (const leg of legs) {
       accountIds.add(leg.accountId);
